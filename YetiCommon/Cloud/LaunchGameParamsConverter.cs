@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using GgpGrpc;
+using GgpGrpc.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using GgpGrpc;
-using GgpGrpc.Models;
 
 namespace YetiCommon.Cloud
 {
@@ -24,12 +24,12 @@ namespace YetiCommon.Cloud
     {
         const string _developerLaunchGameParent = "organizations/-/players/me";
 
-        readonly SdkConfig.Factory _sdkConfigFactory;
+        readonly ISdkConfigFactory _sdkConfigFactory;
 
-        readonly QueryParametersParser _queryParametersParser;
+        readonly IQueryParametersParser _queryParametersParser;
 
         public LaunchGameParamsConverter(
-            SdkConfig.Factory sdkConfigFactory, QueryParametersParser queryParametersParser)
+            ISdkConfigFactory sdkConfigFactory, IQueryParametersParser queryParametersParser)
         {
             _sdkConfigFactory = sdkConfigFactory;
             _queryParametersParser = queryParametersParser;
@@ -42,10 +42,11 @@ namespace YetiCommon.Cloud
                 _queryParametersParser.ParametersToDictionary(
                     parameters.QueryParams, out IDictionary<string, string> parametersDict);
             status = status.Merge(
-                _queryParametersParser.ParseToParameters(parameters, parametersDict));
+                _queryParametersParser.ParseToParameters(parametersDict, parameters));
             ISdkConfig sdkConfig = _sdkConfigFactory.LoadGgpSdkConfigOrDefault();
             status = status.Merge(
                 EnvironmentVariables(parameters, out IDictionary<string, string> envVariables));
+            status = status.Merge(CommandLineArguments(parameters, out string[] cmdArgs));
 
             request = new LaunchGameRequest
             {
@@ -53,7 +54,7 @@ namespace YetiCommon.Cloud
                 GameletName = parameters.GameletName,
                 ApplicationName = parameters.ApplicationName,
                 ExecutablePath = ExecutablePath(parameters),
-                CommandLineArguments = CommandLineArguments(parameters),
+                CommandLineArguments = cmdArgs,
                 EnvironmentVariablePairs = envVariables,
                 SurfaceEnforcementMode = parameters.SurfaceEnforcementMode,
                 Debug = parameters.Debug
@@ -69,24 +70,31 @@ namespace YetiCommon.Cloud
             return status;
         }
 
+        /// <summary>
+        /// Returns the full game launch name, which can be used in the GetGameLaunchState
+        /// GGP api request.
+        /// </summary>
+        /// <param name="gameLaunchName">If empty, the current game launch will be used.</param>
+        /// <param name="testAccount"></param>
+        /// <returns>Full game launch name.</returns>
         public string FullGameLaunchName(string gameLaunchName, string testAccount = null)
         {
             ISdkConfig sdkConfig = _sdkConfigFactory.LoadGgpSdkConfigOrDefault();
-            string fullLaunchName = string.IsNullOrWhiteSpace(gameLaunchName)
+            string actualLaunchName = string.IsNullOrWhiteSpace(gameLaunchName)
                 ? "current"
                 : gameLaunchName;
 
             return string.IsNullOrWhiteSpace(testAccount)
-                ? $"organizations/-/players/me/gameLaunches/{fullLaunchName}"
+                ? $"{_developerLaunchGameParent}/gameLaunches/{actualLaunchName}"
                 : $"organizations/{sdkConfig.OrganizationId}/projects/{sdkConfig.ProjectId}/" +
-                $"testAccounts/{testAccount}/gameLaunches/{fullLaunchName}";
+                $"testAccounts/{testAccount}/gameLaunches/{actualLaunchName}";
         }
 
         string Parent(ISdkConfig sdkConfig, ChromeClientLauncher.Params parameters) =>
             string.IsNullOrWhiteSpace(parameters.TestAccount)
                 ? _developerLaunchGameParent
                 : $"organizations/{sdkConfig.OrganizationId}/projects/{sdkConfig.ProjectId}" +
-                "/testAccounts/{parameters.TestAccount}";
+                $"/testAccounts/{parameters.TestAccount}";
 
         string ExecutablePath(ChromeClientLauncher.Params parameters)
         {
@@ -99,36 +107,38 @@ namespace YetiCommon.Cloud
             return executableName;
         }
 
-        string[] CommandLineArguments(ChromeClientLauncher.Params parameters)
+        ConfigStatus CommandLineArguments(ChromeClientLauncher.Params parameters,
+                                                         out string[] args)
         {
+            args = new string[0];
             if (string.IsNullOrWhiteSpace(parameters.Cmd))
             {
-                return new string[0];
+                return ConfigStatus.OkStatus();
             }
 
-            return parameters.Cmd.Split(' ').Where(s => !string.IsNullOrEmpty(s)).Skip(1).ToArray();
+            args = parameters.Cmd.Trim().Split(' ').Where(s => !string.IsNullOrEmpty(s)).Skip(1)
+                .ToArray();
+            return ConfigStatus.OkStatus();
         }
 
         ConfigStatus EnvironmentVariables(ChromeClientLauncher.Params parameters,
                                           out IDictionary<string, string> envVariables)
         {
-            var status = ConfigStatus.OkStatus();
-            envVariables = parameters.GameletEnvironmentVars.Split(';')
+            ConfigStatus status = ConfigStatus.OkStatus();
+            string variablesString = parameters.GameletEnvironmentVars ?? string.Empty;
+            envVariables = variablesString.Split(';')
                 .Select(v => v.Trim())
                 .Where(v => !string.IsNullOrWhiteSpace(v)).Select(v =>
                 {
-                    List<string> parts = v.Split('=')
-                        .Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+                    List<string> parts = v.Split('=').ToList();
 
-                    if (parts.Count > 2)
+                    if (string.IsNullOrWhiteSpace(parts[0]))
                     {
                         status.AppendWarning(ErrorStrings.InvalidEnvironmentVariable(v));
                         return Tuple.Create(string.Empty, string.Empty);
                     }
 
-                    return Tuple.Create(parts[0].ToUpper(), parts.Count > 1
-                                            ? parts[1]
-                                            : string.Empty);
+                    return Tuple.Create(parts[0], string.Join("=", parts.Skip(1)));
                 }).Where(t => !string.IsNullOrEmpty(t.Item1)).GroupBy(tuple => tuple.Item1).Select(
                     tuple =>
                     {
@@ -140,7 +150,7 @@ namespace YetiCommon.Cloud
                         }
 
                         return tuple;
-                    }).ToDictionary(t => t.Key, t => t.First().Item2);
+                    }).ToDictionary(t => t.Key, t => t.Last().Item2);
             status = status.Merge(AddFlagsEnvironmentVariables(parameters, envVariables));
             if (!status.IsOk)
             {
@@ -154,15 +164,25 @@ namespace YetiCommon.Cloud
             ChromeClientLauncher.Params parameters, IDictionary<string, string> variables)
         {
             ConfigStatus status = ConfigStatus.OkStatus();
-            var flagEnvironmentVariables = new Dictionary<string, string>
+            var flagEnvironmentVariables = new Dictionary<string, string>();
+
+            if (!string.IsNullOrWhiteSpace(parameters.VulkanDriverVariant))
             {
-                {"GGP_DEV_VK_DRIVER_VARIANT", parameters.VulkanDriverVariant},
-                {"ENABLE_VULKAN_RENDERDOC_CAPTURE", parameters.RenderDoc ? "1" : "0"},
-                {"RENDERDOC_TEMP", "/mnt/developer/ggp"},
-                {"RENDERDOC_DEBUG_LOG_FILE", "/var/game/RDDebug.log"},
-                {"GGP_INTERNAL_LOAD_RGP", parameters.Rgp ? "1" : "0"},
-                {"RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log"}
-            };
+                flagEnvironmentVariables.Add("GGP_DEV_VK_DRIVER_VARIANT",
+                                             parameters.VulkanDriverVariant);
+            }
+            if (parameters.RenderDoc)
+            {
+                flagEnvironmentVariables.Add("ENABLE_VULKAN_RENDERDOC_CAPTURE", "1");
+                flagEnvironmentVariables.Add("RENDERDOC_TEMP", "/mnt/developer/ggp");
+                flagEnvironmentVariables.Add("RENDERDOC_DEBUG_LOG_FILE", "/var/game/RDDebug.log");
+            }
+            if (parameters.Rgp)
+            {
+                flagEnvironmentVariables.Add("GGP_INTERNAL_LOAD_RGP", "1");
+                flagEnvironmentVariables.Add("RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log");
+            }
+
             foreach (string key in flagEnvironmentVariables.Keys)
             {
                 if (variables.ContainsKey(key))
@@ -172,14 +192,18 @@ namespace YetiCommon.Cloud
                 }
                 variables.Add(key, flagEnvironmentVariables[key]);
             }
-            if (!variables.ContainsKey("LD_PRELOAD"))
-            {
-                variables.Add("LD_PRELOAD", string.Empty);
-            }
 
-            variables["LD_PRELOAD"] += (string.IsNullOrEmpty(variables["LD_PRELOAD"])
-                ? string.Empty
-                : ":") + "librgpserver.so";
+            if (parameters.Rgp)
+            {
+                if (!variables.ContainsKey("LD_PRELOAD"))
+                {
+                    variables.Add("LD_PRELOAD", string.Empty);
+                }
+                variables["LD_PRELOAD"] += (string.IsNullOrEmpty(variables["LD_PRELOAD"])
+                    ? string.Empty
+                    : ":") + "librgpserver.so";
+            }
+            
             return status;
         }
     }

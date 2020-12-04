@@ -65,6 +65,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CastleAspects\CallSequenceLoggingAspectTests.cs" />
+    <Compile Include="Cloud\ConfigStatusTests.cs" />
+    <Compile Include="Cloud\LaunchGameParamsConverterTests.cs" />
+    <Compile Include="Cloud\LaunchRequestParsingTestData.cs" />
+    <Compile Include="Cloud\ToLaunchGameRequestTests.cs" />
+    <Compile Include="Cloud\QueryParametersParserParsingTests.cs" />
+    <Compile Include="Cloud\QueryParametersParserTests.cs" />
     <Compile Include="EnumValueAliasAttributeTests.cs" />
     <Compile Include="BuildIdTests.cs" />
     <Compile Include="CastleAspects\InvocationLoggerAspectTests.cs" />

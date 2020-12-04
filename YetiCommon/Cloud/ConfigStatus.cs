@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,9 +20,12 @@ namespace YetiCommon.Cloud
 {
     public class ConfigStatus
     {
-        bool _hasWarning;
-
-        bool _hasError;
+        public enum ErrorLevel
+        {
+            Ok = 0,
+            Warning = 1,
+            Error = 2
+        }
 
         List<string> _errorMessages = new List<string>();
 
@@ -33,39 +37,74 @@ namespace YetiCommon.Cloud
 
         public string WarningMessage => string.Join("\r\n", _warningMessages);
 
+        public List<string> WarningMessages => _warningMessages.ToList();
+
+        public List<string> ErrorMessages => _errorMessages.ToList();
+
+        public List<string> AllMessages => _errorMessages.Concat(_warningMessages).ToList();
+
+        public ErrorLevel SeverityLevel
+        {
+            get
+            {
+                if (_errorMessages.Any())
+                {
+                    return ErrorLevel.Error;
+                }
+                if (_warningMessages.Any())
+                {
+                    return ErrorLevel.Warning;
+                }
+
+                return ErrorLevel.Ok;
+            }
+        }
+
         public static ConfigStatus OkStatus() =>
             new ConfigStatus();
 
         public static ConfigStatus WarningStatus(string message) =>
-            new ConfigStatus
-                { _hasWarning = true, _warningMessages = new List<string> { message } };
+            new ConfigStatus { _warningMessages = new List<string> { message } };
 
         public static ConfigStatus ErrorStatus(string message) =>
-            new ConfigStatus { _hasError = true, _errorMessages = new List<string> { message } };
+            new ConfigStatus { _errorMessages = new List<string> { message } };
 
-        public bool IsOk => !_hasWarning && !_hasError;
+        public bool IsOk => SeverityLevel == ErrorLevel.Ok;
 
-        public bool IsWarningLevel => _hasWarning && !_hasError;
+        public bool IsWarningLevel => SeverityLevel == ErrorLevel.Warning;
 
-        public bool IsErrorLevel => _hasError;
+        public bool IsErrorLevel => SeverityLevel == ErrorLevel.Error;
+
+        public List<string> MessagesByErrorLevel(ErrorLevel errorLevel)
+        {
+            switch (errorLevel)
+            {
+                case ErrorLevel.Error:
+                    return ErrorMessages;
+                case ErrorLevel.Warning:
+                    return WarningMessages;
+                case ErrorLevel.Ok:
+                    return null;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(errorLevel), errorLevel,
+                        "Unexpected error level received.");
+            }
+        }
 
         public void AppendWarning(string message)
         {
             _warningMessages.Add(message);
-            _hasWarning = true;
         }
 
         public void AppendError(string message)
         {
             _errorMessages.Add(message);
-            _hasError = true;
         }
 
         public ConfigStatus Merge(ConfigStatus otherStatus) =>
             new ConfigStatus
             {
-                _hasError = _hasError || otherStatus._hasError,
-                _hasWarning = _hasWarning || otherStatus._hasWarning,
                 _errorMessages = _errorMessages.Concat(otherStatus._errorMessages).ToList(),
                 _warningMessages =
                     _warningMessages.Concat(otherStatus._warningMessages).ToList()

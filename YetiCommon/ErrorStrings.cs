@@ -91,11 +91,12 @@ namespace YetiCommon
             string.Join(", ", values.Select(v => $"'{v}'")) + ".";
 
         public static string EnvironmentVariableOverride(string variableName) =>
-            $"The custom environment variable '{variableName}' overrides a setting variable.";
+            $"The custom environment variable '{variableName}' overrides the setting variable.";
 
         public const string EditEnvironmentVariables =
             "Please edit the setting in 'Project Properties' -> " +
-            "'Debugging' -> 'Stadia Environment Variables'.";
+            "'Debugging' -> 'Stadia Environment Variables' or remove 'vars' parameter out of " +
+            "'Project Properties' -> 'Debugging' -> 'Custom Query Parameters'";
 
         public static string QueryParametersIgnored(IEnumerable<string> parameters) =>
             "The following query parameters will be ignored, because they should be " +
@@ -106,6 +107,11 @@ namespace YetiCommon
             string parameterName, string value, Type type) =>
             $"Can not convert query parameter's '{parameterName}' value '{value}' to {type}. " +
             $"Parameter '{parameterName}' is ignored.";
+
+        public static string InvalidEnumValue(string parameterName, string value,
+                                              IEnumerable<string> expectedValues) =>
+            $"Parameter's '{parameterName}' value '{value}' is invalid. Valid " +
+            $"values are: {string.Join(", ", expectedValues.Select(v => $"'{v}'"))}.";
 
         public static string QueryParameterNotInAllowedRange(
             string parameterName, string value, IEnumerable<string> allowedValues) =>
@@ -118,5 +124,8 @@ namespace YetiCommon
             $"{(string.IsNullOrWhiteSpace(actual) ? "an empty value" : $"'{actual}'")}. " +
             "If you want to specify command-line parameters for the binary, use the setting in " +
             "'Project Properties' -> 'Debugging' -> 'Stadia Launch Arguments'.";
+
+        public static string InvalidCommandArgumentsString(string argumentsString) =>
+            $"Invalid command arguments string: '{argumentsString}'";
     }
 }

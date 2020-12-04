@@ -81,7 +81,8 @@ namespace YetiCommon
 
             public string VulkanDriverVariant { get; set; }
 
-            public SurfaceEnforcementSetting SurfaceEnforcementMode { get; set; }
+            public SurfaceEnforcementSetting SurfaceEnforcementMode { get; set; } =
+                SurfaceEnforcementSetting.Off;
 
             public string QueryParams { get; set; }
         }

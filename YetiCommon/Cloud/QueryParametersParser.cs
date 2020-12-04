@@ -23,7 +23,22 @@ using GgpGrpc.Models;
 
 namespace YetiCommon.Cloud
 {
-    public class QueryParametersParser
+    public interface IQueryParametersParser
+    {
+        ConfigStatus ParametersToDictionary(
+            string queryString, out IDictionary<string, string> queryParams);
+
+        ConfigStatus ParseToParameters(IDictionary<string, string> queryParams,
+                                       ChromeClientLauncher.Params parameters);
+
+        ConfigStatus GetFinalQueryString(
+            IDictionary<string, string> queryParams, out string queryString);
+
+        ConfigStatus ParseToLaunchRequest(
+            IDictionary<string, string> queryParams, LaunchGameRequest launchRequest);
+    }
+
+    public class QueryParametersParser : IQueryParametersParser
     {
         class QueryParamMapping
         {
@@ -195,8 +210,8 @@ namespace YetiCommon.Cloud
             return status;
         }
 
-        public ConfigStatus ParseToParameters(ChromeClientLauncher.Params parameters,
-                                              IDictionary<string, string> queryParams)
+        public ConfigStatus ParseToParameters(IDictionary<string, string> queryParams,
+                                              ChromeClientLauncher.Params parameters)
         {
             ConfigStatus status = AssignValues(parameters, queryParams);
             return status.Merge(ParseParamsCustomParameters(parameters, queryParams));
@@ -220,8 +235,8 @@ namespace YetiCommon.Cloud
             IEnumerable<KeyValuePair<string, string>> paramsToStayInQuery = queryParams.Where(
                 p => !queryParamsMappingsDict.ContainsKey(p.Key) ||
                     queryParamsMappingsDict[p.Key].PassAsUrlParam);
-            queryString =
-                string.Join("&", paramsToStayInQuery.Select(p => $"{p.Key}={p.Value}"));
+            queryString = string.Join("&", paramsToStayInQuery.Select(
+                    p => $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
             return status;
         }
 
@@ -307,28 +322,32 @@ namespace YetiCommon.Cloud
                                                 IDictionary<string, string> queryParams,
                                                 string variableName, string queryParamName)
         {
-            ConfigStatus status = ConfigStatus.OkStatus();
             if (!queryParams.ContainsKey(queryParamName) ||
                 launchRequest.EnvironmentVariablePairs.ContainsKey(variableName))
             {
-                return status;
+                return ConfigStatus.OkStatus();
             }
 
             if (!bool.TryParse(queryParams[queryParamName], out bool isTrue))
             {
-                status.AppendWarning(ErrorStrings.InvalidQueryParameterType(
-                                         queryParamName, queryParams[queryParamName],
-                                         typeof(bool)));
-            }
-            else
-            {
-                if (isTrue)
+                if (!int.TryParse(queryParams[queryParamName], out int intVal) || intVal < 0 ||
+                    intVal > 1)
                 {
-                    launchRequest.EnvironmentVariablePairs.Add(variableName, "1");
+                    return ConfigStatus.WarningStatus(ErrorStrings.InvalidQueryParameterType(
+                                                          queryParamName,
+                                                          queryParams[queryParamName],
+                                                          typeof(bool)));
                 }
+
+                isTrue = intVal == 1;
             }
 
-            return status;
+            if (isTrue)
+            {
+                launchRequest.EnvironmentVariablePairs.Add(variableName, "1");
+            }
+
+            return ConfigStatus.OkStatus();
         }
 
         ConfigStatus ParseLaunchRequestVulkanDriverVariant(LaunchGameRequest launchRequest,
@@ -409,8 +428,9 @@ namespace YetiCommon.Cloud
         {
             if (queryParams.ContainsKey(QueryParamMapping.Vars))
             {
-                parameters.GameletEnvironmentVars = queryParams[QueryParamMapping.Vars] + ";" +
-                    parameters.GameletEnvironmentVars;
+                // The last occurrence of the an environment variable wins.
+                parameters.GameletEnvironmentVars = parameters.GameletEnvironmentVars + ";" +
+                    queryParams[QueryParamMapping.Vars];
             }
             return ConfigStatus.OkStatus();
         }
@@ -433,17 +453,17 @@ namespace YetiCommon.Cloud
                 return SetStringProperty(assignObject, property, value);
             }
 
-            if (property.PropertyType == typeof(int))
+            if (property.PropertyType == typeof(int) || property.PropertyType == typeof(int?))
             {
                 return SetIntProperty(assignObject, property, paramName, value);
             }
 
-            if (Nullable.GetUnderlyingType(property.PropertyType) == typeof(ulong))
+            if (property.PropertyType == typeof(ulong) || property.PropertyType == typeof(ulong?))
             {
                 return SetUlongProperty(assignObject, property, paramName, value);
             }
 
-            if (property.PropertyType == typeof(bool))
+            if (property.PropertyType == typeof(bool) || property.PropertyType == typeof(bool?))
             {
                 return SetBoolProperty(assignObject, property, paramName, value);
             }
@@ -495,10 +515,16 @@ namespace YetiCommon.Cloud
         ConfigStatus SetBoolProperty<T>(
             T assignObject, PropertyInfo property, string paramName, string value)
         {
+            value = value.ToLower();
             if (!bool.TryParse(value, out bool boolValue))
             {
-                return ConfigStatus.WarningStatus(
-                    ErrorStrings.InvalidQueryParameterType(paramName, value, typeof(bool)));
+                if (!int.TryParse(value, out int intVal) || intVal < 0 || intVal > 1)
+                {
+                    return ConfigStatus.WarningStatus(
+                        ErrorStrings.InvalidQueryParameterType(paramName, value, typeof(bool)));
+                }
+
+                boolValue = intVal == 1;
             }
             property.SetValue(assignObject, boolValue);
             return ConfigStatus.OkStatus();
@@ -508,29 +534,35 @@ namespace YetiCommon.Cloud
             T assignObject, PropertyInfo property, string paramName, string value)
         {
             Type propertyType = property.PropertyType;
-            if (!int.TryParse(value, out int intValue))
+            var expectedValues = new List<string>();
+            foreach (string fieldName in Enum.GetNames(propertyType))
             {
-                return ConfigStatus.WarningStatus(
-                    ErrorStrings.InvalidQueryParameterType(paramName, value, propertyType));
-            }
-            Array enumValues = Enum.GetValues(propertyType);
-            for (int i = 0; i < enumValues.Length; ++i)
-            {
-                object enumVal = enumValues.GetValue(i);
-                if ((int)enumVal == intValue)
+                FieldInfo fieldInfo = propertyType.GetField(fieldName);
+                var attr = (MapValueAttribute) fieldInfo
+                    .GetCustomAttributes(typeof(MapValueAttribute), false).SingleOrDefault();
+                if (attr == null)
                 {
-                    property.SetValue(assignObject, enumVal);
+                    continue;
+                }
+
+                if (value.ToLower() == attr.QueryParameterValue.ToLower())
+                {
+                    property.SetValue(assignObject, Enum.Parse(propertyType, fieldName));
                     return ConfigStatus.OkStatus();
                 }
+
+                expectedValues.Add(attr.QueryParameterValue);
             }
+
             return ConfigStatus.WarningStatus(
-                    ErrorStrings.InvalidQueryParameterType(paramName, value, propertyType));
+                    ErrorStrings.InvalidEnumValue(paramName, value, expectedValues));
         }
 
         ConfigStatus SetStringArrayProperty<T>(
             T assignObject, PropertyInfo property, string paramName, string value)
         {
-            property.SetValue(assignObject, value.Split(','));
+            property.SetValue(assignObject, value.Split(',')
+                                  .Where(s => !string.IsNullOrWhiteSpace(s)).ToArray());
             return ConfigStatus.OkStatus();
         }
 
@@ -569,7 +601,7 @@ namespace YetiCommon.Cloud
                         throw new ApplicationException("Parameter 'Key' can not be empty.");
                     }
 
-                    queryParams.Add(key.ToLower(), nameValueCollection.Get(key));
+                    queryParams.Add(key, nameValueCollection.Get(key));
                 }
 
                 LogQueryString(queryString, queryParams);
