@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -35,17 +35,17 @@ namespace YetiVSI.DebugEngine.CoreDumps
         public readonly ulong StartOffset;
         public readonly ushort EntrySize;
         public readonly ushort EntriesCount;
-        public readonly bool IsExecuable;
+        public readonly bool IsExecutable;
 
         static readonly ElfHeader EmptyHeader = new ElfHeader(0, 0, 0, false);
 
         public ElfHeader(ulong startOffset, ushort entrySize, ushort entriesCount,
-            bool isExecutable)
+                         bool isExecutable)
         {
             StartOffset = startOffset;
             EntrySize = entrySize;
             EntriesCount = entriesCount;
-            IsExecuable = isExecutable;
+            IsExecutable = isExecutable;
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
         {
             for (int i = 0; i < EntriesCount; i++)
             {
-                yield return (ulong) i * EntrySize;
+                yield return (ulong)i * EntrySize;
             }
         }
 
@@ -126,13 +126,13 @@ namespace YetiVSI.DebugEngine.CoreDumps
                 return false;
             }
 
-            if (ei_bitness != (byte) Bitness.x64)
+            if (ei_bitness != (byte)Bitness.x64)
             {
                 Trace.WriteLine("Only 64-bit elf supported.");
                 return false;
             }
 
-            if (ei_endianness != (byte) Endianness.Little)
+            if (ei_endianness != (byte)Endianness.Little)
             {
                 Trace.WriteLine("Only little endian supported.");
                 return false;
@@ -145,7 +145,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
                 return false;
             }
 
-            result = new ElfHeader(e_phoff, e_phentsize, e_phnum, e_type == (byte) Type.Executable);
+            result = new ElfHeader(e_phoff, e_phentsize, e_phnum, e_type == (byte)Type.Executable);
             return true;
         }
 

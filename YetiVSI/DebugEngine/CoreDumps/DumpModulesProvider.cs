@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
@@ -40,7 +40,8 @@ namespace YetiVSI.DebugEngine.CoreDumps
             IsExecutable = isExecutable;
         }
 
-        public static DumpModule Empty = new DumpModule(string.Empty, BuildId.Empty, false);
+        public static readonly DumpModule Empty =
+            new DumpModule(string.Empty, BuildId.Empty, false);
     }
 
     public class DumpModulesProvider : IDumpModulesProvider
@@ -60,7 +61,12 @@ namespace YetiVSI.DebugEngine.CoreDumps
                 return new DumpModule[0];
             }
 
-            using (var reader = new BinaryReader(_fileSystem.File.Open(dumpPath, FileMode.Open)))
+            Stream fileStream = _fileSystem.File.Open(
+                dumpPath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite);
+            using (var reader = new BinaryReader(fileStream))
             {
                 return GetModules(reader);
             }
@@ -81,7 +87,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
             // loadable segments.
             foreach (ulong headerOffset in elfHeader.GetAbsoluteProgramHeaderOffsets())
             {
-                dumpReader.BaseStream.Seek((long) headerOffset, SeekOrigin.Begin);
+                dumpReader.BaseStream.Seek((long)headerOffset, SeekOrigin.Begin);
 
                 if (!ProgramHeader.TryRead(dumpReader, out ProgramHeader header))
                 {
@@ -101,12 +107,16 @@ namespace YetiVSI.DebugEngine.CoreDumps
                         }
 
                         int size = (int)header.HeaderSize;
-                        dumpReader.BaseStream.Seek((long) header.OffsetInDump, SeekOrigin.Begin);
+                        dumpReader.BaseStream.Seek((long)header.OffsetInDump, SeekOrigin.Begin);
                         byte[] notesBytes = dumpReader.ReadBytes(size);
                         var notesStream = new MemoryStream(notesBytes);
-                        var notesReader = new BinaryReader(notesStream);
-                        fileSections.AddRange(
-                            NoteSection.ReadModuleSections(notesReader, size));
+                        using (var notesReader = new BinaryReader(notesStream))
+                        {
+                            IEnumerable<FileSection> moduleSections =
+                                NoteSection.ReadModuleSections(notesReader, size);
+                            fileSections.AddRange(moduleSections);
+                        }
+
                         break;
 
                     // Collect memory mappings for the core files.
@@ -121,7 +131,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
             // Go through each module and try to find build id in the mapped regions.
             foreach (FileSection file in fileSections)
             {
-                var module = loadableSegmentsReader.GetModule(file);
+                DumpModule module = loadableSegmentsReader.GetModule(file);
                 if (module.Id == BuildId.Empty)
                 {
                     Trace.WriteLine($"Can't find build id for module {module.Path}.");

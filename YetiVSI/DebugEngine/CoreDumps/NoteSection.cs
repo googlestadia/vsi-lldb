@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -80,7 +80,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
                         continue;
                     }
 
-                    int count = (int) noteReader.ReadUInt64();
+                    int count = (int)noteReader.ReadUInt64();
                     ulong pageSize = noteReader.ReadUInt64();
 
                     int locationsSize = FileLocationSize * count;
@@ -129,22 +129,18 @@ namespace YetiVSI.DebugEngine.CoreDumps
         /// <returns>Build id or BuildId.Empty.</returns>
         public static BuildId ReadBuildId(BinaryReader reader, int size)
         {
-            var buildIdNote = ReadNotes(reader, size)
-                .FirstOrDefault(note => note._name == Name.Gnu && note._type == Type.BuildId);
+            NoteSection buildIdNote =
+                ReadNotes(reader, size)
+                    .FirstOrDefault(note => note._name == Name.Gnu && note._type == Type.BuildId);
 
-            if (buildIdNote == null)
-            {
-                return BuildId.Empty;
-            }
-
-            return new BuildId(buildIdNote._data);
+            return buildIdNote == null ? BuildId.Empty : new BuildId(buildIdNote._data);
         }
 
-        private static string ReadUtf8String(BinaryReader reader)
+        static string ReadUtf8String(BinaryReader reader)
         {
             byte b;
             var bytes = new List<byte>();
-            while ((b = (byte) reader.BaseStream.ReadByte()) > 0)
+            while ((b = (byte)reader.BaseStream.ReadByte()) > 0)
             {
                 bytes.Add(b);
             }
@@ -152,7 +148,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
             return Encoding.UTF8.GetString(bytes.ToArray());
         }
 
-        private static List<NoteSection> ReadNotes(BinaryReader reader, int size)
+        static List<NoteSection> ReadNotes(BinaryReader reader, int size)
         {
             var notes = new List<NoteSection>();
             if (!HeadersReadingUtils.IsEnoughBytes(reader, Math.Max(size, MinNoteSize)))
@@ -167,32 +163,54 @@ namespace YetiVSI.DebugEngine.CoreDumps
                     break;
                 }
 
-                var namesz = reader.ReadInt32();
-                var descsz = reader.ReadInt32();
-                var typeValue = reader.ReadUInt32();
+                int nameSize = reader.ReadInt32();
+                int descriptionSize = reader.ReadInt32();
+                uint typeValue = reader.ReadUInt32();
 
-                var namePadding = HeadersReadingUtils.GetInt32ValuePadding(namesz);
-                var dataPadding = HeadersReadingUtils.GetInt32ValuePadding(descsz);
-                var noteSize = namesz + namePadding + descsz + dataPadding;
+                int namePadding = HeadersReadingUtils.GetInt32ValuePadding(nameSize);
+                int dataPadding = HeadersReadingUtils.GetInt32ValuePadding(descriptionSize);
+                int noteSize = nameSize + namePadding + descriptionSize + dataPadding;
                 if (!HeadersReadingUtils.IsEnoughBytes(reader, noteSize))
                 {
                     break;
                 }
 
-                var nameBytes = reader.ReadBytes(namesz);
+                byte[] nameBytes = reader.ReadBytes(nameSize);
                 reader.ReadBytes(namePadding);
 
-                var desc = reader.ReadBytes(descsz);
+                byte[] desc = reader.ReadBytes(descriptionSize);
 
                 reader.ReadBytes(dataPadding);
 
-                var nameString = Encoding.UTF8.GetString(nameBytes, 0, nameBytes.Length - 1);
+                string nameString = Encoding.UTF8.GetString(nameBytes, 0, nameBytes.Length - 1);
 
-                var type = typeValue == NtFileType ? Type.File :
-                    typeValue == NtGnuBuildIdType ? Type.BuildId : Type.Other;
+                Type type;
+                switch (typeValue)
+                {
+                    case NtFileType:
+                        type = Type.File;
+                        break;
+                    case NtGnuBuildIdType:
+                        type = Type.BuildId;
+                        break;
+                    default:
+                        type = Type.Other;
+                        break;
+                }
 
-                var name = nameString == GnuName ? Name.Gnu :
-                    nameString == CoreName ? Name.Core : Name.Other;
+                Name name;
+                switch (nameString)
+                {
+                    case GnuName:
+                        name = Name.Gnu;
+                        break;
+                    case CoreName:
+                        name = Name.Core;
+                        break;
+                    default:
+                        name = Name.Other;
+                        break;
+                }
 
                 notes.Add(new NoteSection(type, name, desc));
             }

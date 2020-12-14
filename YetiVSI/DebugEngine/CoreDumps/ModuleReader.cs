@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using YetiCommon;
 
 namespace YetiVSI.DebugEngine.CoreDumps
 {
@@ -42,64 +43,73 @@ namespace YetiVSI.DebugEngine.CoreDumps
         public DumpModule GetModule(FileSection file)
         {
             byte[] elfHeaderBytes = ReadBlockByAddress(file.StartAddress, ElfHeader.Size);
-            var elfHeaderReader = new BinaryReader(new MemoryStream(elfHeaderBytes));
-            if (!ElfHeader.TryRead(elfHeaderReader, out ElfHeader moduleHeader))
+            using (var elfHeaderReader = new BinaryReader(new MemoryStream(elfHeaderBytes)))
             {
-                Trace.WriteLine($"Failed to read elf header for module {file.Path}.");
-                return DumpModule.Empty;
-            }
-
-            int headersSize = moduleHeader.EntriesCount * moduleHeader.EntrySize;
-            byte[] headerBytes = ReadBlockByAddress(
-                file.StartAddress + moduleHeader.StartOffset, headersSize);
-
-            var headerReader = new BinaryReader(new MemoryStream(headerBytes));
-            // Iterate through the program headers, until we find the note with the build id.
-            foreach (var offset in moduleHeader.GetRelativeProgramHeaderOffsets())
-            {
-                headerReader.BaseStream.Seek((long) offset, SeekOrigin.Begin);
-                if (!ProgramHeader.TryRead(headerReader, out ProgramHeader header))
+                if (!ElfHeader.TryRead(elfHeaderReader, out ElfHeader moduleHeader))
                 {
-                    Trace.WriteLine($"Failed to read program header with offset: {offset} " +
-                        $"from module {file.Path}.");
-                    continue;
+                    Trace.WriteLine($"Failed to read elf header for module {file.Path}.");
+                    return DumpModule.Empty;
                 }
 
-                if (header.HeaderType != ProgramHeader.Type.NoteSegment)
-                {
-                    continue;
-                }
+                int headersSize = moduleHeader.EntriesCount * moduleHeader.EntrySize;
+                byte[] headerBytes =
+                    ReadBlockByAddress(file.StartAddress + moduleHeader.StartOffset, headersSize);
 
-                ulong fileSize = file.EndAddress - file.StartAddress;
-                ulong headerEnd = header.OffsetInDump + header.HeaderSize;
-                if (headerEnd > fileSize)
+                using (var headerReader = new BinaryReader(new MemoryStream(headerBytes)))
                 {
-                    Trace.WriteLine("Can't extract note sections from program header. " +
-                                    "Note section is outside of the first mapped location.");
-                    continue;
-                }
+                    // Iterate through the program headers, until we find the note with the build
+                    // id.
+                    foreach (ulong offset in moduleHeader.GetRelativeProgramHeaderOffsets())
+                    {
+                        headerReader.BaseStream.Seek((long)offset, SeekOrigin.Begin);
+                        if (!ProgramHeader.TryRead(headerReader, out ProgramHeader header))
+                        {
+                            Trace.WriteLine(
+                                $"Failed to read program header with offset: {offset} " +
+                                $"from module {file.Path}.");
+                            continue;
+                        }
 
-                if (header.HeaderSize > int.MaxValue)
-                {
-                    Trace.WriteLine("Can't extract note sections from program header. " +
-                                    "Note size is more then int.Max.");
-                    continue;
-                }
+                        if (header.HeaderType != ProgramHeader.Type.NoteSegment)
+                        {
+                            continue;
+                        }
 
-                int size = (int) header.HeaderSize;
-                var noteSegmentBytes = ReadBlockByAddress(
-                    file.StartAddress + header.OffsetInDump, size);
-                if (noteSegmentBytes.Length < size)
-                {
-                    Trace.WriteLine("Can't extract build ids from note section. " +
-                                    "Note is not fully in load segments.");
-                    continue;
-                }
+                        ulong fileSize = file.EndAddress - file.StartAddress;
+                        ulong headerEnd = header.OffsetInDump + header.HeaderSize;
+                        if (headerEnd > fileSize)
+                        {
+                            Trace.WriteLine(
+                                "Can't extract note sections from program header. " +
+                                "Note section is outside of the first mapped location.");
+                            continue;
+                        }
 
-                var notesStream = new MemoryStream(noteSegmentBytes);
-                var notesReader = new BinaryReader(notesStream);
-                var buildId = NoteSection.ReadBuildId(notesReader, size);
-                return new DumpModule(file.Path, buildId, moduleHeader.IsExecuable);
+                        if (header.HeaderSize > int.MaxValue)
+                        {
+                            Trace.WriteLine("Can't extract note sections from program header. " +
+                                            "Note size is more then int.Max.");
+                            continue;
+                        }
+
+                        int size = (int)header.HeaderSize;
+                        byte[] noteSegmentBytes =
+                            ReadBlockByAddress(file.StartAddress + header.OffsetInDump, size);
+                        if (noteSegmentBytes.Length < size)
+                        {
+                            Trace.WriteLine("Can't extract build ids from note section. " +
+                                            "Note is not fully in load segments.");
+                            continue;
+                        }
+
+                        var notesStream = new MemoryStream(noteSegmentBytes);
+                        using (var notesReader = new BinaryReader(notesStream))
+                        {
+                            BuildId buildId = NoteSection.ReadBuildId(notesReader, size);
+                            return new DumpModule(file.Path, buildId, moduleHeader.IsExecutable);
+                        }
+                    }
+                }
             }
 
             return DumpModule.Empty;
@@ -125,14 +135,14 @@ namespace YetiVSI.DebugEngine.CoreDumps
             int remainSize = size;
             for (int i = firstSegmentIndex; i < _sortedSegments.Count && remainSize > 0; i++)
             {
-                var segment = _sortedSegments[i];
+                ProgramHeader segment = _sortedSegments[i];
                 if (startAddress < segment.VirtualAddress)
                 {
                     break;
                 }
 
                 ulong offsetInSegment = startAddress - segment.VirtualAddress;
-                long offsetInDump = (long) (segment.OffsetInDump + offsetInSegment);
+                long offsetInDump = (long)(segment.OffsetInDump + offsetInSegment);
                 int blockSize = Math.Min((int)(segment.HeaderSize - offsetInSegment), remainSize);
 
                 _dumpReader.BaseStream.Seek(offsetInDump, SeekOrigin.Begin);
@@ -140,7 +150,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
                 byte[] blockBytes = _dumpReader.ReadBytes(blockSize);
                 Array.Copy(blockBytes, 0, result, size - remainSize, blockSize);
                 remainSize -= blockSize;
-                startAddress += (ulong) blockSize;
+                startAddress += (ulong)blockSize;
             }
 
             return result;
@@ -151,7 +161,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
         /// </summary>
         /// <param name="address">The address which should be inside segment.</param>
         /// <returns>Index of the loadable segment if it was found and -1 otherwise.</returns>
-        private int FindSegmentContainingAddress(ulong address)
+        int FindSegmentContainingAddress(ulong address)
         {
             int min = 0;
             int max = _sortedSegments.Count - 1;
@@ -159,8 +169,8 @@ namespace YetiVSI.DebugEngine.CoreDumps
             while (min <= max)
             {
                 int mid = (min + max) / 2;
-                var segment = _sortedSegments[mid];
-                var end = segment.VirtualAddress + segment.HeaderSize;
+                ProgramHeader segment = _sortedSegments[mid];
+                ulong end = segment.VirtualAddress + segment.HeaderSize;
                 if (address < segment.VirtualAddress)
                 {
                     max = mid - 1;
