@@ -216,7 +216,6 @@
     <Compile Include="DebugEngine\Variables\IChildAdapter.cs" />
     <Compile Include="DebugEngine\Variables\CStringEscapeHelper.cs" />
     <Compile Include="DebugEngine\Variables\ExpressionParser.cs" />
-    <Compile Include="DebugEngine\Variables\ExpressionNumChildrenProvider.cs" />
     <Compile Include="DebugEngine\Variables\FloatRadixConversionHelper.cs" />
     <Compile Include="DebugEngine\Variables\RemoteValueChildAdapter.cs" />
     <Compile Include="DebugEngine\Variables\RemoteValueLLDBVectorOfFloatFormat.cs" />
@@ -226,7 +225,6 @@
     <Compile Include="DebugEngine\Variables\IRemoteValueFormatWithSize.cs" />
     <Compile Include="DebugEngine\Variables\RemoteValueStringFormat.cs" />
     <Compile Include="DebugEngine\Variables\RemoteValueFormat.cs" />
-    <Compile Include="DebugEngine\Variables\ScalarNumChildrenProvider.cs" />
     <Compile Include="DebugEngine\Variables\NatvisViewsUtil.cs" />
     <Compile Include="DebugEngine\Variables\FormatSpecifierUtil.cs" />
     <Compile Include="DebugEngine\Variables\ValueStringBuilder.cs" />

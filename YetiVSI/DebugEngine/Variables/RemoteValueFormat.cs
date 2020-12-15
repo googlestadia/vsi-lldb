@@ -25,8 +25,7 @@ namespace YetiVSI.DebugEngine.Variables
     /// </summary>
     public class RemoteValueFormat : IRemoteValueFormat
     {
-        public RemoteValueFormat(ISingleValueFormat valueFormat,
-                                 IRemoteValueNumChildrenProvider sizeSpecifier = null)
+        public RemoteValueFormat(ISingleValueFormat valueFormat, uint? sizeSpecifier = null)
         {
             _format = valueFormat;
             _sizeSpecifier = sizeSpecifier;
@@ -37,22 +36,21 @@ namespace YetiVSI.DebugEngine.Variables
 
         const uint _maxChildBatchSize = 100;
         readonly ISingleValueFormat _format;
-        readonly IRemoteValueNumChildrenProvider _sizeSpecifier;
+        readonly uint? _sizeSpecifier;
 
-        #region ISingleValueFormat implementation
+#region ISingleValueFormat implementation
 
         public ValueFormat GetValueFormat(ValueFormat fallbackValueFormat) =>
             _format.GetValueFormat(fallbackValueFormat);
 
         public string FormatValue(RemoteValue remoteValue, ValueFormat fallbackValueFormat)
         {
-            if (_sizeSpecifier != null)
+            if (_sizeSpecifier is uint size)
             {
                 // If the base formatter supports sized format, use that.
                 if (_format is IRemoteValueFormatWithSize sizeFormatter)
                 {
-                    return sizeFormatter.FormatValueWithSize(
-                        remoteValue, _sizeSpecifier.GetNumChildren(remoteValue));
+                    return sizeFormatter.FormatValueWithSize(remoteValue, size);
                 }
                 // Otherwise, return empty value so that the caller computes the value from
                 // the children.
@@ -63,13 +61,12 @@ namespace YetiVSI.DebugEngine.Variables
 
         public string FormatStringView(RemoteValue remoteValue, ValueFormat fallbackValueFormat)
         {
-            if (_sizeSpecifier != null)
+            if (_sizeSpecifier is uint size)
             {
                 // If the base formatter supports sized format, use that.
                 if (_format is IRemoteValueFormatWithSize sizeFormatter)
                 {
-                    return sizeFormatter.FormatStringViewWithSize(
-                        remoteValue, _sizeSpecifier.GetNumChildren(remoteValue));
+                    return sizeFormatter.FormatStringViewWithSize(remoteValue, size);
                 }
             }
             return _format.FormatStringView(remoteValue, fallbackValueFormat);
@@ -91,9 +88,8 @@ namespace YetiVSI.DebugEngine.Variables
 
         public virtual uint GetNumChildren(RemoteValue remoteValue)
         {
-            if (_sizeSpecifier != null)
+            if (_sizeSpecifier is uint childCount)
             {
-                var childCount = _sizeSpecifier.GetNumChildren(remoteValue);
                 return GetNumPointerOrArrayChildren(childCount, remoteValue);
             }
             return remoteValue.GetNumChildren();
@@ -108,8 +104,7 @@ namespace YetiVSI.DebugEngine.Variables
             }
 
             // If we have a size specifier, we adjust the size appropriately.
-            int childCount = (int)GetNumPointerOrArrayChildren(
-                _sizeSpecifier.GetNumChildren(remoteValue), remoteValue);
+            int childCount = (int)GetNumPointerOrArrayChildren((uint)_sizeSpecifier, remoteValue);
             int adjustedCount = Math.Max(0, Math.Min(count, childCount - offset));
             // For pointers, we obtain the children by pointer arithmetic.
             if (remoteValue.TypeIsPointerType())
@@ -181,17 +176,5 @@ namespace YetiVSI.DebugEngine.Variables
 
         uint GetNumPointerOrArrayChildren(uint size, RemoteValue remoteValue) =>
             remoteValue.TypeIsPointerType() ? size : Math.Min(size, remoteValue.GetNumChildren());
-    }
-
-    /// <summary>
-    /// Implementations of this interface provide a desired child count based on a format
-    /// specifier.
-    /// </summary>
-    public interface IRemoteValueNumChildrenProvider
-    {
-        /// <summary>
-        /// Get the desired number of children.
-        /// </summary>
-        uint GetNumChildren(RemoteValue remoteValue);
     }
 }

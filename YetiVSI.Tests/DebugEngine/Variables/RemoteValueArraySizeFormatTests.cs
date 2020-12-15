@@ -13,7 +13,6 @@
 // limitations under the License.
 
 using DebuggerApi;
-using NSubstitute;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
@@ -167,7 +166,6 @@ namespace YetiVSI.Test.DebugEngine.Variables
         }
 
         RemoteValueFormat GetFormat(uint size) =>
-            new RemoteValueFormat(RemoteValueDefaultFormat.DefaultFormatter,
-                                  sizeSpecifier: new ScalarNumChildrenProvider(size));
+            new RemoteValueFormat(RemoteValueDefaultFormat.DefaultFormatter, sizeSpecifier: size);
     }
 }

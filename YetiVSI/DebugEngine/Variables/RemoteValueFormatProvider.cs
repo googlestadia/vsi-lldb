@@ -15,6 +15,7 @@
 ﻿using DebuggerApi;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
@@ -108,7 +109,9 @@ namespace YetiVSI.DebugEngine.Variables
         {
             // TODO We should support more combinations of formatters, e.g.,
             // size specifier can be combined with 'view', etc.
-            return ParseFormat(formatSpecifier) != null ||
+
+            // Pass a dummy size to correctly resolve the case when size specifier is an expression.
+            return ParseFormat(formatSpecifier, 0U) != null ||
                    ExpandFormatSpecifierUtil.TryParseExpandFormatSpecifier(formatSpecifier,
                                                                            out _) ||
                    !string.IsNullOrEmpty(NatvisViewsUtil.ParseViewFormatSpecifier(formatSpecifier));
@@ -150,57 +153,52 @@ namespace YetiVSI.DebugEngine.Variables
             {
                 return new RemoteValueFormat(valueFormat);
             }
-            if (TryParseSizeFormat(size, evaluatedSize,
-                                   out IRemoteValueNumChildrenProvider sizeSpecifier))
+            uint? parsedSize = TryParseSizeFormat(size, evaluatedSize);
+            if (parsedSize != null)
             {
-                return new RemoteValueFormat(valueFormat, sizeSpecifier);
+                return new RemoteValueFormat(valueFormat, parsedSize);
             }
             return null;
         }
 
         /// <summary>
-        /// Try and parse the format specifier to produce a IRemoteValueNumChildrenProvider. Returns
-        /// true if the given formatSpecifier is a string representation of a uint or an expression
-        /// in square brackets. False otherwise.
+        /// Try and parse the format specifier or return the given |size| in the case of expression
+        /// in square brackets.
         /// </summary>
-        public static bool TryParseSizeFormat(string sizeExpression, uint? size,
-                                              out IRemoteValueNumChildrenProvider
-                                                  numChildrenProvider)
+        public static uint? TryParseSizeFormat(string sizeExpression, uint? size)
         {
             if (sizeExpression != null && sizeExpression.StartsWith("[") &&
                 sizeExpression.EndsWith("]"))
             {
-                if (size != null)
+                if (size == null)
                 {
-                    numChildrenProvider = new ScalarNumChildrenProvider((uint)size);
-                    return true;
+                    Trace.WriteLine("ERROR: Evaluated size specifier isn't provided.");
                 }
 
-                // TODO: Clean this up and remove ExpressionNumChildrenProvider.
-                // This path is currently reached only from the unit tests, which should also be
-                // updated.
-                sizeExpression = sizeExpression.Substring(1, sizeExpression.Length - 2);
-                numChildrenProvider = new ExpressionNumChildrenProvider(sizeExpression, null);
-                return true;
+                return size;
             }
 
-            if ((TryParseDecimal(sizeExpression, out int numChildren) ||
+            if (size != null)
+            {
+                Trace.WriteLine(
+                    "WARNING: Size specifier isn't an expression, evaluated size will be ignored.");
+            }
+
+            if ((TryParseDecimal(sizeExpression, out uint numChildren) ||
                  TryParseHexadecimal(sizeExpression, out numChildren)) &&
                 numChildren > 0)
             {
-                numChildrenProvider = new ScalarNumChildrenProvider((uint)numChildren);
-                return true;
+                return numChildren;
             }
 
-            numChildrenProvider = null;
-            return false;
+            return null;
         }
 
-        static bool TryParseDecimal(string formatSpecifier, out int numChildren)
+        static bool TryParseDecimal(string formatSpecifier, out uint numChildren)
         {
             try
             {
-                numChildren = int.Parse(formatSpecifier, CultureInfo.InvariantCulture);
+                numChildren = uint.Parse(formatSpecifier, CultureInfo.InvariantCulture);
                 return true;
             }
             catch (Exception ex) when (ex is FormatException || ex is OverflowException)
@@ -211,13 +209,13 @@ namespace YetiVSI.DebugEngine.Variables
             return false;
         }
 
-        static bool TryParseHexadecimal(string formatSpecifier, out int numChildren)
+        static bool TryParseHexadecimal(string formatSpecifier, out uint numChildren)
         {
             if (formatSpecifier.StartsWith("0x"))
             {
                 try
                 {
-                    numChildren = Convert.ToInt32(formatSpecifier.Substring(2), 16);
+                    numChildren = Convert.ToUInt32(formatSpecifier.Substring(2), 16);
                     return true;
                 }
                 catch (Exception ex) when (ex is FormatException || ex is OverflowException)

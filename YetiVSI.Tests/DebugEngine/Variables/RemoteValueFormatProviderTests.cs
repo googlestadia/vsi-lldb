@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
 using TestsCommon.TestSupport;
 using YetiVSI.DebugEngine.Variables;
 
@@ -96,97 +93,87 @@ namespace YetiVSI.Test.DebugEngine.Variables
         }
 
         [Test]
-        public void SizeSpecifierIsNegativeDecimal()
+        public void TestSizeExpressionIsValidFormat()
         {
-            IRemoteValueNumChildrenProvider format;
-            bool result = RemoteValueFormatProvider.TryParseSizeFormat("-99", null, out format);
-            Assert.That(result, Is.False);
+            Assert.That(RemoteValueFormatProvider.IsValidFormat("[anyExpression]!sub"));
         }
 
         [Test]
-        public void SizeSpecifierIsNegativeHexadecimal()
+        public void SizeSpecifierIsNegativeDecimal()
         {
-            IRemoteValueNumChildrenProvider format;
-            bool result =
-                RemoteValueFormatProvider.TryParseSizeFormat("0xffffffff", null, out format);
-            Assert.That(result, Is.False);
+            uint? size = RemoteValueFormatProvider.TryParseSizeFormat("-99", null);
+            Assert.That(size, Is.Null);
+        }
+
+        [Test]
+        public void SizeSpecifierIsUnsignedHexadecimal()
+        {
+            Assert.That(RemoteValueFormatProvider.TryParseSizeFormat("0xffffffff", null),
+                        Is.EqualTo(4294967295));
         }
 
         [Test]
         public void SizeSpecifierIsZero()
         {
-            IRemoteValueNumChildrenProvider format;
-            bool result = RemoteValueFormatProvider.TryParseSizeFormat("0", null, out format);
-            Assert.That(result, Is.False);
+            Assert.That(RemoteValueFormatProvider.TryParseSizeFormat("0", null), Is.Null);
         }
 
         [Test]
         public void WhenSizeSpecifierIsNotInteger()
         {
-            IRemoteValueNumChildrenProvider format;
-            bool result =
-                RemoteValueFormatProvider.TryParseSizeFormat("mySpecifier", null, out format);
-            Assert.That(result, Is.False);
+            Assert.That(RemoteValueFormatProvider.TryParseSizeFormat("mySpecifier", null), Is.Null);
         }
 
         [Test]
         public void SizeSpecifierIsPositiveDecimal()
         {
-            IRemoteValueNumChildrenProvider format;
-            bool result = RemoteValueFormatProvider.TryParseSizeFormat("3", null, out format);
-            Assert.That(result, Is.True);
-            Assert.That(format, Is.Not.Null);
+            Assert.That(RemoteValueFormatProvider.TryParseSizeFormat("3", null), Is.EqualTo(3));
         }
 
         [Test]
         public void SizeSpecifierIsPositiveHexadecimal()
         {
-            IRemoteValueNumChildrenProvider format;
-            bool result = RemoteValueFormatProvider.TryParseSizeFormat("0x3", null, out format);
-            Assert.That(result, Is.True);
-            Assert.That(format, Is.Not.Null);
+            Assert.That(RemoteValueFormatProvider.TryParseSizeFormat("0x12", null), Is.EqualTo(18));
         }
 
         [Test]
         public void SizeSpecifierIsNotFormattedCorrectly(
             [Values("myExpression]", "[myExpression")] string expression)
         {
-            IRemoteValueNumChildrenProvider format;
-            var result = RemoteValueFormatProvider.TryParseSizeFormat(expression, null, out format);
-            Assert.That(result, Is.False);
-        }
-
-        [Test]
-        public void SpecifierIsFormattedCorrectly()
-        {
-            IRemoteValueNumChildrenProvider format;
-            var result =
-                RemoteValueFormatProvider.TryParseSizeFormat("[anyExpression]", null, out format);
-            Assert.That(result, Is.True);
-            Assert.That(format, Is.Not.Null);
+            Assert.That(RemoteValueFormatProvider.TryParseSizeFormat(expression, null), Is.Null);
         }
 
         [Test]
         public void SizeIsProvidedAsArgument()
         {
-            IRemoteValueNumChildrenProvider format;
-            var result =
-                RemoteValueFormatProvider.TryParseSizeFormat("[anyExpression]", 5, out format);
-            Assert.That(result, Is.True);
-            Assert.That(format, Is.Not.Null);
-            Assert.IsTrue(format is ScalarNumChildrenProvider);
-            Assert.That(format.GetNumChildren(null), Is.EqualTo(5));
+            Assert.That(RemoteValueFormatProvider.TryParseSizeFormat("[anyExpression]", 5),
+                        Is.EqualTo(5));
+        }
+
+        [Test]
+        public void SizeIsNotProvidedForValidExpression()
+        {
+            LogSpy traceLogSpy = new LogSpy();
+            traceLogSpy.Attach();
+
+            Assert.That(RemoteValueFormatProvider.TryParseSizeFormat("[anyExpression]", null),
+                        Is.Null);
+
+            Assert.That(traceLogSpy.GetOutput(),
+                        Does.Contain("ERROR: Evaluated size specifier isn't provided"));
         }
 
         [Test]
         public void ConstantSpecifierWithSizeProvided()
         {
-            IRemoteValueNumChildrenProvider format;
-            var result = RemoteValueFormatProvider.TryParseSizeFormat("8", 5, out format);
-            Assert.That(result, Is.True);
-            Assert.That(result, Is.Not.Null);
-            Assert.IsTrue(format is ScalarNumChildrenProvider);
-            Assert.That(format.GetNumChildren(null), Is.EqualTo(8));
+            LogSpy traceLogSpy = new LogSpy();
+            traceLogSpy.Attach();
+
+            Assert.That(RemoteValueFormatProvider.TryParseSizeFormat("8", 5), Is.EqualTo(8));
+
+            string log = traceLogSpy.GetOutput();
+            Assert.That(log, Does.Contain("WARNING:"));
+            Assert.That(log, Does.Contain("evaluated size will be ignored"));
         }
     }
 }

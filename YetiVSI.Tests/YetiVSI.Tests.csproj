@@ -161,7 +161,6 @@
     <Compile Include="DebugEngine\Variables\ListChildAdapterTests.cs" />
     <Compile Include="DebugEngine\Variables\ExpandFormatSpecifierUtilTests.cs" />
     <Compile Include="DebugEngine\Variables\ExpandVariableInformationDecoratorTests.cs" />
-    <Compile Include="DebugEngine\Variables\ExpressionNumChildrenProviderTests.cs" />
     <Compile Include="DebugEngine\Variables\FloatRadixConversionHelperTests.cs" />
     <Compile Include="DebugEngine\Variables\RemoteValueArraySizeFormatTests.cs" />
     <Compile Include="DebugEngine\Variables\RemoteValueChildAdapterTests.cs" />
@@ -170,7 +169,6 @@
     <Compile Include="DebugEngine\Variables\RemoteValueLLDBVectorOfFloatFormatTests.cs" />
     <Compile Include="DebugEngine\Variables\RemoteValueNoPrefixIntegerFormatTests.cs" />
     <Compile Include="DebugEngine\Variables\RemoteValueFormatProviderTests.cs" />
-    <Compile Include="DebugEngine\Variables\ScalarNumChildrenProviderTests.cs" />
     <Compile Include="DebugEngine\Variables\FormatSpecifierUtilTests.cs" />
     <Compile Include="DebugEngine\Variables\ValueStringBuilderTests.cs" />
     <Compile Include="DebugEngine\Variables\VsExpressionCreatorTests.cs" />
