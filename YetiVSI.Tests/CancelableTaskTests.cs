@@ -16,6 +16,7 @@
 using NSubstitute;
 using NUnit.Framework;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -69,6 +70,14 @@ namespace YetiVSI.Test
         public class WithReportPeriod : CancelableTaskTests
         {
             protected override TimeSpan DialogDelay => TimeSpan.Zero;
+
+            protected override TimeSpan ProgressPeriod => TimeSpan.FromMilliseconds(1);
+        }
+
+        [TestFixture]
+        public class WithReportPeriodAndInfiniteDelay : CancelableTaskTests
+        {
+            protected override TimeSpan DialogDelay => Timeout.InfiniteTimeSpan;
 
             protected override TimeSpan ProgressPeriod => TimeSpan.FromMilliseconds(1);
         }
@@ -376,7 +385,7 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void Progress()
+        public async Task ProgressAsync()
         {
             var progress = "progress";
             var task = taskFactory.Create(Text, t => {
@@ -388,6 +397,11 @@ namespace YetiVSI.Test
             task.Run();
 
             mockProgressDialog.Received().Message = progress;
+
+            // Make sure we do not keep receiving progress reports after the task is done.
+            mockProgressDialog.ClearReceivedCalls();
+            await Task.Delay(100);
+            Assert.That(mockProgressDialog.ReceivedCalls().Count, Is.LessThanOrEqualTo(1));
         }
     }
 }

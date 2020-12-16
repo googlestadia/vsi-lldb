@@ -271,6 +271,10 @@ namespace YetiVSI
                 {
                     cancellationSource.Cancel();
                 }
+                finally
+                {
+                    isCompleted = true;
+                }
             }
 
             // Handle aborted tasks. Aborted tasks are also canceled, so check abort first.
@@ -389,7 +393,6 @@ namespace YetiVSI
                 finally
                 {
                     progressDialog.Complete();
-                    isCompleted = true;
                 }
             });
 
