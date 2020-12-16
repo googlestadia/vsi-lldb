@@ -1,0 +1,115 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.RemoteBreakpointRpc;
+
+import "Common.proto";
+
+service RemoteBreakpointRpcService {
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+  }
+  rpc SetEnabled(SetEnabledRequest) returns (SetEnabledResponse) {
+  }
+  rpc GetNumLocations(GetNumLocationsRequest)
+      returns (GetNumLocationsResponse) {
+  }
+  rpc GetLocationAtIndex(GetLocationAtIndexRequest)
+      returns (GetLocationAtIndexResponse) {
+  }
+  rpc GetHitCount(GetHitCountRequest) returns (GetHitCountResponse) {
+  }
+  rpc SetIgnoreCount(SetIgnoreCountRequest) returns (SetIgnoreCountResponse) {
+  }
+  rpc SetOneShot(SetOneShotRequest) returns (SetOneShotResponse) {
+  }
+  rpc SetCondition(SetConditionRequest) returns (SetConditionResponse) {
+  }
+  rpc SetCommandLineCommands(SetCommandLineCommandsRequest)
+      returns (SetCommandLineCommandsResponse) {
+  }
+}
+
+message DeleteRequest {
+  Common.GrpcSbBreakpoint breakpoint = 1;
+}
+
+message DeleteResponse {
+}
+
+message SetEnabledRequest {
+  Common.GrpcSbBreakpoint breakpoint = 1;
+  bool enabled = 2;
+}
+
+message SetEnabledResponse {
+}
+
+message GetNumLocationsRequest {
+  Common.GrpcSbBreakpoint breakpoint = 1;
+}
+
+message GetNumLocationsResponse {
+  uint32 result = 1;
+}
+
+message GetLocationAtIndexRequest {
+  Common.GrpcSbBreakpoint breakpoint = 1;
+  uint32 index = 2;
+}
+
+message GetLocationAtIndexResponse {
+  Common.GrpcSbBreakpointLocation result = 1;
+}
+
+message GetHitCountRequest {
+  Common.GrpcSbBreakpoint breakpoint = 1;
+}
+
+message GetHitCountResponse {
+  uint32 result = 1;
+}
+
+message SetIgnoreCountRequest {
+  Common.GrpcSbBreakpoint breakpoint = 1;
+  uint32 ignoreCount = 2;
+}
+
+message SetIgnoreCountResponse {
+}
+
+message SetOneShotRequest {
+  Common.GrpcSbBreakpoint breakpoint = 1;
+  bool isOneShot = 2;
+}
+
+message SetOneShotResponse {
+}
+
+message SetConditionRequest {
+  Common.GrpcSbBreakpoint breakpoint = 1;
+  string condition = 2;
+}
+
+message SetConditionResponse {
+}
+
+message SetCommandLineCommandsRequest {
+  Common.GrpcSbBreakpoint breakpoint = 1;
+  repeated string commands = 2;
+}
+
+message SetCommandLineCommandsResponse {
+}

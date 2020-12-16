@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <OutputBaseDir>$(SolutionDir)</OutputBaseDir>
+    <OutDir>$(OutputBaseDir)bin\$(Configuration)\</OutDir>
+    <OutputPath>$(OutputBaseDir)bin\$(Configuration)\</OutputPath>
+    <TargetDir>$(OutputBaseDir)bin\$(Configuration)\</TargetDir>
+    <LlvmWinDir>$(SolutionDir)llvm-project\build_x64_optdebug\install\</LlvmWinDir>
+    <LldbEvalDir>$(SolutionDir)lldb-eval\</LldbEvalDir>
+
+    <PythonDir Condition="'$(INTERNAL_CI)' != 'true'">$(LocalAppData)\Programs\Python\Python37\</PythonDir>
+    <!-- Specifies the major and minor version of python (without '.'). -->
+    <PythonVersion Condition="'$(INTERNAL_CI)' != 'true'">37</PythonVersion>
+    <DownloadPython Condition="'$(INTERNAL_CI)' != 'true'">false</DownloadPython>
+
+    <!-- Configuration for CI. -->
+    <DownloadPython Condition="'$(INTERNAL_CI)' == 'true'">true</DownloadPython>
+    <PythonDir Condition="'$(INTERNAL_CI)' == 'true'">$(Pkgpython)\tools\</PythonDir>
+    <PythonVersion Condition="'$(INTERNAL_CI)' == 'true'">36</PythonVersion>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,72 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.SbWatchpointRpc;
+
+import "Common.proto";
+
+service SbWatchpointRpcService {
+  rpc GetId(GetIdRequest) returns (GetIdResponse) {
+  }
+  rpc GetHitCount(GetHitCountRequest) returns (GetHitCountResponse) {
+  }
+  rpc SetEnabled(SetEnabledRequest) returns (SetEnabledResponse) {
+  }
+  rpc SetCondition(SetConditionRequest) returns (SetConditionResponse) {
+  }
+  rpc SetIgnoreCount(SetIgnoreCountRequest) returns (SetIgnoreCountResponse) {
+  }
+}
+
+message GetIdRequest {
+  Common.GrpcSbWatchpoint watchpoint = 1;
+}
+
+message GetIdResponse {
+  int32 id = 1;
+}
+
+message GetHitCountRequest {
+  Common.GrpcSbWatchpoint watchpoint = 1;
+}
+
+message GetHitCountResponse {
+  uint32 result = 1;
+}
+
+message SetEnabledRequest {
+  Common.GrpcSbWatchpoint watchpoint = 1;
+  bool enabled = 2;
+}
+
+message SetEnabledResponse {
+}
+
+message SetConditionRequest {
+  Common.GrpcSbWatchpoint watchpoint = 1;
+  string condition = 2;
+}
+
+message SetConditionResponse {
+}
+
+message SetIgnoreCountRequest {
+  Common.GrpcSbWatchpoint watchpoint = 1;
+  uint32 ignoreCount = 2;
+}
+
+message SetIgnoreCountResponse {
+}

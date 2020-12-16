@@ -1,0 +1,24 @@
+﻿[$RootKey$\AD7Metrics\Engine\{6e5c4e9a-119b-4cbf-8c39-24f304d34655}]
+; "AddressBP"=dword:00000001
+"AlwaysLoadLocal"=dword:00000001
+"AlwaysLoadProgramProviderLocal"=dword:00000001
+; "CallStackBP"=dword:00000001
+; "ConditionalBP"=dword:00000001
+"DataBP"=dword:00000001
+"Disassembly"=dword:00000001
+"EnginePriority"=dword:00000050
+"Exceptions"=dword:00000001
+; "FunctionBP"=dword:00000001
+; "HitCountBP"=dword:00000001
+; "JustMyCodeStepping"=dword:00000001
+"Name"="GGP Debug Engine"
+"SetNextStatement"=dword:00000001
+; "SuspendThread"=dword:00000001
+"CLSID"="{011ff79f-0dd3-4d89-8863-5f0761243e74}"
+@="GGP Debug Engine"
+"GlobalVisualizersDirectory"="$PackageFolder$"
+
+[$RootKey$\CLSID\{011ff79f-0dd3-4d89-8863-5f0761243e74}]
+"Assembly"="GgpVsi"
+"Class"="YetiVSI.DebugEngine.DebugEngineEntry"
+"CodeBase"="$PackageFolder$\GgpVsi.dll"

@@ -1,0 +1,71 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.SbCommandReturnObjectRpc;
+
+import "Common.proto";
+
+service SbCommandReturnObjectRpcService {
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+  }
+  rpc Succeeded(SucceededRequest) returns (SucceededResponse) {
+  }
+  rpc GetOutput(GetOutputRequest) returns (GetOutputResponse) {
+  }
+  rpc GetError(GetErrorRequest) returns (GetErrorResponse) {
+  }
+  rpc GetDescription(GetDescriptionRequest) returns (GetDescriptionResponse) {
+  }
+}
+
+message DeleteRequest {
+  Common.GrpcSbCommandReturnObject return_object = 1;
+}
+
+message DeleteResponse {
+}
+
+message SucceededRequest {
+  Common.GrpcSbCommandReturnObject return_object = 1;
+}
+
+message SucceededResponse {
+  bool succeeded = 1;
+}
+
+message GetOutputRequest {
+  Common.GrpcSbCommandReturnObject return_object = 1;
+}
+
+message GetOutputResponse {
+  string output = 1;
+}
+
+message GetErrorRequest {
+  Common.GrpcSbCommandReturnObject return_object = 1;
+}
+
+message GetErrorResponse {
+  string error = 1;
+}
+
+message GetDescriptionRequest {
+  Common.GrpcSbCommandReturnObject return_object = 1;
+}
+
+message GetDescriptionResponse {
+  string description = 1;
+}

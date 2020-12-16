@@ -1,0 +1,72 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.SbSectionRpc;
+
+import "Common.proto";
+
+service SbSectionRpcService {
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+  }
+  rpc GetSectionType(GetSectionTypeRequest) returns (GetSectionTypeResponse) {
+  }
+  rpc GetLoadAddress(GetLoadAddressRequest) returns (GetLoadAddressResponse) {
+  }
+  rpc GetFileAddress(GetFileAddressRequest) returns (GetFileAddressResponse) {
+  }
+  rpc GetFileOffset(GetFileOffsetRequest) returns (GetFileOffsetResponse) {
+  }
+}
+
+message DeleteRequest {
+  Common.GrpcSbSection section = 1;
+}
+
+message DeleteResponse {
+}
+
+message GetSectionTypeRequest {
+  Common.GrpcSbSection section = 1;
+}
+
+message GetSectionTypeResponse {
+  Common.SectionType sectionType = 1;
+}
+
+message GetLoadAddressRequest {
+  Common.GrpcSbSection section = 1;
+  Common.GrpcSbTarget target = 2;
+}
+
+message GetLoadAddressResponse {
+  uint64 loadAddress = 1;
+}
+
+message GetFileAddressRequest {
+  Common.GrpcSbSection section = 1;
+}
+
+message GetFileAddressResponse {
+  uint64 fileAddress = 1;
+}
+
+message GetFileOffsetRequest {
+  Common.GrpcSbSection section = 1;
+}
+
+message GetFileOffsetResponse {
+  uint64 fileOffset = 1;
+}

@@ -1,0 +1,165 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.RemoteFrameRpc;
+
+import "Common.proto";
+
+service RemoteFrameRpcService {
+  rpc BulkDelete(BulkDeleteRequest) returns (BulkDeleteResponse) {
+  }
+  rpc GetFunction(GetFunctionRequest) returns (GetFunctionResponse) {
+  }
+  rpc GetSymbol(GetSymbolRequest) returns (GetSymbolResponse) {
+  }
+  rpc GetVariables(GetVariablesRequest) returns (GetVariablesResponse) {
+  }
+  rpc GetValueForVariablePath(GetValueForVariablePathRequest)
+      returns (GetValueForVariablePathResponse) {
+  }
+  rpc FindValue(FindValueRequest) returns (FindValueResponse) {
+  }
+  rpc GetRegisters(GetRegistersRequest) returns (GetRegistersResponse) {
+  }
+  rpc GetModule(GetModuleRequest) returns (GetModuleResponse) {
+  }
+  rpc GetThread(GetThreadRequest) returns (GetThreadResponse) {
+  }
+  rpc EvaluateExpression(EvaluateExpressionRequest)
+      returns (EvaluateExpressionResponse) {
+  }
+  rpc GetPhysicalStackRange(GetPhysicalStackRangeRequest)
+      returns (GetPhysicalStackRangeResponse) {
+  }
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
+  }
+  rpc EvaluateExpressionLldbEval(EvaluateExpressionLldbEvalRequest)
+      returns (EvaluateExpressionLldbEvalResponse) {
+  }
+}
+
+message BulkDeleteRequest {
+  repeated Common.GrpcSbFrame frames = 1;
+}
+
+message BulkDeleteResponse {
+}
+
+message GetFunctionRequest {
+  Common.GrpcSbFrame frame = 1;
+}
+
+message GetFunctionResponse {
+  Common.GrpcSbFunction function = 1;
+}
+
+message GetPhysicalStackRangeRequest {
+  Common.GrpcSbFrame frame = 1;
+}
+
+message GetPhysicalStackRangeResponse {
+  Common.GrpcAddressRange addressRange = 1;
+}
+
+message GetSymbolRequest {
+  Common.GrpcSbFrame frame = 1;
+}
+
+message GetSymbolResponse {
+  Common.GrpcSbSymbol symbol = 1;
+}
+
+message GetVariablesRequest {
+  Common.GrpcSbFrame frame = 1;
+  bool arguments = 2;
+  bool locals = 3;
+  bool statics = 4;
+  bool only_in_scope = 5;
+}
+
+message GetVariablesResponse {
+  repeated Common.GrpcSbValue variables = 1;
+}
+
+message GetValueForVariablePathRequest {
+  Common.GrpcSbFrame frame = 1;
+  string variable_path = 2;
+}
+
+message GetValueForVariablePathResponse {
+  Common.GrpcSbValue value = 1;
+}
+
+message FindValueRequest {
+  Common.GrpcSbFrame frame = 1;
+  string variable_name = 2;
+  Common.ValueType value_type = 3;
+}
+
+message FindValueResponse {
+  Common.GrpcSbValue variable = 1;
+}
+
+message GetRegistersRequest {
+  Common.GrpcSbFrame frame = 1;
+}
+
+message GetRegistersResponse {
+  repeated Common.GrpcSbValue registers = 1;
+}
+
+message GetModuleRequest {
+  Common.GrpcSbFrame frame = 1;
+}
+
+message GetModuleResponse {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetThreadRequest {
+  Common.GrpcSbFrame frame = 1;
+}
+
+message GetThreadResponse {
+  Common.GrpcSbThread thread = 1;
+}
+
+message EvaluateExpressionRequest {
+  Common.GrpcSbFrame frame = 1;
+  string expression = 2;
+}
+
+message EvaluateExpressionResponse {
+  Common.GrpcSbValue value = 1;
+}
+
+message GetInfoRequest {
+  Common.GrpcSbFrame frame = 1;
+  uint32 fields = 2;
+}
+
+message GetInfoResponse {
+  Common.GrpcFrameInfo info = 1;
+}
+
+message EvaluateExpressionLldbEvalRequest {
+  Common.GrpcSbFrame frame = 1;
+  string expression = 2;
+}
+
+message EvaluateExpressionLldbEvalResponse {
+  Common.GrpcSbValue value = 1;
+}

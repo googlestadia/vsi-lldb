@@ -1,0 +1,52 @@
+﻿/* LargeTestScope + VSFake component diagram for VSFake users */
+digraph {
+
+  LargeTestScope -> "LargeTestDebug\nEngineFactoryCompRoot"
+  LargeTestScope -> "VSFakeCompRoot.Config"
+  LargeTestScope -> VSFakeCompRoot [arrowhead=diamond]
+  LargeTestScope -> VSFake
+
+  VSFakeCompRoot -> VSFake [arrowhead=diamond]
+
+  subgraph cluster_vsfake {
+    style=filled;
+    color=grey95;
+    label="VSFake";
+    node [style=filled color=white];
+
+    VSFake [style=filled color=white];
+
+    VSFakeExtensions;
+
+    VSFake -> TargetAdapter;
+    VSFake -> ProjectAdapter;
+    VSFake -> SessionDebugManager;
+    VSFake -> DebugSession;
+    VSFake -> SolutionExplorer;
+    VSFake -> Timeouts
+
+    DebugSession -> DebugSessionContext;
+    DebugSession -> ControlFlowView;
+    DebugSession -> BreakpointView;
+    DebugSession -> ThreadView;
+    DebugSession -> StackFrameView;
+    DebugSession -> WatchWindow;
+
+    DebugSessionContext [style=filled color=palegreen];
+
+    ControlFlowView [style=filled color=lightskyblue1];
+    BreakpointView [style=filled color=lightskyblue1];
+    ThreadView [style=filled color=lightskyblue1];
+    StackFrameView [style=filled color=lightskyblue1];
+    WatchWindow [style=filled color=lightskyblue1];
+  }
+  DebugSessionContext -> DebugEngine;
+  DebugSessionContext -> DebugProgram;
+  DebugSessionContext -> SelectedThread;
+  DebugSessionContext -> SelectedStackFrame;
+
+  DebugEngine [style=filled color=lightyellow];
+  DebugProgram [style=filled color=lightyellow];
+  SelectedThread [style=filled color=lightyellow];
+  SelectedStackFrame [style=filled color=lightyellow];
+}

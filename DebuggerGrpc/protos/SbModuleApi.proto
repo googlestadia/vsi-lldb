@@ -1,0 +1,192 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.SbModuleRpc;
+
+import "Common.proto";
+
+service SbModuleRpcService {
+  rpc BulkDelete(BulkDeleteRequest) returns (BulkDeleteResponse) {
+  }
+  rpc GetFileSpec(GetFileSpecRequest) returns (GetFileSpecResponse) {
+  }
+  rpc GetPlatformFileSpec(GetPlatformFileSpecRequest)
+      returns (GetPlatformFileSpecResponse) {
+  }
+  rpc SetPlatformFileSpec(SetPlatformFileSpecRequest)
+      returns (SetPlatformFileSpecResponse) {
+  }
+  rpc GetSymbolFileSpec(GetSymbolFileSpecRequest)
+      returns (GetSymbolFileSpecResponse) {
+  }
+  rpc GetCodeLoadAddress(GetCodeLoadAddressRequest)
+      returns (GetCodeLoadAddressResponse) {
+  }
+  rpc GetCodeSize(GetCodeSizeRequest) returns (GetCodeSizeResponse) {
+  }
+  rpc Is64Bit(Is64BitRequest) returns (Is64BitResponse) {
+  }
+  rpc HasSymbols(HasSymbolsRequest) returns (HasSymbolsResponse) {
+  }
+  rpc HasCompileUnits(HasCompileUnitsRequest)
+      returns (HasCompileUnitsResponse) {
+  }
+  rpc GetNumCompileUnits(GetNumCompileUnitsRequest)
+      returns (GetNumCompileUnitsResponse) {
+  }
+  rpc GetUUIDString(GetUUIDStringRequest) returns (GetUUIDStringResponse) {
+  }
+  rpc FindSection(FindSectionRequest) returns (FindSectionResponse) {
+  }
+  rpc GetNumSections(GetNumSectionsRequest) returns (GetNumSectionsResponse) {
+  }
+  rpc GetSectionAtIndex(GetSectionAtIndexRequest)
+      returns (GetSectionAtIndexResponse) {
+  }
+  rpc GetFirstCodeSection(GetFirstCodeSectionRequest)
+      returns (GetFirstCodeSectionResponse) {
+  }
+}
+
+message BulkDeleteRequest {
+  repeated Common.GrpcSbModule modules = 1;
+}
+
+message BulkDeleteResponse {
+}
+
+message GetFileSpecRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetFileSpecResponse {
+  Common.GrpcSbFileSpec file_spec = 1;
+}
+
+message GetPlatformFileSpecRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetPlatformFileSpecResponse {
+  Common.GrpcSbFileSpec file_spec = 1;
+}
+
+message SetPlatformFileSpecRequest {
+  Common.GrpcSbModule module = 1;
+  Common.GrpcSbFileSpec fileSpec = 2;
+}
+
+message SetPlatformFileSpecResponse {
+  bool result = 1;
+}
+
+message GetSymbolFileSpecRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetSymbolFileSpecResponse {
+  Common.GrpcSbFileSpec file_spec = 1;
+}
+
+message GetCodeLoadAddressRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetCodeLoadAddressResponse {
+  uint64 code_load_address = 1;
+}
+
+message GetCodeSizeRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetCodeSizeResponse {
+  uint64 code_size = 1;
+}
+
+message Is64BitRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message Is64BitResponse {
+  bool result = 1;
+}
+
+message HasSymbolsRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message HasSymbolsResponse {
+  bool result = 1;
+}
+
+message HasCompileUnitsRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message HasCompileUnitsResponse {
+  bool result = 1;
+}
+
+message GetNumCompileUnitsRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetNumCompileUnitsResponse {
+  uint32 numCompileUnits = 1;
+}
+
+message GetUUIDStringRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetUUIDStringResponse {
+  string uuid = 1;
+}
+
+message FindSectionRequest {
+  Common.GrpcSbModule module = 1;
+  string name = 2;
+}
+
+message FindSectionResponse {
+  Common.GrpcSbSection section = 1;
+}
+
+message GetNumSectionsRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetNumSectionsResponse {
+  uint64 numSections = 1;
+}
+
+message GetSectionAtIndexRequest {
+  Common.GrpcSbModule module = 1;
+  uint64 index = 2;
+}
+
+message GetSectionAtIndexResponse {
+  Common.GrpcSbSection section = 1;
+}
+
+message GetFirstCodeSectionRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetFirstCodeSectionResponse {
+  Common.GrpcSbSection section = 1;
+}

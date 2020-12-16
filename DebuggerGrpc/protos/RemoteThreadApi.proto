@@ -1,0 +1,208 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.RemoteThreadRpc;
+
+import "Common.proto";
+
+service RemoteThreadRpcService {
+  rpc GetName(GetNameRequest) returns (GetNameResponse) {
+  }
+  rpc GetThreadId(GetThreadIdRequest) returns (GetThreadIdResponse) {
+  }
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse) {
+  }
+  rpc StepInto(StepIntoRequest) returns (StepIntoResponse) {
+  }
+  rpc StepOver(StepOverRequest) returns (StepOverResponse) {
+  }
+  rpc StepOut(StepOutRequest) returns (StepOutResponse) {
+  }
+  rpc StepInstruction(StepInstructionRequest)
+      returns (StepInstructionResponse) {
+  }
+  rpc GetStopReason(GetStopReasonRequest) returns (GetStopReasonResponse) {
+  }
+  rpc GetStopReasonDataAtIndex(GetStopReasonDataAtIndexRequest)
+      returns (GetStopReasonDataAtIndexResponse) {
+  }
+  rpc GetStopReasonDataCount(GetStopReasonDataCountRequest)
+      returns (GetStopReasonDataCountResponse) {
+  }
+  rpc GetNumFrames(GetNumFramesRequest) returns (GetNumFramesResponse) {
+  }
+  rpc GetFrameAtIndex(GetFrameAtIndexRequest)
+      returns (GetFrameAtIndexResponse) {
+  }
+  rpc GetProcess(GetProcessRequest) returns (GetProcessResponse) {
+  }
+  rpc JumpToLine(JumpToLineRequest) returns (JumpToLineResponse) {
+  }
+  rpc GetFramesWithInfo(GetFramesWithInfoRequest)
+      returns (GetFramesWithInfoResponse) {
+  }
+  rpc BulkDelete(BulkDeleteRequest) returns (BulkDeleteResponse) {
+  }
+}
+
+message GetNameRequest {
+  Common.GrpcSbThread thread = 1;
+}
+
+message GetNameResponse {
+  string name = 1;
+}
+
+message GetThreadIdRequest {
+  Common.GrpcSbThread thread = 1;
+}
+
+message GetThreadIdResponse {
+  uint64 id = 1;
+}
+
+message GetStatusRequest {
+  Common.GrpcSbThread thread = 1;
+}
+
+message GetStatusResponse {
+  string status = 1;
+}
+
+message StepIntoRequest {
+  Common.GrpcSbThread thread = 1;
+}
+
+message StepIntoResponse {
+}
+
+message StepOverRequest {
+  Common.GrpcSbThread thread = 1;
+}
+
+message StepOverResponse {
+}
+
+message StepOutRequest {
+  Common.GrpcSbThread thread = 1;
+}
+
+message StepOutResponse {
+}
+
+message StepInstructionRequest {
+  Common.GrpcSbThread thread = 1;
+  bool step_over = 2;
+}
+
+message StepInstructionResponse {
+}
+
+message GetStopReasonRequest {
+  Common.GrpcSbThread thread = 1;
+}
+
+message GetStopReasonResponse {
+  enum StopReason {
+    INVALID = 0;
+    NONE = 1;
+    TRACE = 2;
+    BREAKPOINT = 3;
+    WATCHPOINT = 4;
+    SIGNAL = 5;
+    EXCEPTION = 6;
+    EXEC = 7;
+    PLAN_COMPLETE = 8;
+    EXITING = 9;
+    INSTRUMENTATION = 10;
+  }
+  StopReason stop_reason = 1;
+}
+
+message GetStopReasonDataAtIndexRequest {
+  Common.GrpcSbThread thread = 1;
+  uint32 index = 2;
+}
+
+message GetStopReasonDataAtIndexResponse {
+  uint64 stop_reason_data = 1;
+}
+
+message GetStopReasonDataCountRequest {
+  Common.GrpcSbThread thread = 1;
+}
+
+message GetStopReasonDataCountResponse {
+  uint32 count = 1;
+}
+
+message GetNumFramesRequest {
+  Common.GrpcSbThread thread = 1;
+}
+
+message GetNumFramesResponse {
+  uint32 number_frames = 1;
+}
+
+message GetFrameAtIndexRequest {
+  Common.GrpcSbThread thread = 1;
+  uint32 index = 2;
+}
+
+message GetFrameAtIndexResponse {
+  Common.GrpcSbFrame frame = 1;
+}
+
+message GetProcessRequest {
+  Common.GrpcSbThread thread = 1;
+}
+
+message GetProcessResponse {
+  Common.GrpcSbProcess process = 1;
+}
+
+message JumpToLineRequest {
+  Common.GrpcSbThread thread = 1;
+  string filePath = 2;
+  uint32 line = 3;
+}
+
+message JumpToLineResponse {
+  Common.GrpcSbError error = 1;
+}
+
+message GetFramesWithInfoRequest {
+  Common.GrpcSbThread thread = 1;
+  uint32 fields = 2;
+  uint32 startIndex = 3;
+  uint32 maxCount = 4;
+}
+
+message GetFramesWithInfoResponse {
+  repeated GrpcFrameWithInfo frames_with_info = 1;
+}
+
+message GrpcFrameWithInfo {
+  Common.GrpcSbFrame frame = 1;
+  Common.GrpcFrameInfo info = 2;
+}
+
+message BulkDeleteRequest {
+  repeated Common.GrpcSbThread threads = 1;
+}
+
+message BulkDeleteResponse {
+}

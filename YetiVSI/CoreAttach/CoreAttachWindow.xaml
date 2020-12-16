@@ -1,0 +1,59 @@
+<platformUi:DialogWindow x:Class="YetiVSI.CoreAttach.CoreAttachWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:YetiVSI.CoreAttach"
+        mc:Ignorable="d"
+        xmlns:platformUi="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+        Title="Attach to Stadia Crash Dump" Height="350" Width="525" WindowStartupLocation="CenterOwner">
+    <DockPanel LastChildFill="true">
+        <Label DockPanel.Dock="Top" x:Name="label" Content="Select a crash dump to attach to." Margin="8"/>
+        <DockPanel DockPanel.Dock="Bottom" LastChildFill="false">
+            <Button DockPanel.Dock="Right" x:Name="cancel" Content="_Cancel" Click="cancelClick"  Width="100" Margin="8"/>
+            <Button DockPanel.Dock="Right" x:Name="attachButton" Content="_Attach" Click="attachClick" IsEnabled="False" Width="100" Margin="8"/>
+        </DockPanel>
+
+        <TabControl x:Name="tabControl" Margin="8, 0" SelectionChanged="tabSelected">
+            <TabItem x:Name="gameletTab">
+                <TabItem.Header>
+                    <AccessText Text="_Instance"/>
+                </TabItem.Header>
+                <GroupBox x:Name="gameletGroupBox" Header="Available Crash Dumps" Margin="10">
+                    <DockPanel x:Name="gameletDock" LastChildFill="true">
+                        <DockPanel DockPanel.Dock="Bottom">
+                            <Button DockPanel.Dock="Right" x:Name="refresh" Content="_Refresh" Click="refreshClick" HorizontalAlignment="Right" Width="100" Margin="8"/>
+                            <TextBox x:Name="gameletMessageTextBox" DockPanel.Dock="Left" IsReadOnly="True" TextWrapping="Wrap" BorderThickness="0"/>
+                        </DockPanel>
+                        <Grid x:Name="gameletGrid"  DockPanel.Dock="Top">
+                            <Label x:Name="gameletLabel" Content="Instance:"></Label>
+                            <Button x:Name="gameletSelectButton" Content="_Select instance" HorizontalAlignment="Right" Click="gameletSelectClick"></Button>
+                        </Grid>
+                        <ListView x:Name="coreList" SelectionMode="Single" SelectionChanged="coreListSelectionChanged" Margin="8">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Name" Width="Auto" DisplayMemberBinding="{Binding Name}" />
+                                    <GridViewColumn Header="Date" Width="Auto" DisplayMemberBinding="{Binding Date}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </DockPanel>
+                </GroupBox>
+            </TabItem>
+            <TabItem x:Name="localTab">
+                <TabItem.Header>
+                    <AccessText Text="_Local"/>
+                </TabItem.Header>
+                <GroupBox x:Name="localGroupBox">
+                    <Grid>
+                            <DockPanel DockPanel.Dock="Top" RenderTransformOrigin="0.478,8.548" Margin="0" VerticalAlignment="Center">
+                                <TextBox x:Name="localCorePathBox" DockPanel.Dock="Left" Height="20" Width="372" TextChanged="localCorePathBox_TextChanged"/>
+                                <Button x:Name="browseButton" DockPanel.Dock="Right" Content="_Browse..." Width="100" HorizontalAlignment="Right" Click="browseClick" Height="20"></Button>
+                            </DockPanel>
+                        <TextBox x:Name="localMessageTextBox" DockPanel.Dock="Bottom" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsReadOnly="True" TextWrapping="Wrap" BorderThickness="0"/>
+                    </Grid>
+                </GroupBox>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</platformUi:DialogWindow>

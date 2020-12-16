@@ -1,0 +1,72 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.SbAddressRpc;
+
+import "Common.proto";
+
+service SbAddressRpcService {
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+  }
+  rpc GetLineEntry(GetLineEntryRequest) returns (GetLineEntryResponse) {
+  }
+  rpc GetLoadAddress(GetLoadAddressRequest) returns (GetLoadAddressResponse) {
+  }
+  rpc GetFunction(GetFunctionRequest) returns (GetFunctionResponse) {
+  }
+  rpc GetSymbol(GetSymbolRequest) returns (GetSymbolResponse) {
+  }
+}
+
+message DeleteRequest {
+  Common.GrpcSbAddress address = 1;
+}
+
+message DeleteResponse {
+}
+
+message GetLineEntryRequest {
+  Common.GrpcSbAddress address = 1;
+}
+
+message GetLineEntryResponse {
+  Common.GrpcLineEntryInfo line_entry = 1;
+}
+
+message GetLoadAddressRequest {
+  Common.GrpcSbAddress address = 1;
+  Common.GrpcSbTarget target = 2;
+}
+
+message GetLoadAddressResponse {
+  uint64 load_address = 1;
+}
+
+message GetFunctionRequest {
+  Common.GrpcSbAddress address = 1;
+}
+
+message GetFunctionResponse {
+  Common.GrpcSbFunction function = 1;
+}
+
+message GetSymbolRequest {
+  Common.GrpcSbAddress address = 1;
+}
+
+message GetSymbolResponse {
+  Common.GrpcSbSymbol symbol = 1;
+}

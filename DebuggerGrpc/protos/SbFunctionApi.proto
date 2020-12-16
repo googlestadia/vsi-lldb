@@ -1,0 +1,95 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.SbFunctionRpc;
+
+import "Common.proto";
+
+service SbFunctionRpcService {
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+  }
+  rpc GetStartAddress(GetStartAddressRequest)
+      returns (GetStartAddressResponse) {
+  }
+  rpc GetEndAddress(GetEndAddressRequest) returns (GetEndAddressResponse) {
+  }
+  rpc GetLanguage(GetLanguageRequest) returns (GetLanguageResponse) {
+  }
+  rpc GetInstructions(GetInstructionsRequest)
+      returns (GetInstructionsResponse) {
+  }
+  rpc GetName(GetNameRequest) returns (GetNameResponse) {
+  }
+}
+
+message DeleteRequest {
+  Common.GrpcSbFunction function = 1;
+}
+
+message DeleteResponse {
+}
+
+message GetStartAddressRequest {
+  Common.GrpcSbFunction function = 1;
+}
+
+message GetStartAddressResponse {
+  Common.GrpcSbAddress address = 1;
+}
+
+message GetEndAddressRequest {
+  Common.GrpcSbFunction function = 1;
+}
+
+message GetEndAddressResponse {
+  Common.GrpcSbAddress address = 1;
+}
+
+message GetLanguageRequest {
+  Common.GrpcSbFunction function = 1;
+}
+
+message GetLanguageResponse {
+  enum LanguageType {
+    UNKNOWN = 0;
+    C = 1;
+    C89 = 2;
+    C99 = 3;
+    C11 = 4;
+    C_PLUS_PLUS = 5;
+    C_PLUS_PLUS_03 = 6;
+    C_PLUS_PLUS_11 = 7;
+    C_PLUS_PLUS_14 = 8;
+  }
+  LanguageType language_type = 1;
+}
+
+message GetInstructionsRequest {
+  Common.GrpcSbFunction function = 1;
+  Common.GrpcSbTarget target = 2;
+}
+
+message GetInstructionsResponse {
+  repeated Common.GrpcSbInstruction instructions = 1;
+}
+
+message GetNameRequest {
+  Common.GrpcSbFunction function = 1;
+}
+
+message GetNameResponse {
+  string name = 1;
+}

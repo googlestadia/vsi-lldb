@@ -1,0 +1,208 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <Import Project="$(SolutionDir)BuildRoot.props" />
+  <Import Project="$(SolutionDir)Common.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D985DED6-1AFD-4A62-B383-D2AF3DAA04D7}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>YetiCommon.Tests</RootNamespace>
+    <AssemblyName>YetiCommon.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2017|AnyCPU'">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2019|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2019|AnyCPU'">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Web" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CastleAspects\CallSequenceLoggingAspectTests.cs" />
+    <Compile Include="EnumValueAliasAttributeTests.cs" />
+    <Compile Include="BuildIdTests.cs" />
+    <Compile Include="CastleAspects\InvocationLoggerAspectTests.cs" />
+    <Compile Include="CastleAspects\CreateFunctionProxyHookTests.cs" />
+    <Compile Include="CastleAspects\DecoratorExtensionsTests.cs" />
+    <Compile Include="CastleAspects\DecoratorSelfUtilTests.cs" />
+    <Compile Include="CastleAspects\DecoratorTests.cs" />
+    <Compile Include="CastleAspects\DecoratorUtilTests.cs" />
+    <Compile Include="ExceptionRecorder\ExceptionRecorderAspectTests.cs" />
+    <Compile Include="ExceptionRecorder\ExceptionRecorderExtensionsTests.cs" />
+    <Compile Include="ExceptionTests.cs" />
+    <Compile Include="Logging\InvocationLogUtilTests.cs" />
+    <Compile Include="CastleAspects\LogExceptionAspectTests.cs" />
+    <Compile Include="CastleAspects\ProxyHookBaseTests.cs" />
+    <Compile Include="CastleAspects\SimpleDecoratorSelfTests.cs" />
+    <Compile Include="CastleAspects\TestSupport\ISelfType.cs" />
+    <Compile Include="CastleAspects\TestSupport\TargetObj.cs" />
+    <Compile Include="CastleAspects\ValidateDecoratorTests.cs" />
+    <Compile Include="CastleAspects\ReturnProxyAspectTests.cs" />
+    <Compile Include="CastleAspects\TestSupport\CallCountAspect.cs" />
+    <Compile Include="CastleAspects\TestSupport\DummyObject.cs" />
+    <Compile Include="CastleAspects\TestSupport\InvalidProxyHook.cs" />
+    <Compile Include="CastleAspects\TestSupport\MethodInfoUtil.cs" />
+    <Compile Include="CastleAspects\TestSupport\MethodInfoUtilTests.cs" />
+    <Compile Include="Cloud\CloudConnectionTests.cs" />
+    <Compile Include="Cloud\UnaryBaseInterceptorTests.cs" />
+    <Compile Include="Logging\YetiLogTest.cs" />
+    <Compile Include="MethodRecorder\MetricsCollectionAspectTests.cs" />
+    <Compile Include="PerformanceTracing\TestSupport\MonotonicTimeSource.cs" />
+    <Compile Include="PerformanceTracing\TimeSourceTests.cs" />
+    <Compile Include="PerformanceTracing\TracingAspectTests.cs" />
+    <Compile Include="ChromeClientLaunchCommandFormatterTests.cs" />
+    <Compile Include="ChromeClientLauncherTests.cs" />
+    <Compile Include="Cloud\CloudRunnerTests.cs" />
+    <Compile Include="Cloud\MetricsInterceptorTests.cs" />
+    <Compile Include="CredentialManagerTests.cs" />
+    <Compile Include="ElfFileUtilTests.cs" />
+    <Compile Include="FileUtilTests.cs" />
+    <Compile Include="JsonUtilTests.cs" />
+    <Compile Include="PerformanceTracing\TracingGrpcInterceptorTests.cs" />
+    <Compile Include="ProcessExtensionsTests.cs" />
+    <Compile Include="ProcessStartInfoBuilderTests.cs" />
+    <Compile Include="ProcessUtilTests.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SDKConfigTests.cs" />
+    <Compile Include="SshKeyTests.cs" />
+    <Compile Include="SshKnownHostsTests.cs" />
+    <Compile Include="PerformanceTracing\ChromeTracingLoggerTests.cs" />
+    <Compile Include="SafeErrorUtilTests.cs" />
+    <Compile Include="Util\IEnumerableExtensionTests.cs" />
+    <Compile Include="Util\MemoizedEnumerableTests.cs" />
+    <Compile Include="Util\ObjectGraphVisualizerTests.cs" />
+    <Compile Include="VersionsTests.cs" />
+  </ItemGroup>
+  <Choose>
+    <When Condition="$(IsInternalBuild)">
+      <ItemGroup>
+        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj">
+          <Project>{2c7ec26a-f6cb-44a4-ac66-718fbdd0e632}</Project>
+          <Name>GgpGrpc</Name>
+        </ProjectReference>
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <Reference Include="GgpGrpc, PublicKeyToken=b60cba24c9ed26a2">
+          <HintPath>$(GGP_SDK_PATH)\dev\bin\GgpGrpc.dll</HintPath>
+        </Reference>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup>
+    <ProjectReference Include="..\TestsCommon\TestsCommon.csproj">
+      <Project>{d216ea10-527a-491a-a694-74f2a58ac940}</Project>
+      <Name>TestsCommon</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\YetiCommon\YetiCommon.csproj">
+      <Project>{a2c9f9d7-a499-4e17-bdab-4ef18f1d9a18}</Project>
+      <Name>YetiCommon</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Auth">
+      <Version>1.25.0</Version>
+    </PackageReference>
+    <PackageReference Include="Google.Protobuf">
+      <Version>3.11.4</Version>
+    </PackageReference>
+    <PackageReference Include="Grpc.Core">
+      <Version>2.26.0</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>9.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="NLog">
+      <Version>4.5.6</Version>
+    </PackageReference>
+    <PackageReference Include="NSubstitute">
+      <Version>3.1.0</Version>
+    </PackageReference>
+    <PackageReference Include="NUnit">
+      <Version>3.12.0</Version>
+    </PackageReference>
+    <PackageReference Include="NUnit3TestAdapter" Version="3.17.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers">
+      <Version>2.1.0.247</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Use a "real" vsixmanifest for the VersionsTests tests, so that it's guaranteed to be up-to-date. -->
+    <None Include="$(SolutionDir)\manifest\2019\source.extension.vsixmanifest">
+      <Link>TestData\source.extension.vsixmanifest</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <Choose>
+    <!-- References when building for Visual Studio 2017 -->
+    <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.VisualStudio.Threading">
+          <Version>15.8.209</Version>
+        </PackageReference>
+      </ItemGroup>
+    </When>
+    <!-- References when building for Visual Studio 2019 -->
+    <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.VisualStudio.Threading">
+          <Version>16.0.102</Version>
+        </PackageReference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

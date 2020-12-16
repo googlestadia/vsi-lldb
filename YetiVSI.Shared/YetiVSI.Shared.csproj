@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <Import Project="$(SolutionDir)BuildRoot.props" />
+  <Import Project="$(SolutionDir)Common.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{5705C75B-5C0E-42E4-8414-FB9CF483DFF7}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>YetiVSI.Shared</RootNamespace>
+    <AssemblyName>YetiVSI.Shared</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(KeyFileLocation)Key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Metrics\BinarySignatureCheck.cs" />
+    <Compile Include="Metrics\BinaryType.cs" />
+    <Compile Include="Metrics\CopyBinaryData.cs" />
+    <Compile Include="Metrics\CopyBinaryType.cs" />
+    <Compile Include="Metrics\CustomCommandData.cs" />
+    <Compile Include="Metrics\DebugPreflightCheckData.cs" />
+    <Compile Include="Metrics\DebugSessionEndData.cs" />
+    <Compile Include="Metrics\DeployBinaryData.cs" />
+    <Compile Include="Metrics\DeveloperApiEndpoint.cs" />
+    <Compile Include="Metrics\DeveloperEventStatus.cs" />
+    <Compile Include="Metrics\DeveloperLogEvent.cs" />
+    <Compile Include="Metrics\DeveloperEventType.cs" />
+    <Compile Include="Metrics\GrpcServiceCallDetails.cs" />
+    <Compile Include="Metrics\VSIBoundBreakpointsData.cs" />
+    <Compile Include="Metrics\VSIDebugEventBatch.cs" />
+    <Compile Include="Metrics\VSIDebugParameters.cs" />
+    <Compile Include="Metrics\VSIExceptionData.cs" />
+    <Compile Include="Metrics\VSIMethodInfo.cs" />
+    <Compile Include="Metrics\VSITypeInfo.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Metrics\IMetrics.cs" />
+    <Compile Include="Metrics\SMetrics.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Grpc.Core">
+      <Version>2.26.0</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

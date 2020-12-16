@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(SolutionDir)Common.props" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <Choose>
+    <When Condition="$(IsInternalBuild)">
+      <ItemGroup>
+        <ProjectReference Include="$(SolutionDir)YetiVSI.LLDBDependencies\YetiVSI.LLDBDependencies.vcxproj">
+          <Project>{dc37dd1c-45a9-404a-af59-307bc1bb12b2}</Project>
+        </ProjectReference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Target Name="CheckLldbEvalExists" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(LldbEvalDir)')" Text="Can't find lldb-eval. Did you forget to checkout submodules?" />
+  </Target>
+  <ItemGroup>
+    <ClCompile Include="$(LldbEvalDir)lldb-eval\api.cc" />
+    <ClCompile Include="$(LldbEvalDir)lldb-eval\ast.cc" />
+    <ClCompile Include="$(LldbEvalDir)lldb-eval\context.cc" />
+    <ClCompile Include="$(LldbEvalDir)lldb-eval\eval.cc" />
+    <ClCompile Include="$(LldbEvalDir)lldb-eval\parser.cc" />
+    <ClCompile Include="$(LldbEvalDir)lldb-eval\value.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(LldbEvalDir)lldb-eval\api.h" />
+    <ClInclude Include="$(LldbEvalDir)lldb-eval\ast.h" />
+    <ClInclude Include="$(LldbEvalDir)lldb-eval\context.h" />
+    <ClInclude Include="$(LldbEvalDir)lldb-eval\defines.h" />
+    <ClInclude Include="$(LldbEvalDir)lldb-eval\eval.h" />
+    <ClInclude Include="$(LldbEvalDir)lldb-eval\parser.h" />
+    <ClInclude Include="$(LldbEvalDir)lldb-eval\value.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{03DCCE13-6B53-4E82-A984-295CFE71EAB4}</ProjectGuid>
+    <RootNamespace>YetiVSIDebugEngineLLDBEval</RootNamespace>
+    <WindowsTargetPlatformVersion Condition="$(VisualStudioVersion) == 15">$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion Condition="$(VisualStudioVersion) == 16">10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset Condition="$(VisualStudioVersion) == 15">v141</PlatformToolset>
+    <PlatformToolset Condition="$(VisualStudioVersion) == 16">v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset Condition="$(VisualStudioVersion) == 15">v141</PlatformToolset>
+    <PlatformToolset Condition="$(VisualStudioVersion) == 16">v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(SolutionDir)BuildRoot.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <LinkKeyFile>$(KeyFileLocation)Key.snk</LinkKeyFile>
+    <TargetName>GgpVsi.DebugEngine.LLDBEval</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <LinkKeyFile>$(KeyFileLocation)Key.snk</LinkKeyFile>
+    <TargetName>GgpVsi.DebugEngine.LLDBEval</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4146;4244;4251;4267;4275;4624;4996</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <PreprocessorDefinitions>WIN32;NDEBUG;LLDB_EVAL_CREATE_SHARED_LIBRARY;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(LlvmWinDir)include;$(LldbEvalDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>
+        $(LlvmWinDir)lib\liblldb.lib;
+        $(LlvmWinDir)lib\clangLex.lib;
+        $(LlvmWinDir)lib\clangBasic.lib;
+        $(LlvmWinDir)lib\LLVMMC.lib;
+        $(LlvmWinDir)lib\LLVMDebugInfoCodeView.lib;
+        $(LlvmWinDir)lib\LLVMDebugInfoMSF.lib;
+        $(LlvmWinDir)lib\LLVMCore.lib;
+        $(LlvmWinDir)lib\LLVMRemarks.lib;
+        $(LlvmWinDir)lib\LLVMBitstreamReader.lib;
+        $(LlvmWinDir)lib\LLVMBinaryFormat.lib;
+        $(LlvmWinDir)lib\LLVMSupport.lib;
+        $(LlvmWinDir)lib\LLVMDemangle.lib;
+        %(AdditionalDependencies)
+      </AdditionalDependencies>
+      <!-- Ignore "LNK4099: PDB '*.pdb' was not found ...; linking object as if no debug info" -->
+      <AdditionalOptions>/IGNORE:4099 %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

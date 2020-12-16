@@ -1,0 +1,9 @@
+﻿[$RootKey$\AD7Metrics\PortSupplier\{ed7758db-7076-4b0d-b004-81e6fc6a6af9}]
+"CLSID"="{79a01686-eae4-4d57-9ffd-78ea68d131e9}"
+"Name"="GGP Gamelet"
+@="GGP Gamelet"
+
+[$RootKey$\CLSID\{79a01686-eae4-4d57-9ffd-78ea68d131e9}]
+"Assembly"="GgpVsi"
+"Class"="YetiVSI.PortSupplier.DebugPortSupplier"
+"CodeBase"="$PackageFolder$\GgpVsi.dll"

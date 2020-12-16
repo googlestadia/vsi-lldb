@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="LLDBAddress.cc" />
+    <ClCompile Include="LLDBBreakpoint.cc" />
+    <ClCompile Include="LLDBBreakpointLocation.cc" />
+    <ClCompile Include="LLDBCommandInterpreter.cpp" />
+    <ClCompile Include="LLDBCommandReturnObject.cpp" />
+    <ClCompile Include="LLDBError.cc" />
+    <ClCompile Include="LLDBEvent.cc" />
+    <ClCompile Include="LLDBFileSpec.cc" />
+    <ClCompile Include="LLDBFunction.cc" />
+    <ClCompile Include="LLDBInstruction.cc" />
+    <ClCompile Include="LLDBLineEntry.cc" />
+    <ClCompile Include="LLDBListener.cc" />
+    <ClCompile Include="LLDBListenerFactory.cc" />
+    <ClCompile Include="LLDBPlatform.cc" />
+    <ClCompile Include="LLDBPlatformConnectOptions.cc" />
+    <ClCompile Include="LLDBPlatformConnectOptionsFactory.cc" />
+    <ClCompile Include="LLDBPlatformFactory.cc" />
+    <ClCompile Include="LLDBPlatformShellCommand.cc" />
+    <ClCompile Include="LLDBPlatformShellCommandFactory.cc" />
+    <ClCompile Include="LLDBStackFrame.cc" />
+    <ClCompile Include="LLDBDebuggerFactory.cc" />
+    <ClCompile Include="LLDBSymbol.cc" />
+    <ClCompile Include="LLDBTarget.cc" />
+    <ClCompile Include="LLDBThread.cc" />
+    <ClCompile Include="LLDBDebugger.cc" />
+    <ClCompile Include="LLDBProcess.cc" />
+    <ClCompile Include="LLDBType.cc" />
+    <ClCompile Include="LLDBValue.cc" />
+    <ClCompile Include="LLDBModule.cc" />
+    <ClCompile Include="ValueTypeUtil.cc" />
+    <ClCompile Include="LLDBUnixSignals.cc" />
+    <ClCompile Include="LLDBWatchpoint.cc" />
+    <ClCompile Include="ReturnStatusUtil.cc" />
+    <ClCompile Include="LLDBFileSpecFactory.cc" />
+    <ClCompile Include="LLDBTypeMember.cc" />
+    <ClCompile Include="LLDBSection.cc" />
+    <ClCompile Include="LLDBMemoryRegionInfo.cc" />
+    <ClCompile Include="LLDBTypeList.cc" />
+    <ClCompile Include="LLDBEvalApi.cc" />
+    <ClCompile Include="LLDBExpressionOptionsFactory.cc" />
+    <ClCompile Include="LLDBExpressionOptions.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="LLDBCommandInterpreter.h" />
+    <ClInclude Include="LLDBCommandReturnObject.h" />
+    <ClInclude Include="LLDBType.h" />
+    <ClInclude Include="LLDBAddress.h" />
+    <ClInclude Include="LLDBBreakpoint.h" />
+    <ClInclude Include="LLDBBreakpointLocation.h" />
+    <ClInclude Include="LLDBError.h" />
+    <ClInclude Include="LLDBEvent.h" />
+    <ClInclude Include="LLDBFileSpec.h" />
+    <ClInclude Include="LLDBFunction.h" />
+    <ClInclude Include="LLDBInstruction.h" />
+    <ClInclude Include="LLDBLineEntry.h" />
+    <ClInclude Include="LLDBListener.h" />
+    <ClInclude Include="LLDBListenerFactory.h" />
+    <ClInclude Include="LLDBModule.h" />
+    <ClInclude Include="LLDBPlatform.h" />
+    <ClInclude Include="LLDBPlatformConnectOptions.h" />
+    <ClInclude Include="LLDBPlatformConnectOptionsFactory.h" />
+    <ClInclude Include="LLDBPlatformFactory.h" />
+    <ClInclude Include="LLDBPlatformShellCommand.h" />
+    <ClInclude Include="LLDBPlatformShellCommandFactory.h" />
+    <ClInclude Include="LLDBStackFrame.h" />
+    <ClInclude Include="LLDBDebuggerFactory.h" />
+    <ClInclude Include="LLDBSymbol.h" />
+    <ClInclude Include="LLDBTarget.h" />
+    <ClInclude Include="LLDBThread.h" />
+    <ClInclude Include="LLDBDebugger.h" />
+    <ClInclude Include="LLDBProcess.h" />
+    <ClInclude Include="LLDBObject.h" />
+    <ClInclude Include="LLDBUnixSignals.h" />
+    <ClInclude Include="LLDBValue.h" />
+    <ClInclude Include="LLDBWatchpoint.h" />
+    <ClInclude Include="ManagedUniquePtr.h" />
+    <ClInclude Include="ValueTypeUtil.h" />
+    <ClInclude Include="ReturnStatusUtil.h" />
+    <ClInclude Include="LLDBFileSpecFactory.h" />
+    <ClInclude Include="LLDBTypeMember.h" />
+    <ClInclude Include="LLDBSection.h" />
+    <ClInclude Include="LLDBMemoryRegionInfo.h" />
+    <ClInclude Include="LLDBTypeList.h" />
+    <ClInclude Include="LLDBEvalApi.h" />
+    <ClInclude Include="LLDBExpressionOptionsFactory.h" />
+    <ClInclude Include="LLDBExpressionOptions.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source.def" />
+  </ItemGroup>
+</Project>

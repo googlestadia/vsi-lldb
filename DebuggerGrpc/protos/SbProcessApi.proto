@@ -1,0 +1,155 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.SbProcessRpc;
+
+import "Common.proto";
+
+service SbProcessRpcService {
+  rpc GetNumThreads(GetNumThreadsRequest) returns (GetNumThreadsResponse) {
+  }
+  rpc GetThreadAtIndex(GetThreadAtIndexRequest)
+      returns (GetThreadAtIndexResponse) {
+  }
+  rpc GetSelectedThread(GetSelectedThreadRequest)
+      returns (GetSelectedThreadResponse) {
+  }
+  rpc Continue(ContinueRequest) returns (ContinueResponse) {
+  }
+  rpc Stop(StopRequest) returns (StopResponse) {
+  }
+  rpc Kill(KillRequest) returns (KillResponse) {
+  }
+  rpc Detach(DetachRequest) returns (DetachResponse) {
+  }
+  rpc GetTarget(GetTargetRequest) returns (GetTargetResponse) {
+  }
+  rpc SetSelectedThreadById(SetSelectedThreadByIdRequest)
+      returns (SetSelectedThreadByIdResponse) {
+  }
+  rpc GetUnixSignals(GetUnixSignalsRequest) returns (GetUnixSignalsResponse) {
+  }
+  rpc ReadMemory(ReadMemoryRequest) returns (ReadMemoryResponse) {
+  }
+  rpc WriteMemory(WriteMemoryRequest) returns (WriteMemoryResponse) {
+  }
+}
+
+message GetNumThreadsRequest {
+  Common.GrpcSbProcess process = 1;
+}
+
+message GetNumThreadsResponse {
+  int32 number_threads = 1;
+}
+
+message GetThreadAtIndexRequest {
+  Common.GrpcSbProcess process = 1;
+  int32 index = 2;
+}
+
+message GetThreadAtIndexResponse {
+  Common.GrpcSbThread thread = 1;
+}
+
+message GetSelectedThreadRequest {
+  Common.GrpcSbProcess process = 1;
+}
+
+message GetSelectedThreadResponse {
+  Common.GrpcSbThread thread = 1;
+}
+
+message ContinueRequest {
+  Common.GrpcSbProcess process = 1;
+}
+
+message ContinueResponse {
+  bool result = 1;
+}
+
+message StopRequest {
+  Common.GrpcSbProcess process = 1;
+}
+
+message StopResponse {
+  bool result = 1;
+}
+
+message KillRequest {
+  Common.GrpcSbProcess process = 1;
+}
+
+message KillResponse {
+  bool result = 1;
+}
+
+message DetachRequest {
+  Common.GrpcSbProcess process = 1;
+}
+
+message DetachResponse {
+  bool result = 1;
+}
+
+message GetTargetRequest {
+  Common.GrpcSbProcess process = 1;
+}
+
+message GetTargetResponse {
+  Common.GrpcSbTarget target = 1;
+}
+
+message SetSelectedThreadByIdRequest {
+  Common.GrpcSbProcess process = 1;
+  uint64 threadId = 2;
+}
+
+message SetSelectedThreadByIdResponse {
+  bool success = 1;
+}
+
+message GetUnixSignalsRequest {
+  Common.GrpcSbProcess process = 1;
+}
+
+message GetUnixSignalsResponse {
+  Common.GrpcSbUnixSignals signals = 1;
+}
+
+message ReadMemoryRequest {
+  Common.GrpcSbProcess process = 1;
+  uint64 address = 2;
+  uint64 size = 3;
+}
+
+message ReadMemoryResponse {
+  bytes memory = 1;
+  uint64 size = 2;
+  Common.GrpcSbError error = 3;
+}
+
+message WriteMemoryRequest {
+  Common.GrpcSbProcess process = 1;
+  uint64 address = 2;
+  bytes buffer = 3;
+  uint64 size = 4;
+}
+
+message WriteMemoryResponse {
+  uint64 size = 1;
+  Common.GrpcSbError error = 2;
+}

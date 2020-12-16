@@ -1,0 +1,8 @@
+.vs/*
+bin/*
+packages/*
+*.sdf
+*.user
+*.VC.db
+*.VC.opendb
+

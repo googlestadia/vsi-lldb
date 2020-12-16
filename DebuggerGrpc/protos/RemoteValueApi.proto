@@ -1,0 +1,273 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.RemoteValueRpc;
+
+import "Common.proto";
+
+service RemoteValueRpcService {
+  rpc BulkDelete(BulkDeleteRequest) returns (BulkDeleteResponse) {
+  }
+  rpc GetValue(GetValueRequest) returns (GetValueResponse) {
+  }
+  rpc GetTypeInfo(GetTypeInfoRequest) returns (GetTypeInfoResponse) {
+  }
+  rpc GetTypeName(GetTypeNameRequest) returns (GetTypeNameResponse) {
+  }
+  rpc GetSummary(GetSummaryRequest) returns (GetSummaryResponse) {
+  }
+  rpc GetValueType(GetValueTypeRequest) returns (GetValueTypeResponse) {
+  }
+  rpc GetNumChildren(GetNumChildrenRequest) returns (GetNumChildrenResponse) {
+  }
+  rpc GetChildren(GetChildrenRequest) returns (GetChildrenResponse) {
+  }
+  rpc CreateValueFromExpression(CreateValueFromExpressionRequest)
+      returns (CreateValueFromExpressionResponse) {
+  }
+  rpc CreateValueFromAddress(CreateValueFromAddressRequest)
+      returns (CreateValueFromAddressResponse) {
+  }
+  rpc EvaluateExpression(EvaluateExpressionRequest)
+      returns (EvaluateExpressionResponse) {
+  }
+  rpc Dereference(DereferenceRequest) returns (DereferenceResponse) {
+  }
+  rpc GetChildMemberWithName(GetChildMemberWithNameRequest)
+      returns (GetChildMemberWithNameResponse) {
+  }
+  rpc AddressOf(AddressOfRequest) returns (AddressOfResponse) {
+  }
+  rpc TypeIsPointerType(TypeIsPointerTypeRequest)
+      returns (TypeIsPointerTypeResponse) {
+  }
+  rpc GetValueForExpressionPath(GetValueForExpressionPathRequest)
+      returns (GetValueForExpressionPathResponse) {
+  }
+  rpc GetExpressionPath(GetExpressionPathRequest)
+      returns (GetExpressionPathResponse) {
+  }
+  rpc GetCachedView(GetCachedViewRequest) returns (GetCachedViewResponse) {
+  }
+  rpc GetByteSize(GetByteSizeRequest) returns (GetByteSizeResponse) {
+  }
+  rpc GetPointeeAsByteString(GetPointeeAsByteStringRequest)
+      returns (GetPointeeAsByteStringResponse) {
+  }
+  rpc GetValueAsUnsigned(GetValueAsUnsignedRequest) returns (GetValueAsUnsignedResponse) {
+  }
+  rpc EvaluateExpressionLldbEval(EvaluateExpressionLldbEvalRequest)
+      returns (EvaluateExpressionLldbEvalResponse) {
+  }
+}
+
+message BulkDeleteRequest {
+  repeated Common.GrpcSbValue values = 1;
+}
+
+message BulkDeleteResponse {
+}
+
+message GetValueRequest {
+  Common.GrpcSbValue value = 1;
+  Common.ValueFormat format = 2;
+}
+
+message GetValueResponse {
+  string value = 1;
+}
+
+message GetTypeInfoRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message GetTypeInfoResponse {
+  Common.GrpcSbType type = 1;
+}
+
+message GetTypeNameRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message GetTypeNameResponse {
+  string type_name = 1;
+}
+
+message GetSummaryRequest {
+  Common.GrpcSbValue value = 1;
+  Common.ValueFormat format = 2;
+}
+
+message GetSummaryResponse {
+  string summary = 1;
+}
+
+message GetValueTypeRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message GetValueTypeResponse {
+  Common.ValueType value_type = 1;
+}
+
+message GetNumChildrenRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message GetNumChildrenResponse {
+  uint32 num_children = 1;
+}
+
+message GetChildrenRequest {
+  Common.GrpcSbValue value = 1;
+  uint32 offset = 2;
+  uint32 count = 3;
+}
+
+message GetChildrenResponse {
+  // Maps index to value. Only contains valid children. If an index in [offset, offset + count) is
+  // missing from the map, it means that getting that particular child failed. Note that
+  // repeated fields don't support null values.
+  map<uint32, Common.GrpcSbValue> children = 1;
+}
+
+message CreateValueFromExpressionRequest {
+  Common.GrpcSbValue value = 1;
+  string name = 2;
+  string expression = 3;
+}
+
+message CreateValueFromExpressionResponse {
+  Common.GrpcSbValue expressionResult = 1;
+}
+
+message CreateValueFromAddressRequest {
+  Common.GrpcSbValue value = 1;
+  string name = 2;
+  uint64 address = 3;
+  Common.GrpcSbType type = 4;
+}
+
+message CreateValueFromAddressResponse {
+  Common.GrpcSbValue expressionResult = 1;
+}
+
+message DereferenceRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message DereferenceResponse {
+  Common.GrpcSbValue dereferenceResult = 1;
+}
+
+message EvaluateExpressionRequest {
+  Common.GrpcSbValue value = 1;
+  string expression = 2;
+}
+
+message EvaluateExpressionResponse {
+  Common.GrpcSbValue expressionResult = 1;
+}
+
+message GetChildMemberWithNameRequest {
+  Common.GrpcSbValue value = 1;
+  string name = 2;
+}
+
+message GetChildMemberWithNameResponse {
+  Common.GrpcSbValue child = 1;
+}
+
+message AddressOfRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message AddressOfResponse {
+  Common.GrpcSbValue addressValue = 1;
+}
+
+message TypeIsPointerTypeRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message TypeIsPointerTypeResponse {
+  bool isPointer = 1;
+}
+
+message GetValueForExpressionPathRequest {
+  Common.GrpcSbValue value = 1;
+  string expressionPath = 2;
+}
+
+message GetValueForExpressionPathResponse {
+  Common.GrpcSbValue value = 1;
+}
+
+message GetExpressionPathRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message GetExpressionPathResponse {
+  bool returnValue = 1;
+  string path = 2;
+}
+
+message GetCachedViewRequest {
+  Common.GrpcSbValue value = 1;
+  Common.ValueFormat format = 2;
+}
+
+message GetCachedViewResponse {
+  Common.GrpcValueInfo valueInfo = 1;
+  Common.GrpcValueInfo addressInfo = 2;
+  Common.GrpcSbValue addressValue = 3;
+}
+
+message GetByteSizeRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message GetByteSizeResponse {
+  uint64 byteSize = 1;
+}
+
+message GetPointeeAsByteStringRequest {
+  Common.GrpcSbValue value = 1;
+  uint32 charSize = 2;
+  uint32 maxStringSize = 3;
+}
+
+message GetPointeeAsByteStringResponse {
+  bytes data = 1;
+  string error = 2;
+}
+
+message GetValueAsUnsignedRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message GetValueAsUnsignedResponse {
+  uint64 value = 1;
+}
+
+message EvaluateExpressionLldbEvalRequest {
+  Common.GrpcSbValue value = 1;
+  string expression = 2;
+}
+
+message EvaluateExpressionLldbEvalResponse {
+  Common.GrpcSbValue value = 1;
+}

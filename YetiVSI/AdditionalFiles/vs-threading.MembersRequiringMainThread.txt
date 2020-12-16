@@ -1,0 +1,23 @@
+﻿# This file tells Microsoft.VisualStudio.Threading.Analyzers what types require the main thread
+
+# The following types require the main thread because instances of these types are passed in by
+# Visual Studio as COM objects. These objects can cause deadlocks if they are cast or their methods
+# are invoked while the main thread is waiting for a JoinableTask to complete.
+[Microsoft.VisualStudio.Debugger.Interop.IDebugBreakpointRequest2]
+[Microsoft.VisualStudio.Debugger.Interop.IDebugEventCallback2]
+# In the attach-to-process flow we provide our own implementations of IDebugProcess2 and
+# IDebugProgram2 (through DebugPortSupplier), but in the run-and-debug and attach-to-core flows we
+# still receive Visual Studio-provided instances.
+[Microsoft.VisualStudio.Debugger.Interop.IDebugProcess2]
+[Microsoft.VisualStudio.Debugger.Interop.IDebugProgram2]
+
+# The following types are factories that have arguments that are ultimately passed in by Visual
+# Studio as COM objects. These factories are wrapped in proxies that are not safe to use off the
+# main thread, due to a design flaw in Castle.DynamicProxy.
+# TODO: Make Castle.DynamicProxy avoid casting COM objects.
+[YetiVSI.DebugEngine.ILldbAttachedProgramFactory]
+[YetiVSI.DebugEngine.IDebugEngineHandlerFactory]
+[YetiVSI.DebugEngine.IDebugProgramFactory]
+
+# Interfaces for UI classes
+[YetiVSI.IProgressDialog]

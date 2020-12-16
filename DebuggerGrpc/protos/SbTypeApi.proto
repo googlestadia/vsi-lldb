@@ -1,0 +1,109 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.SbTypeRpc;
+
+import "Common.proto";
+
+service SbTypeRpcService {
+  rpc BulkDelete(BulkDeleteRequest) returns (BulkDeleteResponse) {
+  }
+  rpc GetTypeFlags(GetTypeFlagsRequest) returns (GetTypeFlagsResponse) {
+  }
+  rpc GetName(GetNameRequest) returns (GetNameResponse) {
+  }
+  rpc GetNumberOfDirectBaseClasses(GetNumberOfDirectBaseClassesRequest)
+      returns (GetNumberOfDirectBaseClassesResponse) {
+  }
+  rpc GetDirectBaseClassAtIndex(GetDirectBaseClassAtIndexRequest)
+      returns (GetDirectBaseClassAtIndexResponse) {
+  }
+  rpc GetCanonicalType(GetCanonicalTypeRequest)
+      returns (GetCanonicalTypeResponse) {
+  }
+  rpc GetPointeeType(GetPointeeTypeRequest)
+      returns (GetPointeeTypeResponse) {
+  }
+  rpc GetByteSize(GetByteSizeRequest)
+      returns (GetByteSizeResponse) {
+  }
+}
+
+message BulkDeleteRequest {
+  repeated Common.GrpcSbType types = 1;
+}
+
+message BulkDeleteResponse {
+}
+
+message GetTypeFlagsRequest {
+  Common.GrpcSbType type = 1;
+}
+
+message GetTypeFlagsResponse {
+  // Use an uint32 because protobufs don't allow enum fields to be used for
+  // bitmasks.
+  uint32 flags = 1;
+}
+
+message GetNameRequest {
+  Common.GrpcSbType type = 1;
+}
+
+message GetNameResponse {
+  string name = 1;
+}
+
+message GetNumberOfDirectBaseClassesRequest {
+  Common.GrpcSbType type = 1;
+}
+
+message GetNumberOfDirectBaseClassesResponse {
+  uint32 count = 1;
+}
+
+message GetDirectBaseClassAtIndexRequest {
+  Common.GrpcSbType type = 1;
+  uint32 index = 2;
+}
+
+message GetDirectBaseClassAtIndexResponse {
+  Common.GrpcSbTypeMember typeMember = 1;
+}
+
+message GetCanonicalTypeRequest {
+  Common.GrpcSbType type = 1;
+}
+
+message GetCanonicalTypeResponse {
+  Common.GrpcSbType type = 1;
+}
+
+message GetPointeeTypeRequest {
+  Common.GrpcSbType type = 1;
+}
+
+message GetPointeeTypeResponse {
+  Common.GrpcSbType type = 1;
+}
+
+message GetByteSizeRequest {
+  Common.GrpcSbType type = 1;
+}
+
+message GetByteSizeResponse {
+  uint64 byteSize = 1;
+}

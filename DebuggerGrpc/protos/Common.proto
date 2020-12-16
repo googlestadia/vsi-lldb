@@ -1,0 +1,312 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.Common;
+
+enum ReturnStatus {
+  RETURN_STATUS_INVALID = 0;
+  RETURN_STATUS_SUCCESS_FINISH_NO_RESULT = 1;
+  RETURN_STATUS_SUCCESS_FINISH_RESULT = 2;
+  RETURN_STATUS_SUCCESS_CONTINUING_NO_RESULT = 3;
+  RETURN_STATUS_SUCCESS_CONTINUING_RESULT = 4;
+  RETURN_STATUS_STARTED = 5;
+  RETURN_STATUS_FAILED = 6;
+  RETURN_STATUS_QUIT = 7;
+}
+
+enum ValueType {
+  VALUE_TYPE_INVALID = 0;
+  VALUE_TYPE_VARIABLE_GLOBAL = 1;
+  VALUE_TYPE_VARIABLE_STATIC = 2;
+  VALUE_TYPE_VARIABLE_ARGUMENT = 3;
+  VALUE_TYPE_VARIABLE_LOCAL = 4;
+  VALUE_TYPE_REGISTER = 5;
+  VALUE_TYPE_REGISTER_SET = 6;
+  VALUE_TYPE_CONST_RESULT = 7;
+  VALUE_TYPE_VARIABLE_THREAD_LOCAL = 8;
+}
+
+enum BreakpointError {
+  SUCCESS = 0;
+  NO_FUNCTION_LOCATION = 1;
+  NO_FUNCTION_FOUND = 2;
+  POSITION_NOT_AVAILABLE = 3;
+}
+
+//----------------------------------------------------------------------
+// Display format definitions
+//----------------------------------------------------------------------
+enum ValueFormat {
+  VALUE_FORMAT_DEFAULT = 0;
+  VALUE_FORMAT_INVALID = 1;
+  VALUE_FORMAT_BOOLEAN = 2;
+  VALUE_FORMAT_BINARY = 3;
+  VALUE_FORMAT_BYTES = 4;
+  VALUE_FORMAT_BYTES_WITH_ASCII = 5;
+  VALUE_FORMAT_CHAR = 6;
+  VALUE_FORMAT_CHAR_PRINTABLE = 7;
+  VALUE_FORMAT_COMPLEX = 8;
+  VALUE_FORMAT_COMPLEX_FLOAT = 9;
+  VALUE_FORMAT_CSTRING = 10;
+  VALUE_FORMAT_DECIMAL = 11;
+  VALUE_FORMAT_ENUM = 12;
+  VALUE_FORMAT_HEX = 13;
+  VALUE_FORMAT_HEX_UPPERCASE = 14;
+  VALUE_FORMAT_FLOAT = 15;
+  VALUE_FORMAT_OCTAL = 16;
+  VALUE_FORMAT_OS_TYPE = 17;
+  VALUE_FORMAT_UNICODE_16 = 18;
+  VALUE_FORMAT_UNICODE_32 = 19;
+  VALUE_FORMAT_UNSIGNED = 20;
+  VALUE_FORMAT_POINTER = 21;
+  VALUE_FORMAT_VECTOR_OF_CHAR = 22;
+  VALUE_FORMAT_VECTOR_OF_SINT8 = 23;
+  VALUE_FORMAT_VECTOR_OF_UINT8 = 24;
+  VALUE_FORMAT_VECTOR_OF_SINT16 = 25;
+  VALUE_FORMAT_VECTOR_OF_UINT16 = 26;
+  VALUE_FORMAT_VECTOR_OF_SINT32 = 27;
+  VALUE_FORMAT_VECTOR_OF_UINT32 = 28;
+  VALUE_FORMAT_VECTOR_OF_SINT64 = 29;
+  VALUE_FORMAT_VECTOR_OF_UINT64 = 30;
+  VALUE_FORMAT_VECTOR_OF_FLOAT16 = 31;
+  VALUE_FORMAT_VECTOR_OF_FLOAT32 = 32;
+  VALUE_FORMAT_VECTOR_OF_FLOAT64 = 33;
+  VALUE_FORMAT_VECTOR_OF_UINT128 = 34;
+  VALUE_FORMAT_COMPLEX_INTEGER = 35;
+  VALUE_FORMAT_CHAR_ARRAY = 36;
+  VALUE_FORMAT_ADDRESS_INFO = 37;
+  VALUE_FORMAT_HEX_FLOAT = 38;
+  VALUE_FORMAT_INSTRUCTION = 39;
+  VALUE_FORMAT_VOID = 40;
+};
+
+enum SectionType {
+  SECTION_TYPE_INVALID = 0;
+  SECTION_TYPE_CODE = 1;
+  SECTION_TYPE_CONTAINER = 2;
+  SECTION_TYPE_DATA = 3;
+  SECTION_TYPE_DATA_C_STRING = 4;
+  SECTION_TYPE_DATA_C_STRING_POINTERS = 5;
+  SECTION_TYPE_DATA_SYMBOL_ADDRESS = 6;
+  SECTION_TYPE_DATA4 = 7;
+  SECTION_TYPE_DATA8 = 8;
+  SECTION_TYPE_DATA16 = 9;
+  SECTION_TYPE_DATA_POINTERS = 10;
+  SECTION_TYPE_DEBUG = 11;
+  SECTION_TYPE_ZERO_FILL = 12;
+  SECTION_TYPE_DATA_OBJ_C_MESSAGE_REFS = 13;
+  SECTION_TYPE_DATA_OBJ_C_C_F_STRINGS = 14;
+  SECTION_TYPE_DWARF_DEBUG_ABBREV = 15;
+  SECTION_TYPE_DWARF_DEBUG_ADDR = 16;
+  SECTION_TYPE_DWARF_DEBUG_ARANGES = 17;
+  SECTION_TYPE_DWARF_DEBUG_CU_INDEX = 18;
+  SECTION_TYPE_DWARF_DEBUG_FRAME = 19;
+  SECTION_TYPE_DWARF_DEBUG_INFO = 20;
+  SECTION_TYPE_DWARF_DEBUG_LINE = 21;
+  SECTION_TYPE_DWARF_DEBUG_LOC = 22;
+  SECTION_TYPE_DWARF_DEBUG_MAC_INFO = 23;
+  SECTION_TYPE_DWARF_DEBUG_MACRO = 24;
+  SECTION_TYPE_DWARF_DEBUG_PUB_NAMES = 25;
+  SECTION_TYPE_DWARF_DEBUG_PUB_TYPES = 26;
+  SECTION_TYPE_DWARF_DEBUG_RANGES = 27;
+  SECTION_TYPE_DWARF_DEBUG_STR = 28;
+  SECTION_TYPE_DWARF_DEBUG_STR_OFFSETS = 29;
+  SECTION_TYPE_DWARF_APPLE_NAMES = 30;
+  SECTION_TYPE_DWARF_APPLE_TYPES = 31;
+  SECTION_TYPE_DWARF_APPLE_NAMESPACES = 32;
+  SECTION_TYPE_DWARF_APPLE_OBJ_C = 33;
+  SECTION_TYPE_ELF_SYMBOL_TABLE = 34;
+  SECTION_TYPE_ELF_DYNAMIC_SYMBOLS = 35;
+  SECTION_TYPE_ELF_RELOCATION_ENTRIES = 36;
+  SECTION_TYPE_ELF_DYNAMIC_LINK_INFO = 37;
+  SECTION_TYPE_EH_FRAME = 38;
+  SECTION_TYPE_ARM_EXIDX = 39;
+  SECTION_TYPE_ARM_EXTAB = 40;
+  SECTION_TYPE_COMPACT_UNWIND = 41;
+  SECTION_TYPE_GO_SYMTAB = 42;
+  SECTION_TYPE_ABSOLUTE_ADDRESS = 43;
+  SECTION_TYPE_OTHER = 44;
+};
+
+message GrpcAddressRange {
+  uint64 addressMin = 1;
+  uint64 addressMax = 2;
+}
+
+message GrpcSbTarget {
+  int64 id = 1;
+}
+
+message GrpcSbError {
+  bool success = 1;
+  uint32 code = 2;
+  string error = 3;
+}
+
+message GrpcSbListener {
+  int64 id = 1;
+}
+
+message GrpcSbBreakpoint {
+  GrpcSbTarget target = 1;
+  int32 id = 2;
+}
+
+message GrpcSbBreakpointLocation {
+  GrpcSbBreakpoint breakpoint = 1;
+  int32 id = 2;
+}
+
+message GrpcSbProcess {
+  int32 id = 1;
+}
+
+message GrpcSbThread {
+  int64 id = 1;
+}
+
+message GrpcSbFrame {
+  int64 id = 1;
+  string functionName = 2;
+  uint64 programCounter = 3;
+  GrpcLineEntryInfo lineEntry = 4;
+}
+
+message GrpcSbFunction {
+  int64 id = 1;
+}
+
+message GrpcSbSymbol {
+  int64 id = 1;
+}
+
+message GrpcSbType {
+  int64 id = 1;
+  string name = 2;
+  uint32 flags = 3;
+  uint32 numberOfDirectBaseClasses = 4;
+}
+
+message GrpcSbTypeMember {
+  int64 id = 1;
+}
+
+message GrpcSbValue {
+  int64 id = 1;
+  string name = 2;
+  GrpcSbError error = 3;
+}
+
+message GrpcValueInfo {
+  GrpcSbType type = 1;
+  string expressionPath = 2;
+  bool hasExpressionPath = 3;
+  uint32 numChildren = 4;
+  string summary = 5;
+  string typeName = 6;
+  string value = 7;
+  ValueType valueType = 8;
+  bool isPointerType = 9;
+  uint64 byteSize = 10;
+}
+
+message GrpcSbModule {
+  int64 id = 1;
+}
+
+message GrpcSbSection {
+  int64 id = 1;
+}
+
+message GrpcSbEvent {
+  uint32 type = 1;
+  string description = 2;
+
+  enum StateType {
+    INVALID = 0;
+    CONNECTED = 2;
+    STOPPED = 5;
+    RUNNING = 6;
+    DETACHED = 9;
+    EXITED = 10;
+  }
+  StateType state_type = 3;
+  bool hasProcessResumed = 4;
+}
+
+message GrpcSbAddress {
+  int64 id = 1;
+}
+
+message GrpcSbFileSpec {
+  string filename = 1;
+  string directory = 2;
+}
+
+message GrpcSbInstruction {
+  int64 id = 1;
+}
+
+message GrpcSbWatchpoint {
+  int64 id = 1;
+}
+
+message GrpcSbCommandInterpreter {
+  int64 id = 1;
+}
+
+message GrpcSbCommandReturnObject {
+  int64 id = 1;
+}
+
+message GrpcSbUnixSignals {
+  int64 id = 1;
+}
+
+message GrpcSbCompileUnit {
+  int64 id = 1;
+}
+
+message GrpcFrameInfo {
+  uint64 addrMax = 1;
+  uint64 addrMin = 2;
+  string Args = 3;
+  string FuncName = 4;
+  string Language = 5;
+  string ModuleName = 6;
+  string ReturnType = 7;
+  uint32 Flags = 8;
+  uint32 ValidFields = 9;
+  int32 HasDebugInfo = 10;
+  int32 StaleCode = 11;
+  Common.GrpcSbModule module = 12;
+}
+
+message GrpcInstructionInfo {
+  uint64 address = 1;
+  string operands = 2;
+  string comment = 3;
+  string mnemonic = 4;
+  string symbolName = 5;
+  Common.GrpcLineEntryInfo lineEntry = 6;
+}
+
+message GrpcLineEntryInfo {
+  string fileName = 1;
+  string directory = 2;
+  uint32 line = 3;
+  uint32 column = 4;
+}

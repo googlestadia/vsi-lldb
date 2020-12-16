@@ -1,0 +1,110 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package Debugger.SbDebuggerRpc;
+
+import "Common.proto";
+
+service SbDebuggerRpcService {
+  rpc Create(CreateRequest) returns (CreateResponse) {
+  }
+  rpc SetAsync(SetAsyncRequest) returns (SetAsyncResponse) {
+  }
+  rpc SkipLLDBInitFiles(SkipLLDBInitFilesRequest) returns (SkipLLDBInitFilesResponse) {
+  }
+  rpc GetCommandInterpreter(GetCommandInterpreterRequest)
+      returns (GetCommandInterpreterResponse) {
+  }
+  rpc CreateTarget(CreateTargetRequest) returns (CreateTargetResponse) {
+  }
+  rpc SetSelectedPlatform(SetSelectedPlatformRequest)
+      returns (SetSelectedPlatformResponse) {
+  }
+  rpc GetSelectedPlatform(GetSelectedPlatformRequest)
+      returns (GetSelectedPlatformResponse) {
+  }
+  rpc EnableLog(EnableLogRequest) returns (EnableLogResponse) {
+  }
+  rpc IsPlatformAvailable(IsPlatformAvailableRequest) returns (IsPlatformAvailableResponse) {
+  }
+}
+
+message CreateRequest {
+  bool sourceInitFiles = 1;
+}
+
+message CreateResponse {
+}
+
+message SetAsyncRequest {
+  bool async = 1;
+}
+
+message SetAsyncResponse {
+}
+
+message SkipLLDBInitFilesRequest {
+  bool skip = 1;
+}
+
+message SkipLLDBInitFilesResponse {
+}
+
+message GetCommandInterpreterRequest {
+}
+
+message GetCommandInterpreterResponse {
+  Common.GrpcSbCommandInterpreter interpreter = 1;
+}
+
+message CreateTargetRequest {
+  string filename = 1;
+}
+
+message CreateTargetResponse {
+  Common.GrpcSbTarget grpc_sb_target = 1;
+}
+
+// Only one platform is supported.  Making this request will select the single
+// platform if it has been created.
+message SetSelectedPlatformRequest {
+}
+
+message SetSelectedPlatformResponse {
+}
+
+message GetSelectedPlatformRequest {
+}
+
+message GetSelectedPlatformResponse {
+}
+
+message EnableLogRequest {
+  string channel = 1;
+  repeated string types = 2;
+}
+
+message EnableLogResponse {
+  bool result = 1;
+}
+
+message IsPlatformAvailableRequest {
+  string platformName = 1;
+}
+
+message IsPlatformAvailableResponse {
+  bool result = 1;
+}

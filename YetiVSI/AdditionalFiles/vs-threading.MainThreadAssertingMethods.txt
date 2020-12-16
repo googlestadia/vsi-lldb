@@ -1,0 +1,4 @@
+﻿# This file tells Microsoft.VisualStudio.Threading.Analyzers what methods can be used to assert the
+# main thread
+
+[YetiVSI.Util.JoinableTaskContextExtensions]::ThrowIfNotOnMainThread

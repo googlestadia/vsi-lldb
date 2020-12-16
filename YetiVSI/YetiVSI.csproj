@@ -1,0 +1,852 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>$(VisualStudioVersion)</MinimumVisualStudioVersion>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+    <UseCodebase>true</UseCodebase>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <Import Project="$(SolutionDir)Common.props" />
+  <Import Project="$(SolutionDir)BuildRoot.props" />
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(KeyFileLocation)Key.snk</AssemblyOriginatorKeyFile>
+    <!--
+      Supress warning MSB3270:
+      There was a mismatch between the processor architecture of the project being built "MSIL" and the processor architecture of the reference "...\DebuggerGrpcServer.exe", "AMD64".
+
+      DebuggerGrpcServer.exe is a separate binary and is built for AMD64 by design.
+     -->
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectTypeGuids>{82b43b9b-a64c-4715-b499-d71e9ca2bd60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{799D0160-8C0D-43F5-AB4C-249BE64AAA4E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>YetiVSI</RootNamespace>
+    <AssemblyName>GgpVsi</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+    <IncludeDebugSymbolsInVSIXContainer>true</IncludeDebugSymbolsInVSIXContainer>
+    <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
+    <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
+    <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;DEBUG;VS_2017</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <SharedConfiguration>Debug</SharedConfiguration>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2017|AnyCPU'">
+    <DefineConstants>TRACE;VS_2017</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <SharedConfiguration>Release</SharedConfiguration>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug2019|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;DEBUG;VS_2019</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <SharedConfiguration>Debug</SharedConfiguration>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2019|AnyCPU'">
+    <DefineConstants>TRACE;VS_2019</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <SharedConfiguration>Release</SharedConfiguration>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Make sure we run the devenv.exe in the target VS version, not the version used to compile the extension. -->
+    <TargetDevEnvDir Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\</TargetDevEnvDir>
+    <TargetDevEnvDir Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\</TargetDevEnvDir>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartAction>Program</StartAction>
+    <StartProgram>$(TargetDevEnvDir)devenv.exe</StartProgram>
+    <StartArguments>/rootsuffix Exp /log</StartArguments>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <VsixType>v3</VsixType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AD7FrameInfoCreator.cs" />
+    <Compile Include="Attributes\ProvideStadiaExceptionAttribute.cs" />
+    <Compile Include="CancelableTask.cs" />
+    <Compile Include="CommandWindowWriter.cs" />
+    <Compile Include="ConfiguredProjectAdapter.cs" />
+    <Compile Include="DebugEngine\AsyncOperations\AsyncDebugRootPropertyInfoProvider.cs" />
+    <Compile Include="DebugEngine\AsyncOperations\AsyncGetRootPropertiesOperation.cs" />
+    <Compile Include="DebugEngine\AsyncOperations\AsyncGetStackFramesOperation.cs" />
+    <Compile Include="DebugEngine\AsyncOperations\FrameVariablesProvider.cs" />
+    <Compile Include="DebugEngine\AsyncOperations\ListDebugEntityInfo.cs" />
+    <Compile Include="DebugEngine\AsyncOperations\StackFramesProvider.cs" />
+    <Compile Include="DebugEngine\ChildrenProvider.cs" />
+    <Compile Include="DebugEngine\AsyncExpressionEvaluator.cs" />
+    <Compile Include="DebugEngine\AsyncOperations\AsyncDebugPropertyInfoProvider.cs" />
+    <Compile Include="DebugEngine\AsyncOperations\AsyncEvaluateExpressionOperation.cs" />
+    <Compile Include="DebugEngine\AsyncOperations\AsyncGetPropertiesOperation.cs" />
+    <Compile Include="DebugEngine\CastleAspects\DebugEngineProxyHook.cs" />
+    <Compile Include="DebugEngine\BinaryLoader.cs" />
+    <Compile Include="DebugEngine\CastleAspects\InteropBoundaryAttribute.cs" />
+    <Compile Include="DebugEngine\CommandDebugProperty.cs" />
+    <Compile Include="DebugEngine\CoreDumps\CoreAttachWarningDialogUtil.cs" />
+    <Compile Include="DebugEngine\CoreDumps\ModuleReader.cs" />
+    <Compile Include="DebugEngine\CoreDumps\DumpModulesProvider.cs" />
+    <Compile Include="DebugEngine\CoreDumps\ElfHeader.cs" />
+    <Compile Include="DebugEngine\CoreDumps\FileSection.cs" />
+    <Compile Include="DebugEngine\CoreDumps\HeaderUtils.cs" />
+    <Compile Include="DebugEngine\CoreDumps\NoteSection.cs" />
+    <Compile Include="DebugEngine\CoreDumps\ProgramHeader.cs" />
+    <Compile Include="DebugEngine\CoreDumpViewer\CoreDumpViewerFactory.cs" />
+    <Compile Include="DebugEngine\CoreDumpViewer\CoreDumpViewerPackage.cs" />
+    <Compile Include="DebugEngine\CoreDumpViewer\CoreDumpViewerWindow.xaml.cs">
+      <DependentUpon>CoreDumpViewerWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="DebugEngine\CoreDumpViewer\DesignerPane.cs" />
+    <Compile Include="DebugEngine\CoreDumpViewer\ModuleNode.cs" />
+    <Compile Include="DebugEngine\CoreDumpViewer\ViewModel.cs" />
+    <Compile Include="DebugEngine\DebugEngineFactoryCompRoot.cs" />
+    <Compile Include="DebugEngine\DebugEngineFlags.cs" />
+    <Compile Include="DebugEngine\DebugEngineManager.cs" />
+    <Compile Include="DebugEngine\DiagnosticTools\CallSequenceLoggedDebugEventCallback.cs" />
+    <Compile Include="DebugEngine\ErrorDebugProperty.cs" />
+    <Compile Include="DebugEngine\ExpressionConstants.cs" />
+    <Compile Include="DebugEngine\ExpressionEvaluationFailed.cs" />
+    <Compile Include="DebugEngine\FrameInfoEnum.cs" />
+    <Compile Include="DebugEngine\IDebugEngineCommands.cs" />
+    <Compile Include="DebugEngine\Interfaces\ITaskExecutor.cs" />
+    <Compile Include="DebugEngine\ISymbolSettingsProvider.cs" />
+    <Compile Include="DebugEngine\LldbEventDescriptionParser.cs" />
+    <Compile Include="DebugEngine\LldbListenerSubscriber.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\ArrayItemsEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\CustomListCodeBlocks.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\CustomListItemsContext.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\CustomListItemsEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\ExpandedItemEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisExpander.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisTextMatcher.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\RangedNatvisEntityDecorator.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\SseAdapter.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\VisualizerInfo.cs" />
+    <Compile Include="DebugEngine\SymbolUtils.cs" />
+    <Compile Include="DebugEngine\TaskExecutorTracingHelper.cs" />
+    <Compile Include="DebugEngine\Variables\IHasChildrenLimit.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\LeafEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\ItemEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\LinkedListItemsEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisCollectionEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\IndexListItemsEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisEntityStore.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisErrorUtils.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisSizeParser.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\INatvisEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisLoader.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisSyntheticVariableInformation.cs" />
+    <Compile Include="DebugEngine\Variables\ISingleValueFormat.cs" />
+    <Compile Include="DebugEngine\Variables\RangedChildAdapterDecorator.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\IStringElement.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\SmartPointerEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\SyntheticItemEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\TreeItemsEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\UnsupportedNatvisEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisStringFormatter.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisVisualizerScanner.cs" />
+    <Compile Include="DebugEngine\RegisterSetsBuilder.cs" />
+    <Compile Include="DebugEngine\DebugEngineEntry.cs" />
+    <Compile Include="DebugEngine\DebugSessionLauncher.cs" />
+    <Compile Include="DebugEngine\DebugModuleCache.cs" />
+    <Compile Include="DebugEngine\Exit\ExitDialogUtil.cs" />
+    <Compile Include="DebugEngine\Exit\ExitInfo.cs" />
+    <Compile Include="DebugEngine\LldbAttachedProgram.cs" />
+    <Compile Include="DebugEngine\ModuleFileFinder.cs" />
+    <Compile Include="DebugEngine\ModuleFileMetricsLoadRecorder.cs" />
+    <Compile Include="DebugEngine\LldbModuleUtil.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisExpressionEvaluator.cs" />
+    <Compile Include="DebugEngine\NullExceptionManager.cs" />
+    <Compile Include="DebugEngine\Signal.cs" />
+    <Compile Include="DebugEngine\LldbExceptionManager.cs" />
+    <Compile Include="DebugEngine\Interfaces\IExceptionManager.cs" />
+    <Compile Include="DebugEngine\LinuxSignals.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\HostNatvisProject.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisVariableInformation.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisNames.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisValidator.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisVariableNameTransformer.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\VS2017\CustomListItemsType.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\VS2017\NatvisXsdTypes.cs" />
+    <Compile Include="DebugEngine\NatvisLoggerOutputWindowListener.cs" />
+    <Compile Include="DebugEngine\PreflightBinaryChecker.cs" />
+    <Compile Include="DebugEngine\SymbolLoader.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisDiagnosticLogger.cs" />
+    <Compile Include="DebugEngine\TaskExecutor.cs" />
+    <Compile Include="DebugEngine\VariableInformationEnum.cs" />
+    <Compile Include="DebugEngine\ModuleFileLoader.cs" />
+    <Compile Include="DebugEngine\Variables\ListChildAdapter.cs" />
+    <Compile Include="DebugEngine\Variables\ExpandFormatSpecifierUtil.cs" />
+    <Compile Include="DebugEngine\Variables\ExpandVariableInformation.cs" />
+    <Compile Include="DebugEngine\Variables\IChildAdapter.cs" />
+    <Compile Include="DebugEngine\Variables\CStringEscapeHelper.cs" />
+    <Compile Include="DebugEngine\Variables\ExpressionParser.cs" />
+    <Compile Include="DebugEngine\Variables\ExpressionNumChildrenProvider.cs" />
+    <Compile Include="DebugEngine\Variables\FloatRadixConversionHelper.cs" />
+    <Compile Include="DebugEngine\Variables\RemoteValueChildAdapter.cs" />
+    <Compile Include="DebugEngine\Variables\RemoteValueLLDBVectorOfFloatFormat.cs" />
+    <Compile Include="DebugEngine\Variables\RemoteValueNoPrefixIntegerFormat.cs" />
+    <Compile Include="DebugEngine\Variables\RemoteValueLLDBFormat.cs" />
+    <Compile Include="DebugEngine\Variables\RemoteValueDefaultFormat.cs" />
+    <Compile Include="DebugEngine\Variables\IRemoteValueFormatWithSize.cs" />
+    <Compile Include="DebugEngine\Variables\RemoteValueStringFormat.cs" />
+    <Compile Include="DebugEngine\Variables\RemoteValueFormat.cs" />
+    <Compile Include="DebugEngine\Variables\ScalarNumChildrenProvider.cs" />
+    <Compile Include="DebugEngine\Variables\NatvisViewsUtil.cs" />
+    <Compile Include="DebugEngine\Variables\FormatSpecifierUtil.cs" />
+    <Compile Include="DebugEngine\Variables\ValueStringBuilder.cs" />
+    <Compile Include="DebugEngine\Variables\VsExpression.cs" />
+    <Compile Include="DebugEngine\Variables\RemoteValueFormatProvider.cs" />
+    <Compile Include="DebugEngine\Variables\IRemoteValueFormat.cs" />
+    <Compile Include="DebugEngine\Variables\RemoteValueExtensions.cs" />
+    <Compile Include="DebugEngine\Variables\Variables.cs" />
+    <Compile Include="DebugEngine\Variables\VarInfoBuilder.cs" />
+    <Compile Include="ErrorDialog.xaml.cs">
+      <DependentUpon>ErrorDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ErrorStrings.cs" />
+    <Compile Include="GameletMountChecker.cs" />
+    <Compile Include="GgpDebugQueryTargetCompRoot.cs" />
+    <Compile Include="IIncementalProgress.cs" />
+    <Compile Include="LoadSymbols\ISessionNotifier.cs" />
+    <Compile Include="LoadSymbols\LoadSymbolsCommand.cs" />
+    <Compile Include="LoadSymbols\SessionNotifierService.cs" />
+    <Compile Include="LoadSymbols\SSessionNotifier.cs" />
+    <Compile Include="Metrics\ExceptionRecorder.cs" />
+    <Compile Include="Metrics\TypeExtensions.cs" />
+    <Compile Include="NativeMethods.cs" />
+    <Compile Include="NoSourceWindowHider.cs" />
+    <Compile Include="OptionPageGrid.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="GameletSelector.cs" />
+    <Compile Include="GgpDebugQueryTarget.cs" />
+    <Compile Include="Metrics\Action.cs" />
+    <Compile Include="Metrics\DebugEventAggregator.cs" />
+    <Compile Include="Metrics\DebugEventBatch.cs" />
+    <Compile Include="Metrics\DebugEventBatchSummary.cs" />
+    <Compile Include="Metrics\DebugEventRecorder.cs" />
+    <Compile Include="Metrics\DebugSessionMetrics.cs" />
+    <Compile Include="Metrics\EventScheduler.cs" />
+    <Compile Include="Metrics\ExceptionHelper.cs" />
+    <Compile Include="Metrics\ActionExtensionMethods.cs" />
+    <Compile Include="Metrics\ActionRecorder.cs" />
+    <Compile Include="Metrics\GameletData.cs" />
+    <Compile Include="Metrics\MethodInfoExtensions.cs" />
+    <Compile Include="Metrics\ActionType.cs" />
+    <Compile Include="Metrics\Timer.cs" />
+    <Compile Include="DebuggerOptions\DebuggerOptionsCommand.cs" />
+    <Compile Include="GameletSelectionWindow.xaml.cs">
+      <DependentUpon>GameletSelectionWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="DebugEngine\SignalMap.cs" />
+    <Compile Include="PortSupplier\DebugPort.cs" />
+    <Compile Include="ProgressDialog.xaml.cs">
+      <DependentUpon>ProgressDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ServiceManager.cs" />
+    <Compile Include="SshTunnels.cs" />
+    <Compile Include="SshManager.cs" />
+    <Compile Include="RemoteCommand.cs" />
+    <Compile Include="RemoteFile.cs" />
+    <Compile Include="Util\IDictionaryExtensions.cs" />
+    <Compile Include="Util\FeatureFlagConverter.cs" />
+    <Compile Include="Util\IWindowsRegistry.cs" />
+    <Compile Include="Util\JoinableTaskContextExtensions.cs" />
+    <Compile Include="Util\LldbCommandUtil.cs" />
+    <Compile Include="Util\MainThreadDispatcher.cs" />
+    <Compile Include="Util\WindowsRegistry.cs" />
+    <Compile Include="DebugEngine\DebugBreakpointResolution.cs" />
+    <Compile Include="DebugEngine\DebugCodeContext.cs" />
+    <Compile Include="DebugEngine\DebugDocumentContext.cs" />
+    <Compile Include="DebugEngine\DebugEngine.cs" />
+    <Compile Include="DebugEngine\DebugEvents.cs" />
+    <Compile Include="DebugEngine\DebugEnums.cs" />
+    <Compile Include="DebugEngine\DebugMemoryContext.cs" />
+    <Compile Include="DebugEngine\DebugModule.cs" />
+    <Compile Include="DebugEngine\DebugWatchpoint.cs" />
+    <Compile Include="DebugEngine\DebugDisassemblyStream.cs" />
+    <Compile Include="DebugEngine\DebugProgram.cs" />
+    <Compile Include="DebugEngine\DebugProgramNode.cs" />
+    <Compile Include="DebugEngine\DebugExpression.cs" />
+    <Compile Include="DebugEngine\DebugStackFrame.cs" />
+    <Compile Include="DebugEngine\DebugThread.cs" />
+    <Compile Include="DebugEngine\DebugProperty.cs" />
+    <Compile Include="DebugEngine\DebugWatchpointResolution.cs" />
+    <Compile Include="DebugEngine\Interfaces\IBreakpointManager.cs" />
+    <Compile Include="DebugEngine\Interfaces\ITransportSession.cs" />
+    <Compile Include="DebugEngine\Interfaces\IEventManager.cs" />
+    <Compile Include="DebugEngine\LldbEventManager.cs" />
+    <Compile Include="DebugEngine\LldbTransportSession.cs" />
+    <Compile Include="DebugEngine\Marshal.cs" />
+    <Compile Include="DebugEngineUtil.cs" />
+    <Compile Include="DebugEngine\AD7Constants.cs" />
+    <Compile Include="DebugEngine\DebugBoundBreakpoint.cs" />
+    <Compile Include="DebugEngine\DebugBreakpointError.cs" />
+    <Compile Include="DebugEngine\LldbBreakpointManager.cs" />
+    <Compile Include="DebugEngine\DebugPendingBreakpoint.cs" />
+    <Compile Include="DebugEngine\DebugEngineHandler.cs" />
+    <Compile Include="LLDBShell\ILLDBShell.cs" />
+    <Compile Include="LLDBShell\LLDBShell.cs" />
+    <Compile Include="LLDBShell\LLDBShellCommandTarget.cs" />
+    <Compile Include="LLDBShell\SLLDBShell.cs" />
+    <Compile Include="PkgCmdID.cs" />
+    <Compile Include="ProcessManager.cs" />
+    <Compile Include="VCProjectAdapter.cs" />
+    <Compile Include="VSCommandUtil.cs" />
+    <Compile Include="YetiDebugTransport.cs" />
+    <Compile Include="CoreAttach\CoreAttachCommand.cs" />
+    <Compile Include="CoreAttach\CoreAttachWindow.xaml.cs">
+      <DependentUpon>CoreAttachWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="DialogUtil.cs" />
+    <Compile Include="EnvDTEUtil.cs" />
+    <Compile Include="PortSupplier\DebugEnums.cs" />
+    <Compile Include="PortSupplier\ProcessListRequest.cs" />
+    <Compile Include="PortSupplier\DebugProperty.cs" />
+    <Compile Include="PortSupplier\DebugProgram.cs" />
+    <Compile Include="PortSupplier\DebugProcess.cs" />
+    <Compile Include="PortSupplier\DebugPortSupplier.cs" />
+    <Compile Include="CoreAttach\CoreListRequest.cs" />
+    <Compile Include="SolutionExplorer.cs" />
+    <Compile Include="RemoteDeploy.cs" />
+    <Compile Include="VsiAccountOptionLoader.cs" />
+    <Compile Include="YetiVSIPackage.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="YetiGameletDebugger.cs" />
+    <Compile Include="YetiVSIService.cs" />
+    <VSIXSourceItem Include="@(RequiredNetFX46FacadeAssemblies)" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DebugEngine\NatvisEngine\VS2017\natvis-2017-modified.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="DebugEngine\NatvisEngine\VS2017\natvis-2017-original.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'" Include="$(SolutionDir)\manifest\2017\source.extension.vsixmanifest">
+      <SubType>Designer</SubType>
+    </None>
+    <None Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'" Include="$(SolutionDir)\manifest\2019\source.extension.vsixmanifest">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <VSCTCompile Include="YetiVSI.vsct">
+      <ResourceName>Menus.ctmenu</ResourceName>
+      <SubType>Designer</SubType>
+    </VSCTCompile>
+  </ItemGroup>
+  <!-- Shared references -->
+  <ItemGroup>
+    <Reference Include="EnvDTE100, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="EnvDTE90, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.VisualStudio.CommandBars, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Net.Http.WebRequest" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+    <!--
+      This is a workaround for a known issue with older MSBuild:
+      https://github.com/Microsoft/dotnet/blob/master/releases/net472/KnownIssues/613745%20-%20Single-name%20references%20are%20removed%20by%20the%20SDK%20when%20targeting%204.7.2.md
+     -->
+    <PackageReference Include="System.Net.Http" Version="4.3.3">
+      <ExcludeAssets>All</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="VSPackage.resx">
+      <MergeWithCTO>true</MergeWithCTO>
+      <ManifestResourceName>VSPackage</ManifestResourceName>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <Choose>
+    <When Condition="'$(DownloadPython)' == 'true'">
+      <ItemGroup>
+        <PackageReference Include="python">
+          <Version>3.6.8</Version>
+          <GeneratePathProperty>true</GeneratePathProperty>
+        </PackageReference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="$(IsInternalBuild)">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);INTERNAL_BUILD</DefineConstants>
+      </PropertyGroup>
+      <ItemGroup>
+        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj">
+          <Project>{2c7ec26a-f6cb-44a4-ac66-718fbdd0e632}</Project>
+          <Name>GgpGrpc</Name>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)\Google.Build.CPPTasks.Yeti\Google.Build.CPPTasks.Yeti.csproj">
+          <Project>{315aea06-6465-47ed-8abe-84297aea2b30}</Project>
+          <Name>Google.Build.CPPTasks.Yeti</Name>
+          <Private>False</Private>
+          <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)MetricsUploader\MetricsUploader.csproj">
+          <Project>{534205a2-b924-4618-b3c8-bdd91abe7043}</Project>
+          <Name>MetricsUploader</Name>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)ProjectTemplates\CppProject\CppProject.csproj">
+          <Project>{937911AD-9ED2-49A5-B388-8F6C62912586}</Project>
+          <Name>CppProject</Name>
+          <VSIXSubPath>ProjectTemplates</VSIXSubPath>
+          <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+          <IncludeOutputGroupsInVSIX>TemplateProjectOutputGroup;</IncludeOutputGroupsInVSIX>
+          <Private>False</Private>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)ProjectTemplates\CProject\CProject.csproj">
+          <Project>{8157F8E6-DCB6-4F25-9070-1C75D1720288}</Project>
+          <Name>CProject</Name>
+          <VSIXSubPath>ProjectTemplates</VSIXSubPath>
+          <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+          <IncludeOutputGroupsInVSIX>TemplateProjectOutputGroup;</IncludeOutputGroupsInVSIX>
+          <Private>False</Private>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)ProjectTemplates\EmptyProject\EmptyProject.csproj">
+          <Project>{6F0AA882-7EFA-46B3-97B0-7DC76BFB8AAE}</Project>
+          <Name>EmptyProject</Name>
+          <VSIXSubPath>ProjectTemplates</VSIXSubPath>
+          <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+          <IncludeOutputGroupsInVSIX>TemplateProjectOutputGroup;</IncludeOutputGroupsInVSIX>
+          <Private>False</Private>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)ProjectTemplates\MakefileProject\MakefileProject.csproj">
+          <Project>{220F427A-EBFE-448A-AAAB-D7286FE0F624}</Project>
+          <Name>MakefileProject</Name>
+          <VSIXSubPath>ProjectTemplates</VSIXSubPath>
+          <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+          <IncludeOutputGroupsInVSIX>TemplateProjectOutputGroup;</IncludeOutputGroupsInVSIX>
+          <Private>False</Private>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)ProjectTemplates\ProjectWizard\ProjectWizard.csproj">
+          <Project>{F6955CFF-6141-4915-AFF4-360993B62014}</Project>
+          <Name>ProjectWizard</Name>
+          <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup;BuiltProjectOutputGroupDependencies;GetCopyToOutputDirectoryItems;SatelliteDllsProjectOutputGroup;</IncludeOutputGroupsInVSIX>
+          <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup;</IncludeOutputGroupsInVSIXLocalOnly>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj">
+          <Project>{2c7ec26a-f6cb-44a4-ac66-718fbdd0e632}</Project>
+          <Name>GgpGrpc</Name>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)CloudGrpc\CloudGrpc.csproj">
+          <Project>{b1d183ee-531f-4dbf-95a1-e3ee0c49ab67}</Project>
+          <Name>CloudGrpc</Name>
+          <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)YetiVSI.Internal\YetiVSI.Internal.csproj">
+          <Project>{40e5c6e2-b7cd-412a-8348-e5636cc794d7}</Project>
+          <Name>YetiVSI.Internal</Name>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)ProcessManagerCommon\ProcessManagerCommon.csproj">
+          <Project>{e32c7e7e-7f57-4eea-90a8-2e99e9ebd697}</Project>
+          <Name>ProcessManagerCommon</Name>
+        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)ProcessManagerGrpc\ProcessManagerGrpc.csproj">
+          <Project>{065b8b10-67a2-46ce-9872-ed9f47d4b691}</Project>
+          <Name>ProcessManagerGrpc</Name>
+        </ProjectReference>
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <Reference Include="GgpGrpc, PublicKeyToken=b60cba24c9ed26a2">
+          <HintPath>$(GGP_SDK_PATH)\dev\bin\GgpGrpc.dll</HintPath>
+        </Reference>
+        <ProjectReference Include="..\YetiVSI.External\YetiVSI.External.csproj">
+          <Project>{8b6b1019-f3c1-41dd-b8ee-e397a92a9a7d}</Project>
+          <Name>YetiVSI.External</Name>
+        </ProjectReference>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup>
+    <Content Include="$(SolutionDir)GGP.ico">
+      <Link>GGP.ico</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="$(SolutionDir)GGP.png">
+      <Link>GGP.png</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="GgpVsi.DebugEngine.pkgdef">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Resources\YetiIcons.png" />
+    <Content Include="GgpVsi.PortSupplier.pkgdef">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="GgpVsi.PortSupplier.pkgdef">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="$(OutputBaseDir)bin\$(SharedConfiguration)\GgpVsi.DebugEngine.LLDBEval.dll">
+      <!-- LLDBEval is an unmanaged DLL. Alternative solutions to include it caused issues, cf. (internal). -->
+      <Link>GgpVsi.DebugEngine.LLDBEval.dll</Link>
+      <Visible>false</Visible>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="$(GGP_SDK_PATH)dev\bin\CloudGrpc.dll" Condition="!$(IsInternalBuild)">
+      <Link>CloudGrpc.dll</Link>
+      <Visible>false</Visible>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <AdditionalFiles Include="AdditionalFiles\*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(ThirdPartyRootDir)ChromeClientLauncher\ChromeClientLauncher.csproj">
+      <Project>{5b4e613a-028d-4e08-8716-8a6bcd4906a9}</Project>
+      <Name>ChromeClientLauncher</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerCommonApi\DebuggerCommonApi.csproj">
+      <Project>{6E6A1F1D-FF94-40C6-8DB5-6466EEFFBA85}</Project>
+      <Name>DebuggerCommonApi</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpcClient\DebuggerGrpcClient.csproj">
+      <Project>{90f6a34d-3d0c-4451-a40f-82101538fa73}</Project>
+      <Name>DebuggerGrpcClient</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpcServer\DebuggerGrpcServer.csproj">
+      <Project>{115f721a-d99e-457b-932c-869a646b083d}</Project>
+      <Name>DebuggerGrpcServer</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(ThirdPartyRootDir)LldbApi\LldbApi.csproj">
+      <Project>{26aaf846-325f-4af8-8f06-da5fb523d9d8}</Project>
+      <Name>LldbApi</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpc\DebuggerGrpc.csproj">
+      <Project>{15e392e6-4715-4066-aa47-099a1dd0dbcf}</Project>
+      <Name>DebuggerGrpc</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(ThirdPartyRootDir)SymbolStores\SymbolStores.csproj">
+      <Project>{ac9da952-3ed1-4cc6-9200-3847204b92fd}</Project>
+      <Name>SymbolStores</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\YetiCommon\YetiCommon.csproj">
+      <Project>{a2c9f9d7-a499-4e17-bdab-4ef18f1d9a18}</Project>
+      <Name>YetiCommon</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.DebugEngine.LLDBEval\YetiVSI.DebugEngine.LLDBEval.vcxproj">
+      <Project>{03dcce13-6b53-4e82-a984-295cfe71eab4}</Project>
+      <Name>YetiVSI.DebugEngine.LLDBEval</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <Private>true</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.DebugEngine.LLDBWorker\YetiVSI.DebugEngine.LLDBWorker.vcxproj">
+      <Project>{138ad833-91aa-41b4-9350-e2ff5262aefa}</Project>
+      <Name>YetiVSI.DebugEngine.LLDBWorker</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\YetiVSI.Shared\YetiVSI.Shared.csproj">
+      <Project>{5705c75b-5c0e-42e4-8414-fb9cf483dff7}</Project>
+      <Name>YetiVSI.Shared</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="DebugEngine\CoreDumpViewer\CoreDumpViewerWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DebugEngine\CoreDumpViewer\DefaultStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="ErrorDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="GameletSelectionWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CoreAttach\CoreAttachWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="ProgressDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <!-- Shared references -->
+  <ItemGroup>
+    <PackageReference Include="EnvDTE">
+      <Version>8.0.2</Version>
+    </PackageReference>
+    <PackageReference Include="EnvDTE80">
+      <Version>8.0.3</Version>
+    </PackageReference>
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils">
+      <Version>2.3.4</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Debugger.Interop.10.0">
+      <Version>10.0.30320</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Debugger.Interop.14.0">
+      <Version>14.3.25407</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Debugger.Interop.15.0">
+      <Version>15.9.28307</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes">
+      <Version>15.0.30</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.SDK.Analyzers">
+      <Version>15.8.36</Version>
+      <!-- TODO: Remove this line and fix all the errors. Without this line, the SDK
+           and threading analyzers are recursively applied to all downstream projects (tests). -->
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>9.0.1</Version>
+      <GeneratePathProperty>true</GeneratePathProperty>
+    </PackageReference>
+    <PackageReference Include="System.Management">
+      <Version>4.7.0</Version>
+    </PackageReference>
+    <PackageReference Include="UIAComWrapper">
+      <Version>1.1.0.14</Version>
+    </PackageReference>
+  </ItemGroup>
+  <Choose>
+    <!-- References when building for Visual Studio 2017 -->
+    <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.VisualStudio.ComponentModelHost">
+          <Version>15.8.525</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.ImageCatalog">
+          <Version>15.9.28307</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.Imaging">
+          <Version>15.9.28307</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.Shell.Framework">
+          <Version>15.9.28307</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.Shell.15.0">
+          <Version>15.9.28307</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem">
+          <Version>15.8.243</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VSSDK.BuildTools">
+          <Version>15.9.3039</Version>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <HintPath>$(SolutionDir)lib\Microsoft.VisualStudio.ProjectEngine.15.0.27729.1\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
+      </ItemGroup>
+    </When>
+    <!-- References when building for Visual Studio 2019 -->
+    <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.VisualStudio.ComponentModelHost">
+          <Version>16.0.467</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.ImageCatalog">
+          <Version>16.0.28727</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.Imaging">
+          <Version>16.0.28729</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.Shell.Framework">
+          <Version>16.0.28729</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.Shell.15.0">
+          <Version>16.0.28729</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem">
+          <Version>16.2.133-pre</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VSSDK.BuildTools">
+          <Version>16.5.2044</Version>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=16.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <HintPath>$(SolutionDir)lib\Microsoft.VisualStudio.ProjectEngine.16.0.29428.189\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
+  <PropertyGroup>
+    <!-- Set DeployPythonAndToolchainDependencies to False in Common.props.user to speed up local iteration. -->
+    <DefineConstants Condition="!$(DeployPythonAndToolchainDependencies)">$(DefineConstants);USE_LOCAL_PYTHON_AND_TOOLCHAIN</DefineConstants>
+    <GetVsixSourceItemsDependsOn Condition="$(DeployPythonAndToolchainDependencies)">
+      $(GetVsixSourceItemsDependsOn);
+      AddPythonAndToolchainVSIXContentFiles
+    </GetVsixSourceItemsDependsOn>
+    <GetVsixSourceItemsDependsOn>
+      $(GetVsixSourceItemsDependsOn);
+      AddXDeltaVSIXContentFiles;
+      AddPigzVSIXContentFiles;
+      AddNewtonsoftJsonVSIXContentFiles
+    </GetVsixSourceItemsDependsOn>
+  </PropertyGroup>
+  <!-- Security check that DeployPythonAndToolchainDependencies is never set to False in Jenkins builds -->
+  <Target Name="EnsureDeployPythonAndToolchainDependencies" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(JenkinsBuildRoot)' != '' AND !$(DeployPythonAndToolchainDependencies)" Text="DeployPythonAndToolchainDependencies should never be set to False in production builds!" />
+  </Target>
+  <Target Name="AddXDeltaVSIXContentFiles" Condition="$(IsInternalBuild)">
+    <ItemGroup>
+      <XDeltaLinuxFile Include="$(XDeltaDir)linux\bin\xdelta3" />
+      <XDeltaWindowsFile Include="$(XDeltaDir)windows\xdelta3.exe" />
+    </ItemGroup>
+    <Error Condition="!Exists('@(XDeltaLinuxFile)')" Text="Could not find @(XDeltaLinuxFile)." />
+    <Error Condition="!Exists('@(XDeltaWindowsFile)')" Text="Could not find @(XDeltaWindowsFile)." />
+    <ItemGroup>
+      <VSIXSourceItem Include="@(XDeltaLinuxFile)">
+        <VSIXSubPath>XDelta\Linux</VSIXSubPath>
+      </VSIXSourceItem>
+      <VSIXSourceItem Include="@(XDeltaWindowsFile)">
+        <VSIXSubPath>XDelta\Windows</VSIXSubPath>
+      </VSIXSourceItem>
+    </ItemGroup>
+  </Target>
+  <Target Name="AddPigzVSIXContentFiles" Condition="$(IsInternalBuild)">
+    <ItemGroup>
+      <PigzExeFile Include="$(PigzDir)pigz.exe" />
+    </ItemGroup>
+    <Error Condition="!Exists('@(PigzExeFile)')" Text="Could not find @(PigzExeFile)." />
+    <ItemGroup>
+      <VSIXSourceItem Include="@(PigzExeFile)">
+        <VSIXSubPath>pigz</VSIXSubPath>
+      </VSIXSourceItem>
+    </ItemGroup>
+  </Target>
+  <Target Name="AddPythonAndToolchainVSIXContentFiles">
+    <ItemGroup>
+      <LLDBSitePackageFiles Include="$(LlvmWinDir)lib\site-packages\**" />
+      <LLDBDLLFile Include="$(LlvmWinDir)bin\liblldb.dll" />
+      <LLDBServerFile Condition="$(IsInternalBuild)" Include="$(InternalToolchainDir)runtime\bin\lldb-server" />
+      <LLVMObjdumpFile Include="$(LlvmWinDir)bin\llvm-objdump.exe" />
+      <PythonDLLFile Include="$(PythonDir)python$(PythonVersion).dll" />
+      <PythonLibFiles Include="$(PythonDir)Lib\**" />
+    </ItemGroup>
+    <Error Condition="@(LLDBSitePackageFiles)==''" Text="Could not find LLDB site-packages in $(LlvmWinDir)lib\" />
+    <Error Condition="!Exists('@(LLDBDLLFile)')" Text="Could not find @(LLDBDLLFile)." />
+    <Error Condition="!Exists('@(LLDBServerFile)') AND $(IsInternalBuild)" Text="Could not find @(LLDBServerFile)." />
+    <Error Condition="!Exists('@(LLVMObjdumpFile)')" Text="Could not find @(LLVMObjdumpFile)." />
+    <Error Condition="@(PythonLibFiles)==''" Text="Could not find Lib in $(PythonDir)" />
+    <Error Condition="!Exists('@(PythonDLLFile)')" Text="Could not find python$(PythonVersion).dll in $(PythonDir). Please, check that PythonDir in BuildRoot.props points to a valid python installation and PythonVersion is specified correctly." />
+    <ItemGroup>
+      <VSIXSourceItem Include="@(LLDBSitePackageFiles)">
+        <VSIXSubPath>LLDB\site-packages\%(RecursiveDir)</VSIXSubPath>
+      </VSIXSourceItem>
+      <VSIXSourceItem Include="@(LLDBDLLFile)">
+        <VSIXSubPath>LLDB\bin</VSIXSubPath>
+      </VSIXSourceItem>
+      <VSIXSourceItem Include="@(LLDBServerFile)">
+        <VSIXSubPath>LLDB\bin</VSIXSubPath>
+      </VSIXSourceItem>
+      <VSIXSourceItem Include="@(LLVMObjdumpFile)">
+        <VSIXSubPath>LLDB\bin</VSIXSubPath>
+      </VSIXSourceItem>
+      <VSIXSourceItem Include="@(PythonDLLFile)">
+        <VSIXSubPath>Python3</VSIXSubPath>
+      </VSIXSourceItem>
+      <VSIXSourceItem Include="@(PythonLibFiles)">
+        <VSIXSubPath>Python3\Lib\%(RecursiveDir)</VSIXSubPath>
+      </VSIXSourceItem>
+    </ItemGroup>
+  </Target>
+  <Target Name="AddNewtonsoftJsonVSIXContentFiles">
+    <ItemGroup>
+      <!-- Add Newtonsoft.Json.dll back. It is suppressed, but ChromeClientLauncher.exe, which is
+           not run within the context of devenv.exe, needs it. -->
+      <VSIXSourceItem Include="$(PkgNewtonsoft_Json)\lib\net45\Newtonsoft.Json.dll">
+        <VSIXSubPath>PrivateDeps</VSIXSubPath>
+      </VSIXSourceItem>
+    </ItemGroup>
+  </Target>
+  <!-- If DeployPythonAndToolchainDependencies is off, the code references local paths.
+       This code stores the local paths in files, so that C# can get them. -->
+  <Target Name="CreateLocalPythonDirFile" Condition="!$(DeployPythonAndToolchainDependencies)" BeforeTargets="PrepareForBuild">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="$(IntermediateOutputPath)local_python_dir.txt" Lines="$(PythonDir)" Overwrite="true" />
+  </Target>
+  <ItemGroup Condition="!$(DeployPythonAndToolchainDependencies)">
+    <Content Include="$(IntermediateOutputPath)local_python_dir.txt">
+      <Link>local_python_dir.txt</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <Visible>false</Visible>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="DebugEngine\CoreDumpViewer\Resources\" />
+  </ItemGroup>
+  <Import Project="AdditionalLibSuppression.targets" />
+</Project>

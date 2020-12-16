@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <Extern href="stdidcmd.h" />
+  <Extern href="vsshlids.h" />
+  <Extern href="VSDbgCmd.h" />
+  <Extern href="VsDebugGuids.h" />
+
+  <Commands package="guidYetiVSIPackage">
+    <Groups>
+      <Group guid="guidYetiVSIPackageCmdSet" id="yetiDebugMenuGroup" priority="0x0300">
+        <Parent guid="guidVSDebugGroup" id="IDM_DEBUG_MENU" />
+      </Group>
+    </Groups>
+    <Bitmaps>
+      <Bitmap guid="guidYetiIcons" href="Resources\YetiIcons.png" usedList="yetiIcon1" />
+    </Bitmaps>
+    <Buttons>
+      <Button guid="guidYetiVSIPackageCmdSet" id="cmdidCrashDumpAttachCommand" priority="0x0100" type="Button">
+        <Parent guid="guidYetiVSIPackageCmdSet" id="yetiDebugMenuGroup" />
+        <Icon guid="guidYetiIcons" id="yetiIcon1" />
+        <Strings>
+          <ButtonText>Attach to Stadia Crash &amp;Dump</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidYetiVSIPackageCmdSet" id="cmdidLLDBShellExec" priority="0x0100" type="Button">
+        <!-- https://docs.microsoft.com/en-us/visualstudio/extensibility/command-flag-element -->
+        <CommandFlag>AllowParams</CommandFlag>
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>LLDB Shell Command</ButtonText>
+          <CanonicalName>LLDB.Shell</CanonicalName>
+          <LocCanonicalName>LLDB.Shell</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="guidYetiVSIPackageCmdSet" id="cmdidDebuggerOptionsCommand" priority="0x0100" type="Button">
+        <!-- https://docs.microsoft.com/en-us/visualstudio/extensibility/command-flag-element -->
+        <CommandFlag>AllowParams</CommandFlag>
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Stadia Debugger Options</ButtonText>
+          <CanonicalName>Stadia.Debugger</CanonicalName>
+          <LocCanonicalName>Stadia.Debugger</LocCanonicalName>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+
+  <Symbols>
+    <GuidSymbol name="guidYetiVSIPackage" value="{5fc8481d-4b1a-4cdc-b123-fd6d32fc4096}" />
+    <GuidSymbol name="guidYetiVSIPackageCmdSet" value="{56bb93d0-9d14-42a1-afab-ee7ed1d3ca1a}">
+      <IDSymbol name="yetiDebugMenuGroup" value="0x1020" />
+      <IDSymbol name="cmdidCrashDumpAttachCommand" value="256" />
+      <IDSymbol name="cmdidLLDBShellExec" value="257" />
+      <IDSymbol name="cmdidDebuggerOptionsCommand" value="258" />
+    </GuidSymbol>
+    <GuidSymbol name="guidYetiIcons" value="{7ef24189-6258-4cf1-808b-0f513b5a50f4}">
+      <IDSymbol name="yetiIcon1" value="1" />
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>
