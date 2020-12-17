@@ -1,0 +1,6 @@
+[submodule "lldb-eval"]
+	path = lldb-eval
+	url = https://github.com/google/lldb-eval.git
+[submodule "llvm-project"]
+	path = llvm-project
+	url = https://github.com/llvm/llvm-project.git
