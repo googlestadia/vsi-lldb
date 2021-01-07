@@ -216,8 +216,6 @@
     <Compile Include="TestSupport\VariableInformationExtensions.cs" />
     <Compile Include="TestSupport\Lldb\SbUnixSignalsStubTests.cs" />
     <Compile Include="TestSupport\RegistrationContextStubTests.cs" />
-    <Compile Include="TestSupport\RemoteFrameStub.cs" />
-    <Compile Include="TestSupport\RemoteFrameStubTests.cs" />
     <Compile Include="TestSupport\Lldb\SbUnixSignalsStub.cs" />
     <Compile Include="TestSupport\RegistrationContextStub.cs" />
     <Compile Include="TestSupport\SbTypeMemberStub.cs" />

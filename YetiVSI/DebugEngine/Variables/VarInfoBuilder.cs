@@ -46,18 +46,16 @@ namespace YetiVSI.DebugEngine.Variables
         /// Create an IVariableInformation instance from an expression. The expression may or
         /// may not contain a format specifier.
         /// </summary>
-        /// <param name="remoteFrame">The remote frame associated with the expression.</param>
         /// <param name="remoteValue">The remote value associated with the expression.</param>
         /// <param name="displayName">
         /// The display name of the expression. Uses the value's name if not specified.
         /// </param>
         /// <param name="formatSpecifier">Value format specifier.</param>
         /// <returns></returns>
-        public IVariableInformation Create(RemoteFrame remoteFrame, RemoteValue remoteValue,
-                                           string displayName = null,
+        public IVariableInformation Create(RemoteValue remoteValue, string displayName = null,
                                            FormatSpecifier formatSpecifier = null)
         {
-            return varInfoFactory.Create(remoteFrame, remoteValue, displayName, formatSpecifier);
+            return varInfoFactory.Create(remoteValue, displayName, formatSpecifier);
         }
     }
 }

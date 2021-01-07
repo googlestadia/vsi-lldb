@@ -13,12 +13,9 @@
 // limitations under the License.
 
 ﻿using DebuggerApi;
-using NSubstitute;
 using NUnit.Framework;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TestsCommon.TestSupport;
 using YetiVSI.DebugEngine.Variables;
 using YetiVSI.Test.TestSupport;
 
@@ -28,7 +25,6 @@ namespace YetiVSI.Test.DebugEngine.Variables
     class ValueStringBuilderTests
     {
         MediumTestDebugEngineFactoryCompRoot _compRoot;
-        RemoteFrameStub _remoteFrame;
         RemoteValueFake _remoteValue;
         const ulong _pointerAddress = 1234;
         RemoteValueFake _pointerValue;
@@ -37,7 +33,6 @@ namespace YetiVSI.Test.DebugEngine.Variables
         [SetUp]
         public void SetUp()
         {
-            _remoteFrame = new RemoteFrameStub();
             _compRoot = new MediumTestDebugEngineFactoryCompRoot();
 
             _childValues = new int[] { 20, 21, 22, 23, 24 };
@@ -129,8 +124,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         }
 
         IVariableInformation CreateVarInfo(RemoteValue remoteValue, string formatSpecifier) =>
-            _compRoot.GetVariableInformationFactory().Create(_remoteFrame, remoteValue,
-                                                             remoteValue.GetName(),
+            _compRoot.GetVariableInformationFactory().Create(remoteValue, remoteValue.GetName(),
                                                              new FormatSpecifier(formatSpecifier));
     }
 }

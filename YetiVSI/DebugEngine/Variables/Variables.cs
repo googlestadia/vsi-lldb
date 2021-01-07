@@ -36,9 +36,6 @@ namespace YetiVSI.DebugEngine.Variables
         /// <summary>
         /// Create an IVariableInformation object that will use the RemoteValue's real name.
         /// </summary>
-        /// <param name="remoteFrame">
-        /// Remote frame that the variable belongs to.
-        /// </param>
         /// <param name="remoteValue">
         /// Value to wrap.</param>
         /// <param name="displayName">
@@ -55,9 +52,7 @@ namespace YetiVSI.DebugEngine.Variables
         /// <returns>
         /// Wrapping IVariableInformation object
         /// </returns>
-        // TODO Remove every occurrence of remoteFrame
-        IVariableInformation Create(RemoteFrame remoteFrame, RemoteValue remoteValue,
-                                    string displayName = null,
+        IVariableInformation Create(RemoteValue remoteValue, string displayName = null,
                                     FormatSpecifier formatSpecifier = null,
                                     CustomVisualizer customVisualizer = CustomVisualizer.None);
     }
@@ -450,7 +445,7 @@ namespace YetiVSI.DebugEngine.Variables
         #region IVariableInformationFactory
 
         public virtual IVariableInformation Create(
-            RemoteFrame remoteFrame, RemoteValue remoteValue, string displayName = null,
+            RemoteValue remoteValue, string displayName = null,
             FormatSpecifier formatSpecifier = null,
             CustomVisualizer customVisualizer =
                 CustomVisualizer
@@ -461,8 +456,7 @@ namespace YetiVSI.DebugEngine.Variables
                                                                  RemoteValueFormatProvider.Get(
                                                                      formatSpecifier?.Expression,
                                                                      formatSpecifier?.Size),
-                                                                 ValueFormat.Default, remoteFrame,
-                                                                 remoteValue,
+                                                                 ValueFormat.Default, remoteValue,
                                                                  displayName
                                                                  ?? remoteValue.GetName(),
                                                                  customVisualizer,
@@ -478,7 +472,6 @@ namespace YetiVSI.DebugEngine.Variables
     {
         readonly VarInfoBuilder _varInfoBuilder;
 
-        readonly RemoteFrame _remoteFrame;
         readonly RemoteValue _remoteValue;
         readonly IRemoteValueFormat _remoteValueFormat;
         readonly IRemoteValueChildAdapterFactory _childAdapterFactory;
@@ -486,13 +479,12 @@ namespace YetiVSI.DebugEngine.Variables
         public RemoteValueVariableInformation(VarInfoBuilder varInfoBuilder, string formatSpecifier,
                                               IRemoteValueFormat remoteValueFormat,
                                               ValueFormat fallbackValueFormat,
-                                              RemoteFrame remoteFrame, RemoteValue remoteValue,
-                                              string displayName, CustomVisualizer customVisualizer,
+                                              RemoteValue remoteValue, string displayName,
+                                              CustomVisualizer customVisualizer,
                                               IRemoteValueChildAdapterFactory childAdapterFactory)
         {
             _varInfoBuilder = varInfoBuilder;
             _remoteValueFormat = remoteValueFormat;
-            _remoteFrame = remoteFrame;
             _remoteValue = remoteValue;
             _childAdapterFactory = childAdapterFactory;
 
@@ -533,8 +525,10 @@ namespace YetiVSI.DebugEngine.Variables
 
         public bool MightHaveChildren() => _remoteValueFormat.GetNumChildren(_remoteValue) != 0;
 
-        public IChildAdapter GetChildAdapter() => _childAdapterFactory.Create(
-            _remoteValue, _remoteValueFormat, _remoteFrame, _varInfoBuilder, FormatSpecifier);
+        public IChildAdapter GetChildAdapter() => _childAdapterFactory.Create(_remoteValue,
+                                                                              _remoteValueFormat,
+                                                                              _varInfoBuilder,
+                                                                              FormatSpecifier);
 
         public IEnumerable<string> GetAllInheritedTypes()
         {
@@ -646,7 +640,7 @@ namespace YetiVSI.DebugEngine.Variables
                 return null;
             }
 
-            return _varInfoBuilder.Create(_remoteFrame, expressionValue,
+            return _varInfoBuilder.Create(expressionValue,
                                           formatSpecifier: vsExpression.FormatSpecifier);
         }
 
@@ -662,7 +656,7 @@ namespace YetiVSI.DebugEngine.Variables
                 return null;
             }
 
-            return _varInfoBuilder.Create(_remoteFrame, expressionValue,
+            return _varInfoBuilder.Create(expressionValue,
                                           formatSpecifier: vsExpression.FormatSpecifier);
         }
 
@@ -673,7 +667,7 @@ namespace YetiVSI.DebugEngine.Variables
                 await _remoteValue.EvaluateExpressionAsync(vsExpression.Value);
             return resultValue == null
                        ? null
-                       : _varInfoBuilder.Create(_remoteFrame, resultValue, displayName,
+                       : _varInfoBuilder.Create(resultValue, displayName,
                                                 formatSpecifier: vsExpression.FormatSpecifier);
         }
 
@@ -684,15 +678,14 @@ namespace YetiVSI.DebugEngine.Variables
                 await _remoteValue.EvaluateExpressionLldbEvalAsync(vsExpression.Value);
             return resultValue == null
                        ? null
-                       : _varInfoBuilder.Create(_remoteFrame, resultValue, displayName,
+                       : _varInfoBuilder.Create(resultValue, displayName,
                                                 formatSpecifier: vsExpression.FormatSpecifier);
         }
 
         public IVariableInformation Dereference()
         {
             RemoteValue dereferencedValue = _remoteValue.Dereference();
-            return dereferencedValue == null ? null : _varInfoBuilder.Create(
-                _remoteFrame, dereferencedValue);
+            return dereferencedValue == null ? null : _varInfoBuilder.Create(dereferencedValue);
         }
 
         public IVariableInformation FindChildByName(string name)
@@ -703,7 +696,7 @@ namespace YetiVSI.DebugEngine.Variables
                 return null;
             }
 
-            return _varInfoBuilder.Create(_remoteFrame, child, name);
+            return _varInfoBuilder.Create(child, name);
         }
 
         public bool IsReadOnly => _remoteValue.GetVariableAssignExpression() == null;
@@ -748,7 +741,7 @@ namespace YetiVSI.DebugEngine.Variables
             _remoteValueFormat.FormatValueAsAddress(_remoteValue);
 
         public IVariableInformation GetCachedView() => new RemoteValueVariableInformation(
-            _varInfoBuilder, FormatSpecifier, _remoteValueFormat, FallbackValueFormat, _remoteFrame,
+            _varInfoBuilder, FormatSpecifier, _remoteValueFormat, FallbackValueFormat,
             _remoteValue.GetCachedView(_remoteValueFormat.GetValueFormat(FallbackValueFormat)),
             DisplayName, CustomVisualizer, _childAdapterFactory);
 

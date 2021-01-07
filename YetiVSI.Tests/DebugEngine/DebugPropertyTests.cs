@@ -994,7 +994,7 @@ namespace YetiVSI.Test.DebugEngine
             var childAdapterFactory = new RemoteValueChildAdapter.Factory();
             var remoteValue = RemoteValueFakeUtil.CreateSimpleInt("test", valueInt);
             var varInfo = new RemoteValueVariableInformation(
-                null, "", RemoteValueFormat.Default, ValueFormat.Default, null, remoteValue, "test",
+                null, "", RemoteValueFormat.Default, ValueFormat.Default, remoteValue, "test",
                 CustomVisualizer.None, childAdapterFactory);
 
             var debugProperty = createPropertyDelegate.Invoke(varInfo);

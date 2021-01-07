@@ -22,8 +22,7 @@ namespace YetiVSI.DebugEngine.Variables
     public interface IRemoteValueChildAdapterFactory
     {
         IChildAdapter Create(RemoteValue remoteValue, IRemoteValueFormat remoteValueFormat,
-                             RemoteFrame remoteFrame, VarInfoBuilder varInfoBuilder,
-                             string formatSpecifier);
+                             VarInfoBuilder varInfoBuilder, string formatSpecifier);
     }
 
     class RemoteValueRangedAdapter : RangedChildAdapterDecorator
@@ -55,36 +54,30 @@ namespace YetiVSI.DebugEngine.Variables
 
             public IChildAdapter Create(RemoteValue remoteValue,
                                         IRemoteValueFormat remoteValueFormat,
-                                        RemoteFrame remoteFrame, VarInfoBuilder varInfoBuilder,
-                                        string formatSpecifier) =>
-                CreateForTesting(remoteValue, remoteValueFormat, remoteFrame, varInfoBuilder,
-                                 formatSpecifier, _remoteValueCountPerRange);
+                                        VarInfoBuilder varInfoBuilder, string formatSpecifier) =>
+                CreateForTesting(remoteValue, remoteValueFormat, varInfoBuilder, formatSpecifier,
+                                 _remoteValueCountPerRange);
 
             public IChildAdapter CreateForTesting(RemoteValue remoteValue,
                                                   IRemoteValueFormat remoteValueFormat,
-                                                  RemoteFrame remoteFrame,
                                                   VarInfoBuilder varInfoBuilder,
                                                   string formatSpecifier, int maxCountPerRange) =>
                 RemoteValueRangedAdapter.First(
-                    maxCountPerRange,
-                    new RemoteValueChildAdapter(remoteValue, remoteValueFormat, remoteFrame,
-                                                varInfoBuilder, formatSpecifier));
+                    maxCountPerRange, new RemoteValueChildAdapter(remoteValue, remoteValueFormat,
+                                                                  varInfoBuilder, formatSpecifier));
         }
 
         readonly RemoteValue _remoteValue;
         readonly IRemoteValueFormat _remoteValueFormat;
-        readonly RemoteFrame _remoteFrame;
         readonly VarInfoBuilder _varInfoBuilder;
         readonly string _formatSpecifier;
 
         RemoteValueChildAdapter(RemoteValue remoteValue, IRemoteValueFormat remoteValueFormat,
-                                RemoteFrame remoteFrame, VarInfoBuilder varInfoBuilder,
-                                string formatSpecifier)
+                                VarInfoBuilder varInfoBuilder, string formatSpecifier)
         {
             _remoteValue = remoteValue;
             _remoteValueFormat = remoteValueFormat;
             _varInfoBuilder = varInfoBuilder;
-            _remoteFrame = remoteFrame;
             _formatSpecifier = formatSpecifier;
         }
 
@@ -100,8 +93,7 @@ namespace YetiVSI.DebugEngine.Variables
             IList<IVariableInformation> result =
                 _remoteValueFormat.GetChildren(_remoteValue, from, count)
                     .Select(v => _varInfoBuilder.Create(
-                                _remoteFrame, v,
-                                formatSpecifier: new FormatSpecifier(childFormatSpecifier)))
+                                v, formatSpecifier: new FormatSpecifier(childFormatSpecifier)))
                     .ToList();
 
             return Task.FromResult(result);

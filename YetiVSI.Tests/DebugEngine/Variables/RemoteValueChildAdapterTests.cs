@@ -26,7 +26,6 @@ namespace YetiVSI.Test.DebugEngine.Variables
     class RemoteValueChildAdapterTests
     {
         RemoteValueFake remoteValue;
-        RemoteFrameStub remoteFrame;
         VarInfoBuilder varInfoBuilder;
 
         static readonly string noFormatSpecifier = string.Empty;
@@ -40,8 +39,6 @@ namespace YetiVSI.Test.DebugEngine.Variables
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleString("child3", "value3"));
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleString("child4", "value4"));
 
-            remoteFrame = new RemoteFrameStub();
-
             var childAdapterFactory = new RemoteValueChildAdapter.Factory();
             var varInfoFactory = new LLDBVariableInformationFactory(childAdapterFactory);
 
@@ -53,8 +50,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         public async Task GetChildrenReturnsChildrenInTheSelectedRangeAsync()
         {
             var childAdapter = new RemoteValueChildAdapter.Factory().Create(
-                remoteValue, RemoteValueFormat.Default, remoteFrame, varInfoBuilder,
-                noFormatSpecifier);
+                remoteValue, RemoteValueFormat.Default, varInfoBuilder, noFormatSpecifier);
 
             CollectionAssert.AreEqual(new[] {"child1", "child2"},
                                       await GetChildNamesAsync(childAdapter, 0, 2));
@@ -76,8 +72,8 @@ namespace YetiVSI.Test.DebugEngine.Variables
 
             int _countPerRange = 2;
             var childAdapter = new RemoteValueChildAdapter.Factory().CreateForTesting(
-                remoteValue, RemoteValueFormat.Default, remoteFrame, varInfoBuilder,
-                noFormatSpecifier, _countPerRange);
+                remoteValue, RemoteValueFormat.Default, varInfoBuilder, noFormatSpecifier,
+                _countPerRange);
 
             IList<IVariableInformation> children = await childAdapter.GetChildrenAsync(0, 5);
             Assert.That(children.Count, Is.EqualTo(3));
@@ -102,7 +98,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
             Assert.That(lldbFormat.ShouldInheritFormatSpecifier(), Is.True);
 
             var childAdapter = new RemoteValueChildAdapter.Factory().Create(
-                remoteValue, lldbFormat, remoteFrame, varInfoBuilder, formatSpecifier: "x");
+                remoteValue, lldbFormat, varInfoBuilder, formatSpecifier: "x");
 
             CollectionAssert.AreEqual(new[] {"x", "x", "x", "x"},
                                       await GetAllChildFormatSpecifiersAsync(childAdapter));
@@ -115,8 +111,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
                         Is.False);
 
             var childAdapter = new RemoteValueChildAdapter.Factory().Create(
-                remoteValue, RemoteValueFormat.Default, remoteFrame, varInfoBuilder,
-                formatSpecifier: "na");
+                remoteValue, RemoteValueFormat.Default, varInfoBuilder, formatSpecifier: "na");
 
             CollectionAssert.AreEqual(
                 new[] {string.Empty, string.Empty, string.Empty, string.Empty},
@@ -131,7 +126,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
             Assert.That(lldbFormat.ShouldInheritFormatSpecifier(), Is.True);
 
             var childAdapter = new RemoteValueChildAdapter.Factory().Create(
-                remoteValue, lldbFormat, remoteFrame, varInfoBuilder, formatSpecifier: "!x");
+                remoteValue, lldbFormat, varInfoBuilder, formatSpecifier: "!x");
 
             CollectionAssert.AreEqual(new[] {"x", "x", "x", "x"},
                                       await GetAllChildFormatSpecifiersAsync(childAdapter));
@@ -145,7 +140,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
             Assert.That(lldbFormat.ShouldInheritFormatSpecifier(), Is.True);
 
             var childAdapter = new RemoteValueChildAdapter.Factory().Create(
-                remoteValue, lldbFormat, remoteFrame, varInfoBuilder, formatSpecifier: "!!x");
+                remoteValue, lldbFormat, varInfoBuilder, formatSpecifier: "!!x");
 
             CollectionAssert.AreEqual(new[] {"!!x", "!!x", "!!x", "!!x"},
                                       await GetAllChildFormatSpecifiersAsync(childAdapter));

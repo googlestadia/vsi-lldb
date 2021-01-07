@@ -41,12 +41,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         }
 
         public virtual IVariableInformation Create(
-            RemoteFrame remoteFrame, RemoteValue remoteValue, string displayName = null,
+            RemoteValue remoteValue, string displayName = null,
             FormatSpecifier formatSpecifier = null,
             CustomVisualizer customVisualizer = CustomVisualizer.None)
         {
-            IVariableInformation varInfo = _varInfoFactory.Create(
-                remoteFrame, remoteValue, displayName, formatSpecifier, customVisualizer);
+            IVariableInformation varInfo =
+                _varInfoFactory.Create(remoteValue, displayName, formatSpecifier, customVisualizer);
 
             if (customVisualizer != CustomVisualizer.None)
             {
@@ -84,12 +84,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         // TODO: handle the situation when raw and expand formatter are both present
         public virtual IVariableInformation Create(
-            RemoteFrame remoteFrame, RemoteValue remoteValue, string displayName = null,
+            RemoteValue remoteValue, string displayName = null,
             FormatSpecifier formatSpecifier = null,
             CustomVisualizer customVisualizer = CustomVisualizer.None)
         {
-            IVariableInformation varInfo = _varInfoFactory.Create(
-                remoteFrame, remoteValue, displayName, formatSpecifier, customVisualizer);
+            IVariableInformation varInfo =
+                _varInfoFactory.Create(remoteValue, displayName, formatSpecifier, customVisualizer);
 
             // Don't use Natvis for raw format specifier (!), e.g. "myvar,!".
             if (FormatSpecifierUtil.HasRawFormatSpecifier(varInfo.FormatSpecifier))

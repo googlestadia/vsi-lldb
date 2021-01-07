@@ -61,13 +61,11 @@ namespace YetiVSI.Test.DebugEngine.Variables
             logSpy.Detach();
         }
 
-        RemoteValueVariableInformation CreateVarInfo(
-            RemoteValue remoteValue, string displayName, RemoteFrame remoteFrame=null)
+        RemoteValueVariableInformation CreateVarInfo(RemoteValue remoteValue, string displayName)
         {
-            return new RemoteValueVariableInformation(
-                varInfoBuilder, "", RemoteValueFormat.Default, ValueFormat.Default,
-                remoteFrame ?? new RemoteFrameStub(), remoteValue, displayName,
-                CustomVisualizer.None, childAdapterFactory);
+            return new RemoteValueVariableInformation(varInfoBuilder, "", RemoteValueFormat.Default,
+                                                      ValueFormat.Default, remoteValue, displayName,
+                                                      CustomVisualizer.None, childAdapterFactory);
         }
 
         [Test]
@@ -247,8 +245,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
 
             var varInfo = new RemoteValueVariableInformation(
                 varInfoBuilder, "5", RemoteValueFormatProvider.Get("5"), ValueFormat.Default,
-                new RemoteFrameStub(), remoteValue, "displayName", CustomVisualizer.None,
-                childAdapterFactory);
+                remoteValue, "displayName", CustomVisualizer.None, childAdapterFactory);
 
             Assert.That(await varInfo.GetChildAdapter().CountChildrenAsync(), Is.EqualTo(5u));
             Assert.That(logSpy.GetOutput(), Does.Not.Contain("WARNING"));
@@ -289,10 +286,8 @@ namespace YetiVSI.Test.DebugEngine.Variables
                 .CreateValueFromExpressionAsync("someName", "someExpression")
                 .Returns(Task.FromResult<RemoteValue>(null));
 
-            var remoteFrame = Substitute.For<RemoteFrame>();
-
             RemoteValueVariableInformation remoteVarInfo =
-                CreateVarInfo(remoteValue, "remoteValue", remoteFrame);
+                CreateVarInfo(remoteValue, "remoteValue");
 
             IVariableInformation varInfo = await remoteVarInfo.CreateValueFromExpressionAsync(
                 "someName", new VsExpression("someExpression", FormatSpecifier.EMPTY));
@@ -326,13 +321,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         {
             RemoteValueFake remoteValue = RemoteValueFakeUtil.CreateSimpleArray(
                 "test", "int", RemoteValueFakeUtil.CreateSimpleInt, 4, 7, 74, 47);
-            RemoteFrameStub remoteFrame = new RemoteFrameStub.Builder()
-                .AddExpressionResult(
-                    "[0]",
-                    RemoteValueFakeUtil.CreateSimpleArray("$test", "int",
-                                                          RemoteValueFakeUtil.CreateSimpleInt, 4, 7,
-                                                          74, 47)).Build();
-            var varInfo = CreateVarInfo(remoteValue, "remoteValue", remoteFrame);
+            var varInfo = CreateVarInfo(remoteValue, "remoteValue");
 
             var result =
                 varInfo.GetValueForExpressionPath(new VsExpression("[0]", FormatSpecifier.EMPTY));
@@ -346,12 +335,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         {
             RemoteValueFake remoteValue = RemoteValueFakeUtil.CreateSimpleArray(
                 "test", "int", RemoteValueFakeUtil.CreateSimpleInt, 4);
-            RemoteFrameStub remoteFrame = new RemoteFrameStub.Builder()
-                .AddExpressionResult("[1]",
-                    RemoteValueFakeUtil.CreateSimpleArray(
-                        "$test", "int", RemoteValueFakeUtil.CreateSimpleInt, 4))
-                .Build();
-            var varInfo = CreateVarInfo(remoteValue, "remoteValue", remoteFrame);
+            var varInfo = CreateVarInfo(remoteValue, "remoteValue");
 
             var result =
                 varInfo.GetValueForExpressionPath(new VsExpression("[1]", FormatSpecifier.EMPTY));
@@ -396,7 +380,6 @@ namespace YetiVSI.Test.DebugEngine.Variables
     class RemoteValueVariableInformation_AssignValue_Tests
     {
         LLDBVariableInformationFactory varInfoFactory;
-        RemoteFrame remoteFrame;
 
         [SetUp]
         public void SetUp()
@@ -406,7 +389,6 @@ namespace YetiVSI.Test.DebugEngine.Variables
             varInfoFactory = new LLDBVariableInformationFactory(childAdapterFactory);
             var varInfoBuilder = new VarInfoBuilder(varInfoFactory);
             varInfoFactory.SetVarInfoBuilder(varInfoBuilder);
-            remoteFrame = new RemoteFrameStub();
         }
 
         [Test]
@@ -414,7 +396,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         {
             var remoteValue = Substitute.For<RemoteValue>();
             remoteValue.AddressOf().Returns((RemoteValue)null);
-            var varInfo = varInfoFactory.Create(remoteFrame, remoteValue, "myVar");
+            var varInfo = varInfoFactory.Create(remoteValue, "myVar");
 
             string dummy;
             remoteValue.GetExpressionPath(out dummy).Returns(false);
@@ -441,7 +423,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
 
             remoteValue.AddValueFromExpression("myVar = (newValue)", newValue);
 
-            var varInfo = varInfoFactory.Create(remoteFrame, remoteValue, "myVar");
+            var varInfo = varInfoFactory.Create(remoteValue, "myVar");
 
             Assert.That(varInfo.IsReadOnly, Is.False);
 
@@ -465,7 +447,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
 
             remoteValue.AddValueFromExpression("myVar = (newValue)", newValue);
 
-            var varInfo = varInfoFactory.Create(remoteFrame, remoteValue, "myVar");
+            var varInfo = varInfoFactory.Create(remoteValue, "myVar");
 
             Assert.That(varInfo.IsReadOnly, Is.False);
 
@@ -482,7 +464,6 @@ namespace YetiVSI.Test.DebugEngine.Variables
     {
         RemoteValueChildAdapter.Factory childAdapterFactory;
         VarInfoBuilder varInfoBuilder;
-        RemoteFrame remoteFrame;
 
         [SetUp]
         public void SetUp()
@@ -491,15 +472,14 @@ namespace YetiVSI.Test.DebugEngine.Variables
             var varInfoFactory = new LLDBVariableInformationFactory(childAdapterFactory);
             varInfoBuilder = new VarInfoBuilder(varInfoFactory);
             varInfoFactory.SetVarInfoBuilder(varInfoBuilder);
-            remoteFrame = new RemoteFrameStub();
         }
 
         public RemoteValueVariableInformation CreateVarInfo(
             RemoteValue remoteValue, string displayName)
         {
-            return new RemoteValueVariableInformation(
-                varInfoBuilder, "", RemoteValueFormat.Default, ValueFormat.Default, remoteFrame,
-                remoteValue, displayName, CustomVisualizer.None, childAdapterFactory);
+            return new RemoteValueVariableInformation(varInfoBuilder, "", RemoteValueFormat.Default,
+                                                      ValueFormat.Default, remoteValue, displayName,
+                                                      CustomVisualizer.None, childAdapterFactory);
         }
 
         [Test]
@@ -584,7 +564,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
             remoteValue.SetValueType(DebuggerApi.ValueType.VariableLocal);
             remoteValue.SetAddressOf(null);
             remoteValue.SetTypeInfo(new SbTypeStub("CustomType", TypeFlags.NONE));
-            var varInfo = varInfoBuilder.Create(remoteFrame, remoteValue);
+            var varInfo = varInfoBuilder.Create(remoteValue);
 
             Assert.That(varInfo.IsReadOnly, Is.True);
         }
@@ -600,7 +580,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
             remoteValue.SetAddressOf(sbAddress);
             remoteValue.SetTypeInfo(new SbTypeStub("int*", TypeFlags.NONE));
 
-            var varInfo = varInfoBuilder.Create(remoteFrame, remoteValue);
+            var varInfo = varInfoBuilder.Create(remoteValue);
 
             Assert.That(varInfo.IsReadOnly, Is.True);
         }
@@ -632,7 +612,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         public void BoolValues(bool value)
         {
             var remoteValue = RemoteValueFakeUtil.CreateSimpleBool("myVar", value);
-            var varInfo = CreateVarInfo(remoteValue);
+            var varInfo = varInfoBuilder.Create(remoteValue);
 
             Assert.That(varInfo.IsTruthy, Is.EqualTo(value));
         }
@@ -645,7 +625,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
             var boolType = new SbTypeStub("MyBoolType", TypeFlags.IS_TYPEDEF);
             boolType.SetCanonicalType(new SbTypeStub("bool", TypeFlags.IS_SCALAR));
             remoteValue.SetTypeInfo(boolType);
-            var varInfo = CreateVarInfo(remoteValue);
+            var varInfo = varInfoBuilder.Create(remoteValue);
 
             Assert.That(varInfo.IsTruthy, Is.EqualTo(value));
         }
@@ -655,7 +635,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         public void PointerValues(string address, bool isTruthy)
         {
             var remoteValue = RemoteValueFakeUtil.CreatePointer("MyType*", "myVar", address);
-            var varInfo = CreateVarInfo(remoteValue);
+            var varInfo = varInfoBuilder.Create(remoteValue);
 
             Assert.That(varInfo.IsTruthy, Is.EqualTo(isTruthy));
         }
@@ -666,7 +646,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         public void IntValues(int value, bool isTruthy)
         {
             var remoteValue = RemoteValueFakeUtil.CreateSimpleInt("myVar", value);
-            var varInfo = CreateVarInfo(remoteValue);
+            var varInfo = varInfoBuilder.Create(remoteValue);
 
             Assert.That(varInfo.IsTruthy, Is.EqualTo(isTruthy));
         }
@@ -677,7 +657,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         public void LongValues(long value, bool isTruthy)
         {
             var remoteValue = RemoteValueFakeUtil.CreateSimpleLong("myVar", value);
-            var varInfo = CreateVarInfo(remoteValue);
+            var varInfo = varInfoBuilder.Create(remoteValue);
 
             Assert.That(varInfo.IsTruthy, Is.EqualTo(isTruthy));
         }
@@ -689,7 +669,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         public void FloatValues(float value, bool isTruthy)
         {
             var remoteValue = RemoteValueFakeUtil.CreateSimpleFloat("myVar", value);
-            var varInfo = CreateVarInfo(remoteValue);
+            var varInfo = varInfoBuilder.Create(remoteValue);
 
             Assert.That(varInfo.IsTruthy, Is.EqualTo(isTruthy));
         }
@@ -701,15 +681,9 @@ namespace YetiVSI.Test.DebugEngine.Variables
         public void DoubleValues(double value, bool isTruthy)
         {
             var remoteValue = RemoteValueFakeUtil.CreateSimpleDouble("myVar", value);
-            var varInfo = CreateVarInfo(remoteValue);
+            var varInfo = varInfoBuilder.Create(remoteValue);
 
             Assert.That(varInfo.IsTruthy, Is.EqualTo(isTruthy));
-        }
-
-        IVariableInformation CreateVarInfo(RemoteValue remoteValue)
-        {
-            var remoteFrame = Substitute.For<RemoteFrame>();
-            return varInfoBuilder.Create(remoteFrame, remoteValue);
         }
     }
 }

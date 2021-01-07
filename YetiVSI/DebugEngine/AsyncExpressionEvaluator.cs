@@ -137,8 +137,8 @@ namespace YetiVSI.DebugEngine
             }
 
             string displayName = vsExpression.ToString();
-            IVariableInformation varInfo = varInfoBuilder.Create(frame, remoteValue, displayName,
-                                                                 vsExpression.FormatSpecifier);
+            IVariableInformation varInfo =
+                varInfoBuilder.Create(remoteValue, displayName, vsExpression.FormatSpecifier);
             result = createPropertyDelegate.Invoke(varInfo);
 
             return EvaluationResult.FromResult(result);

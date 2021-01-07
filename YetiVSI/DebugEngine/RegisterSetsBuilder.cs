@@ -70,7 +70,7 @@ namespace YetiVSI.DebugEngine
                 // Visual Studio will display the "CPU" register group by default.
                 var newName = firstGroup ? "CPU" : value.GetName();
                 firstGroup = false;
-                varInfos.Add(varInfoFactory.Create(frame, value, newName));
+                varInfos.Add(varInfoFactory.Create(value, newName));
             }
             return varInfos;
         }
@@ -89,13 +89,13 @@ namespace YetiVSI.DebugEngine
 
             // A preset Natvis entry for CustomVisualizer.SSE shows the registers xmm<0-7>
             // contained in the floating point register set as VectorOfFloat32.
-            sets.Add(varInfoFactory.Create(frame, floatingPointRegs, "SSE",
+            sets.Add(varInfoFactory.Create(floatingPointRegs, "SSE",
                                            customVisualizer: CustomVisualizer.SSE));
 
             // A preset Natvis entry for CustomVisualizer.SSE2 shows the registers xmm<0-15>
             // contained in the floating point register set as VectorOfFloat64, and xmm<8-15> as
             // VectorOfFloat32.
-            sets.Add(varInfoFactory.Create(frame, floatingPointRegs, "SSE2",
+            sets.Add(varInfoFactory.Create(floatingPointRegs, "SSE2",
                                            customVisualizer: CustomVisualizer.SSE2));
 
             return sets;

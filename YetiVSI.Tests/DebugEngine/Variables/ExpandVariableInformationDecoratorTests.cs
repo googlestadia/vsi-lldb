@@ -25,13 +25,11 @@ namespace YetiVSI.Test.DebugEngine.Variables
     {
         MediumTestDebugEngineFactoryCompRoot _compRoot;
         LogSpy _logSpy;
-        RemoteFrameStub _remoteFrame;
         const string _memAddress1 = "0x0000000002260771";
 
         [SetUp]
         public void SetUp()
         {
-            _remoteFrame = new RemoteFrameStub();
             _compRoot = new MediumTestDebugEngineFactoryCompRoot();
             _logSpy = new LogSpy();
             _logSpy.Attach();
@@ -89,8 +87,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         }
 
         IVariableInformation CreateVarInfo(RemoteValue remoteValue, string formatSpecifier) =>
-            _compRoot.GetVariableInformationFactory().Create(_remoteFrame, remoteValue,
-                                                             remoteValue.GetName(),
+            _compRoot.GetVariableInformationFactory().Create(remoteValue, remoteValue.GetName(),
                                                              new FormatSpecifier(formatSpecifier));
     }
 }

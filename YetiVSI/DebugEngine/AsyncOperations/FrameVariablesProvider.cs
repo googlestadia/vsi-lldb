@@ -80,6 +80,6 @@ namespace YetiVSI.DebugEngine.AsyncOperations
         }
 
         IVariableInformation CreateVarInfo(RemoteValue remoteValue) =>
-            _varInfoFactory.Create(_lldbFrame, remoteValue);
+            _varInfoFactory.Create(remoteValue);
     }
 }

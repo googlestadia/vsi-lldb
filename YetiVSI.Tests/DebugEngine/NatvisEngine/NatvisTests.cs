@@ -74,8 +74,6 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         private RemoteValueFake FALSE_REMOTE_VALUE;
         private RemoteValueFake TRUE_REMOTE_VALUE;
 
-        private RemoteFrameStub remoteFrame;
-
         const string MEM_ADDRESS1 = "0x0000000002260771";
         const string MEM_ADDRESS2 = "0x0000000002260772";
         const string MEM_ADDRESS3 = "0x0000000002260773";
@@ -110,8 +108,6 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             TRUE_REMOTE_VALUE = RemoteValueFakeUtil.CreateSimpleBool("", true);
             TRUE_REMOTE_VALUE.SetError(new SbErrorStub(true));
-
-            remoteFrame = new RemoteFrameStub();
         }
 
         [TearDown]
@@ -7755,12 +7751,6 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var list = RemoteValueFakeUtil.CreateClassPointer("List", "l", MEM_ADDRESS1);
 
-            remoteFrame = new RemoteFrameStub.Builder()
-                // Variable declarations
-                .AddExpressionResult($"auto cur=((List*){list.GetDefaultValue()})->head; cur",
-                    RemoteValueFakeUtil.CreateError("<invalid expression>"))
-                .Build();
-
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -7788,8 +7778,6 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             LoadFromString(xml);
 
             var list = RemoteValueFakeUtil.CreateClassPointer("List", "l", MEM_ADDRESS1);
-
-            remoteFrame = new RemoteFrameStub.Builder().Build();
 
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
@@ -8766,11 +8754,6 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var list = RemoteValueFakeUtil.CreateClassPointer("List", "l", MEM_ADDRESS1);
 
-            remoteFrame = new RemoteFrameStub.Builder()
-                .AddExpressionResult("if_cond",
-                                     RemoteValueFakeUtil.CreateError("<invalid expression>"))
-                .Build();
-
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -9734,12 +9717,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var remoteValue = RemoteValueFakeUtil.CreateClass("SSE", "mySimpleVar", "");
 
             var varInfo1 = compRoot.GetVariableInformationFactory().Create(
-                remoteFrame, remoteValue, "SSE", customVisualizer: CustomVisualizer.SSE);
+                remoteValue, "SSE", customVisualizer: CustomVisualizer.SSE);
             string varCached1 = await varInfo1.ValueAsync();
 
             // This should select a cached custom Natvis Visualizer
             var varInfo2 = compRoot.GetVariableInformationFactory().Create(
-                remoteFrame, remoteValue, "SSE", customVisualizer: CustomVisualizer.SSE);
+                remoteValue, "SSE", customVisualizer: CustomVisualizer.SSE);
             string varCached2 = await varInfo2.ValueAsync();
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
@@ -9772,7 +9755,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             AddLongFromExpression(remoteValue, "xmm7", 7);
 
             var varInfo = compRoot.GetVariableInformationFactory().Create(
-                remoteFrame, remoteValue, "SSE", customVisualizer: CustomVisualizer.SSE);
+                remoteValue, "SSE", customVisualizer: CustomVisualizer.SSE);
 
             IVariableInformation[] children = await varInfo.GetAllChildrenAsync();
 
@@ -9813,7 +9796,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             AddLongFromExpression(remoteValue, "xmm15", 15);
 
             var varInfo = compRoot.GetVariableInformationFactory().Create(
-                remoteFrame, remoteValue, "SSE2", customVisualizer: CustomVisualizer.SSE2);
+                remoteValue, "SSE2", customVisualizer: CustomVisualizer.SSE2);
 
             IVariableInformation[] children = await varInfo.GetAllChildrenAsync();
 
@@ -9864,7 +9847,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             _natvisExpander.VisualizerScanner.Reload();
 
             var varInfo = compRoot.GetVariableInformationFactory().Create(
-                remoteFrame, remoteValue, "SSE", customVisualizer: CustomVisualizer.SSE);
+                remoteValue, "SSE", customVisualizer: CustomVisualizer.SSE);
 
             IVariableInformation[] children = await varInfo.GetAllChildrenAsync();
 
@@ -9918,7 +9901,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         IVariableInformation CreateVarInfo(RemoteValue remoteValue, string formatSpecifier = null)
         {
             return compRoot.GetVariableInformationFactory().Create(
-                remoteFrame, remoteValue, formatSpecifier: new FormatSpecifier(formatSpecifier));
+                remoteValue, formatSpecifier: new FormatSpecifier(formatSpecifier));
         }
 
         #endregion
