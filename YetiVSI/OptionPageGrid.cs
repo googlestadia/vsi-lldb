@@ -50,6 +50,17 @@ namespace YetiVSI
         DISABLED = 2,
     }
 
+    public enum LunchGameApiFlowFlag
+    {
+        [Description("Default - Disabled")]
+        [EnumValueAlias(DISABLED)]
+        DEFAULT = 0,
+        [Description("Enabled")]
+        ENABLED = 1,
+        [Description("Disabled")]
+        DISABLED = 2,
+    }
+
     public enum NatvisLoggingLevelFeatureFlag
     {
         [Description("Default - Disabled")]
@@ -116,6 +127,7 @@ namespace YetiVSI
         string SelectedAccount { get; }
         LLDBVisualizerSupport LLDBVisualizerSupport { get; }
         SymbolServerSupport SymbolServerSupport { get; }
+        LaunchGameApiFlow LaunchGameApiFlow { get; }
         NatvisLoggingLevel NatvisLoggingLevel { get; }
         FastExpressionEvaluation FastExpressionEvaluation { get; }
         ExpressionEvaluationEngine ExpressionEvaluationEngine { get; }
@@ -175,6 +187,13 @@ namespace YetiVSI
         [TypeConverter(typeof(FeatureFlagConverter))]
         [DefaultValue(SymbolServerFeatureFlag.DEFAULT)]
         public SymbolServerFeatureFlag SymbolServerSupport { get; set; }
+
+        [Category("LLDB Debugger")]
+        [DisplayName("Enable launch anywhere")]
+        [Description("If enabled, the game is launched via the new Launch Game API.")]
+        [TypeConverter(typeof(FeatureFlagConverter))]
+        [DefaultValue(LunchGameApiFlowFlag.DEFAULT)]
+        public LunchGameApiFlowFlag LunchGameApiFlow { get; set; }
 
         [Category("LLDB Debugger")]
         [DisplayName("Natvis diagnostic messages")]
@@ -293,6 +312,10 @@ namespace YetiVSI
         SymbolServerSupport IExtensionOptions.SymbolServerSupport =>
             EnumValueAliasAttribute.GetAliasOrValue(SymbolServerSupport)
                 .ConvertTo<SymbolServerSupport>();
+
+        LaunchGameApiFlow IExtensionOptions.LaunchGameApiFlow =>
+            EnumValueAliasAttribute.GetAliasOrValue(LunchGameApiFlow)
+                .ConvertTo<LaunchGameApiFlow>();
 
         NatvisLoggingLevel IExtensionOptions.NatvisLoggingLevel =>
             EnumValueAliasAttribute.GetAliasOrValue(NatvisLoggingLevel)

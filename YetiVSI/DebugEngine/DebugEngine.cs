@@ -125,7 +125,7 @@ namespace YetiVSI.DebugEngine
         public abstract int SetMetric(string pszMetric, object varValue);
         public abstract int SetRegistryRoot(string pszRegistryRoot);
         public abstract int SetSymbolPath(string szSymbolSearchPath, string szSymbolCachePath,
-            uint Flags);
+            uint flags);
         public abstract int TerminateProcess(IDebugProcess2 pProcess);
     }
 
@@ -138,30 +138,31 @@ namespace YetiVSI.DebugEngine
 
         public class Factory : IDebugEngineFactory
         {
-            readonly JoinableTaskContext taskContext;
-            readonly ServiceManager serviceManager;
-            readonly DebugSessionMetrics debugSessionMetrics;
-            readonly YetiDebugTransport yetiTransport;
-            readonly ActionRecorder actionRecorder;
-            readonly HttpClient symbolServerHttpClient;
-            readonly ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory;
-            readonly IModuleFileFinder moduleFileFinder;
-            readonly YetiCommon.ChromeClientLauncher.Factory chromeClientLauncherFactory;
+            readonly JoinableTaskContext _taskContext;
+            readonly ServiceManager _serviceManager;
+            readonly DebugSessionMetrics _debugSessionMetrics;
+            readonly YetiDebugTransport _yetiTransport;
+            readonly ActionRecorder _actionRecorder;
+            readonly HttpClient _symbolServerHttpClient;
+            readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
+            readonly IModuleFileFinder _moduleFileFinder;
+            readonly YetiCommon.ChromeClientLauncher.Factory _chromeClientLauncherFactory;
             readonly NatvisExpander _natvisExpander;
-            readonly NatvisDiagnosticLogger natvisLogger;
-            readonly ExitDialogUtil exitDialogUtil;
-            readonly PreflightBinaryChecker preflightBinaryChecker;
-            readonly IDebugSessionLauncherFactory debugSessionLauncherFactory;
-            readonly Params.Factory paramsFactory;
-            readonly IRemoteDeploy remoteDeploy;
-            readonly CancelableTask.Factory cancelableTaskFactory;
-            readonly IDialogUtil dialogUtil;
-            readonly NatvisLoggerOutputWindowListener natvisLogListener;
-            readonly ISolutionExplorer solutionExplorer;
-            readonly IDebugEngineCommands debugEngineCommands;
-            readonly DebugEventCallbackTransform debugEventCallbackDecorator;
-            readonly ISymbolSettingsProvider symbolSettingsProvider;
-            readonly bool deployLldbServer;
+            readonly NatvisDiagnosticLogger _natvisLogger;
+            readonly ExitDialogUtil _exitDialogUtil;
+            readonly PreflightBinaryChecker _preflightBinaryChecker;
+            readonly IDebugSessionLauncherFactory _debugSessionLauncherFactory;
+            readonly Params.Factory _paramsFactory;
+            readonly IRemoteDeploy _remoteDeploy;
+            readonly CancelableTask.Factory _cancelableTaskFactory;
+            readonly IDialogUtil _dialogUtil;
+            readonly NatvisLoggerOutputWindowListener _natvisLogListener;
+            readonly ISolutionExplorer _solutionExplorer;
+            readonly IDebugEngineCommands _debugEngineCommands;
+            readonly DebugEventCallbackTransform _debugEventCallbackDecorator;
+            readonly ISymbolSettingsProvider _symbolSettingsProvider;
+            readonly bool _deployLldbServer;
+            readonly bool _launchGameApiEnabled;
 
             public Factory(JoinableTaskContext taskContext, ServiceManager serviceManager,
                            DebugSessionMetrics debugSessionMetrics,
@@ -180,33 +181,35 @@ namespace YetiVSI.DebugEngine
                            ISolutionExplorer solutionExplorer,
                            IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
-                           ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer)
+                           ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
+                           bool launchGameApiEnabled)
             {
-                this.taskContext = taskContext;
-                this.serviceManager = serviceManager;
-                this.debugSessionMetrics = debugSessionMetrics;
+                _taskContext = taskContext;
+                _serviceManager = serviceManager;
+                _debugSessionMetrics = debugSessionMetrics;
 
-                this.yetiTransport = yetiTransport;
-                this.actionRecorder = actionRecorder;
-                this.symbolServerHttpClient = symbolServerHttpClient;
-                this.moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
-                this.moduleFileFinder = moduleFileFinder;
-                this.chromeClientLauncherFactory = chromeClientLauncherFactory;
-                this._natvisExpander = natvisExpander;
-                this.natvisLogger = natvisLogger;
-                this.exitDialogUtil = exitDialogUtil;
-                this.preflightBinaryChecker = preflightBinaryChecker;
-                this.debugSessionLauncherFactory = debugSessionLauncherFactory;
-                this.paramsFactory = paramsFactory;
-                this.remoteDeploy = remoteDeploy;
-                this.cancelableTaskFactory = cancelableTaskFactory;
-                this.dialogUtil = dialogUtil;
-                this.natvisLogListener = natvisLogListener;
-                this.solutionExplorer = solutionExplorer;
-                this.debugEngineCommands = debugEngineCommands;
-                this.debugEventCallbackDecorator = debugEventCallbackDecorator;
-                this.symbolSettingsProvider = symbolSettingsProvider;
-                this.deployLldbServer = deployLldbServer;
+                _yetiTransport = yetiTransport;
+                _actionRecorder = actionRecorder;
+                _symbolServerHttpClient = symbolServerHttpClient;
+                _moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
+                _moduleFileFinder = moduleFileFinder;
+                _chromeClientLauncherFactory = chromeClientLauncherFactory;
+                _natvisExpander = natvisExpander;
+                _natvisLogger = natvisLogger;
+                _exitDialogUtil = exitDialogUtil;
+                _preflightBinaryChecker = preflightBinaryChecker;
+                _debugSessionLauncherFactory = debugSessionLauncherFactory;
+                _paramsFactory = paramsFactory;
+                _remoteDeploy = remoteDeploy;
+                _cancelableTaskFactory = cancelableTaskFactory;
+                _dialogUtil = dialogUtil;
+                _natvisLogListener = natvisLogListener;
+                _solutionExplorer = solutionExplorer;
+                _debugEngineCommands = debugEngineCommands;
+                _debugEventCallbackDecorator = debugEventCallbackDecorator;
+                _symbolSettingsProvider = symbolSettingsProvider;
+                _deployLldbServer = deployLldbServer;
+                _launchGameApiEnabled = launchGameApiEnabled;
             }
 
             /// <summary>
@@ -215,25 +218,26 @@ namespace YetiVSI.DebugEngine
             /// <param name="self">The external identity of the debug engine.</param>
             public virtual IGgpDebugEngine Create(IGgpDebugEngine self)
             {
-                taskContext.ThrowIfNotOnMainThread();
+                _taskContext.ThrowIfNotOnMainThread();
 
                 var vsiService =
-                    (YetiVSIService)serviceManager.RequireGlobalService(typeof(YetiVSIService));
-                var envDTEService =
-                    (EnvDTE.DTE)serviceManager.GetGlobalService(typeof(EnvDTE.DTE));
+                    (YetiVSIService)_serviceManager.RequireGlobalService(typeof(YetiVSIService));
+                var envDteService =
+                    (EnvDTE.DTE)_serviceManager.GetGlobalService(typeof(EnvDTE.DTE));
                 var extensionOptions = vsiService.Options;
                 var debuggerOptions = vsiService.DebuggerOptions;
-                var sessionNotifier = serviceManager.GetGlobalService(
+                var sessionNotifier = _serviceManager.GetGlobalService(
                     typeof(SSessionNotifier)) as ISessionNotifier;
                 return new DebugEngine(
-                    self, Guid.NewGuid(), extensionOptions, debuggerOptions, debugSessionMetrics,
-                    taskContext, natvisLogListener, solutionExplorer, cancelableTaskFactory,
-                    dialogUtil, yetiTransport, actionRecorder, symbolServerHttpClient,
-                    moduleFileLoadRecorderFactory, moduleFileFinder, chromeClientLauncherFactory,
-                    _natvisExpander, natvisLogger, exitDialogUtil, preflightBinaryChecker,
-                    debugSessionLauncherFactory, paramsFactory, remoteDeploy, debugEngineCommands,
-                    debugEventCallbackDecorator, envDTEService?.RegistryRoot, sessionNotifier,
-                    symbolSettingsProvider, deployLldbServer);
+                    self, Guid.NewGuid(), extensionOptions, debuggerOptions, _debugSessionMetrics,
+                    _taskContext, _natvisLogListener, _solutionExplorer, _cancelableTaskFactory,
+                    _dialogUtil, _yetiTransport, _actionRecorder, _symbolServerHttpClient,
+                    _moduleFileLoadRecorderFactory, _moduleFileFinder, _chromeClientLauncherFactory,
+                    _natvisExpander, _natvisLogger, _exitDialogUtil, _preflightBinaryChecker,
+                    _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
+                    _debugEngineCommands, _debugEventCallbackDecorator, envDteService?.RegistryRoot,
+                    sessionNotifier, _symbolSettingsProvider, _deployLldbServer,
+                    _launchGameApiEnabled);
             }
         }
 
@@ -256,21 +260,21 @@ namespace YetiVSI.DebugEngine
         {
             public class Factory
             {
-                private ISerializer serializer;
+                private ISerializer _serializer;
 
                 public Factory(ISerializer serializer)
                 {
-                    this.serializer = serializer;
+                    _serializer = serializer;
                 }
 
                 public Params Deserialize(string json)
                 {
-                    return serializer.Deserialize<Params>(json);
+                    return _serializer.Deserialize<Params>(json);
                 }
 
                 public string Serialize(Params parameters)
                 {
-                    return serializer.Serialize(parameters);
+                    return _serializer.Serialize(parameters);
                 }
 
                 public Params Create()
@@ -285,55 +289,56 @@ namespace YetiVSI.DebugEngine
             public string DebugSessionId { get; set; }
         }
 
-        readonly TimeSpan DeleteTimeout = TimeSpan.FromSeconds(5);
+        readonly TimeSpan _deleteTimeout = TimeSpan.FromSeconds(5);
 
-        readonly JoinableTaskContext taskContext;
-        readonly NatvisLoggerOutputWindowListener natvisLogListener;
-        readonly DebugSessionMetrics debugSessionMetrics;
+        readonly JoinableTaskContext _taskContext;
+        readonly NatvisLoggerOutputWindowListener _natvisLogListener;
+        readonly DebugSessionMetrics _debugSessionMetrics;
 
-        readonly CancelableTask.Factory cancelableTaskFactory;
-        readonly ISolutionExplorer solutionExplorer;
-        readonly YetiDebugTransport yetiTransport;
-        readonly IDialogUtil dialogUtil;
-        readonly ActionRecorder actionRecorder;
-        readonly IExtensionOptions extensionOptions;
-        readonly DebuggerOptions.DebuggerOptions debuggerOptions;
-        readonly HttpClient symbolServerHttpClient;
-        readonly ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory;
-        readonly IModuleFileFinder moduleFileFinder;
-        readonly YetiCommon.ChromeClientLauncher.Factory chromeClientLauncherFactory;
+        readonly CancelableTask.Factory _cancelableTaskFactory;
+        readonly ISolutionExplorer _solutionExplorer;
+        readonly YetiDebugTransport _yetiTransport;
+        readonly IDialogUtil _dialogUtil;
+        readonly ActionRecorder _actionRecorder;
+        readonly IExtensionOptions _extensionOptions;
+        readonly DebuggerOptions.DebuggerOptions _debuggerOptions;
+        readonly HttpClient _symbolServerHttpClient;
+        readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
+        readonly IModuleFileFinder _moduleFileFinder;
+        readonly YetiCommon.ChromeClientLauncher.Factory _chromeClientLauncherFactory;
         readonly NatvisExpander _natvisExpander;
-        readonly NatvisDiagnosticLogger natvisLogger;
-        readonly ExitDialogUtil exitDialogUtil;
-        readonly PreflightBinaryChecker preflightBinaryChecker;
-        readonly IDebugSessionLauncherFactory debugSessionLauncherFactory;
-        readonly Params.Factory paramsFactory;
-        readonly IRemoteDeploy remoteDeploy;
-        readonly IDebugEngineCommands debugEngineCommands;
-        readonly DebugEventCallbackTransform debugEventCallbackDecorator;
-        readonly ISymbolSettingsProvider symbolSettingsProvider;
-        readonly bool deployLldbServer;
+        readonly NatvisDiagnosticLogger _natvisLogger;
+        readonly ExitDialogUtil _exitDialogUtil;
+        readonly PreflightBinaryChecker _preflightBinaryChecker;
+        readonly IDebugSessionLauncherFactory _debugSessionLauncherFactory;
+        readonly Params.Factory _paramsFactory;
+        readonly IRemoteDeploy _remoteDeploy;
+        readonly IDebugEngineCommands _debugEngineCommands;
+        readonly DebugEventCallbackTransform _debugEventCallbackDecorator;
+        readonly ISymbolSettingsProvider _symbolSettingsProvider;
+        readonly bool _deployLldbServer;
+        readonly bool _launchGameApiEnabled;
 
         // Keep track of the attach operation, so that it can be aborted by transport errors.
-        ICancelableTask attachOperation;
+        ICancelableTask _attachOperation;
 
         // Variables set during launch and/or attach.
-        string executableFileName;
-        string executableFullPath;
-        bool rgpEnabled;
-        bool renderDocEnabled;
-        string workingDirectory;
-        SshTarget target;
-        string coreFilePath;
-        LaunchOption launchOption;
-        bool deleteCoreFileAtCleanup;
+        string _executableFileName;
+        string _executableFullPath;
+        bool _rgpEnabled;
+        bool _renderDocEnabled;
+        string _workingDirectory;
+        SshTarget _target;
+        string _coreFilePath;
+        LaunchOption _launchOption;
+        bool _deleteCoreFileAtCleanup;
 
         // Attached program is set after successfully attaching.
-        ILldbAttachedProgram attachedProgram;
+        ILldbAttachedProgram _attachedProgram;
         // Timer that is started after successfully attaching.
-        ITimer attachedTimer;
+        ITimer _attachedTimer;
 
-        ISessionNotifier sessionNotifier;
+        ISessionNotifier _sessionNotifier;
 
         public DebugEngine(IGgpDebugEngine self, Guid id, IExtensionOptions extensionOptions,
                            DebuggerOptions.DebuggerOptions debuggerOptions,
@@ -354,52 +359,54 @@ namespace YetiVSI.DebugEngine
                            IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            string vsRegistryRoot, ISessionNotifier sessionNotifier,
-                           ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer)
+                           ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
+                           bool launchGameApiEnabled)
             : base(self)
         {
             taskContext.ThrowIfNotOnMainThread();
 
-            launchOption = LaunchOption.Invalid;
+            _launchOption = LaunchOption.Invalid;
 
             Id = id;
 
-            this.taskContext = taskContext;
-            this.natvisLogListener = natvisLogListener;
-            this.debugSessionMetrics = debugSessionMetrics;
+            _taskContext = taskContext;
+            _natvisLogListener = natvisLogListener;
+            _debugSessionMetrics = debugSessionMetrics;
 
-            this.extensionOptions = extensionOptions;
-            this.debuggerOptions = debuggerOptions;
+            _extensionOptions = extensionOptions;
+            _debuggerOptions = debuggerOptions;
 
-            this.cancelableTaskFactory = cancelableTaskFactory;
-            this.solutionExplorer = solutionExplorer;
-            this.dialogUtil = dialogUtil;
-            this.yetiTransport = yetiTransport;
-            this.actionRecorder = actionRecorder;
-            this.symbolServerHttpClient = symbolServerHttpClient;
-            this.moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
-            this.moduleFileFinder = moduleFileFinder;
-            this.chromeClientLauncherFactory = chromeClientLauncherFactory;
-            this._natvisExpander = natvisExpander;
-            this.natvisLogger = natvisLogger;
-            this.exitDialogUtil = exitDialogUtil;
-            this.preflightBinaryChecker = preflightBinaryChecker;
-            this.debugSessionLauncherFactory = debugSessionLauncherFactory;
-            this.paramsFactory = paramsFactory;
-            this.remoteDeploy = remoteDeploy;
-            this.debugEngineCommands = debugEngineCommands;
-            this.debugEventCallbackDecorator = debugEventCallbackDecorator;
-            this.sessionNotifier = sessionNotifier;
-            this.symbolSettingsProvider = symbolSettingsProvider;
-            this.deployLldbServer = deployLldbServer;
+            _cancelableTaskFactory = cancelableTaskFactory;
+            _solutionExplorer = solutionExplorer;
+            _dialogUtil = dialogUtil;
+            _yetiTransport = yetiTransport;
+            _actionRecorder = actionRecorder;
+            _symbolServerHttpClient = symbolServerHttpClient;
+            _moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
+            _moduleFileFinder = moduleFileFinder;
+            _chromeClientLauncherFactory = chromeClientLauncherFactory;
+            _natvisExpander = natvisExpander;
+            _natvisLogger = natvisLogger;
+            _exitDialogUtil = exitDialogUtil;
+            _preflightBinaryChecker = preflightBinaryChecker;
+            _debugSessionLauncherFactory = debugSessionLauncherFactory;
+            _paramsFactory = paramsFactory;
+            _remoteDeploy = remoteDeploy;
+            _debugEngineCommands = debugEngineCommands;
+            _debugEventCallbackDecorator = debugEventCallbackDecorator;
+            _sessionNotifier = sessionNotifier;
+            _symbolSettingsProvider = symbolSettingsProvider;
+            _deployLldbServer = deployLldbServer;
+            _launchGameApiEnabled = launchGameApiEnabled;
 
             // Register observers on long lived objects last so that they don't hold a reference
             // to this if an exception is thrown during construction.
-            this.yetiTransport.OnStop += Abort;
-            this.extensionOptions.PropertyChanged += OptionsGrid_PropertyChanged;
-            this.debuggerOptions.ValueChanged += OnDebuggerOptionChanged;
-            if (this.natvisLogger != null && natvisLogListener != null)
+            _yetiTransport.OnStop += Abort;
+            _extensionOptions.PropertyChanged += OptionsGrid_PropertyChanged;
+            _debuggerOptions.ValueChanged += OnDebuggerOptionChanged;
+            if (_natvisLogger != null && natvisLogListener != null)
             {
-                this.natvisLogger.NatvisLogEvent += natvisLogListener.OnNatvisLogEvent;
+                _natvisLogger.NatvisLogEvent += natvisLogListener.OnNatvisLogEvent;
             }
 
             Trace.WriteLine("Debug session started.");
@@ -414,7 +421,7 @@ namespace YetiVSI.DebugEngine
         {
             get
             {
-                return debugEngineCommands;
+                return _debugEngineCommands;
             }
         }
 
@@ -422,9 +429,9 @@ namespace YetiVSI.DebugEngine
         {
             if (e.PropertyName == nameof(OptionPageGrid.NatvisLoggingLevel))
             {
-                if (natvisLogger != null)
+                if (_natvisLogger != null)
                 {
-                    natvisLogger.SetLogLevel(extensionOptions.NatvisLoggingLevel);
+                    _natvisLogger.SetLogLevel(_extensionOptions.NatvisLoggingLevel);
                 }
             }
         }
@@ -450,22 +457,22 @@ namespace YetiVSI.DebugEngine
         public override int Attach(IDebugProgram2[] programs, IDebugProgramNode2[] programNodes,
             uint numPrograms, IDebugEventCallback2 callback, enum_ATTACH_REASON reason)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            _taskContext.ThrowIfNotOnMainThread();
 
-            callback = debugEventCallbackDecorator(callback);
+            callback = _debugEventCallbackDecorator(callback);
 
             if (numPrograms != 1)
             {
                 Trace.WriteLine($"Debug Engine failed to attach. Attempted to attach to " +
                     $"{numPrograms} programs; we only support attaching to one.");
-                dialogUtil.ShowError(ErrorStrings.SingleProgramExpected);
+                _dialogUtil.ShowError(ErrorStrings.SingleProgramExpected);
                 return VSConstants.E_INVALIDARG;
             }
 
             if (reason == enum_ATTACH_REASON.ATTACH_REASON_AUTO)
             {
                 Trace.WriteLine("Debug Engine failed to attach. Auto attach is not supported.");
-                dialogUtil.ShowError(ErrorStrings.AutoAttachNotSupported);
+                _dialogUtil.ShowError(ErrorStrings.AutoAttachNotSupported);
                 return VSConstants.E_NOTIMPL;
             }
 
@@ -483,30 +490,30 @@ namespace YetiVSI.DebugEngine
                 var gamelet = debugPort?.Gamelet;
                 if (gamelet != null && !string.IsNullOrEmpty(gamelet.IpAddr))
                 {
-                    target = new SshTarget(gamelet);
+                    _target = new SshTarget(gamelet);
                 }
                 else
                 {
                     Trace.WriteLine("Unable to find Stadia instance.");
-                    dialogUtil.ShowError(ErrorStrings.NoGameletsFound);
+                    _dialogUtil.ShowError(ErrorStrings.NoGameletsFound);
                     return VSConstants.E_ABORT;
                 }
-                debugSessionMetrics.DebugSessionId = debugPort?.DebugSessionId;
+                _debugSessionMetrics.DebugSessionId = debugPort?.DebugSessionId;
             }
 
-            if (string.IsNullOrEmpty(debugSessionMetrics.DebugSessionId))
+            if (string.IsNullOrEmpty(_debugSessionMetrics.DebugSessionId))
             {
-                debugSessionMetrics.UseNewDebugSessionId();
+                _debugSessionMetrics.UseNewDebugSessionId();
             }
 
             Trace.WriteLine("Extension Options:");
-            foreach (var option in extensionOptions.Options)
+            foreach (var option in _extensionOptions.Options)
             {
                 Trace.WriteLine(string.Format("{0}: {1}", option.Name.ToLower(),
                     option.Value.ToString().ToLower()));
             }
             Trace.WriteLine("Debugger Options:");
-            foreach (var option in debuggerOptions)
+            foreach (var option in _debuggerOptions)
             {
                 Trace.WriteLine(string.Format("{0}: {1}", option.Key.ToString().ToLower(),
                     option.Value.ToString().ToLower()));
@@ -515,48 +522,48 @@ namespace YetiVSI.DebugEngine
             var libPaths = GetLldbSearchPaths();
             uint? attachPid = null;
 
-            if (!string.IsNullOrEmpty(coreFilePath))
+            if (!string.IsNullOrEmpty(_coreFilePath))
             {
-                launchOption = LaunchOption.AttachToCore;
+                _launchOption = LaunchOption.AttachToCore;
             }
             else
             {
                 if (reason == enum_ATTACH_REASON.ATTACH_REASON_LAUNCH)
                 {
-                    launchOption = LaunchOption.LaunchGame;
+                    _launchOption = LaunchOption.LaunchGame;
                 }
                 else if (reason == enum_ATTACH_REASON.ATTACH_REASON_USER)
                 {
-                    launchOption = LaunchOption.AttachToGame;
+                    _launchOption = LaunchOption.AttachToGame;
                 }
             }
 
-            var lldbDeployAction = actionRecorder.CreateToolAction(ActionType.LldbServerDeploy);
+            var lldbDeployAction = _actionRecorder.CreateToolAction(ActionType.LldbServerDeploy);
             JoinableTask lldbDeployTask = null;
-            if (deployLldbServer && launchOption != LaunchOption.AttachToCore)
+            if (_deployLldbServer && _launchOption != LaunchOption.AttachToCore)
             {
-                lldbDeployTask = taskContext.Factory.RunAsync(async () =>
+                lldbDeployTask = _taskContext.Factory.RunAsync(async () =>
                 {
                     await TaskScheduler.Default;
-                    await remoteDeploy.DeployLldbServerAsync(target, lldbDeployAction);
+                    await _remoteDeploy.DeployLldbServerAsync(_target, lldbDeployAction);
                 });
             }
 
             try
             {
-                var preflightCheckAction = actionRecorder.CreateToolAction(
+                var preflightCheckAction = _actionRecorder.CreateToolAction(
                     ActionType.DebugPreflightBinaryChecks);
-                if (launchOption != LaunchOption.AttachToCore)
+                if (_launchOption != LaunchOption.AttachToCore)
                 {
-                    switch (launchOption)
+                    switch (_launchOption)
                     {
                         case LaunchOption.LaunchGame:
                             var remoteTargetPath = Path.Combine(YetiConstants.RemoteDeployPath,
-                                executableFileName);
-                            cancelableTaskFactory.Create(TaskMessages.CheckingBinaries,
-                                async _ => await preflightBinaryChecker.
+                                _executableFileName);
+                            _cancelableTaskFactory.Create(TaskMessages.CheckingBinaries,
+                                async _ => await _preflightBinaryChecker.
                                     CheckLocalAndRemoteBinaryOnLaunchAsync(libPaths,
-                                    executableFileName, target, remoteTargetPath,
+                                    _executableFileName, _target, remoteTargetPath,
                                     preflightCheckAction))
                                     .RunAndRecord(preflightCheckAction);
                             break;
@@ -564,9 +571,9 @@ namespace YetiVSI.DebugEngine
                             attachPid = GetProcessId(process);
                             if (attachPid.HasValue)
                             {
-                                cancelableTaskFactory.Create(TaskMessages.CheckingRemoteBinary,
-                                    async _ => await preflightBinaryChecker
-                                        .CheckRemoteBinaryOnAttachAsync(attachPid.Value, target,
+                                _cancelableTaskFactory.Create(TaskMessages.CheckingRemoteBinary,
+                                    async _ => await _preflightBinaryChecker
+                                        .CheckRemoteBinaryOnAttachAsync(attachPid.Value, _target,
                                             preflightCheckAction))
                                             .RunAndRecord(preflightCheckAction);
                             }
@@ -581,7 +588,7 @@ namespace YetiVSI.DebugEngine
             }
             catch (PreflightBinaryCheckerException e)
             {
-                dialogUtil.ShowWarning(e.Message, e.UserDetails);
+                _dialogUtil.ShowWarning(e.Message, e.UserDetails);
             }
 
             // Attaching the debugger is a synchronous operation that runs on a background thread.
@@ -590,9 +597,9 @@ namespace YetiVSI.DebugEngine
             // asynchronously if the YetiTransport fails to start.
             int result = VSConstants.S_OK;
             var exitInfo = ExitInfo.Normal(ExitReason.Unknown);
-            var startAction = actionRecorder.CreateToolAction(ActionType.DebugStart);
+            var startAction = _actionRecorder.CreateToolAction(ActionType.DebugStart);
             var attachTask =
-                cancelableTaskFactory.Create(TaskMessages.AttachingToProcess, async task => {
+                _cancelableTaskFactory.Create(TaskMessages.AttachingToProcess, async task => {
                     if (lldbDeployTask != null)
                     {
                         await lldbDeployAction.RecordAsync(lldbDeployTask.JoinAsync());
@@ -600,27 +607,28 @@ namespace YetiVSI.DebugEngine
 
                     // Attempt to start the transport. Pass on to the transport if our attach reason
                     // indicates we need to launch the main debugged process ourselves.
-                    yetiTransport.StartPreGame(launchOption, rgpEnabled, renderDocEnabled,
-                                        target, out GrpcConnection grpcConnection,
+                    _yetiTransport.StartPreGame(_launchOption, _rgpEnabled, _renderDocEnabled,
+                                        _target, out GrpcConnection grpcConnection,
                                         out ITransportSession transportSession);
 
                     SafeErrorUtil.SafelyLogError(
-                        () => RecordParameters(startAction, extensionOptions, debuggerOptions),
+                        () => RecordParameters(startAction, _extensionOptions, _debuggerOptions),
                         "Recording debugger parameters");
-                    var launcher = debugSessionLauncherFactory.Create(
-                        Self, launchOption, coreFilePath, executableFileName, executableFullPath);
+                    var launcher = _debugSessionLauncherFactory.Create(
+                        Self, _launchOption, _coreFilePath, _executableFileName,
+                        _executableFullPath);
 
                     ILldbAttachedProgram program = await launcher.LaunchAsync(
-                        task, process, programId, attachPid, debuggerOptions, libPaths,
+                        task, process, programId, attachPid, _debuggerOptions, libPaths,
                         grpcConnection, transportSession?.GetLocalDebuggerPort() ?? 0,
-                        target?.IpAddress, target?.Port ?? 0, callback);
+                        _target?.IpAddress, _target?.Port ?? 0, callback);
 
                     // Launch processes that need the game process id.
-                    yetiTransport.StartPostGame(launchOption, target, program.RemotePid);
+                    _yetiTransport.StartPostGame(_launchOption, _target, program.RemotePid);
 
                     return program;
                 });
-            attachOperation = attachTask;
+            _attachOperation = attachTask;
             try
             {
                 if (!attachTask.RunAndRecord(startAction))
@@ -631,11 +639,11 @@ namespace YetiVSI.DebugEngine
                 }
                 else
                 {
-                    attachedProgram = attachTask.Result;
-                    attachedProgram.Start(Self);
-                    attachedTimer = actionRecorder.CreateStartedTimer();
-                    sessionNotifier.NotifySessionLaunched(
-                        new SessionLaunchedEventArgs(launchOption, attachedProgram));
+                    _attachedProgram = attachTask.Result;
+                    _attachedProgram.Start(Self);
+                    _attachedTimer = _actionRecorder.CreateStartedTimer();
+                    _sessionNotifier.NotifySessionLaunched(
+                        new SessionLaunchedEventArgs(_launchOption, _attachedProgram));
                     Trace.WriteLine("LLDB successfully attached");
                 }
             }
@@ -689,33 +697,33 @@ namespace YetiVSI.DebugEngine
         {
             if (evnt is ProgramCreateEvent)
             {
-                if (attachedProgram == null)
+                if (_attachedProgram == null)
                 {
                     Trace.WriteLine("Program create failed. There is no attached program.");
                     return VSConstants.E_FAIL;
                 }
 
-                if (launchOption == LaunchOption.AttachToCore)
+                if (_launchOption == LaunchOption.AttachToCore)
                 {
-                    attachedProgram.ContinueInBreakMode();
+                    _attachedProgram.ContinueInBreakMode();
                 }
                 else
                 {
-                    attachedProgram.ContinueFromSuspended();
+                    _attachedProgram.ContinueFromSuspended();
                 }
 
                 // Records the time it took from attaching until resuming the process
                 // as well as the number of breakpoints that were placed in that time.
-                uint numPending = attachedProgram.GetNumPendingBreakpoints();
-                uint numBound = attachedProgram.GetNumBoundBreakpoints();
+                uint numPending = _attachedProgram.GetNumPendingBreakpoints();
+                uint numBound = _attachedProgram.GetNumBoundBreakpoints();
                 var bpData = new VSIBoundBreakpointsData
                 {
                     NumPendingBreakpoints = (int) numPending,
                     NumBoundBreakpoints = (int) numBound
                 };
                 SafeErrorUtil.SafelyLogError(
-                    () => actionRecorder.RecordToolAction(
-                        ActionType.DebugContinueAfterAttach, attachedTimer,
+                    () => _actionRecorder.RecordToolAction(
+                        ActionType.DebugContinueAfterAttach, _attachedTimer,
                         new DeveloperLogEvent {BoundBreakpointsData = bpData}),
                     "Recording attach-to-continue time");
                 return VSConstants.S_OK;
@@ -731,9 +739,9 @@ namespace YetiVSI.DebugEngine
         public override int CreatePendingBreakpoint(IDebugBreakpointRequest2 breakpointRequest,
             out IDebugPendingBreakpoint2 pendingBreakpoint)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            _taskContext.ThrowIfNotOnMainThread();
 
-            if (attachedProgram == null)
+            if (_attachedProgram == null)
             {
                 Trace.WriteLine(
                     "Unable to create pending breakpoint, there is no attached program");
@@ -741,7 +749,7 @@ namespace YetiVSI.DebugEngine
                 return VSConstants.E_FAIL;
             }
 
-            pendingBreakpoint = attachedProgram.CreatePendingBreakpoint(breakpointRequest);
+            pendingBreakpoint = _attachedProgram.CreatePendingBreakpoint(breakpointRequest);
             return VSConstants.S_OK;
         }
 
@@ -774,13 +782,13 @@ namespace YetiVSI.DebugEngine
 
         public override int SetException(EXCEPTION_INFO[] exceptions)
         {
-            if (attachedProgram == null)
+            if (_attachedProgram == null)
             {
                 Trace.WriteLine("WARNING: SetException was called without a program attached. "
                     + "Exception state will not be set.");
                 return VSConstants.E_FAIL;
             }
-            attachedProgram.SetExceptions(exceptions);
+            _attachedProgram.SetExceptions(exceptions);
             return VSConstants.S_OK;
         }
 
@@ -809,24 +817,24 @@ namespace YetiVSI.DebugEngine
 
         public override int SetSymbolPath(string searchPath, string cachePath, uint flags)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            _taskContext.ThrowIfNotOnMainThread();
 
             // We are ignoring input params and ask VS Symbols Settings Store for search and cache
             // paths. Otherwise for whatever reason VS tries to set empty search paths when users
             // explicitly ask to load symbols e.g. via symbols settings page in Run mode (works
             // as expected in Attach / Dump debugging).
-            symbolSettingsProvider.GetStorePaths(out string storeSearchPaths,
+            _symbolSettingsProvider.GetStorePaths(out string storeSearchPaths,
                                                  out string storeCache);
-            moduleFileFinder.SetSearchPaths(
+            _moduleFileFinder.SetSearchPaths(
                 SymbolUtils.GetCombinedLookupPaths(storeSearchPaths, storeCache));
             return VSConstants.S_OK;
         }
 
         public override int LoadSymbols()
         {
-            taskContext.ThrowIfNotOnMainThread();
+            _taskContext.ThrowIfNotOnMainThread();
 
-            if (attachedProgram == null)
+            if (_attachedProgram == null)
             {
                 Trace.WriteLine("Load symbols failed. There is no attached program.");
                 return VSConstants.E_FAIL;
@@ -834,24 +842,24 @@ namespace YetiVSI.DebugEngine
 
             // Due to performance implications we do not use symbols servers paths by default,
             // but require to turn on "Enable symbol server support" option in Stadia settings.
-            if (!symbolSettingsProvider.IsSymbolServerEnabled)
+            if (!_symbolSettingsProvider.IsSymbolServerEnabled)
             {
                 return VSConstants.S_OK;
             }
 
-            var action = actionRecorder.CreateToolAction(ActionType.DebugEngineLoadSymbols);
+            var action = _actionRecorder.CreateToolAction(ActionType.DebugEngineLoadSymbols);
 
             int result = VSConstants.S_OK;
-            var inclusionSettings = symbolSettingsProvider.GetInclusionSettings();
-            var loadSymbolsTask = cancelableTaskFactory.Create("Loading symbols...", task => {
-                result = attachedProgram.LoadModuleFiles(
-                    inclusionSettings, task, moduleFileLoadRecorderFactory.Create(action));
+            var inclusionSettings = _symbolSettingsProvider.GetInclusionSettings();
+            var loadSymbolsTask = _cancelableTaskFactory.Create("Loading symbols...", task => {
+                result = _attachedProgram.LoadModuleFiles(
+                    inclusionSettings, task, _moduleFileLoadRecorderFactory.Create(action));
             });
             return loadSymbolsTask.RunAndRecord(action) ? result : VSConstants.E_ABORT;
         }
 
         public override int SetJustMyCodeState(int fUpdate, uint dwModules,
-            JMC_CODE_SPEC[] rgJMCSpec)
+            JMC_CODE_SPEC[] rgJmcSpec)
         {
             return VSConstants.E_NOTIMPL;
         }
@@ -884,16 +892,16 @@ namespace YetiVSI.DebugEngine
             enum_LAUNCH_FLAGS launchFlags, uint stdInput, uint stdOutput, uint stdError,
             IDebugEventCallback2 callback, out IDebugProcess2 process)
         {
-            if (attachedProgram != null)
+            if (_attachedProgram != null)
             {
                 Trace.WriteLine("Unable to launch while another program is attached");
                 process = null;
                 return VSConstants.E_FAIL;
             }
-            callback = debugEventCallbackDecorator(callback);
+            callback = _debugEventCallbackDecorator(callback);
 
-            this.executableFullPath = executableFullPath;
-            executableFileName = Path.GetFileName(executableFullPath);
+            _executableFullPath = executableFullPath;
+            _executableFileName = Path.GetFileName(executableFullPath);
             YetiCommon.ChromeClientLauncher gameLauncher;
             if (string.IsNullOrEmpty(args))
             {
@@ -903,7 +911,7 @@ namespace YetiVSI.DebugEngine
             {
                 try
                 {
-                    gameLauncher = chromeClientLauncherFactory.Create(args);
+                    gameLauncher = _chromeClientLauncherFactory.Create(args);
                 }
                 catch (SerializationException e)
                 {
@@ -913,29 +921,29 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
-            workingDirectory = dir;
+            _workingDirectory = dir;
             if (!string.IsNullOrEmpty(options))
             {
-                var parameters = paramsFactory.Deserialize(options);
-                coreFilePath = parameters.CoreFilePath;
-                debugSessionMetrics.DebugSessionId = parameters.DebugSessionId;
-                deleteCoreFileAtCleanup = parameters.DeleteCoreFile;
+                var parameters = _paramsFactory.Deserialize(options);
+                _coreFilePath = parameters.CoreFilePath;
+                _debugSessionMetrics.DebugSessionId = parameters.DebugSessionId;
+                _deleteCoreFileAtCleanup = parameters.DeleteCoreFile;
                 if (parameters.TargetIp != null)
                 {
-                    target = new SshTarget(parameters.TargetIp);
+                    _target = new SshTarget(parameters.TargetIp);
                 }
             }
             else
             {
                 // This case handles launch of dump file from double-click or from
                 // File -> Open menu in Visual Studio.
-                coreFilePath = executableFullPath;
-                debugSessionMetrics.UseNewDebugSessionId();
-                deleteCoreFileAtCleanup = false;
+                _coreFilePath = executableFullPath;
+                _debugSessionMetrics.UseNewDebugSessionId();
+                _deleteCoreFileAtCleanup = false;
             }
 
             // Only start Chrome Client in the launch case, and not when attaching to a core.
-            if (string.IsNullOrEmpty(coreFilePath))
+            if (string.IsNullOrEmpty(_coreFilePath))
             {
                 if (gameLauncher == null)
                 {
@@ -943,8 +951,8 @@ namespace YetiVSI.DebugEngine
                     process = null;
                     return VSConstants.E_FAIL;
                 }
-                rgpEnabled = gameLauncher.LaunchParams.Rgp;
-                renderDocEnabled = gameLauncher.LaunchParams.RenderDoc;
+                _rgpEnabled = gameLauncher.LaunchParams.Rgp;
+                _renderDocEnabled = gameLauncher.LaunchParams.RenderDoc;
 
                 var urlBuildStatus = gameLauncher.BuildLaunchUrl(out string launchUrl);
                 // TODO: Currently the status severity can not be higher than Warning.
@@ -962,7 +970,7 @@ namespace YetiVSI.DebugEngine
 
                 // Start Chrome Client. We are starting it as earlier as possible, so we can
                 // initialize the debugger and start the game in parallel.
-                gameLauncher.StartChrome(launchUrl, workingDirectory);
+                gameLauncher.StartChrome(launchUrl, _workingDirectory);
             }
 
             AD_PROCESS_ID pid = new AD_PROCESS_ID();
@@ -983,7 +991,7 @@ namespace YetiVSI.DebugEngine
         // sending the events marking the debug engine's initialization.
         public override int ResumeProcess(IDebugProcess2 process)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            _taskContext.ThrowIfNotOnMainThread();
 
             IDebugPort2 port;
             if (process.GetPort(out port) != 0)
@@ -1007,7 +1015,7 @@ namespace YetiVSI.DebugEngine
 
             // The SDM will call Attach. Attach sends EngineCreate and ProgramCreate events.
             // When Program Create event is finished, the process is actually resumed.
-            if (portNotify.AddProgramNode(new DebugProgramNode(taskContext, process)) !=
+            if (portNotify.AddProgramNode(new DebugProgramNode(_taskContext, process)) !=
                 VSConstants.S_OK)
             {
                 Trace.WriteLine("Resume failed. Could not add a program node");
@@ -1016,7 +1024,7 @@ namespace YetiVSI.DebugEngine
 
             // If the attach returned an error, ensure we also return an error here or else the SDM
             // is left in a bad state.
-            if (attachedProgram == null)
+            if (_attachedProgram == null)
             {
                 return VSConstants.E_ABORT;
             }
@@ -1028,12 +1036,12 @@ namespace YetiVSI.DebugEngine
         // Other classes' Terminate calls may occur beforehand.
         public override int TerminateProcess(IDebugProcess2 process)
         {
-            if (launchOption != LaunchOption.AttachToCore)
+            if (_launchOption != LaunchOption.AttachToCore)
             {
                 return VSConstants.S_OK;
             }
 
-            attachedProgram?.Abort(ExitInfo.Normal(ExitReason.DebuggerTerminated));
+            _attachedProgram?.Abort(ExitInfo.Normal(ExitReason.DebuggerTerminated));
             return VSConstants.S_OK;
         }
 
@@ -1041,7 +1049,7 @@ namespace YetiVSI.DebugEngine
 
         private uint? GetProcessId(IDebugProcess2 process)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            _taskContext.ThrowIfNotOnMainThread();
 
             AD_PROCESS_ID[] pid = new AD_PROCESS_ID[1];
             if (process.GetPhysicalProcessId(pid) != VSConstants.S_OK ||
@@ -1054,48 +1062,48 @@ namespace YetiVSI.DebugEngine
 
         private void StopTransportAndCleanup(ExitInfo exitInfo)
         {
-            exitInfo.IfError(exitDialogUtil.ShowExitDialog);
-            yetiTransport.Stop(exitInfo.ExitReason);
-            if (symbolServerHttpClient != null)
+            exitInfo.IfError(_exitDialogUtil.ShowExitDialog);
+            _yetiTransport.Stop(exitInfo.ExitReason);
+            if (_symbolServerHttpClient != null)
             {
-                symbolServerHttpClient.Dispose();
+                _symbolServerHttpClient.Dispose();
             }
-            if (launchOption == LaunchOption.AttachToCore && File.Exists(coreFilePath) &&
-                deleteCoreFileAtCleanup)
+            if (_launchOption == LaunchOption.AttachToCore && File.Exists(_coreFilePath) &&
+                _deleteCoreFileAtCleanup)
             {
                 // There's a race between yetiTransport.Stop() and File.Delete() so we try a few
                 // times before giving up.
                 var timer = new Stopwatch();
                 timer.Start();
-                while (File.Exists(coreFilePath))
+                while (File.Exists(_coreFilePath))
                 {
-                    if (timer.Elapsed > DeleteTimeout)
+                    if (timer.Elapsed > _deleteTimeout)
                     {
-                        Trace.WriteLine($"Warning: Unable to delete {coreFilePath}");
+                        Trace.WriteLine($"Warning: Unable to delete {_coreFilePath}");
                         break;
                     }
                     try
                     {
-                        File.Delete(coreFilePath);
+                        File.Delete(_coreFilePath);
                     }
                     catch (UnauthorizedAccessException exception)
                     {
                         Trace.WriteLine($"Warning: Deletion failed with exception: {exception}");
-                        Trace.WriteLine($"Retrying in {DeleteTimeout.TotalSeconds} seconds.");
+                        Trace.WriteLine($"Retrying in {_deleteTimeout.TotalSeconds} seconds.");
                     }
-                    Thread.Sleep((int)DeleteTimeout.TotalMilliseconds);
+                    Thread.Sleep((int)_deleteTimeout.TotalMilliseconds);
                 }
             }
         }
 
         private void Abort(Exception e)
         {
-            attachOperation?.Abort(e);
+            _attachOperation?.Abort(e);
             // This method can be called on a thread that isn't the main thread which means that
             // technically the attachedProgram can be null when we enter this method. The use
             // of the null conditional operator here is thread-safe so if the attached program
             // becomes null at any point we are covered ((internal)).
-            attachedProgram?.Abort(ExitInfo.Error(e));
+            _attachedProgram?.Abort(ExitInfo.Error(e));
         }
 
         /// <summary>
@@ -1105,30 +1113,30 @@ namespace YetiVSI.DebugEngine
         {
             RaiseSessionEnding(new EventArgs());
 
-            if (attachedProgram == null)
+            if (_attachedProgram == null)
             {
                 return;
             }
 
-            attachedProgram.Stop();
-            sessionNotifier.NotifySessionStopped(new SessionStoppedEventArgs(attachedProgram));
+            _attachedProgram.Stop();
+            _sessionNotifier.NotifySessionStopped(new SessionStoppedEventArgs(_attachedProgram));
             StopTransportAndCleanup(exitInfo);
             RecordDebugEnd(exitInfo);
-            attachedProgram = null;
+            _attachedProgram = null;
 
 
-            if (extensionOptions != null)
+            if (_extensionOptions != null)
             {
-                extensionOptions.PropertyChanged -= OptionsGrid_PropertyChanged;
+                _extensionOptions.PropertyChanged -= OptionsGrid_PropertyChanged;
             }
-            if (debuggerOptions != null)
+            if (_debuggerOptions != null)
             {
-                debuggerOptions.ValueChanged -= OnDebuggerOptionChanged;
+                _debuggerOptions.ValueChanged -= OnDebuggerOptionChanged;
             }
 
-            if (natvisLogger != null && natvisLogListener != null)
+            if (_natvisLogger != null && _natvisLogListener != null)
             {
-                natvisLogger.NatvisLogEvent -= natvisLogListener.OnNatvisLogEvent;
+                _natvisLogger.NatvisLogEvent -= _natvisLogListener.OnNatvisLogEvent;
             }
             RaiseSessionEnded(new EventArgs());
         }
@@ -1141,9 +1149,9 @@ namespace YetiVSI.DebugEngine
         private void RecordDebugEnd(ExitInfo exitInfo)
         {
             exitInfo.HandleResult(
-                onNormal: reason => actionRecorder.RecordSuccess(ActionType.DebugEnd,
+                onNormal: reason => _actionRecorder.RecordSuccess(ActionType.DebugEnd,
                     CreateDebugSessionEndData(MapExitReason(reason))),
-                onError: ex => actionRecorder.RecordFailure(ActionType.DebugEnd, ex,
+                onError: ex => _actionRecorder.RecordFailure(ActionType.DebugEnd, ex,
                     CreateDebugSessionEndData(
                         DebugSessionEndData.Types.EndReason.DebuggerError)));
         }
@@ -1200,13 +1208,13 @@ namespace YetiVSI.DebugEngine
         {
             var libPaths = new HashSet<string>(SDKUtil.GetLibraryPaths());
 
-            if (!string.IsNullOrEmpty(coreFilePath))
+            if (!string.IsNullOrEmpty(_coreFilePath))
             {
-                libPaths.Add(Path.GetDirectoryName(coreFilePath));
+                libPaths.Add(Path.GetDirectoryName(_coreFilePath));
             }
 
             // Add search paths for all open projects.
-            foreach (var project in solutionExplorer.EnumerateProjects())
+            foreach (var project in _solutionExplorer.EnumerateProjects())
             {
                 // TODO: Perform proper null checks in VCProjectAdapter instead of
                 // catching exceptions at the call site.

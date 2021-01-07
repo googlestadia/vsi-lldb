@@ -393,6 +393,8 @@ namespace YetiVSI.DebugEngine
             var remoteDeploy = new RemoteDeploy(remoteCommand, remoteFile, processFactory,
                                                 GetFileSystem(), binaryFileUtil);
             bool deployLldbServer = IsInternalEngine();
+            bool launchGameApiEnabled =
+                GetVsiService().Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
             IDebugEngineFactory factory = new DebugEngine.Factory(
                 GetJoinableTaskContext(), serviceManager, GetDebugSessionMetrics(), yetiTransport,
                 actionRecorder, symbolServerHttpClient, moduleFileLoadRecorderFactory,
@@ -402,7 +404,7 @@ namespace YetiVSI.DebugEngine
                 GetDialogUtil(), GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(),
                 debugEngineCommands,
                 GetDebugEventCallbackDecorator(GetVsiService().DebuggerOptions),
-                GetSymbolSettingsProvider(), deployLldbServer);
+                GetSymbolSettingsProvider(), deployLldbServer, launchGameApiEnabled);
             return GetFactoryDecorator().Decorate(factory);
         }
 
