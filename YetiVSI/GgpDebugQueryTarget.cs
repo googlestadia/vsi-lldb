@@ -132,7 +132,7 @@ namespace YetiVSI
                     return new IDebugLaunchSettings[] { };
                 }
 
-                launchParams.ApplicationId = setupQueriesResult.Application.Id;
+                launchParams.ApplicationName = setupQueriesResult.Application.Name;
                 if (setupQueriesResult.TestAccount != null)
                 {
                     launchParams.TestAccount = setupQueriesResult.TestAccount.Name;
@@ -148,7 +148,7 @@ namespace YetiVSI
                     return new IDebugLaunchSettings[] { };
                 }
 
-                launchParams.GameletId = gamelet.Id;
+                launchParams.GameletName = gamelet.Name;
                 launchParams.PoolId = gamelet.PoolId;
                 launchParams.GameletEnvironmentVars =
                     await project.GetGameletEnvironmentVariablesAsync();

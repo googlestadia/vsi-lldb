@@ -37,13 +37,12 @@ namespace YetiVSI.Test
     [TestFixture]
     class GgpDebugQueryTargetTests
     {
-        const string TEST_GAMELET_ID1 = "gameletid1";
-        const string TEST_GAMELET_ID2 = "gameletid2";
-        const string TEST_GAMELET_IP1 = "1.2.3.4";
-        const string TEST_GAMELET_IP2 = "1.2.3.5";
+        const string TEST_GAMELET_ID = "gamelet/id";
+        const string TEST_GAMELET_IP = "1.2.3.4";
+        const string TEST_GAMELET_NAME = "test/gamelet/name";
         const string TEST_PROJECT_DIR = "test/project/dir";
         const string TEST_APPLICATION_ID = "test_application_id";
-        const string TEST_APPLICATION_NAME = "test application name";
+        const string TEST_APPLICATION_NAME = "test/application/name";
         const string TEST_ACCOUNT = "test account";
         const string TEST_DEBUG_SESSION_ID = "abc123";
         const string TEST_PROJECT_ID = "project123";
@@ -110,7 +109,8 @@ namespace YetiVSI.Test
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
 
             applicationClient = Substitute.For<IApplicationClient>();
-            var application = new Application() { Id = TEST_APPLICATION_ID };
+            var application = new Application
+                { Id = TEST_APPLICATION_ID, Name = TEST_APPLICATION_NAME };
             applicationClient.LoadByNameOrIdAsync(TEST_APPLICATION_NAME)
                 .Returns(Task.FromResult(application));
             var applicationClientFactory = Substitute.For<ApplicationClient.Factory>();
@@ -160,8 +160,9 @@ namespace YetiVSI.Test
             project.GetVulkanDriverVariantAsync().Returns(vulkanDriverVariant);
 
             var gamelets = new List<Gamelet> { new Gamelet {
-                Id = TEST_GAMELET_ID1,
-                IpAddr = TEST_GAMELET_IP1,
+                Id = TEST_GAMELET_ID,
+                Name = TEST_GAMELET_NAME,
+                IpAddr = TEST_GAMELET_IP,
                 State = GameletState.Reserved,
             } };
             gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
@@ -187,8 +188,8 @@ namespace YetiVSI.Test
             Assert.AreEqual(await project.GetTargetFileNameAsync(), launchParams.Cmd);
             Assert.AreEqual(renderdoc, launchParams.RenderDoc);
             Assert.AreEqual(rgp, launchParams.Rgp);
-            Assert.AreEqual(TEST_APPLICATION_ID, launchParams.ApplicationId);
-            Assert.AreEqual(TEST_GAMELET_ID1, launchParams.GameletId);
+            Assert.AreEqual(TEST_APPLICATION_NAME, launchParams.ApplicationName);
+            Assert.AreEqual(TEST_GAMELET_NAME, launchParams.GameletName);
             Assert.AreEqual(TEST_ACCOUNT, launchParams.Account);
             Assert.IsFalse(launchParams.Debug);
             Assert.AreEqual(SDK_VERSION_STRING, launchParams.SdkVersion);
@@ -208,8 +209,9 @@ namespace YetiVSI.Test
         public async Task LaunchNoDebugDeployFailsAsync()
         {
             var gamelets = new List<Gamelet> { new Gamelet {
-                Id = TEST_GAMELET_ID1,
-                IpAddr = TEST_GAMELET_IP1,
+                Id = TEST_GAMELET_ID,
+                Name = TEST_GAMELET_NAME,
+                IpAddr = TEST_GAMELET_IP,
                 State = GameletState.Reserved,
             } };
             gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
@@ -274,8 +276,9 @@ namespace YetiVSI.Test
             project.GetVulkanDriverVariantAsync().Returns(vulkanDriverVariant);
 
             var gamelets = new List<Gamelet> { new Gamelet {
-                Id = TEST_GAMELET_ID1,
-                IpAddr = TEST_GAMELET_IP1,
+                Id = TEST_GAMELET_ID,
+                Name = TEST_GAMELET_NAME,
+                IpAddr = TEST_GAMELET_IP,
                 State = GameletState.Reserved,
             } };
             gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
@@ -295,7 +298,7 @@ namespace YetiVSI.Test
             Assert.AreEqual(YetiConstants.DebugEngineGuid, launchSettings[0].LaunchDebugEngineGuid);
             Assert.AreEqual(TEST_PROJECT_DIR, launchSettings[0].CurrentDirectory);
             var parameters = paramsFactory.Deserialize(launchSettings[0].Options);
-            Assert.AreEqual(parameters.TargetIp, $"{TEST_GAMELET_IP1}:44722");
+            Assert.AreEqual(parameters.TargetIp, $"{TEST_GAMELET_IP}:44722");
             Assert.AreEqual(parameters.DebugSessionId, TEST_DEBUG_SESSION_ID);
             Assert.AreEqual(await project.GetTargetPathAsync(), launchSettings[0].Executable);
 
@@ -304,8 +307,8 @@ namespace YetiVSI.Test
             Assert.AreEqual(await project.GetTargetFileNameAsync(), launchParams.Cmd);
             Assert.AreEqual(renderdoc, launchParams.RenderDoc);
             Assert.AreEqual(rgp, launchParams.Rgp);
-            Assert.AreEqual(TEST_APPLICATION_ID, launchParams.ApplicationId);
-            Assert.AreEqual(TEST_GAMELET_ID1, launchParams.GameletId);
+            Assert.AreEqual(TEST_APPLICATION_NAME, launchParams.ApplicationName);
+            Assert.AreEqual(TEST_GAMELET_NAME, launchParams.GameletName);
             Assert.AreEqual(TEST_ACCOUNT, launchParams.Account);
             Assert.IsTrue(launchParams.Debug);
             Assert.AreEqual(SDK_VERSION_STRING, launchParams.SdkVersion);
@@ -326,8 +329,9 @@ namespace YetiVSI.Test
         {
             project.GetTestAccountAsync().Returns(TEST_TEST_ACCOUNT_ID);
             var gamelets = new List<Gamelet> { new Gamelet {
-                Id = TEST_GAMELET_ID1,
-                IpAddr = TEST_GAMELET_IP1,
+                Id = TEST_GAMELET_ID,
+                Name = TEST_GAMELET_NAME,
+                IpAddr = TEST_GAMELET_IP,
                 State = GameletState.Reserved,
             } };
             gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
@@ -361,8 +365,9 @@ namespace YetiVSI.Test
             project.GetTestAccountAsync().Returns("wrong");
             var gamelet = new Gamelet
             {
-                Id = TEST_GAMELET_ID1,
-                IpAddr = TEST_GAMELET_IP1,
+                Id = TEST_GAMELET_ID,
+                Name = TEST_GAMELET_NAME,
+                IpAddr = TEST_GAMELET_IP,
                 State = GameletState.Reserved,
             };
             gameletClient.ListGameletsAsync().Returns(
@@ -399,8 +404,9 @@ namespace YetiVSI.Test
                 .Returns(new List<TestAccount> { testAccount });
             testAccountClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(testAccountClient);
             var gamelets = new List<Gamelet> { new Gamelet {
-                Id = TEST_GAMELET_ID1,
-                IpAddr = TEST_GAMELET_IP1,
+                Id = TEST_GAMELET_ID,
+                Name = TEST_GAMELET_NAME,
+                IpAddr = TEST_GAMELET_IP,
                 State = GameletState.Reserved,
             } };
             gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
@@ -455,8 +461,9 @@ namespace YetiVSI.Test
             testAccountClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(testAccountClient);
             var gamelet = new Gamelet
             {
-                Id = TEST_GAMELET_ID1,
-                IpAddr = TEST_GAMELET_IP1,
+                Id = TEST_GAMELET_ID,
+                Name = TEST_GAMELET_NAME,
+                IpAddr = TEST_GAMELET_IP,
                 State = GameletState.Reserved,
             };
             gameletClient.ListGameletsAsync().Returns(
@@ -474,8 +481,9 @@ namespace YetiVSI.Test
             [Values(DebugLaunchOptions.NoDebug, 0)] DebugLaunchOptions debugLaunchOptions)
         {
             var gamelets = new List<Gamelet> { new Gamelet {
-                Id = TEST_GAMELET_ID1,
-                IpAddr = TEST_GAMELET_IP1,
+                Id = TEST_GAMELET_ID,
+                Name = TEST_GAMELET_NAME,
+                IpAddr = TEST_GAMELET_IP,
                 State = GameletState.InUse,
             } };
             gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
@@ -496,8 +504,9 @@ namespace YetiVSI.Test
             [Values(DebugLaunchOptions.NoDebug, 0)] DebugLaunchOptions debugLaunchOptions)
         {
             var gamelets = new List<Gamelet> { new Gamelet {
-                Id = TEST_GAMELET_ID1,
-                IpAddr = TEST_GAMELET_IP1,
+                Id = TEST_GAMELET_ID,
+                Name = TEST_GAMELET_NAME,
+                IpAddr = TEST_GAMELET_IP,
                 State = GameletState.InUse,
             } };
             gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));

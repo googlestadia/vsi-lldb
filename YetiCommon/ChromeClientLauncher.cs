@@ -57,9 +57,9 @@ namespace YetiCommon
 
         public class Params
         {
-            public string ApplicationId { get; set; }
+            public string ApplicationName { get; set; }
 
-            public string GameletId { get; set; }
+            public string GameletName { get; set; }
 
             public string PoolId { get; set; }
 
@@ -108,10 +108,14 @@ namespace YetiCommon
             var chromeClientUrl =
                 $"{portalUrl}/organizations/{SdkConfig.OrganizationId}/stream";
 
-            var queryParams = new List<QueryParam> {
+            var queryParams = new List<QueryParam>
+            {
                 QueryParam.Create("cmd", WebUtility.UrlEncode(launchParams.Cmd)),
-                QueryParam.Create("application_id", launchParams.ApplicationId),
-                QueryParam.Create("gamelet_id", launchParams.GameletId),
+                QueryParam.Create("application_name",
+                                  Uri.EscapeDataString(
+                                      launchParams.ApplicationName ?? string.Empty)),
+                QueryParam.Create("gamelet_name",
+                                  Uri.EscapeDataString(launchParams.GameletName ?? string.Empty)),
                 QueryParam.Create("test_account", launchParams.TestAccount),
                 QueryParam.Create("vars",
                                   WebUtility.UrlEncode(launchParams.GameletEnvironmentVars)),
@@ -121,7 +125,8 @@ namespace YetiCommon
                 QueryParam.Create("vulkan_driver_variant", launchParams.VulkanDriverVariant),
                 QueryParam.Create("surface_enforcement_mode",
                                   launchParams.SurfaceEnforcementMode.ToString().ToLower()),
-                QueryParam.Create("debug_mode", GetDebugMode())};
+                QueryParam.Create("debug_mode", GetDebugMode())
+            };
 
             var fragment = string.IsNullOrEmpty(launchParams.Account) ? "" :
                 $"Email={launchParams.Account}";

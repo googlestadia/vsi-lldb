@@ -61,9 +61,9 @@ namespace YetiCommon.Tests
             sdkConfig.Url = "http://theurl.com";
             sdkConfig.PortalUrl = portalUrl;
             sdkConfig.OrganizationId = "orgId";
-
-            launchParams.ApplicationId = "theappid";
-            launchParams.GameletId = "gameletId";
+            
+            launchParams.ApplicationName = "theAppName";
+            launchParams.GameletName = "gameletName";
             launchParams.Account = "test@example.com";
             launchParams.Cmd = "TestProject launcharg=1 launcharg2=2";
             launchParams.TestAccount = "testAccount";
@@ -92,8 +92,8 @@ namespace YetiCommon.Tests
                         $"{expectedPortalUrl}/organizations/{sdkConfig.OrganizationId}/stream"));
 
                 var query = parser.QueryParams;
-                Assert.That(query["application_id"], Is.EqualTo(launchParams.ApplicationId));
-                Assert.That(query["gamelet_id"], Is.EqualTo(launchParams.GameletId));
+                Assert.That(query["application_name"], Is.EqualTo(launchParams.ApplicationName));
+                Assert.That(query["gamelet_name"], Is.EqualTo(launchParams.GameletName));
                 Assert.That(query["cmd"], Is.EqualTo(launchParams.Cmd));
                 Assert.That(query["vars"], Is.EqualTo(launchParams.GameletEnvironmentVars));
                 Assert.That(query["debug_mode"], Is.EqualTo("2"));
@@ -111,8 +111,8 @@ namespace YetiCommon.Tests
         [Test]
         public void LaunchesChromeBrowserSkipsEmptyParams()
         {
-            launchParams.ApplicationId = "theappid";
-            launchParams.GameletId = "gameletId";
+            launchParams.ApplicationName = "theAppName";
+            launchParams.GameletName = "gameletName";
             launchParams.Debug = true;
 
             var workingDirectory = "the/working/directory";
@@ -130,8 +130,8 @@ namespace YetiCommon.Tests
 
             var query = parser.QueryParams;
             Assert.That(query.Count, Is.EqualTo(6));
-            Assert.That(query["application_id"], Is.EqualTo(launchParams.ApplicationId));
-            Assert.That(query["gamelet_id"], Is.EqualTo(launchParams.GameletId));
+            Assert.That(query["application_name"], Is.EqualTo(launchParams.ApplicationName));
+            Assert.That(query["gamelet_name"], Is.EqualTo(launchParams.GameletName));
             Assert.That(query["debug_mode"], Is.EqualTo("2"));
             Assert.That(query["rgp"], Is.EqualTo("false"));
             Assert.That(query["renderdoc"], Is.EqualTo("false"));
@@ -142,12 +142,12 @@ namespace YetiCommon.Tests
         public void LaunchChromeBrowserCustomQueryParamOverridesLaunchParam(
             [Values("?", "")] string prefix)
         {
-            launchParams.ApplicationId = "theappid";
-            launchParams.GameletId = "gameletId";
+            launchParams.ApplicationName = "theAppName";
+            launchParams.GameletName = "gameletName";
             launchParams.Account = "test@example.com";
             launchParams.Debug = true;
             launchParams.QueryParams
-                = $"{prefix}application_id=customAppId&gamelet_id=customGamelet";
+                = $"{prefix}application_name=customAppName&gamelet_name=customGameletName";
 
             var workingDirectory = "the/working/directory";
             var commandRun = "";
@@ -163,17 +163,17 @@ namespace YetiCommon.Tests
                 $"https://console.ggp.google.com/organizations/{sdkConfig.OrganizationId}/stream"));
 
             var query = parser.QueryParams;
-            Assert.That(query["application_id"], Is.EqualTo("customAppId"));
-            Assert.That(query["gamelet_id"], Is.EqualTo("customGamelet"));
+            Assert.That(query["application_name"], Is.EqualTo("customAppName"));
+            Assert.That(query["gamelet_name"], Is.EqualTo("customGameletName"));
             Assert.That(query["test_account"], Is.EqualTo(launchParams.TestAccount));
 
-            Assert.That(logSpy.GetOutput(), Does.Contain("application_id"));
-            Assert.That(logSpy.GetOutput(), Does.Contain("theappid"));
-            Assert.That(logSpy.GetOutput(), Does.Contain("customAppId"));
+            Assert.That(logSpy.GetOutput(), Does.Contain("application_name"));
+            Assert.That(logSpy.GetOutput(), Does.Contain("theAppName"));
+            Assert.That(logSpy.GetOutput(), Does.Contain("customAppName"));
 
-            Assert.That(logSpy.GetOutput(), Does.Contain("gamelet_id"));
-            Assert.That(logSpy.GetOutput(), Does.Contain("gameletId"));
-            Assert.That(logSpy.GetOutput(), Does.Contain("customGamelet"));
+            Assert.That(logSpy.GetOutput(), Does.Contain("gamelet_name"));
+            Assert.That(logSpy.GetOutput(), Does.Contain("gameletName"));
+            Assert.That(logSpy.GetOutput(), Does.Contain("customGameletName"));
         }
 
         [TestCase("Plain text", TestName = "ParsePlainTextQueryParam")]

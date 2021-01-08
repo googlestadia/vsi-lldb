@@ -50,8 +50,8 @@ namespace YetiCommon.Cloud
             request = new LaunchGameRequest
             {
                 Parent = Parent(sdkConfig, parameters),
-                GameletName = FullGameletName(sdkConfig, parameters.PoolId, parameters.GameletId),
-                ApplicationName = FullApplicationName(sdkConfig, parameters),
+                GameletName = parameters.GameletName,
+                ApplicationName = parameters.ApplicationName,
                 ExecutablePath = ExecutablePath(parameters),
                 CommandLineArguments = CommandLineArguments(parameters),
                 EnvironmentVariablePairs = envVariables,
@@ -67,12 +67,6 @@ namespace YetiCommon.Cloud
             parameters.QueryParams = queryString;
 
             return status;
-        }
-
-        public string GetFullGameletName(string poolId, string gameletId)
-        {
-            ISdkConfig sdkConfig = _sdkConfigFactory.LoadGgpSdkConfigOrDefault();
-            return FullGameletName(sdkConfig, poolId, gameletId);
         }
 
         public string FullGameLaunchName(string gameLaunchName, string testAccount = null)
@@ -93,13 +87,6 @@ namespace YetiCommon.Cloud
                 ? _developerLaunchGameParent
                 : $"organizations/{sdkConfig.OrganizationId}/projects/{sdkConfig.ProjectId}" +
                 "/testAccounts/{parameters.TestAccount}";
-
-        string FullGameletName(ISdkConfig sdkConfig, string poolId, string gameletId) =>
-            $"organizations/{sdkConfig.OrganizationId}/projects/{sdkConfig.ProjectId}/" +
-            $"pools/{poolId}/gamelets/{gameletId}";
-
-        string FullApplicationName(ISdkConfig sdkConfig, ChromeClientLauncher.Params parameters) =>
-            $"organizations/{sdkConfig.OrganizationId}/applications/{parameters.ApplicationId}";
 
         string ExecutablePath(ChromeClientLauncher.Params parameters)
         {

@@ -29,8 +29,8 @@ namespace YetiCommon.Tests
 
             var launchParams = new ChromeClientLauncher.Params()
             {
-                ApplicationId = "theappid",
-                GameletId = "gameletId",
+                ApplicationName = "theAppName",
+                GameletName= "gameletName",
                 Account = "test@example.com",
                 Cmd = "TestProject",
                 TestAccount = "testAccount",
@@ -45,9 +45,9 @@ namespace YetiCommon.Tests
             var command = launchCommand.Create(launchParams);
             var parsedLaunchParams = launchCommand.Parse(command);
             Assert.Multiple(() => {
-                Assert.That(parsedLaunchParams.ApplicationId,
-                            Is.EqualTo(launchParams.ApplicationId));
-                Assert.That(parsedLaunchParams.GameletId, Is.EqualTo(launchParams.GameletId));
+                Assert.That(parsedLaunchParams.ApplicationName,
+                            Is.EqualTo(launchParams.ApplicationName));
+                Assert.That(parsedLaunchParams.GameletName, Is.EqualTo(launchParams.GameletName));
                 Assert.That(parsedLaunchParams.Account, Is.EqualTo(launchParams.Account));
                 Assert.That(parsedLaunchParams.Cmd, Is.EqualTo(launchParams.Cmd));
                 Assert.That(parsedLaunchParams.TestAccount, Is.EqualTo(launchParams.TestAccount));
