@@ -52,6 +52,7 @@ using YetiVSI.DebugEngine.DiagnosticTools;
 using YetiVSI.DebugEngine.Interfaces;
 using YetiCommon.Cloud;
 using YetiVSI.DebugEngine.CoreDumps;
+using GameLauncher = YetiVSI.GameLaunch.GameLauncher;
 
 namespace YetiVSI.DebugEngine
 {
@@ -395,6 +396,9 @@ namespace YetiVSI.DebugEngine
             bool deployLldbServer = IsInternalEngine();
             bool launchGameApiEnabled =
                 GetVsiService().Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
+            var gameletFactory = new GameletClient.Factory();
+            IGameletClient gameletClient = gameletFactory.Create(GetCloudRunner());
+            var gameLauncher = new GameLauncher(gameletClient, GetSdkConfigFactory());
             IDebugEngineFactory factory = new DebugEngine.Factory(
                 GetJoinableTaskContext(), serviceManager, GetDebugSessionMetrics(), yetiTransport,
                 actionRecorder, symbolServerHttpClient, moduleFileLoadRecorderFactory,
@@ -404,7 +408,7 @@ namespace YetiVSI.DebugEngine
                 GetDialogUtil(), GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(),
                 debugEngineCommands,
                 GetDebugEventCallbackDecorator(GetVsiService().DebuggerOptions),
-                GetSymbolSettingsProvider(), deployLldbServer, launchGameApiEnabled);
+                GetSymbolSettingsProvider(), deployLldbServer, launchGameApiEnabled, gameLauncher);
             return GetFactoryDecorator().Decorate(factory);
         }
 

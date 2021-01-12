@@ -47,6 +47,7 @@ namespace YetiVSI
         public const string FailedToCreateDebugTarget = "Failed to create LLDB SBTarget object.";
         public const string FailedToCreateLldbPlatform = "Failed to create LLDB SBPlatform object.";
         public const string Warning = "Warning";
+        public const string Error = "Error";
         public static string FailedToOpenLogsBecauseLoggingNotInitialized =
             "Failed to open logs, there is a problem with logging, please file a bug.";
         public const string FailedToRetrieveCoreFilePath =
@@ -85,7 +86,10 @@ namespace YetiVSI
             "Debug engine expects only a single program while attaching.";
         public const string SymbolFileNameUnknown =
             "Unable to search for symbols. Symbol file name is unknown.";
-
+        public const string StopRunningGame = "Stop running game?";
+        public const string LaunchExistsDialogText =
+            "Game cannot be launched as there is an active launch associated with the current " +
+            "account.\nDo you want to stop it?";
         public static string BuildIdCheckDetails(IEnumerable<string> matchedFiles,
                                                  IEnumerable<string> searchedPaths) =>
             $"Executables matched by name: " + Environment.NewLine

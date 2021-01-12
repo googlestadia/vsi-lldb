@@ -28,6 +28,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.PlatformUI;
 using YetiCommon;
+using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiCommon.VSProject;
 using YetiVSI.DebugEngine.Exit;
@@ -40,6 +41,7 @@ using YetiVSI.Util;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
 using YetiVSI.DebugEngine.CoreDumps;
 using YetiVSI.DebugEngine.Interfaces;
+using YetiVSI.GameLaunch;
 
 namespace YetiVSI.DebugEngine
 {
@@ -163,6 +165,7 @@ namespace YetiVSI.DebugEngine
             readonly ISymbolSettingsProvider _symbolSettingsProvider;
             readonly bool _deployLldbServer;
             readonly bool _launchGameApiEnabled;
+            readonly IGameLauncher _gameLauncher;
 
             public Factory(JoinableTaskContext taskContext, ServiceManager serviceManager,
                            DebugSessionMetrics debugSessionMetrics,
@@ -182,7 +185,7 @@ namespace YetiVSI.DebugEngine
                            IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
-                           bool launchGameApiEnabled)
+                           bool launchGameApiEnabled, IGameLauncher gameLauncher)
             {
                 _taskContext = taskContext;
                 _serviceManager = serviceManager;
@@ -210,6 +213,7 @@ namespace YetiVSI.DebugEngine
                 _symbolSettingsProvider = symbolSettingsProvider;
                 _deployLldbServer = deployLldbServer;
                 _launchGameApiEnabled = launchGameApiEnabled;
+                _gameLauncher = gameLauncher;
             }
 
             /// <summary>
@@ -237,7 +241,7 @@ namespace YetiVSI.DebugEngine
                     _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
                     _debugEngineCommands, _debugEventCallbackDecorator, envDteService?.RegistryRoot,
                     sessionNotifier, _symbolSettingsProvider, _deployLldbServer,
-                    _launchGameApiEnabled);
+                    _launchGameApiEnabled, _gameLauncher);
             }
         }
 
@@ -318,6 +322,7 @@ namespace YetiVSI.DebugEngine
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
         readonly bool _deployLldbServer;
         readonly bool _launchGameApiEnabled;
+        readonly IGameLauncher _gameLauncher;
 
         // Keep track of the attach operation, so that it can be aborted by transport errors.
         ICancelableTask _attachOperation;
@@ -360,7 +365,7 @@ namespace YetiVSI.DebugEngine
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            string vsRegistryRoot, ISessionNotifier sessionNotifier,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
-                           bool launchGameApiEnabled)
+                           bool launchGameApiEnabled, IGameLauncher gameLauncher)
             : base(self)
         {
             taskContext.ThrowIfNotOnMainThread();
@@ -398,6 +403,7 @@ namespace YetiVSI.DebugEngine
             _symbolSettingsProvider = symbolSettingsProvider;
             _deployLldbServer = deployLldbServer;
             _launchGameApiEnabled = launchGameApiEnabled;
+            _gameLauncher = gameLauncher;
 
             // Register observers on long lived objects last so that they don't hold a reference
             // to this if an exception is thrown during construction.
@@ -884,9 +890,11 @@ namespace YetiVSI.DebugEngine
             return VSConstants.S_OK;
         }
 
-        // Launches a process in a suspended state to begin debugging.
-        // For our remote debugging, we must launch what is necessary and
-        // set up the connection.
+        /// <summary>
+        /// Launches a process in a suspended state to begin debugging.
+        /// For our remote debugging, we must launch what is necessary and
+        /// set up the connection.
+        /// </summary>
         public override int LaunchSuspended(string server, IDebugPort2 port,
             string executableFullPath, string args, string dir, string env, string options,
             enum_LAUNCH_FLAGS launchFlags, uint stdInput, uint stdOutput, uint stdError,
@@ -902,16 +910,16 @@ namespace YetiVSI.DebugEngine
 
             _executableFullPath = executableFullPath;
             _executableFileName = Path.GetFileName(executableFullPath);
-            YetiCommon.ChromeClientLauncher gameLauncher;
+            YetiCommon.ChromeClientLauncher chromeLauncher;
             if (string.IsNullOrEmpty(args))
             {
-                gameLauncher = null;
+                chromeLauncher = null;
             }
             else
             {
                 try
                 {
-                    gameLauncher = _chromeClientLauncherFactory.Create(args);
+                    chromeLauncher = _chromeClientLauncherFactory.Create(args);
                 }
                 catch (SerializationException e)
                 {
@@ -945,32 +953,29 @@ namespace YetiVSI.DebugEngine
             // Only start Chrome Client in the launch case, and not when attaching to a core.
             if (string.IsNullOrEmpty(_coreFilePath))
             {
-                if (gameLauncher == null)
+                if (chromeLauncher == null)
                 {
                     Trace.WriteLine($"Chrome Client parameters have not been supplied");
                     process = null;
                     return VSConstants.E_FAIL;
                 }
-                _rgpEnabled = gameLauncher.LaunchParams.Rgp;
-                _renderDocEnabled = gameLauncher.LaunchParams.RenderDoc;
+                _rgpEnabled = chromeLauncher.LaunchParams.Rgp;
+                _renderDocEnabled = chromeLauncher.LaunchParams.RenderDoc;
 
-                var urlBuildStatus = gameLauncher.BuildLaunchUrl(out string launchUrl);
-                // TODO: Currently the status severity can not be higher than Warning.
-                // Once the Game Launch Api is used, the Error severity
-                // case should be implemented. http://(internal)
-                if (urlBuildStatus.IsWarningLevel)
+                if (_launchGameApiEnabled)
                 {
-                    MessageDialog.Show(ErrorStrings.Warning, urlBuildStatus.WarningMessage,
-                                       MessageDialogCommandSet.Ok);
+                    bool launchIsSuccessful = _taskContext.Factory.Run(
+                        () => _gameLauncher.LaunchGameAsync(chromeLauncher, _workingDirectory));
+                    if (!launchIsSuccessful)
+                    {
+                        process = null;
+                        return VSConstants.E_FAIL;
+                    }
                 }
-                else if (!urlBuildStatus.IsOk)
+                else
                 {
-                    throw new NotImplementedException();
+                    LegacyLaunchFlow(chromeLauncher);
                 }
-
-                // Start Chrome Client. We are starting it as earlier as possible, so we can
-                // initialize the debugger and start the game in parallel.
-                gameLauncher.StartChrome(launchUrl, _workingDirectory);
             }
 
             AD_PROCESS_ID pid = new AD_PROCESS_ID();
@@ -984,14 +989,44 @@ namespace YetiVSI.DebugEngine
             return VSConstants.S_OK;
         }
 
-        // Meant to resume the process launched by LaunchSuspended.
-        // Actual resumption of the process may only be possible after events have completed,
-        // and so would occur in ContinueFromSynchronousEvent or elsewhere.
-        // Creates and provides the SDM with a program node; the SDM then calls Attach,
-        // sending the events marking the debug engine's initialization.
+        //TODO: remove the legacy launch flow.
+        void LegacyLaunchFlow(YetiCommon.ChromeClientLauncher chromeLauncher)
+        {
+            ConfigStatus urlBuildStatus = chromeLauncher.BuildLaunchUrl(out string launchUrl);
+
+            if (urlBuildStatus.IsWarningLevel)
+            {
+                MessageDialog.Show(ErrorStrings.Warning, urlBuildStatus.WarningMessage,
+                                   MessageDialogCommandSet.Ok);
+            }
+            else if (!urlBuildStatus.IsOk)
+            {
+                // The status severity can not be higher than Warning in this case.
+                throw new NotImplementedException();
+            }
+
+            // Start Chrome Client. We are starting it as early as possible, so we can
+            // initialize the debugger and start the game in parallel.
+            chromeLauncher.StartChrome(launchUrl, _workingDirectory);
+        }
+
+        /// <summary>
+        /// Meant to resume the process launched by LaunchSuspended.
+        /// Actual resumption of the process may only be possible after events have completed,
+        /// and so would occur in ContinueFromSynchronousEvent or elsewhere.
+        /// Creates and provides the SDM with a program node; the SDM then calls Attach,
+        /// sending the events marking the debug engine's initialization.
+        /// </summary>
         public override int ResumeProcess(IDebugProcess2 process)
         {
             _taskContext.ThrowIfNotOnMainThread();
+
+            if (_launchGameApiEnabled && _gameLauncher.CurrentLaunchExists)
+            {
+                object status =
+                    _taskContext.Factory.Run(() => _gameLauncher.GetLaunchStateAsync());
+                // TODO: depending on the status either proceed or Fail now.
+            }
 
             IDebugPort2 port;
             if (process.GetPort(out port) != 0)
@@ -1032,10 +1067,17 @@ namespace YetiVSI.DebugEngine
             return VSConstants.S_OK;
         }
 
-        // Used to terminate the process launched by LaunchSuspended.
-        // Other classes' Terminate calls may occur beforehand.
+        /// <summary>
+        /// Used to terminate the process launched by LaunchSuspended.
+        /// Other classes' Terminate calls may occur beforehand.
+        /// </summary>
         public override int TerminateProcess(IDebugProcess2 process)
         {
+            if (_launchOption == LaunchOption.LaunchGame && _launchGameApiEnabled)
+            {
+                _gameLauncher.StopGame();
+            }
+
             if (_launchOption != LaunchOption.AttachToCore)
             {
                 return VSConstants.S_OK;

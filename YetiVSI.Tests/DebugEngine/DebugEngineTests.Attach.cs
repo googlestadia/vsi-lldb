@@ -26,6 +26,7 @@ using System.Threading.Tasks;
 using TestsCommon.TestSupport;
 using YetiCommon.SSH;
 using YetiVSI.DebugEngine;
+using YetiVSI.GameLaunch;
 using YetiVSI.LLDBShell;
 using YetiVSI.LoadSymbols;
 using YetiVSI.Metrics;
@@ -169,8 +170,8 @@ namespace YetiVSI.Test.DebugEngine
         DebugEngineFactoryCompRootStub CreateEngineFactoryCompRoot(
             IDebugSessionLauncherFactory debugSessionLauncherFactory, IRemoteDeploy remoteDeploy)
         {
-            var compRoot =
-                new DebugEngineFactoryCompRootStub(debugSessionLauncherFactory, remoteDeploy);
+            var compRoot = new DebugEngineFactoryCompRootStub(
+                debugSessionLauncherFactory, remoteDeploy, Substitute.For<IGameLauncher>());
             _metrics = Substitute.For<IMetrics>();
             _metrics.NewDebugSessionId().Returns(_debugSessionId);
             ISessionNotifier sessionNotifier = Substitute.For<ISessionNotifier>();

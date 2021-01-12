@@ -37,6 +37,8 @@ namespace YetiCommon.Cloud
 
         public string WarningMessage => string.Join("\r\n", _warningMessages);
 
+        public string ErrorMessage => string.Join("\r\n", _errorMessages);
+
         public List<string> WarningMessages => _warningMessages.ToList();
 
         public List<string> ErrorMessages => _errorMessages.ToList();

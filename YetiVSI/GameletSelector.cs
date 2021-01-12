@@ -104,6 +104,8 @@ namespace YetiVSI
 
             if (gamelet.State == GameletState.InUse)
             {
+                // TODO: Do not stop the running game on the gamelet
+                // in the new launch flow, it is taken care of in the game launcher.
                 if (!PromptStopGamelet(actionRecorder, ref gamelet))
                 {
                     return false;

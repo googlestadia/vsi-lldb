@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerGrpcClient;
+using DebuggerGrpcClient;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
@@ -27,6 +27,7 @@ using YetiCommon.VSProject;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.NatvisEngine;
+using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Test.TestSupport.DebugEngine.NatvisEngine;
 using YetiVSI.Util;
@@ -57,6 +58,7 @@ namespace YetiVSI.Test.DebugEngine
 
         readonly IDebugSessionLauncherFactory _debugSessionLauncherFactory;
         readonly IRemoteDeploy _remoteDeploy;
+        readonly IGameLauncher _gameLauncher;
 
         ISymbolSettingsProvider _symbolSettingsProvider;
 
@@ -69,11 +71,15 @@ namespace YetiVSI.Test.DebugEngine
         /// </param>
         /// <param name="remoteDeploy"><see cref="IRemoteDeploy"/> instance to use during the
         /// deployment process.</param>
+        /// <param name="gameLauncher"><see cref="IGameLauncher"/> instance to use during game
+        /// launch.</param>
         public DebugEngineFactoryCompRootStub(IDebugSessionLauncherFactory factory,
-                                              IRemoteDeploy remoteDeploy)
+                                              IRemoteDeploy remoteDeploy,
+                                              IGameLauncher gameLauncher)
         {
             _debugSessionLauncherFactory = factory;
             _remoteDeploy = remoteDeploy;
+            _gameLauncher = gameLauncher;
         }
 
         readonly IDialogUtil _dialogUtil = Substitute.For<IDialogUtil>();
@@ -123,6 +129,8 @@ namespace YetiVSI.Test.DebugEngine
             var paramsFactory = new YetiVSI.DebugEngine.DebugEngine.Params.Factory(GetJsonUtil());
 
             var cancelableTaskFactory = GetCancelableTaskFactory();
+            bool deployLldbServer = true;
+            bool launchGameApiEnabled = false;
             IDebugEngineFactory factory = new YetiVSI.DebugEngine.DebugEngine.Factory(
                 joinableTaskContext, serviceManager, GetDebugSessionMetrics(), yetiTransport,
                 actionRecorder, null, moduleFileLoadRecorderFactory, moduleFileFinder,
@@ -131,7 +139,7 @@ namespace YetiVSI.Test.DebugEngine
                 _remoteDeploy, cancelableTaskFactory, _dialogUtil,
                 GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(), debugEngineCommands,
                 GetDebugEventCallbackDecorator(vsiService.DebuggerOptions),
-                GetSymbolSettingsProvider(), deployLldbServer: true, launchGameApiEnabled: false);
+                GetSymbolSettingsProvider(), deployLldbServer, launchGameApiEnabled, _gameLauncher);
             return GetFactoryDecorator().Decorate(factory);
         }
 
