@@ -58,6 +58,7 @@ namespace YetiVSI.Test
             gamelet1 = new Gamelet
             {
                 Id = "test_gamelet1",
+                Name = "test_gamelet_name1",
                 IpAddr = "1.2.3.4",
                 State = GameletState.Reserved,
             };
@@ -65,6 +66,7 @@ namespace YetiVSI.Test
             gamelet2 = new Gamelet
             {
                 Id = "test_gamelet2",
+                Name = "test_gamelet_name2",
                 IpAddr = "1.2.3.5",
                 State = GameletState.Reserved,
             };
@@ -159,7 +161,8 @@ namespace YetiVSI.Test
 
             var stoppedGamelet = gamelet1.Clone();
             stoppedGamelet.State = GameletState.Reserved;
-            gameletClient.GetGameletAsync(gamelet1.Id).Returns(Task.FromResult(stoppedGamelet));
+            gameletClient.GetGameletByNameAsync(gamelet1.Name)
+                .Returns(Task.FromResult(stoppedGamelet));
             dialogUtil.ShowYesNo(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
 
             Gamelet gamelet;

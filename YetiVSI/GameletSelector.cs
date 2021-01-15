@@ -200,7 +200,7 @@ namespace YetiVSI
                     }
                     while (!task.IsCanceled)
                     {
-                        gamelet = await gameletClient.GetGameletAsync(gamelet.Id);
+                        gamelet = await gameletClient.GetGameletByNameAsync(gamelet.Name);
                         if (gamelet.State == GameletState.Reserved)
                         {
                             break;
