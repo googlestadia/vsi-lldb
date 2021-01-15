@@ -246,7 +246,7 @@ namespace YetiVSI.Test
             var mockFileSystem = Substitute.For<System.IO.Abstractions.IFileSystem>();
             var mockFile = Substitute.For<System.IO.Abstractions.IFileStreamFactory>();
             mockFileSystem.FileStream.Returns(mockFile);
-            mockFile.Create(Arg.Any<string>(), Arg.Any<FileMode>()).Returns(x => {
+            mockFile.Create(Arg.Any<string>(), FileMode.Open, FileAccess.Read).Returns(x => {
                 throw new System.IO.IOException();
             });
 

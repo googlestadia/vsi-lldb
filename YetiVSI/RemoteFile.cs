@@ -88,14 +88,13 @@ namespace YetiVSI
             switch (compression)
             {
                 case DeployCompression.Uncompressed:
-                    await ScpAsync(
-                        ProcessStartInfoBuilder.BuildForScpPut(file, target, remotePath),
-                        processManager);
+                    await ScpAsync(ProcessStartInfoBuilder.BuildForScpPut(file, target, remotePath),
+                                   processManager);
                     transferredBytes = FileUtil.GetFileSize(file, _fileSystem);
                     break;
                 case DeployCompression.Compressed:
                     transferredBytes = await PutCompressedAsync(target, file, remotePath, progress,
-                        processManager, task);
+                                                                processManager, task);
                     break;
             }
 
@@ -105,10 +104,10 @@ namespace YetiVSI
         }
 
         public async Task GetAsync(SshTarget target, string file, string destination,
-            ICancelable task)
+                                   ICancelable task)
         {
             await ScpAsync(ProcessStartInfoBuilder.BuildForScpGet(file, target, destination),
-                ProcessManager.CreateForCancelableTask(task));
+                           ProcessManager.CreateForCancelableTask(task));
 
             // Notify client if operation was cancelled.
             task.ThrowIfCancellationRequested();
@@ -137,7 +136,7 @@ namespace YetiVSI
             string command = $"nc -vlp {portEntry.RemotePort} | " + $"gzip -d --stdout | " +
                 $"tee {ProcessUtil.QuoteAndEscapeArgumentForSsh(remotePath)} | " + $"md5sum -b";
 
-            var ports = new ProcessStartInfoBuilder.PortForwardEntry[] {portEntry};
+            var ports = new ProcessStartInfoBuilder.PortForwardEntry[] { portEntry };
 
             ProcessStartInfo decompressorStartInfo =
                 ProcessStartInfoBuilder.BuildForSshPortForwardAndCommand(ports, target, command);
@@ -189,8 +188,7 @@ namespace YetiVSI
         async Task<long> RunTransferProcessesAsync(string localPath, int localPort,
                                                    IProcess uncompressProcess,
                                                    IIncementalProgess progress,
-                                                   ProcessManager manager,
-                                                   ICancelable task)
+                                                   ProcessManager manager, ICancelable task)
         {
             // Start the remote processes and Wait for the first line of netcat's standard
             // output. This should start with "Listening" once it is ready to accept
@@ -226,7 +224,7 @@ namespace YetiVSI
             // Once netcat starts listening, launch also the compress process and
             // the hash process in parallel.
             Task<long> compressTask = RunCompressProcessAsync(localPath, localPort, progress,
-                manager, task);
+                                                              manager, task);
 
             string hash = await ComputeFileHashAsync(localPath, task);
             var sentBytes = await compressTask;
@@ -274,7 +272,8 @@ namespace YetiVSI
                 byte[] fileBuffer = new byte[bufferSize];
                 using (MD5 md5 = MD5.Create())
                 {
-                    using (Stream file = _fileSystem.FileStream.Create(localPath, FileMode.Open))
+                    using (Stream file = _fileSystem.FileStream.Create(localPath, FileMode.Open,
+                                                                       FileAccess.Read))
                     {
                         while (true)
                         {
@@ -289,8 +288,10 @@ namespace YetiVSI
                             {
                                 break;
                             }
+
                             md5.TransformBlock(fileBuffer, 0, byteCount, null, 0);
                         }
+
                         md5.TransformFinalBlock(fileBuffer, 0, 0);
                         return BitConverter.ToString(md5.Hash).Replace("-", "").ToLower();
                     }
@@ -379,8 +380,7 @@ namespace YetiVSI
             SocketError result;
 
             var connectCompletion = new TaskCompletionSource<SocketError>();
-            Socket socket =
-                new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            Socket socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             var socketEventArgs = new SocketAsyncEventArgs();
             socketEventArgs.RemoteEndPoint = endPoint;
             socketEventArgs.Completed += (s, e) =>
