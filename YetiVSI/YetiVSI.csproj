@@ -240,6 +240,7 @@
     <Compile Include="ErrorStrings.cs" />
     <Compile Include="GameLaunch\GameLauncher.LaunchGame.cs" />
     <Compile Include="GameLaunch\GameLauncher.LaunchState.cs" />
+    <Compile Include="GameLaunch\GameletSelector.cs" />
     <Compile Include="GameletMountChecker.cs" />
     <Compile Include="GgpDebugQueryTargetCompRoot.cs" />
     <Compile Include="IIncementalProgress.cs" />
@@ -254,7 +255,7 @@
     <Compile Include="OptionPageGrid.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="GameletSelector.cs" />
+    <Compile Include="GameLaunch\GameletSelectorLegacyFlow.cs" />
     <Compile Include="GgpDebugQueryTarget.cs" />
     <Compile Include="Metrics\Action.cs" />
     <Compile Include="Metrics\DebugEventAggregator.cs" />

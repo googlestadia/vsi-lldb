@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using GgpGrpc.Cloud;
+using GgpGrpc.Models;
+using Grpc.Core;
+using Microsoft.VisualStudio.PlatformUI;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using GgpGrpc.Models;
-using Microsoft.VisualStudio.PlatformUI;
 using YetiCommon;
 
 namespace YetiVSI.GameLaunch
@@ -144,6 +146,36 @@ namespace YetiVSI.GameLaunch
             }
 
             return message;
+        }
+
+        public async Task<bool> DeleteLaunchAsync(string gameLaunchName, ICancelable task)
+        {
+            if (task.IsCanceled)
+            {
+                return false;
+            }
+
+            GgpGrpc.Models.GameLaunch launch;
+
+            try
+            {
+                launch =
+                    await _gameletClient.DeleteGameLaunchAsync(gameLaunchName);
+            }
+            catch (CloudException e) when ((e.InnerException as RpcException)?.StatusCode ==
+                StatusCode.NotFound)
+            {
+                // There is no launch with the specified name.
+                return true;
+            }
+
+            while (!task.IsCanceled && launch.GameLaunchState != GameLaunchState.GameLaunchEnded)
+            {
+                launch = await _gameletClient.GetGameLaunchStateAsync(gameLaunchName);
+                await Task.Delay(500);
+            }
+
+            return launch.GameLaunchState == GameLaunchState.GameLaunchEnded;
         }
     }
 }

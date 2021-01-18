@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,74 +12,56 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using GgpGrpc.Cloud;
+using GgpGrpc.Cloud;
 using GgpGrpc.Models;
-using Grpc.Core;
+using Microsoft.VisualStudio.PlatformUI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiCommon.VSProject;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
 
-namespace YetiVSI
+namespace YetiVSI.GameLaunch
 {
-    public interface IGameletSelector
-    {
-        /// <summary>
-        /// Selects a gamelet from the given list and prepares it for running a game.
-        /// </summary>
-        /// <exception cref="InvalidStateException">
-        /// Thrown when the selected gamelet is in an unexpected state.</exception>
-        /// <exception cref="ConfigurationException">
-        /// Thrown if there is no gamelet reserved</exception>
-        /// <exception cref="CloudException">Thrown if there are any RPC errors.</exception>
-        /// <returns>True if the gamelet was prepared successfully, false otherwise.</returns>
-        bool TrySelectAndPrepareGamelet(
-            string targetPath, DeployOnLaunchSetting deployOnLaunchSetting,
-            ActionRecorder actionRecorder, List<Gamelet> gamelets, out Gamelet result);
-    }
-
     /// <summary>
-    /// GameletSelector is responsible for selecting and preparing a gamelet for launch.
+    /// GameletSelector is responsible for selecting and preparing a gamelet
+    /// for launch when the Game Launch API is enabled.
     /// </summary>
-    public class GameletSelector : IGameletSelector
+    public class GameletSelector: IGameletSelector
     {
-        public const string CLEAR_LOGS_CMD = "rm -f /var/game/stdout /var/game/stderr";
+        public const string ClearLogsCmd = "rm -f /var/game/stdout /var/game/stderr";
 
-        public const string GAMELET_BUSY_DIALOG_TEXT =
-            "Game cannot be launched as one is already running on the instance.\n" +
-            "Do you want to stop it?";
-
-        readonly GameletSelectionWindow.Factory gameletSelectionWindowFactory;
-        readonly IDialogUtil dialogUtil;
-        readonly CancelableTask.Factory cancelableTaskFactory;
-        readonly GameletClient.Factory gameletClientFactory;
-        readonly ISshManager sshManager;
-        readonly IRemoteCommand remoteCommand;
-        readonly ICloudRunner runner;
-        readonly GameletMountChecker mountChecker;
+        readonly GameletSelectionWindow.Factory _gameletSelectionWindowFactory;
+        readonly IDialogUtil _dialogUtil;
+        readonly CancelableTask.Factory _cancelableTaskFactory;
+        readonly GameletClient.Factory _gameletClientFactory;
+        readonly ISshManager _sshManager;
+        readonly IRemoteCommand _remoteCommand;
+        readonly ICloudRunner _runner;
+        readonly GameletMountChecker _mountChecker;
+        readonly SdkConfig.Factory _sdkConfigFactory;
 
         public GameletSelector(IDialogUtil dialogUtil, ICloudRunner runner,
-                               GameletSelectionWindow.Factory gameletSelectionWindowFactory,
-                               CancelableTask.Factory cancelableTaskFactory,
-                               GameletClient.Factory gameletClientFactory, ISshManager sshManager,
-                               IRemoteCommand remoteCommand)
+                                GameletSelectionWindow.Factory gameletSelectionWindowFactory,
+                                CancelableTask.Factory cancelableTaskFactory,
+                                GameletClient.Factory gameletClientFactory, ISshManager sshManager,
+                                IRemoteCommand remoteCommand, SdkConfig.Factory sdkConfigFactory)
         {
-            this.dialogUtil = dialogUtil;
-            this.runner = runner;
-            this.gameletSelectionWindowFactory = gameletSelectionWindowFactory;
-            this.cancelableTaskFactory = cancelableTaskFactory;
-            this.gameletClientFactory = gameletClientFactory;
-            this.sshManager = sshManager;
-            this.remoteCommand = remoteCommand;
-            mountChecker =
+            _dialogUtil = dialogUtil;
+            _runner = runner;
+            _gameletSelectionWindowFactory = gameletSelectionWindowFactory;
+            _cancelableTaskFactory = cancelableTaskFactory;
+            _gameletClientFactory = gameletClientFactory;
+            _sshManager = sshManager;
+            _remoteCommand = remoteCommand;
+            _mountChecker =
                 new GameletMountChecker(remoteCommand, dialogUtil, cancelableTaskFactory);
+            _sdkConfigFactory = sdkConfigFactory;
         }
 
         /// <summary>
@@ -94,41 +76,96 @@ namespace YetiVSI
         public bool TrySelectAndPrepareGamelet(string targetPath,
                                                DeployOnLaunchSetting deployOnLaunchSetting,
                                                ActionRecorder actionRecorder,
-                                               List<Gamelet> gamelets, out Gamelet result)
+                                               List<Gamelet> gamelets, string testAccount,
+                                               out Gamelet result)
         {
-            Gamelet gamelet = result = null;
-            if (!TrySelectGamelet(actionRecorder, gamelets, out gamelet))
+            if (!TrySelectGamelet(actionRecorder, gamelets, out result))
             {
                 return false;
             }
 
-            if (gamelet.State == GameletState.InUse)
+            if (!StopGameLaunchIfPresent(actionRecorder, testAccount, gamelets, result))
             {
-                // TODO: Do not stop the running game on the gamelet
-                // in the new launch flow, it is taken care of in the game launcher.
-                if (!PromptStopGamelet(actionRecorder, ref gamelet))
-                {
-                    return false;
-                }
+                return false;
             }
 
-            if (!EnableSsh(actionRecorder, gamelet))
+            if (!EnableSsh(actionRecorder, result))
             {
                 return false;
             }
 
             if (!ValidateMountConfiguration(targetPath, deployOnLaunchSetting, actionRecorder,
-                                            gamelet))
+                                            result))
             {
                 return false;
             }
 
-            if (!ClearLogs(actionRecorder, gamelet))
+            if (!ClearLogs(actionRecorder, result))
             {
                 return false;
             }
 
-            result = gamelet;
+            return true;
+        }
+
+        bool StopGameLaunchIfPresent(ActionRecorder actionRecorder, string testAccount,
+                                     List<Gamelet> gamelets, Gamelet selectedGamelet)
+        {
+            // TODO: record actions.
+            IGameletClient gameletClient = _gameletClientFactory.Create(_runner);
+            var gameLauncher = new GameLauncher(gameletClient, _sdkConfigFactory,
+                                                _cancelableTaskFactory,
+                                /*The new Game launch API is always enabled in this flow*/ true);
+            ICancelableTask<GgpGrpc.Models.GameLaunch> currentGameLaunchTask =
+                _cancelableTaskFactory.Create(TaskMessages.LookingForTheCurrentLaunch,
+                    async task => await gameLauncher.GetCurrentGameLaunchAsync(testAccount));
+            if (!currentGameLaunchTask.Run())
+            {
+                return false;
+            }
+            GgpGrpc.Models.GameLaunch currentGameLaunch = currentGameLaunchTask.Result;
+            if (currentGameLaunch == null)
+            {
+                return true;
+            }
+
+            if (!PromptToDeleteLaunch(currentGameLaunch, gamelets, selectedGamelet))
+            {
+                return false;
+            }
+
+            ICancelableTask<bool> stopTask = _cancelableTaskFactory.Create(
+                TaskMessages.WaitingForGameStop,
+                async task => await gameLauncher.DeleteLaunchAsync(currentGameLaunch.Name, task));
+            if (stopTask.Run())
+            {
+                return stopTask.Result;
+            }
+
+            return false;
+        }
+
+        bool PromptToDeleteLaunch(GgpGrpc.Models.GameLaunch currentGameLaunch,
+                                 List<Gamelet> gamelets, Gamelet selectedGamelet)
+        {
+            if (currentGameLaunch.GameLaunchState == GameLaunchState.IncompleteLaunch)
+            {
+                return true;
+            }
+
+            string instanceName = selectedGamelet.Name == currentGameLaunch.GameletName
+                ? ErrorStrings.ThisInstance
+                : gamelets.Single(g => g.Name == currentGameLaunch.GameletName).DisplayName;
+            MessageDialogCommand dialogRes = MessageDialog.Show(
+                ErrorStrings.StopRunningGame, ErrorStrings.LaunchExistsDialogText(instanceName),
+                MessageDialogCommandSet.YesNo);
+            if (dialogRes != MessageDialogCommand.Yes)
+            {
+                // Developer opted to not stop the existing launch.
+                // Launch can not proceed.
+                return false;
+            }
+
             return true;
         }
 
@@ -149,7 +186,7 @@ namespace YetiVSI
                         gamelet = gamelets[0];
                         return true;
                     default:
-                        gamelet = gameletSelectionWindowFactory.Create(gamelets).Run();
+                        gamelet = _gameletSelectionWindowFactory.Create(gamelets).Run();
                         return gamelet != null;
                 }
             }))
@@ -161,63 +198,6 @@ namespace YetiVSI
         }
 
         /// <summary>
-        /// Confirms that the user wants to stop the gamelet and, if so, stops the gamelet.
-        /// </summary>
-        /// <returns>True if the user chooses to stop the gamelet and the gamelet stops
-        /// successfully, false otherwise.</returns>
-        bool PromptStopGamelet(ActionRecorder actionRecorder, ref Gamelet gamelet)
-        {
-            bool okToStop = actionRecorder.RecordUserAction(
-                ActionType.GameletPrepare,
-                () => dialogUtil.ShowYesNo(GAMELET_BUSY_DIALOG_TEXT, "Stop running game?"));
-            if (!okToStop)
-            {
-                return false;
-            }
-            gamelet = StopGamelet(actionRecorder, gamelet);
-            return gamelet != null;
-        }
-
-        /// <summary>
-        /// Stop a gamelet and wait for it to return to the reserved state.
-        /// </summary>
-        Gamelet StopGamelet(ActionRecorder actionRecorder, Gamelet gamelet)
-        {
-            IAction action = actionRecorder.CreateToolAction(ActionType.GameletStop);
-            ICancelableTask stopTask =
-                cancelableTaskFactory.Create(TaskMessages.WaitingForGameStop, async (task) => {
-                    IGameletClient gameletClient =
-                        gameletClientFactory.Create(runner.Intercept(action));
-                    try
-                    {
-                        await gameletClient.StopGameAsync(gamelet.Id);
-                    }
-                    catch (CloudException e) when ((e.InnerException as RpcException)
-                        ?.StatusCode == StatusCode.FailedPrecondition)
-                    {
-                        // FailedPreconditions likely means there is no game session to stop.
-                        // For details see (internal).
-                        Trace.WriteLine("Potential race condition while stopping game; " +
-                                        $"ignoring RPC error: {e.InnerException.Message}");
-                    }
-                    while (!task.IsCanceled)
-                    {
-                        gamelet = await gameletClient.GetGameletByNameAsync(gamelet.Name);
-                        if (gamelet.State == GameletState.Reserved)
-                        {
-                            break;
-                        }
-                        await Task.Delay(1000);
-                    }
-                });
-            if (stopTask.RunAndRecord(action))
-            {
-                return gamelet;
-            }
-            return null;
-        }
-
-        /// <summary>
         /// Enable SSH for communication with the gamelet.
         /// </summary>
         bool EnableSsh(ActionRecorder actionRecorder, Gamelet gamelet)
@@ -226,15 +206,15 @@ namespace YetiVSI
             {
                 IAction action = actionRecorder.CreateToolAction(ActionType.GameletEnableSsh);
                 ICancelableTask enableSshTask =
-                    cancelableTaskFactory.Create(TaskMessages.EnablingSSH, async _ => {
-                        await sshManager.EnableSshAsync(gamelet, action);
+                    _cancelableTaskFactory.Create(TaskMessages.EnablingSSH, async _ => {
+                        await _sshManager.EnableSshAsync(gamelet, action);
                     });
                 return enableSshTask.RunAndRecord(action);
             }
             catch (Exception e) when (e is CloudException || e is SshKeyException)
             {
                 Trace.Write($"Received exception while enabling ssh.\n{e}");
-                dialogUtil.ShowError(ErrorStrings.FailedToEnableSsh(e.Message), e.ToString());
+                _dialogUtil.ShowError(ErrorStrings.FailedToEnableSsh(e.Message), e.ToString());
                 return false;
             }
         }
@@ -256,23 +236,23 @@ namespace YetiVSI
                                         ActionRecorder actionRecorder, Gamelet gamelet)
         {
             MountConfiguration configuration =
-                mountChecker.GetConfiguration(gamelet, actionRecorder);
+                _mountChecker.GetConfiguration(gamelet, actionRecorder);
 
             string targetPathNormalized = GetNormalizedFullPath(targetPath);
             Trace.WriteLine($"TargetPath is set to {targetPathNormalized}");
             // If the /srv/game/assets folder is detached from /mnt/developer then
             // binaries generated by VS won't be used during the run/debug process.
             // Notify the user and let them decide whether this is expected behaviour or not.
-            if (mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration))
+            if (_mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration))
             {
                 // 'Yes' - continue; 'No' - interrupt (gamelet validation fails).
-                return dialogUtil.ShowYesNo(
+                return _dialogUtil.ShowYesNo(
                     ErrorStrings.MountConfigurationWarning(YetiConstants.GameAssetsMountingPoint,
                                                            YetiConstants.DeveloperMountingPoint),
                     _mountConfigurationDialogCaption);
             }
 
-            if (mountChecker.IsAssetStreamingActivated(configuration))
+            if (_mountChecker.IsAssetStreamingActivated(configuration))
             {
                 var sshChannels = new SshTunnels();
                 IEnumerable<string> commandLines = sshChannels.GetSshCommandLines();
@@ -285,7 +265,7 @@ namespace YetiVSI
                     // probably lost (or asset streaming is set to a different machine, and
                     // then it's ok).
                     // 'Yes' - continue; 'No' - interrupt (gamelet validation fails).
-                    return dialogUtil.ShowYesNo(ErrorStrings.AssetStreamingBrokenWarning(),
+                    return _dialogUtil.ShowYesNo(ErrorStrings.AssetStreamingBrokenWarning(),
                                                 _mountConfigurationDialogCaption);
                 }
 
@@ -304,7 +284,7 @@ namespace YetiVSI
                             string current = GgpDeployOnLaunchToDisplayName(deployOnLaunchSetting);
                             string expected =
                                 GgpDeployOnLaunchToDisplayName(DeployOnLaunchSetting.FALSE);
-                            return dialogUtil.ShowYesNo(
+                            return _dialogUtil.ShowYesNo(
                                 ErrorStrings.AssetStreamingDeployWarning(mountPointNormalized,
                                                                          current, expected),
                                 _mountConfigurationDialogCaption);
@@ -357,9 +337,9 @@ namespace YetiVSI
         bool ClearLogs(ActionRecorder actionRecorder, Gamelet gamelet)
         {
             ICancelableTask clearLogsTask =
-                cancelableTaskFactory.Create(TaskMessages.ClearingInstanceLogs,
-                                             async _ => await remoteCommand.RunWithSuccessAsync(
-                                                 new SshTarget(gamelet), CLEAR_LOGS_CMD));
+                _cancelableTaskFactory.Create(TaskMessages.ClearingInstanceLogs,
+                                             async _ => await _remoteCommand.RunWithSuccessAsync(
+                                                 new SshTarget(gamelet), ClearLogsCmd));
             try
             {
                 return clearLogsTask.RunAndRecord(actionRecorder, ActionType.GameletClearLogs);
@@ -367,7 +347,7 @@ namespace YetiVSI
             catch (ProcessException e)
             {
                 Trace.WriteLine($"Error clearing instance logs: {e.Message}");
-                dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message),
+                _dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message),
                                      e.ToString());
                 return false;
             }
@@ -383,6 +363,7 @@ namespace YetiVSI
             {
                 return gamelet;
             }
+
             var error = new InvalidStateException(ErrorStrings.GameletInUnexpectedState(gamelet));
             try
             {

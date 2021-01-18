@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.VSProject;
+using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
@@ -64,7 +65,7 @@ namespace YetiVSI.Test
         ChromeClientLaunchCommandFormatter launchCommandFormatter;
         IExtensionOptions options;
         YetiVSI.DebugEngine.DebugEngine.Params.Factory paramsFactory;
-        readonly int _outVariableIndex = 4;
+        readonly int _outVariableIndex = 5;
         IAsyncProject project;
         string targetPath;
         string outputDirectory;
@@ -170,7 +171,7 @@ namespace YetiVSI.Test
             Gamelet gamelet;
             gameletSelector
                 .TrySelectAndPrepareGamelet(Arg.Any<string>(), Arg.Any<DeployOnLaunchSetting>(),
-                                            Arg.Any<ActionRecorder>(), gamelets, out gamelet)
+                                Arg.Any<ActionRecorder>(), gamelets, Arg.Any<string>(), out gamelet)
                 .Returns(x => {
                     x[_outVariableIndex] = gamelets[0];
                     return true;
@@ -219,7 +220,7 @@ namespace YetiVSI.Test
             Gamelet gamelet;
             gameletSelector
                 .TrySelectAndPrepareGamelet(Arg.Any<string>(), Arg.Any<DeployOnLaunchSetting>(),
-                                            Arg.Any<ActionRecorder>(), gamelets, out gamelet)
+                                Arg.Any<ActionRecorder>(), gamelets, Arg.Any<string>(), out gamelet)
                 .Returns(x => {
                     x[_outVariableIndex] = gamelets[0];
                     return true;
@@ -286,7 +287,7 @@ namespace YetiVSI.Test
             Gamelet gamelet;
             gameletSelector
                 .TrySelectAndPrepareGamelet(Arg.Any<string>(), Arg.Any<DeployOnLaunchSetting>(),
-                                            Arg.Any<ActionRecorder>(), gamelets, out gamelet)
+                                Arg.Any<ActionRecorder>(), gamelets, Arg.Any<string>(), out gamelet)
                 .Returns(x => {
                     x[_outVariableIndex] = gamelets[0];
                     return true;
@@ -339,7 +340,7 @@ namespace YetiVSI.Test
             Gamelet gamelet;
             gameletSelector
                 .TrySelectAndPrepareGamelet(Arg.Any<string>(), Arg.Any<DeployOnLaunchSetting>(),
-                                            Arg.Any<ActionRecorder>(), gamelets, out gamelet)
+                                Arg.Any<ActionRecorder>(), gamelets, Arg.Any<string>(), out gamelet)
                 .Returns(x => {
                     x[_outVariableIndex] = gamelets[0];
                     return true;
@@ -414,7 +415,7 @@ namespace YetiVSI.Test
             Gamelet gamelet;
             gameletSelector
                 .TrySelectAndPrepareGamelet(Arg.Any<string>(), Arg.Any<DeployOnLaunchSetting>(),
-                                            Arg.Any<ActionRecorder>(), gamelets, out gamelet)
+                                Arg.Any<ActionRecorder>(), gamelets, Arg.Any<string>(), out gamelet)
                 .Returns(x => {
                     x[_outVariableIndex] = gamelets[0];
                     return true;
@@ -491,7 +492,7 @@ namespace YetiVSI.Test
             Gamelet gamelet;
             gameletSelector
                 .TrySelectAndPrepareGamelet(Arg.Any<string>(), Arg.Any<DeployOnLaunchSetting>(),
-                                            Arg.Any<ActionRecorder>(), gamelets, out gamelet)
+                                Arg.Any<ActionRecorder>(), gamelets, Arg.Any<string>(), out gamelet)
                 .Returns(false);
 
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);
@@ -515,7 +516,7 @@ namespace YetiVSI.Test
             gameletSelector
                 .When(g => g.TrySelectAndPrepareGamelet(
                           Arg.Any<string>(), Arg.Any<DeployOnLaunchSetting>(),
-                          Arg.Any<ActionRecorder>(), gamelets, out gamelet))
+                          Arg.Any<ActionRecorder>(), gamelets, Arg.Any<string>(), out gamelet))
                 .Throw(c => new Exception("Oops!"));
 
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);

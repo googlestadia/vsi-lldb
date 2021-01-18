@@ -26,6 +26,7 @@ using YetiCommon;
 using YetiCommon.SSH;
 using YetiCommon.VSProject;
 using YetiVSI.DebuggerOptions;
+using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
 using ICredentialManager = YetiCommon.ICredentialManager;
@@ -143,7 +144,7 @@ namespace YetiVSI
 
                 if (!gameletSelector.TrySelectAndPrepareGamelet(
                     targetPath, deployOnLaunchAsync, actionRecorder,
-                    setupQueriesResult.Gamelets, out gamelet))
+                    setupQueriesResult.Gamelets, launchParams.TestAccount, out gamelet))
                 {
                     return new IDebugLaunchSettings[] { };
                 }

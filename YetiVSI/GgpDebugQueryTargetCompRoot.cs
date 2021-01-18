@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using GgpGrpc.Cloud;
+using GgpGrpc.Cloud;
 using System.IO.Abstractions;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
+using YetiVSI.DebugEngine;
+using YetiVSI.GameLaunch;
 using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 
@@ -75,11 +77,19 @@ namespace YetiVSI
             var sshKnownHostsWriter = new SshKnownHostsWriter();
             var sshManager = new SshManager(gameletClientFactory, cloudRunner, sshKeyLoader,
                                             sshKnownHostsWriter, remoteCommand);
-            var gameletSelector = new GameletSelector(_dialogUtil, cloudRunner,
-                                                      GetGameletSelectorWindowFactory(),
-                                                      GetCancelableTaskFactory(),
-                                                      gameletClientFactory, sshManager,
-                                                      remoteCommand);
+            bool launchGameApiEnabled =
+                yetiVsiService.Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
+            IGameletSelector gameletSelector = launchGameApiEnabled
+                ? new GameletSelector(_dialogUtil, cloudRunner,
+                                                   GetGameletSelectorWindowFactory(),
+                                                   GetCancelableTaskFactory(),
+                                                   gameletClientFactory, sshManager,
+                                                   remoteCommand, sdkConfigFactory)
+                : (IGameletSelector) new GameletSelectorLegacyFlow(_dialogUtil, cloudRunner,
+                                                         GetGameletSelectorWindowFactory(),
+                                                         GetCancelableTaskFactory(),
+                                                         gameletClientFactory, sshManager,
+                                                         remoteCommand);
             var serializer = new JsonUtil();
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(serializer);

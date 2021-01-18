@@ -32,6 +32,8 @@ namespace YetiVSI.GameLaunch
 
         bool GetLaunchState();
         Task StopGameAsync();
+        Task<bool> DeleteLaunchAsync(string gameLaunchName, ICancelable task);
+        Task<GgpGrpc.Models.GameLaunch> GetCurrentGameLaunchAsync(string testAccount);
     }
 
     public partial class GameLauncher : IGameLauncher
@@ -56,7 +58,8 @@ namespace YetiVSI.GameLaunch
 
         public bool CurrentLaunchExists => !string.IsNullOrWhiteSpace(_launchName);
 
-        async Task<string> GetCurrentGameLaunchNameAsync(string testAccount)
+        public async Task<GgpGrpc.Models.GameLaunch> GetCurrentGameLaunchAsync(
+            string testAccount)
         {
             GgpGrpc.Models.GameLaunch currentGameLaunch;
             try
@@ -68,11 +71,11 @@ namespace YetiVSI.GameLaunch
             catch (CloudException e) when ((e.InnerException as RpcException)?.StatusCode ==
                 StatusCode.NotFound)
             {
-                // There is no current launch on the gamelet, a new launch can be created.
+                // There is no current launch on the gamelet.
                 return null;
             }
 
-            return currentGameLaunch.Name;
+            return currentGameLaunch;
         }
 
         async Task<string> CheckSdkCompatibilityAsync(string gameletName, string sdkVersion)
@@ -90,9 +93,6 @@ namespace YetiVSI.GameLaunch
             // TODO: Show a progressbar of what's currently happening.
             Task<string> sdkCompatibilityTask = CheckSdkCompatibilityAsync(
                 chromeLauncher.LaunchParams.GameletName, chromeLauncher.LaunchParams.SdkVersion);
-
-            Task<string> launchNameTask =
-                GetCurrentGameLaunchNameAsync(chromeLauncher.LaunchParams.TestAccount);
 
             LaunchGameRequest launchRequest = null;
             Task<ConfigStatus> parsingTask =
@@ -123,23 +123,6 @@ namespace YetiVSI.GameLaunch
                 // SDK versions are not compatible, show a warning message.
                 MessageDialog.Show(ErrorStrings.Warning, sdkCompatibilityErrorMessage,
                                    MessageDialogCommandSet.Ok);
-            }
-
-            string currentLaunchName = await launchNameTask;
-            if (!string.IsNullOrEmpty(currentLaunchName))
-            {
-                // TODO: record actions.
-                MessageDialogCommand dialogRes = MessageDialog.Show(
-                    ErrorStrings.StopRunningGame, ErrorStrings.LaunchExistsDialogText,
-                    MessageDialogCommandSet.YesNo);
-                if (dialogRes != MessageDialogCommand.Yes)
-                {
-                    // Developer opted to not stop the existing launch.
-                    // Launch can not proceed.
-                    return false;
-                }
-
-                launchRequest.OverrideGameLaunchName = currentLaunchName;
             }
 
             LaunchGameResponse response = await _gameletClient.LaunchGameAsync(launchRequest);

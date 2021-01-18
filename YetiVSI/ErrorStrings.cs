@@ -87,10 +87,6 @@ namespace YetiVSI
         public const string SymbolFileNameUnknown =
             "Unable to search for symbols. Symbol file name is unknown.";
         public const string StopRunningGame = "Stop running game?";
-        public const string LaunchExistsDialogText =
-            "Game cannot be launched as there is an active launch associated with the current " +
-            "account.\nDo you want to stop it?";
-
         public const string LaunchEndedCommonMessage = "Can not proceed with the game launch. ";
         public const string LaunchEndedUnspecified = "Unknown reason.";
         public const string LaunchEndedExitedByUser = "User requested the game session to end.";
@@ -109,7 +105,10 @@ namespace YetiVSI
             "The user explicitly requested to exit the queue.";
         public const string LaunchEndedQueueReadyTimeout =
             "The user didn't request to play when the queue was ready and it timed-out.";
-
+        public const string ThisInstance = "this instance";
+        public static string LaunchExistsDialogText (string gameletName) =>
+            $"A game is currently running on {gameletName}. Only one game can be running for" +
+            " each player.\r\nWould you like to stop it?";
         public static string BuildIdCheckDetails(IEnumerable<string> matchedFiles,
                                                  IEnumerable<string> searchedPaths) =>
             $"Executables matched by name: " + Environment.NewLine
