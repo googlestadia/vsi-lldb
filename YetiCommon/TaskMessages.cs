@@ -27,6 +27,7 @@ namespace YetiCommon
         public const string ClearingInstanceLogs = "Clearing instance logs...";
         public const string AttachingToProcess = "Attaching to Process...";
         public const string LaunchingGame = "Launching the game...";
+        public const string StoppingGame = "Stopping the game...";
         public const string LookingForTheCurrentLaunch = "Looking for the current launch...";
         public const string DeployingExecutable = "Deploying executable...";
         public const string CustomDeployCommand = "Running custom deploy command...";

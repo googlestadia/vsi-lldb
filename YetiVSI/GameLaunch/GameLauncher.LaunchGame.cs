@@ -16,7 +16,6 @@ using System.Threading.Tasks;
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using Grpc.Core;
-using Microsoft.VisualStudio.PlatformUI;
 using YetiCommon;
 using YetiCommon.Cloud;
 
@@ -25,16 +24,29 @@ namespace YetiVSI.GameLaunch
     public interface IGameLauncher
     {
         bool LaunchGameApiEnabled { get; }
-        bool CurrentLaunchExists { get; }
-
         Task<bool> LaunchGameAsync(YetiCommon.ChromeClientLauncher chromeLauncher,
                                    string workingDirectory);
 
         Task<GgpGrpc.Models.GameLaunch> GetLaunchStateAsync();
         bool WaitUntilGameLaunched();
         string GetEndReason(GameLaunchEnded gameLaunchEnded);
-        Task StopGameAsync();
-        Task<bool> DeleteLaunchAsync(string gameLaunchName, ICancelable task);
+        void StopGame();
+
+        /// <summary>
+        /// Attempts to delete a launch by the gameLaunchName. Returns null when
+        /// specified launch doesn't exists. Otherwise returns a GgpGrpc.Models.GameLaunch
+        /// instance containing current GameLaunchState after delete attempt.
+        /// </summary>
+        /// <param name="gameLaunchName">Game launch name.</param>
+        /// <param name="task">Cancelable token.</param>
+        /// <returns>GgpGrpc.Models.GameLaunch.</returns>
+        Task<GgpGrpc.Models.GameLaunch> DeleteLaunchAsync(string gameLaunchName, ICancelable task);
+
+        /// <summary>
+        /// Polls the backend for a current launch.
+        /// </summary>
+        /// <param name="testAccount">Test account.</param>
+        /// <returns>Current game launch, if exists, otherwise null.</returns>
         Task<GgpGrpc.Models.GameLaunch> GetCurrentGameLaunchAsync(string testAccount);
     }
 
@@ -43,6 +55,7 @@ namespace YetiVSI.GameLaunch
         readonly IGameletClient _gameletClient;
         readonly CancelableTask.Factory _cancelableTaskFactory;
         readonly LaunchGameParamsConverter _launchGameParamsConverter;
+        readonly DialogUtil _dialogUtil;
 
         string _launchName;
 
@@ -53,12 +66,13 @@ namespace YetiVSI.GameLaunch
             _cancelableTaskFactory = cancelableTaskFactory;
             _launchGameParamsConverter =
                 new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
+            _dialogUtil = new DialogUtil();
             LaunchGameApiEnabled = launchGameApiEnabled;
         }
 
         public bool LaunchGameApiEnabled { get; }
 
-        public bool CurrentLaunchExists => !string.IsNullOrWhiteSpace(_launchName);
+        bool CurrentLaunchExists => !string.IsNullOrWhiteSpace(_launchName);
 
         public async Task<GgpGrpc.Models.GameLaunch> GetCurrentGameLaunchAsync(string testAccount)
         {
@@ -105,16 +119,14 @@ namespace YetiVSI.GameLaunch
             {
                 // Critical error occurred while parsing the configuration.
                 // Launch can not proceed.
-                MessageDialog.Show(ErrorStrings.Error, parsingState.ErrorMessage,
-                                   MessageDialogCommandSet.Ok);
+                _dialogUtil.ShowError(parsingState.ErrorMessage);
                 return false;
             }
 
             if (parsingState.IsWarningLevel)
             {
                 // TODO: record actions.
-                MessageDialog.Show(ErrorStrings.Warning, parsingState.WarningMessage,
-                                   MessageDialogCommandSet.Ok);
+                _dialogUtil.ShowWarning(parsingState.WarningMessage);
             }
 
             string sdkCompatibilityErrorMessage = await sdkCompatibilityTask;
@@ -122,8 +134,7 @@ namespace YetiVSI.GameLaunch
             {
                 // TODO: record actions.
                 // SDK versions are not compatible, show a warning message.
-                MessageDialog.Show(ErrorStrings.Warning, sdkCompatibilityErrorMessage,
-                                   MessageDialogCommandSet.Ok);
+                _dialogUtil.ShowWarning(sdkCompatibilityErrorMessage);
             }
 
             LaunchGameResponse response = await _gameletClient.LaunchGameAsync(launchRequest);

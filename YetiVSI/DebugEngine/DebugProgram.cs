@@ -465,10 +465,7 @@ namespace YetiVSI.DebugEngine
             TerminationRequested = true;
             if (_gameLauncher.LaunchGameApiEnabled)
             {
-                _taskContext.Factory.Run(
-                    () => _gameLauncher.StopGameAsync());
-                // TODO: Poll for the launch status to show an error message in
-                // case the game stop fails.
+                _gameLauncher.StopGame();
             }
             else
             {

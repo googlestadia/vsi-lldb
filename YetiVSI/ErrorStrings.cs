@@ -46,8 +46,6 @@ namespace YetiVSI
             "Failed to create LLDB SBListener object.";
         public const string FailedToCreateDebugTarget = "Failed to create LLDB SBTarget object.";
         public const string FailedToCreateLldbPlatform = "Failed to create LLDB SBPlatform object.";
-        public const string Warning = "Warning";
-        public const string Error = "Error";
         public static string FailedToOpenLogsBecauseLoggingNotInitialized =
             "Failed to open logs, there is a problem with logging, please file a bug.";
         public const string FailedToRetrieveCoreFilePath =
@@ -107,6 +105,10 @@ namespace YetiVSI
             "The user explicitly requested to exit the queue.";
         public const string LaunchEndedQueueReadyTimeout =
             "The user didn't request to play when the queue was ready and it timed-out.";
+        public const string GameNotStopped =
+            "Could not stop the game. See logs for further details";
+        public const string GameStoppedWithError =
+            "Game was stopped, but the end reason was unexpected. ";
         public const string ThisInstance = "this instance";
         public static string LaunchExistsDialogText (string gameletName) =>
             $"A game is currently running on {gameletName}. Only one game can be running for" +

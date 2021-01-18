@@ -47,10 +47,10 @@ namespace YetiVSI.GameLaunch
         readonly SdkConfig.Factory _sdkConfigFactory;
 
         public GameletSelector(IDialogUtil dialogUtil, ICloudRunner runner,
-                                GameletSelectionWindow.Factory gameletSelectionWindowFactory,
-                                CancelableTask.Factory cancelableTaskFactory,
-                                GameletClient.Factory gameletClientFactory, ISshManager sshManager,
-                                IRemoteCommand remoteCommand, SdkConfig.Factory sdkConfigFactory)
+                               GameletSelectionWindow.Factory gameletSelectionWindowFactory,
+                               CancelableTask.Factory cancelableTaskFactory,
+                               GameletClient.Factory gameletClientFactory, ISshManager sshManager,
+                               IRemoteCommand remoteCommand, SdkConfig.Factory sdkConfigFactory)
         {
             _dialogUtil = dialogUtil;
             _runner = runner;
@@ -114,15 +114,16 @@ namespace YetiVSI.GameLaunch
             // TODO: record actions.
             IGameletClient gameletClient = _gameletClientFactory.Create(_runner);
             var gameLauncher = new GameLauncher(gameletClient, _sdkConfigFactory,
-                                                _cancelableTaskFactory,
-                                /*The new Game launch API is always enabled in this flow*/ true);
+                                _cancelableTaskFactory,
+                                /*The new Game launch API is always enabled in this flow*/true);
             ICancelableTask<GgpGrpc.Models.GameLaunch> currentGameLaunchTask =
                 _cancelableTaskFactory.Create(TaskMessages.LookingForTheCurrentLaunch,
-                    async task => await gameLauncher.GetCurrentGameLaunchAsync(testAccount));
+                        async task => await gameLauncher.GetCurrentGameLaunchAsync(testAccount));
             if (!currentGameLaunchTask.Run())
             {
                 return false;
             }
+
             GgpGrpc.Models.GameLaunch currentGameLaunch = currentGameLaunchTask.Result;
             if (currentGameLaunch == null)
             {
@@ -134,19 +135,20 @@ namespace YetiVSI.GameLaunch
                 return false;
             }
 
-            ICancelableTask<bool> stopTask = _cancelableTaskFactory.Create(
+            ICancelableTask<GgpGrpc.Models.GameLaunch> stopTask = _cancelableTaskFactory.Create(
                 TaskMessages.WaitingForGameStop,
                 async task => await gameLauncher.DeleteLaunchAsync(currentGameLaunch.Name, task));
             if (stopTask.Run())
             {
-                return stopTask.Result;
+                return stopTask.Result == null ||
+                    stopTask.Result.GameLaunchState == GameLaunchState.GameLaunchEnded;
             }
 
             return false;
         }
 
         bool PromptToDeleteLaunch(GgpGrpc.Models.GameLaunch currentGameLaunch,
-                                 List<Gamelet> gamelets, Gamelet selectedGamelet)
+                                  List<Gamelet> gamelets, Gamelet selectedGamelet)
         {
             if (currentGameLaunch.GameLaunchState == GameLaunchState.IncompleteLaunch)
             {

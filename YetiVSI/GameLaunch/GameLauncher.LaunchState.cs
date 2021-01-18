@@ -15,7 +15,6 @@
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using Grpc.Core;
-using Microsoft.VisualStudio.PlatformUI;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -66,75 +65,101 @@ namespace YetiVSI.GameLaunch
             if (!status.GameLaunched && !string.IsNullOrEmpty(status.Error))
             {
                 Trace.WriteLine(status.Error);
-                MessageDialog.Show(ErrorStrings.Error, status.Error, MessageDialogCommandSet.Ok);
+                _dialogUtil.ShowError(status.Error);
             }
 
             return status.GameLaunched;
         }
 
-        public async Task StopGameAsync()
+        public void StopGame()
         {
-            await _gameletClient.DeleteGameLaunchAsync(_launchName);
+            if (!CurrentLaunchExists)
+            {
+                Trace.WriteLine("Current launch doesn't exist.");
+                return;
+            }
+
+            ICancelableTask<GgpGrpc.Models.GameLaunch> waitForDeletedLaunchTask =
+                _cancelableTaskFactory.Create(TaskMessages.StoppingGame,
+                                              async task =>
+                                                  await DeleteLaunchAsync(_launchName, task));
+
+            // TODO: use RunAndRecord to collect metrics.
+            waitForDeletedLaunchTask.Run();
+            GgpGrpc.Models.GameLaunch gameLaunch = waitForDeletedLaunchTask.Result;
+
+            if (gameLaunch == null ||
+                gameLaunch.GameLaunchState == GameLaunchState.GameLaunchEnded &&
+                gameLaunch.GameLaunchEnded?.EndReason == EndReason.GameExitedWithSuccessfulCode)
+            {
+                return;
+            }
+
+            string message;
+
+            if (gameLaunch.GameLaunchState != GameLaunchState.GameLaunchEnded)
+            {
+                Trace.WriteLine($"Couldn't delete the launch '{_launchName}'." +
+                                $"Current launch state is: '{gameLaunch.GameLaunchState}'");
+                message = ErrorStrings.GameNotStopped;
+            }
+            else
+            {
+                Trace.WriteLine(
+                    $"Something went wrong while deleting the launch '{_launchName}'. " +
+                    "Current end reason is: " +
+                    $"{gameLaunch.GameLaunchEnded?.EndReason.ToString() ?? "empty"}', " +
+                    $"Expected end reason is: '{EndReason.GameExitedWithSuccessfulCode}'");
+                message = ErrorStrings.GameStoppedWithError +
+                    GetEndReasonSuffix(gameLaunch.GameLaunchEnded);
+            }
+
+            _dialogUtil.ShowWarning(message);
         }
 
         public async Task<GgpGrpc.Models.GameLaunch> GetLaunchStateAsync() =>
             await _gameletClient.GetGameLaunchStateAsync(_launchName);
 
         // Some of the statuses might not be applicable for the dev flow.
-        public string GetEndReason(GameLaunchEnded gameLaunchEnded)
+        public string GetEndReason(GameLaunchEnded gameLaunchEnded) =>
+            ErrorStrings.LaunchEndedCommonMessage + GetEndReasonSuffix(gameLaunchEnded);
+
+        string GetEndReasonSuffix(GameLaunchEnded gameLaunchEnded)
         {
-            string message = ErrorStrings.LaunchEndedCommonMessage;
             switch (gameLaunchEnded.EndReason)
             {
                 case EndReason.Unspecified:
-                    message += ErrorStrings.LaunchEndedUnspecified;
-                    break;
+                    return ErrorStrings.LaunchEndedUnspecified;
                 case EndReason.ExitedByUser:
-                    message += ErrorStrings.LaunchEndedExitedByUser;
-                    break;
+                    return ErrorStrings.LaunchEndedExitedByUser;
                 case EndReason.InactivityTimeout:
-                    message += ErrorStrings.LaunchEndedInactivityTimeout;
-                    break;
+                    return ErrorStrings.LaunchEndedInactivityTimeout;
                 case EndReason.ClientNeverConnected:
-                    message += ErrorStrings.LaunchEndedClientNeverConnected;
-                    break;
+                    return ErrorStrings.LaunchEndedClientNeverConnected;
                 case EndReason.GameExitedWithSuccessfulCode:
-                    message += ErrorStrings.LaunchEndedGameExitedWithSuccessfulCode;
-                    break;
+                    return ErrorStrings.LaunchEndedGameExitedWithSuccessfulCode;
                 case EndReason.GameExitedWithErrorCode:
-                    message += ErrorStrings.LaunchEndedGameExitedWithErrorCode;
-                    break;
+                    return ErrorStrings.LaunchEndedGameExitedWithErrorCode;
                 case EndReason.GameShutdownBySystem:
-                    message += ErrorStrings.LaunchEndedGameShutdownBySystem;
-                    break;
+                    return ErrorStrings.LaunchEndedGameShutdownBySystem;
                 case EndReason.UnexpectedGameShutdownBySystem:
-                    message += ErrorStrings.LaunchEndedUnexpectedGameShutdownBySystem;
-                    break;
+                    return ErrorStrings.LaunchEndedUnexpectedGameShutdownBySystem;
                 case EndReason.GameBinaryNotFound:
-                    message += ErrorStrings.LaunchEndedGameBinaryNotFound;
-                    break;
+                    return ErrorStrings.LaunchEndedGameBinaryNotFound;
                 case EndReason.QueueAbandonedByUser:
-                    message += ErrorStrings.LaunchEndedQueueAbandonedByUser;
-                    break;
+                    return ErrorStrings.LaunchEndedQueueAbandonedByUser;
                 case EndReason.QueueReadyTimeout:
-                    message += ErrorStrings.LaunchEndedQueueReadyTimeout;
-                    break;
+                    return ErrorStrings.LaunchEndedQueueReadyTimeout;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(gameLaunchEnded.EndReason),
                                                           gameLaunchEnded.EndReason,
                                                           "Unexpected end reason received.");
             }
-
-            return message;
         }
 
-        public async Task<bool> DeleteLaunchAsync(string gameLaunchName, ICancelable task)
+        public async Task<GgpGrpc.Models.GameLaunch> DeleteLaunchAsync(
+            string gameLaunchName, ICancelable task)
         {
-            if (task.IsCanceled)
-            {
-                return false;
-            }
-
             GgpGrpc.Models.GameLaunch launch;
 
             try
@@ -145,7 +170,7 @@ namespace YetiVSI.GameLaunch
                 StatusCode.NotFound)
             {
                 // There is no launch with the specified name.
-                return true;
+                return null;
             }
 
             while (!task.IsCanceled && launch.GameLaunchState != GameLaunchState.GameLaunchEnded)
@@ -154,7 +179,7 @@ namespace YetiVSI.GameLaunch
                 await Task.Delay(500);
             }
 
-            return launch.GameLaunchState == GameLaunchState.GameLaunchEnded;
+            return launch;
         }
 
         // Polling statuses until we see RunningGame or GameLaunchEnded. IncompleteLaunch,

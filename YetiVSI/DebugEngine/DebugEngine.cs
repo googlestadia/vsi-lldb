@@ -26,7 +26,6 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.PlatformUI;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
@@ -988,8 +987,7 @@ namespace YetiVSI.DebugEngine
 
             if (urlBuildStatus.IsWarningLevel)
             {
-                MessageDialog.Show(ErrorStrings.Warning, urlBuildStatus.WarningMessage,
-                                   MessageDialogCommandSet.Ok);
+                _dialogUtil.ShowWarning(urlBuildStatus.WarningMessage);
             }
             else if (!urlBuildStatus.IsOk)
             {
