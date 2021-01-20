@@ -1,0 +1,192 @@
+From 0fee8367db3725659858b3a5e660c4a1dfaf48c9 Mon Sep 17 00:00:00 2001
+From: Andy Yankovsky <weratt@gmail.com>
+Date: Tue, 22 Dec 2020 10:07:44 -0800
+Subject: [PATCH 3/6] [lldb] Add SBType::GetEnumerationIntegerType method
+
+Add a method for getting the enumeration underlying type.
+
+Differential revision: https://reviews.llvm.org/D93696
+
+Cherry-picked from 1432ae57bf6e4022b6f4541c9225674ee6b19c23
+---
+ lldb/bindings/interface/SBType.i                     |  3 +++
+ lldb/include/lldb/API/SBType.h                       |  3 +++
+ lldb/include/lldb/Symbol/ClangASTContext.h           |  5 +++--
+ lldb/include/lldb/Symbol/CompilerType.h              |  6 ++++--
+ lldb/include/lldb/Symbol/TypeSystem.h                |  3 +++
+ .../lldbsuite/test/python_api/type/TestTypeList.py   | 12 ++++++++++++
+ .../Python/lldbsuite/test/python_api/type/main.cpp   |  2 ++
+ lldb/source/API/SBType.cpp                           | 11 +++++++++++
+ lldb/source/Symbol/CompilerType.cpp                  |  6 ++++++
+ 9 files changed, 47 insertions(+), 4 deletions(-)
+
+diff --git a/lldb/bindings/interface/SBType.i b/lldb/bindings/interface/SBType.i
+index 3ffd3263a118..671249155299 100644
+--- a/lldb/bindings/interface/SBType.i
++++ b/lldb/bindings/interface/SBType.i
+@@ -244,6 +244,9 @@ public:
+     lldb::SBType
+     GetCanonicalType();
+ 
++    lldb::SBType
++    GetEnumerationIntegerType();
++
+     lldb::SBType
+     GetArrayElementType ();
+ 
+diff --git a/lldb/include/lldb/API/SBType.h b/lldb/include/lldb/API/SBType.h
+index a65c1c41735b..5f3d12e37124 100644
+--- a/lldb/include/lldb/API/SBType.h
++++ b/lldb/include/lldb/API/SBType.h
+@@ -152,6 +152,9 @@ public:
+   lldb::SBType GetVectorElementType();
+ 
+   lldb::SBType GetCanonicalType();
++
++  lldb::SBType GetEnumerationIntegerType();
++
+   // Get the "lldb::BasicType" enumeration for a type. If a type is not a basic
+   // type eBasicTypeInvalid will be returned
+   lldb::BasicType GetBasicType();
+diff --git a/lldb/include/lldb/Symbol/ClangASTContext.h b/lldb/include/lldb/Symbol/ClangASTContext.h
+index 1364af0ddaa6..667cce6916af 100644
+--- a/lldb/include/lldb/Symbol/ClangASTContext.h
++++ b/lldb/include/lldb/Symbol/ClangASTContext.h
+@@ -597,6 +597,9 @@ public:
+   CompilerType
+   GetFullyUnqualifiedType(lldb::opaque_compiler_type_t type) override;
+ 
++  CompilerType
++  GetEnumerationIntegerType(lldb::opaque_compiler_type_t type) override;
++
+   // Returns -1 if this isn't a function of if the function doesn't have a
+   // prototype Returns a value >= 0 if there is a prototype.
+   int GetFunctionArgumentCount(lldb::opaque_compiler_type_t type) override;
+@@ -833,8 +836,6 @@ public:
+       const CompilerType &enum_type, const Declaration &decl, const char *name,
+       const llvm::APSInt &value);
+ 
+-  CompilerType GetEnumerationIntegerType(lldb::opaque_compiler_type_t type);
+-
+   // Pointers & References
+ 
+   // Call this function using the class type when you want to make a member
+diff --git a/lldb/include/lldb/Symbol/CompilerType.h b/lldb/include/lldb/Symbol/CompilerType.h
+index 27edbf322772..34dec83e9014 100644
+--- a/lldb/include/lldb/Symbol/CompilerType.h
++++ b/lldb/include/lldb/Symbol/CompilerType.h
+@@ -183,8 +183,10 @@ public:
+ 
+   CompilerType GetFullyUnqualifiedType() const;
+ 
+-  // Returns -1 if this isn't a function of if the function doesn't have a
+-  // prototype Returns a value >= 0 if there is a prototype.
++  CompilerType GetEnumerationIntegerType() const;
++
++  /// Returns -1 if this isn't a function of if the function doesn't
++  /// have a prototype Returns a value >= 0 if there is a prototype.
+   int GetFunctionArgumentCount() const;
+ 
+   CompilerType GetFunctionArgumentTypeAtIndex(size_t idx) const;
+diff --git a/lldb/include/lldb/Symbol/TypeSystem.h b/lldb/include/lldb/Symbol/TypeSystem.h
+index 39ac4da73508..033d0fe5d09c 100644
+--- a/lldb/include/lldb/Symbol/TypeSystem.h
++++ b/lldb/include/lldb/Symbol/TypeSystem.h
+@@ -220,6 +220,9 @@ public:
+ 
+   virtual CompilerType GetCanonicalType(lldb::opaque_compiler_type_t type) = 0;
+ 
++  virtual CompilerType
++  GetEnumerationIntegerType(lldb::opaque_compiler_type_t type) = 0;
++
+   // Returns -1 if this isn't a function of if the function doesn't have a
+   // prototype Returns a value >= 0 if there is a prototype.
+   virtual int GetFunctionArgumentCount(lldb::opaque_compiler_type_t type) = 0;
+diff --git a/lldb/packages/Python/lldbsuite/test/python_api/type/TestTypeList.py b/lldb/packages/Python/lldbsuite/test/python_api/type/TestTypeList.py
+index 0cdc16a41e48..2ca142d5df04 100644
+--- a/lldb/packages/Python/lldbsuite/test/python_api/type/TestTypeList.py
++++ b/lldb/packages/Python/lldbsuite/test/python_api/type/TestTypeList.py
+@@ -141,3 +141,15 @@ class TypeAndTypeListTestCase(TestBase):
+         self.assertTrue(scoped_enum_type)
+         self.DebugSBType(scoped_enum_type)
+         self.assertTrue(scoped_enum_type.IsScopedEnumerationType())
++        int_scoped_enum_type = scoped_enum_type.GetEnumerationIntegerType()
++        self.assertTrue(int_scoped_enum_type)
++        self.DebugSBType(int_scoped_enum_type)
++        self.assertEquals(int_scoped_enum_type.GetName(), 'int')
++
++        enum_uchar = target.FindFirstType('EnumUChar')
++        self.assertTrue(enum_uchar)
++        self.DebugSBType(enum_uchar)
++        int_enum_uchar = enum_uchar.GetEnumerationIntegerType()
++        self.assertTrue(int_enum_uchar)
++        self.DebugSBType(int_enum_uchar)
++        self.assertEquals(int_enum_uchar.GetName(), 'unsigned char')
+diff --git a/lldb/packages/Python/lldbsuite/test/python_api/type/main.cpp b/lldb/packages/Python/lldbsuite/test/python_api/type/main.cpp
+index 320fc6383efe..0a670ad872f5 100644
+--- a/lldb/packages/Python/lldbsuite/test/python_api/type/main.cpp
++++ b/lldb/packages/Python/lldbsuite/test/python_api/type/main.cpp
+@@ -38,6 +38,7 @@ public:
+ 
+ enum EnumType {};
+ enum class ScopedEnumType {};
++enum class EnumUChar : unsigned char {};
+ 
+ int main (int argc, char const *argv[])
+ {
+@@ -67,6 +68,7 @@ int main (int argc, char const *argv[])
+ 
+     EnumType enum_type;
+     ScopedEnumType scoped_enum_type;
++    EnumUChar scoped_enum_type_uchar;
+ 
+     return 0; // Break at this line
+ }
+diff --git a/lldb/source/API/SBType.cpp b/lldb/source/API/SBType.cpp
+index 8588d8967f57..1bbed08d2d94 100644
+--- a/lldb/source/API/SBType.cpp
++++ b/lldb/source/API/SBType.cpp
+@@ -345,6 +345,16 @@ lldb::SBType SBType::GetCanonicalType() {
+   return LLDB_RECORD_RESULT(SBType());
+ }
+ 
++SBType SBType::GetEnumerationIntegerType() {
++  LLDB_RECORD_METHOD_NO_ARGS(lldb::SBType, SBType, GetEnumerationIntegerType);
++
++  if (IsValid()) {
++    return LLDB_RECORD_RESULT(
++        SBType(m_opaque_sp->GetCompilerType(true).GetEnumerationIntegerType()));
++  }
++  return LLDB_RECORD_RESULT(SBType());
++}
++
+ lldb::BasicType SBType::GetBasicType() {
+   LLDB_RECORD_METHOD_NO_ARGS(lldb::BasicType, SBType, GetBasicType);
+ 
+@@ -942,6 +952,7 @@ void RegisterMethods<SBType>(Registry &R) {
+                        GetMemberFunctionAtIndex, (uint32_t));
+   LLDB_REGISTER_METHOD(lldb::SBType, SBType, GetUnqualifiedType, ());
+   LLDB_REGISTER_METHOD(lldb::SBType, SBType, GetCanonicalType, ());
++  LLDB_REGISTER_METHOD(lldb::SBType, SBType, GetEnumerationIntegerType, ());
+   LLDB_REGISTER_METHOD(lldb::BasicType, SBType, GetBasicType, ());
+   LLDB_REGISTER_METHOD(lldb::SBType, SBType, GetBasicType, (lldb::BasicType));
+   LLDB_REGISTER_METHOD(uint32_t, SBType, GetNumberOfDirectBaseClasses, ());
+diff --git a/lldb/source/Symbol/CompilerType.cpp b/lldb/source/Symbol/CompilerType.cpp
+index 35c9d7b03a81..f13aa0051bd2 100644
+--- a/lldb/source/Symbol/CompilerType.cpp
++++ b/lldb/source/Symbol/CompilerType.cpp
+@@ -358,6 +358,12 @@ CompilerType CompilerType::GetFullyUnqualifiedType() const {
+   return CompilerType();
+ }
+ 
++CompilerType CompilerType::GetEnumerationIntegerType() const {
++  if (IsValid())
++    return m_type_system->GetEnumerationIntegerType(m_type);
++  return CompilerType();
++}
++
+ int CompilerType::GetFunctionArgumentCount() const {
+   if (IsValid()) {
+     return m_type_system->GetFunctionArgumentCount(m_type);
+-- 
+2.24.1.windows.2
