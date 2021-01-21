@@ -23,6 +23,7 @@ using System.Linq;
 using YetiCommon;
 using YetiCommon.CastleAspects;
 using YetiVSI.DebugEngine.Exit;
+using YetiVSI.GameLaunch;
 using YetiVSI.Util;
 
 namespace YetiVSI.DebugEngine
@@ -64,14 +65,15 @@ namespace YetiVSI.DebugEngine
 
         public class Factory : IDebugProgramFactory
         {
-            private readonly JoinableTaskContext taskContext;
-            private readonly DebugDisassemblyStream.Factory debugDisassemblyStreamFactory;
-            private readonly DebugDocumentContext.Factory documentContextFactory;
-            private readonly DebugCodeContext.Factory codeContextFactory;
+            readonly JoinableTaskContext _taskContext;
+            readonly DebugDisassemblyStream.Factory _debugDisassemblyStreamFactory;
+            readonly DebugDocumentContext.Factory _documentContextFactory;
+            readonly DebugCodeContext.Factory _codeContextFactory;
 
-            private readonly ThreadEnumFactory threadsEnumFactory;
-            private readonly ModuleEnumFactory moduleEnumFactory;
-            private readonly CodeContextEnumFactory codeContextEnumFactory;
+            readonly ThreadEnumFactory _threadsEnumFactory;
+            readonly ModuleEnumFactory _moduleEnumFactory;
+            readonly CodeContextEnumFactory _codeContextEnumFactory;
+            readonly IGameLauncher _gameLauncher;
 
             public Factory(JoinableTaskContext taskContext,
                 DebugDisassemblyStream.Factory debugDisassemblyStreamFactory,
@@ -79,15 +81,17 @@ namespace YetiVSI.DebugEngine
                 DebugCodeContext.Factory codeContextFactory,
                 ThreadEnumFactory threadsEnumFactory,
                 ModuleEnumFactory moduleEnumFactory,
-                CodeContextEnumFactory codeContextEnumFactory)
+                CodeContextEnumFactory codeContextEnumFactory,
+                IGameLauncher gameLauncher)
             {
-                this.taskContext = taskContext;
-                this.debugDisassemblyStreamFactory = debugDisassemblyStreamFactory;
-                this.documentContextFactory = documentContextFactory;
-                this.codeContextFactory = codeContextFactory;
-                this.threadsEnumFactory = threadsEnumFactory;
-                this.moduleEnumFactory = moduleEnumFactory;
-                this.codeContextEnumFactory = codeContextEnumFactory;
+                _taskContext = taskContext;
+                _debugDisassemblyStreamFactory = debugDisassemblyStreamFactory;
+                _documentContextFactory = documentContextFactory;
+                _codeContextFactory = codeContextFactory;
+                _threadsEnumFactory = threadsEnumFactory;
+                _moduleEnumFactory = moduleEnumFactory;
+                _codeContextEnumFactory = codeContextEnumFactory;
+                _gameLauncher = gameLauncher;
             }
 
             public IGgpDebugProgram Create(IDebugEngineHandler debugEngineHandler,
@@ -96,34 +100,36 @@ namespace YetiVSI.DebugEngine
                 RemoteTarget lldbTarget,
                 IDebugModuleCache debugModuleCache, bool isCoreAttach)
             {
-                return new DebugProgram(taskContext, threadCreator,
-                    debugDisassemblyStreamFactory,
-                    documentContextFactory, codeContextFactory, threadsEnumFactory,
-                    moduleEnumFactory, codeContextEnumFactory, debugEngineHandler, process,
-                    programId, lldbProcess, lldbTarget, debugModuleCache, isCoreAttach);
+                return new DebugProgram(_taskContext, threadCreator,
+                    _debugDisassemblyStreamFactory,
+                    _documentContextFactory, _codeContextFactory, _threadsEnumFactory,
+                    _moduleEnumFactory, _codeContextEnumFactory, debugEngineHandler, process,
+                    programId, lldbProcess, lldbTarget, debugModuleCache, isCoreAttach,
+                    _gameLauncher);
             }
         }
 
-        Guid id;
-        IDebugProcess2 process;
-        SbProcess lldbProcess;
-        RemoteTarget lldbTarget;
-        Dictionary<uint, IDebugThread> threadCache;
-        bool isCoreAttach;
-        IDebugEngineHandler debugEngineHandler;
+        readonly Guid _id;
+        readonly IDebugProcess2 _process;
+        readonly SbProcess _lldbProcess;
+        readonly RemoteTarget _lldbTarget;
+        readonly Dictionary<uint, IDebugThread> _threadCache;
+        readonly bool _isCoreAttach;
+        readonly IDebugEngineHandler _debugEngineHandler;
 
-        JoinableTaskContext taskContext;
-        ThreadCreator threadCreator;
-        DebugDisassemblyStream.Factory debugDisassemblyStreamFactory;
-        DebugDocumentContext.Factory documentContextFactory;
-        DebugCodeContext.Factory codeContextFactory;
-        IDebugModuleCache debugModuleCache;
+        readonly JoinableTaskContext _taskContext;
+        readonly ThreadCreator _threadCreator;
+        readonly DebugDisassemblyStream.Factory _debugDisassemblyStreamFactory;
+        readonly DebugDocumentContext.Factory _documentContextFactory;
+        readonly DebugCodeContext.Factory _codeContextFactory;
+        readonly IDebugModuleCache _debugModuleCache;
 
-        ThreadEnumFactory threadEnumFactory;
-        ModuleEnumFactory moduleEnumFactory;
-        CodeContextEnumFactory codeContextEnumFactory;
+        readonly ThreadEnumFactory _threadEnumFactory;
+        readonly ModuleEnumFactory _moduleEnumFactory;
+        readonly CodeContextEnumFactory _codeContextEnumFactory;
+        readonly IGameLauncher _gameLauncher;
 
-        private DebugProgram(
+        DebugProgram(
             JoinableTaskContext taskContext,
             ThreadCreator threadCreator,
             DebugDisassemblyStream.Factory debugDisassemblyStreamFactory,
@@ -138,24 +144,26 @@ namespace YetiVSI.DebugEngine
             SbProcess lldbProcess,
             RemoteTarget lldbTarget,
             IDebugModuleCache debugModuleCache,
-            bool isCoreAttach)
+            bool isCoreAttach,
+            IGameLauncher gameLauncher)
         {
-            id = programId;
-            this.process = process;
-            this.lldbProcess = lldbProcess;
-            this.lldbTarget = lldbTarget;
-            threadCache = new Dictionary<uint, IDebugThread>();
-            this.isCoreAttach = isCoreAttach;
-            this.debugEngineHandler = debugEngineHandler;
-            this.taskContext = taskContext;
-            this.threadCreator = threadCreator;
-            this.debugDisassemblyStreamFactory = debugDisassemblyStreamFactory;
-            this.documentContextFactory = documentContextFactory;
-            this.codeContextFactory = codeContextFactory;
-            this.threadEnumFactory = threadEnumFactory;
-            this.moduleEnumFactory = moduleEnumFactory;
-            this.codeContextEnumFactory = codeContextEnumFactory;
-            this.debugModuleCache = debugModuleCache;
+            _id = programId;
+            _process = process;
+            _lldbProcess = lldbProcess;
+            _lldbTarget = lldbTarget;
+            _threadCache = new Dictionary<uint, IDebugThread>();
+            _isCoreAttach = isCoreAttach;
+            _debugEngineHandler = debugEngineHandler;
+            _taskContext = taskContext;
+            _threadCreator = threadCreator;
+            _debugDisassemblyStreamFactory = debugDisassemblyStreamFactory;
+            _documentContextFactory = documentContextFactory;
+            _codeContextFactory = codeContextFactory;
+            _threadEnumFactory = threadEnumFactory;
+            _moduleEnumFactory = moduleEnumFactory;
+            _codeContextEnumFactory = codeContextEnumFactory;
+            _debugModuleCache = debugModuleCache;
+            _gameLauncher = gameLauncher;
         }
 
         #region IGgpDebugProgram functions
@@ -166,15 +174,15 @@ namespace YetiVSI.DebugEngine
             {
                 return null;
             }
-            lock (threadCache)
+            lock (_threadCache)
             {
                 IDebugThread debugThread;
                 uint threadId = (uint)lldbThread.GetThreadId();
-                if (!threadCache.TryGetValue(threadId, out debugThread))
+                if (!_threadCache.TryGetValue(threadId, out debugThread))
                 {
-                    debugThread = threadCreator(lldbThread, Self);
-                    threadCache.Add(threadId, debugThread);
-                    debugEngineHandler.SendEvent(new ThreadCreateEvent(), Self, debugThread);
+                    debugThread = _threadCreator(lldbThread, Self);
+                    _threadCache.Add(threadId, debugThread);
+                    _debugEngineHandler.SendEvent(new ThreadCreateEvent(), Self, debugThread);
                 }
                 return debugThread;
             }
@@ -200,7 +208,7 @@ namespace YetiVSI.DebugEngine
 
         public int CauseBreak()
         {
-            if (lldbProcess.Stop())
+            if (_lldbProcess.Stop())
             {
                 return VSConstants.S_OK;
             }
@@ -209,11 +217,11 @@ namespace YetiVSI.DebugEngine
 
         public int Continue(IDebugThread2 thread)
         {
-            if (isCoreAttach)
+            if (_isCoreAttach)
             {
                 return AD7Constants.E_CRASHDUMP_UNSUPPORTED;
             }
-            if (lldbProcess.Continue())
+            if (_lldbProcess.Continue())
             {
                 return VSConstants.S_OK;
             }
@@ -223,7 +231,7 @@ namespace YetiVSI.DebugEngine
         public int Detach()
         {
             DetachRequested = true;
-            if (!lldbProcess.Detach())
+            if (!_lldbProcess.Detach())
             {
                 DetachRequested = false;
                 return VSConstants.E_FAIL;
@@ -232,7 +240,7 @@ namespace YetiVSI.DebugEngine
             // Send the ProgramDestroyEvent immediately, so that Visual Studio can't cause a
             // deadlock by waiting for the event while preventing us from accessing the main thread.
             // TODO: Block and wait for LldbEventHandler to send the event
-            debugEngineHandler.Abort(this, ExitInfo.Normal(ExitReason.DebuggerDetached));
+            _debugEngineHandler.Abort(this, ExitInfo.Normal(ExitReason.DebuggerDetached));
             return VSConstants.S_OK;
         }
 
@@ -252,7 +260,7 @@ namespace YetiVSI.DebugEngine
             var codeContexts = new List<IDebugCodeContext2>();
 
             // TODO: Find a less hacky way of doing this
-            var tempBreakpoint = lldbTarget.BreakpointCreateByLocation(fileName,
+            var tempBreakpoint = _lldbTarget.BreakpointCreateByLocation(fileName,
                         startPositions[0].dwLine + 1);
             if (tempBreakpoint == null)
             {
@@ -269,10 +277,10 @@ namespace YetiVSI.DebugEngine
                     var address = location.GetAddress();
                     if (address != null)
                     {
-                        var codeContext = codeContextFactory.Create(
-                            address.GetLoadAddress(lldbTarget),
+                        var codeContext = _codeContextFactory.Create(
+                            address.GetLoadAddress(_lldbTarget),
                             address.GetFunction().GetName(),
-                            documentContextFactory.Create(address.GetLineEntry()),
+                            _documentContextFactory.Create(address.GetLineEntry()),
                             Guid.Empty);
                         codeContexts.Add(codeContext);
                     }
@@ -285,11 +293,11 @@ namespace YetiVSI.DebugEngine
             }
             finally
             {
-                lldbTarget.BreakpointDelete(tempBreakpoint.GetId());
+                _lldbTarget.BreakpointDelete(tempBreakpoint.GetId());
                 tempBreakpoint = null;
             }
 
-            contextsEnum = codeContextEnumFactory.Create(codeContexts);
+            contextsEnum = _codeContextEnumFactory.Create(codeContexts);
             return VSConstants.S_OK;
         }
 
@@ -305,15 +313,15 @@ namespace YetiVSI.DebugEngine
         public int EnumModules(out IEnumDebugModules2 modulesEnum)
         {
             var sbModules = GetSbModules();
-            debugModuleCache.RemoveAllExcept(sbModules);
-            var modules = sbModules.Select(m => debugModuleCache.GetOrCreate(m, Self));
-            modulesEnum = moduleEnumFactory.Create(modules);
+            _debugModuleCache.RemoveAllExcept(sbModules);
+            var modules = sbModules.Select(m => _debugModuleCache.GetOrCreate(m, Self));
+            modulesEnum = _moduleEnumFactory.Create(modules);
             return VSConstants.S_OK;
         }
 
         public int EnumThreads(out IEnumDebugThreads2 threadsEnum)
         {
-            lock (threadCache)
+            lock (_threadCache)
             {
                 var remoteThreads = GetRemoteThreads();
 
@@ -322,12 +330,12 @@ namespace YetiVSI.DebugEngine
                 // EnumThreads call, that thread will be lost forever.
                 if (remoteThreads.Count == 0)
                 {
-                    threadsEnum = threadEnumFactory.Create(threadCache.Values);
+                    threadsEnum = _threadEnumFactory.Create(_threadCache.Values);
                     return VSConstants.S_OK;
                 }
 
                 // Update the thread cache, and remove any stale entries.
-                var deadIds = threadCache.Keys.ToList();
+                var deadIds = _threadCache.Keys.ToList();
                 foreach (var remoteThread in remoteThreads)
                 {
                     var currentThread = GetDebugThread(remoteThread);
@@ -338,13 +346,13 @@ namespace YetiVSI.DebugEngine
                 foreach (var threadId in deadIds)
                 {
                     IDebugThread thread;
-                    if (threadCache.TryGetValue(threadId, out thread))
+                    if (_threadCache.TryGetValue(threadId, out thread))
                     {
-                        debugEngineHandler.SendEvent(new ThreadDestroyEvent(0), Self, thread);
-                        threadCache.Remove(threadId);
+                        _debugEngineHandler.SendEvent(new ThreadDestroyEvent(0), Self, thread);
+                        _threadCache.Remove(threadId);
                     }
                 }
-                threadsEnum = threadEnumFactory.Create(threadCache.Values);
+                threadsEnum = _threadEnumFactory.Create(_threadCache.Values);
             }
             return VSConstants.S_OK;
         }
@@ -364,8 +372,8 @@ namespace YetiVSI.DebugEngine
             enum_DISASSEMBLY_STREAM_SCOPE scope, IDebugCodeContext2 codeContext,
             out IDebugDisassemblyStream2 disassemblyStream)
         {
-            disassemblyStream = debugDisassemblyStreamFactory.Create(
-                scope, codeContext, lldbTarget);
+            disassemblyStream = _debugDisassemblyStreamFactory.Create(
+                scope, codeContext, _lldbTarget);
             return VSConstants.S_OK;
         }
 
@@ -390,26 +398,26 @@ namespace YetiVSI.DebugEngine
 
         public int GetName(out string name)
         {
-            taskContext.ThrowIfNotOnMainThread();
-            return process.GetName(enum_GETNAME_TYPE.GN_BASENAME, out name);
+            _taskContext.ThrowIfNotOnMainThread();
+            return _process.GetName(enum_GETNAME_TYPE.GN_BASENAME, out name);
         }
 
         public int GetProcess(out IDebugProcess2 process)
         {
-            taskContext.ThrowIfNotOnMainThread();
-            process = this.process;
+            _taskContext.ThrowIfNotOnMainThread();
+            process = _process;
             return VSConstants.S_OK;
         }
 
         public int GetProgramId(out Guid guid)
         {
-            guid = this.id;
+            guid = _id;
             return VSConstants.S_OK;
         }
 
         public int Step(IDebugThread2 thread, enum_STEPKIND sk, enum_STEPUNIT step)
         {
-            if (isCoreAttach)
+            if (_isCoreAttach)
             {
                 return AD7Constants.E_CRASHDUMP_UNSUPPORTED;
             }
@@ -455,19 +463,32 @@ namespace YetiVSI.DebugEngine
         public int Terminate()
         {
             TerminationRequested = true;
-            if (!lldbProcess.Kill())
+            if (_gameLauncher.LaunchGameApiEnabled)
             {
-                // Visual Studio waits for the ProgramDestroyEvent regardless of whether Terminate()
-                // succeeds, so we send the event on failure as well as on success.
-                debugEngineHandler.Abort(this,
-                    ExitInfo.Error(new TerminateProcessException(ErrorStrings.FailedToStopGame)));
-                return VSConstants.E_FAIL;
+                _taskContext.Factory.Run(
+                    () => _gameLauncher.StopGameAsync());
+                // TODO: Poll for the launch status to show an error message in
+                // case the game stop fails.
+            }
+            else
+            {
+                //TODO: remove the legacy launch flow.
+                if (!_lldbProcess.Kill())
+                {
+                    // Visual Studio waits for the ProgramDestroyEvent regardless of whether
+                    // Terminate() succeeds, so we send the event on failure as well as on success.
+                    _debugEngineHandler.Abort(
+                        this,
+                        ExitInfo.Error(
+                            new TerminateProcessException(ErrorStrings.FailedToStopGame)));
+                    return VSConstants.E_FAIL;
+                }
             }
 
             // Send the ProgramDestroyEvent immediately, so that Visual Studio can't cause a
             // deadlock by waiting for the event while preventing us from accessing the main thread.
             // TODO: Block and wait for LldbEventHandler to send the event
-            debugEngineHandler.Abort(this, ExitInfo.Normal(ExitReason.DebuggerTerminated));
+            _debugEngineHandler.Abort(this, ExitInfo.Normal(ExitReason.DebuggerTerminated));
             return VSConstants.S_OK;
         }
 
@@ -480,7 +501,7 @@ namespace YetiVSI.DebugEngine
         // this when continuing rather than Continue.
         public int ExecuteOnThread(IDebugThread2 pThread)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            _taskContext.ThrowIfNotOnMainThread();
             return Continue(pThread);
         }
 
@@ -490,10 +511,10 @@ namespace YetiVSI.DebugEngine
         List<SbModule> GetSbModules()
         {
             var modules = new List<SbModule>();
-            var numModules = lldbTarget.GetNumModules();
+            var numModules = _lldbTarget.GetNumModules();
             for (int i = 0; i < numModules; i++)
             {
-                var module = lldbTarget.GetModuleAtIndex(i);
+                var module = _lldbTarget.GetModuleAtIndex(i);
                 if (module == null)
                 {
                     Trace.WriteLine("Unable to retrieve module " + i);
@@ -509,10 +530,10 @@ namespace YetiVSI.DebugEngine
         List<RemoteThread> GetRemoteThreads()
         {
             var threads = new List<RemoteThread>();
-            var numberThreads = lldbProcess.GetNumThreads();
+            var numberThreads = _lldbProcess.GetNumThreads();
             for (int i = 0; i < numberThreads; i++)
             {
-                var thread = lldbProcess.GetThreadAtIndex(i);
+                var thread = _lldbProcess.GetThreadAtIndex(i);
                 if (thread == null)
                 {
                     Trace.WriteLine("Failed to get thread at index: " + i);
@@ -553,7 +574,7 @@ namespace YetiVSI.DebugEngine
                 SbError error;
                 try
                 {
-                    countRead = Convert.ToUInt32(lldbProcess.ReadMemory(address, memory,
+                    countRead = Convert.ToUInt32(_lldbProcess.ReadMemory(address, memory,
                         countToRead, out error));
                     if (error.Fail() || countRead == 0)
                     {
@@ -585,7 +606,7 @@ namespace YetiVSI.DebugEngine
                 return VSConstants.E_FAIL;
             }
             SbError error;
-            var bytesWrote = lldbProcess.WriteMemory(address, buffer, count, out error);
+            var bytesWrote = _lldbProcess.WriteMemory(address, buffer, count, out error);
             if (error.Fail())
             {
                 Trace.WriteLine($"Error: {error.GetCString()}");

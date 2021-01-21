@@ -164,7 +164,6 @@ namespace YetiVSI.DebugEngine
             readonly DebugEventCallbackTransform _debugEventCallbackDecorator;
             readonly ISymbolSettingsProvider _symbolSettingsProvider;
             readonly bool _deployLldbServer;
-            readonly bool _launchGameApiEnabled;
             readonly IGameLauncher _gameLauncher;
 
             public Factory(JoinableTaskContext taskContext, ServiceManager serviceManager,
@@ -185,7 +184,7 @@ namespace YetiVSI.DebugEngine
                            IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
-                           bool launchGameApiEnabled, IGameLauncher gameLauncher)
+                           IGameLauncher gameLauncher)
             {
                 _taskContext = taskContext;
                 _serviceManager = serviceManager;
@@ -212,7 +211,6 @@ namespace YetiVSI.DebugEngine
                 _debugEventCallbackDecorator = debugEventCallbackDecorator;
                 _symbolSettingsProvider = symbolSettingsProvider;
                 _deployLldbServer = deployLldbServer;
-                _launchGameApiEnabled = launchGameApiEnabled;
                 _gameLauncher = gameLauncher;
             }
 
@@ -240,8 +238,7 @@ namespace YetiVSI.DebugEngine
                     _natvisExpander, _natvisLogger, _exitDialogUtil, _preflightBinaryChecker,
                     _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
                     _debugEngineCommands, _debugEventCallbackDecorator, envDteService?.RegistryRoot,
-                    sessionNotifier, _symbolSettingsProvider, _deployLldbServer,
-                    _launchGameApiEnabled, _gameLauncher);
+                    sessionNotifier, _symbolSettingsProvider, _deployLldbServer, _gameLauncher);
             }
         }
 
@@ -321,7 +318,6 @@ namespace YetiVSI.DebugEngine
         readonly DebugEventCallbackTransform _debugEventCallbackDecorator;
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
         readonly bool _deployLldbServer;
-        readonly bool _launchGameApiEnabled;
         readonly IGameLauncher _gameLauncher;
 
         // Keep track of the attach operation, so that it can be aborted by transport errors.
@@ -365,7 +361,7 @@ namespace YetiVSI.DebugEngine
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            string vsRegistryRoot, ISessionNotifier sessionNotifier,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
-                           bool launchGameApiEnabled, IGameLauncher gameLauncher)
+                           IGameLauncher gameLauncher)
             : base(self)
         {
             taskContext.ThrowIfNotOnMainThread();
@@ -402,7 +398,6 @@ namespace YetiVSI.DebugEngine
             _sessionNotifier = sessionNotifier;
             _symbolSettingsProvider = symbolSettingsProvider;
             _deployLldbServer = deployLldbServer;
-            _launchGameApiEnabled = launchGameApiEnabled;
             _gameLauncher = gameLauncher;
 
             // Register observers on long lived objects last so that they don't hold a reference
@@ -962,7 +957,7 @@ namespace YetiVSI.DebugEngine
                 _rgpEnabled = chromeLauncher.LaunchParams.Rgp;
                 _renderDocEnabled = chromeLauncher.LaunchParams.RenderDoc;
 
-                if (_launchGameApiEnabled)
+                if (_gameLauncher.LaunchGameApiEnabled)
                 {
                     bool launchIsSuccessful = _taskContext.Factory.Run(
                         () => _gameLauncher.LaunchGameAsync(chromeLauncher, _workingDirectory));
@@ -1021,7 +1016,7 @@ namespace YetiVSI.DebugEngine
         {
             _taskContext.ThrowIfNotOnMainThread();
 
-            if (_launchGameApiEnabled && _gameLauncher.CurrentLaunchExists)
+            if (_gameLauncher.LaunchGameApiEnabled && _gameLauncher.CurrentLaunchExists)
             {
                 object status =
                     _taskContext.Factory.Run(() => _gameLauncher.GetLaunchStateAsync());
@@ -1073,11 +1068,6 @@ namespace YetiVSI.DebugEngine
         /// </summary>
         public override int TerminateProcess(IDebugProcess2 process)
         {
-            if (_launchOption == LaunchOption.LaunchGame && _launchGameApiEnabled)
-            {
-                _gameLauncher.StopGame();
-            }
-
             if (_launchOption != LaunchOption.AttachToCore)
             {
                 return VSConstants.S_OK;

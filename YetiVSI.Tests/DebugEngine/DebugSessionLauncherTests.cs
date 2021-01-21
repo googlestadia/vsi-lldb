@@ -26,6 +26,7 @@ using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.CoreDumps;
 using YetiVSI.DebugEngine.Variables;
 using YetiVSI.DebuggerOptions;
+using YetiVSI.GameLaunch;
 using YetiVSI.LLDBShell;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
@@ -321,6 +322,8 @@ namespace YetiVSI.Test.DebugEngine
             var lldbShell = Substitute.For<ILLDBShell>();
             var actionRecorder = new ActionRecorder(Substitute.For<IMetrics>());
             var symbolSettingsProvider = Substitute.For<ISymbolSettingsProvider>();
+            var mockGameLauncher = Substitute.For<IGameLauncher>();
+            mockGameLauncher.LaunchGameApiEnabled.Returns(false);
             var attachedProgramFactory = new LldbAttachedProgram.Factory(
                 taskContext, new DebugEngineHandler.Factory(taskContext), taskExecutor,
                 new LldbEventManager.Factory(new BoundBreakpointEnumFactory(), taskContext),
@@ -329,7 +332,7 @@ namespace YetiVSI.Test.DebugEngine
                                              debugCodeContextFactory, debugDocumentContextFactory),
                                          debugDocumentContextFactory, debugCodeContextFactory,
                                          threadsEnumFactory, moduleEnumFactory,
-                                         codeContextEnumFactory),
+                                         codeContextEnumFactory, mockGameLauncher),
                 new DebugModuleCache.Factory(new SynchronousDispatcher()),
                 new DebugModule.Factory(
                     FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false),

@@ -24,12 +24,13 @@ namespace YetiVSI.GameLaunch
 {
     public interface IGameLauncher
     {
+        bool LaunchGameApiEnabled { get; }
         bool CurrentLaunchExists { get; }
         Task<bool> LaunchGameAsync(
             YetiCommon.ChromeClientLauncher chromeLauncher, string workingDirectory);
         // TODO: Implement status polling.
         Task<object> GetLaunchStateAsync();
-        void StopGame();
+        Task StopGameAsync();
     }
 
     public partial class GameLauncher : IGameLauncher
@@ -39,12 +40,16 @@ namespace YetiVSI.GameLaunch
 
         string _launchName;
 
-        public GameLauncher(IGameletClient gameletClient, SdkConfig.Factory sdkConfigFactory)
+        public GameLauncher(IGameletClient gameletClient, SdkConfig.Factory sdkConfigFactory,
+                            bool launchGameApiEnabled)
         {
             _gameletClient = gameletClient;
             _launchGameParamsConverter =
                 new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
+            LaunchGameApiEnabled = launchGameApiEnabled;
         }
+
+        public bool LaunchGameApiEnabled { get; }
 
         public bool CurrentLaunchExists => !string.IsNullOrWhiteSpace(_launchName);
 

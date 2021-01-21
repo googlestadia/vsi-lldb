@@ -130,7 +130,6 @@ namespace YetiVSI.Test.DebugEngine
 
             var cancelableTaskFactory = GetCancelableTaskFactory();
             bool deployLldbServer = true;
-            bool launchGameApiEnabled = false;
             IDebugEngineFactory factory = new YetiVSI.DebugEngine.DebugEngine.Factory(
                 joinableTaskContext, serviceManager, GetDebugSessionMetrics(), yetiTransport,
                 actionRecorder, null, moduleFileLoadRecorderFactory, moduleFileFinder,
@@ -139,7 +138,7 @@ namespace YetiVSI.Test.DebugEngine
                 _remoteDeploy, cancelableTaskFactory, _dialogUtil,
                 GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(), debugEngineCommands,
                 GetDebugEventCallbackDecorator(vsiService.DebuggerOptions),
-                GetSymbolSettingsProvider(), deployLldbServer, launchGameApiEnabled, _gameLauncher);
+                GetSymbolSettingsProvider(), deployLldbServer, _gameLauncher);
             return GetFactoryDecorator().Decorate(factory);
         }
 

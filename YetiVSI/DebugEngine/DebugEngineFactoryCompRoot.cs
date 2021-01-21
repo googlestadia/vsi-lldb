@@ -308,6 +308,12 @@ namespace YetiVSI.DebugEngine
                     GetFactoryDecorator().Decorate(new FrameEnumFactory()), _taskExecutor));
             var debugThreadCreator = asyncInterfacesEnabled ?(CreateDebugThreadDelegate)
                                          debugThreadAsyncFactory.Create : debugThreadFactory.Create;
+            bool launchGameApiEnabled =
+                GetVsiService().Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
+            var gameletFactory = new GameletClient.Factory();
+            IGameletClient gameletClient = gameletFactory.Create(GetCloudRunner());
+            var gameLauncher =
+                new GameLauncher(gameletClient, GetSdkConfigFactory(), launchGameApiEnabled);
             var debugProgramFactory =
                 GetFactoryDecorator().Decorate<IDebugProgramFactory>(new DebugProgram.Factory(
                     GetJoinableTaskContext(),
@@ -316,7 +322,7 @@ namespace YetiVSI.DebugEngine
                     debugDocumentContextFactory, debugCodeContextFactory,
                     GetFactoryDecorator().Decorate(new ThreadEnumFactory()),
                     GetFactoryDecorator().Decorate(new ModuleEnumFactory()),
-                    GetFactoryDecorator().Decorate(new CodeContextEnumFactory())));
+                    GetFactoryDecorator().Decorate(new CodeContextEnumFactory()), gameLauncher));
             var breakpointErrorEnumFactory =
                 GetFactoryDecorator().Decorate(new BreakpointErrorEnumFactory());
             var boundBreakpointEnumFactory =
@@ -394,11 +400,6 @@ namespace YetiVSI.DebugEngine
             var remoteDeploy = new RemoteDeploy(remoteCommand, remoteFile, processFactory,
                                                 GetFileSystem(), binaryFileUtil);
             bool deployLldbServer = IsInternalEngine();
-            bool launchGameApiEnabled =
-                GetVsiService().Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
-            var gameletFactory = new GameletClient.Factory();
-            IGameletClient gameletClient = gameletFactory.Create(GetCloudRunner());
-            var gameLauncher = new GameLauncher(gameletClient, GetSdkConfigFactory());
             IDebugEngineFactory factory = new DebugEngine.Factory(
                 GetJoinableTaskContext(), serviceManager, GetDebugSessionMetrics(), yetiTransport,
                 actionRecorder, symbolServerHttpClient, moduleFileLoadRecorderFactory,
@@ -408,7 +409,7 @@ namespace YetiVSI.DebugEngine
                 GetDialogUtil(), GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(),
                 debugEngineCommands,
                 GetDebugEventCallbackDecorator(GetVsiService().DebuggerOptions),
-                GetSymbolSettingsProvider(), deployLldbServer, launchGameApiEnabled, gameLauncher);
+                GetSymbolSettingsProvider(), deployLldbServer, gameLauncher);
             return GetFactoryDecorator().Decorate(factory);
         }
 

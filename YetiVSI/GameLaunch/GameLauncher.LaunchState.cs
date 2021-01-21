@@ -32,9 +32,9 @@ namespace YetiVSI.GameLaunch
             throw new NotImplementedException();
         }
 
-        public void StopGame()
+        public async Task StopGameAsync()
         {
-            _launchName = null;
+            await _gameletClient.DeleteGameLaunchAsync(_launchName);
         }
     }
 }
