@@ -26,24 +26,27 @@ namespace YetiVSI.GameLaunch
     {
         bool LaunchGameApiEnabled { get; }
         bool CurrentLaunchExists { get; }
-        Task<bool> LaunchGameAsync(
-            YetiCommon.ChromeClientLauncher chromeLauncher, string workingDirectory);
-        // TODO: Implement status polling.
-        Task<object> GetLaunchStateAsync();
+
+        Task<bool> LaunchGameAsync(YetiCommon.ChromeClientLauncher chromeLauncher,
+                                   string workingDirectory);
+
+        bool GetLaunchState();
         Task StopGameAsync();
     }
 
     public partial class GameLauncher : IGameLauncher
     {
         readonly IGameletClient _gameletClient;
+        readonly CancelableTask.Factory _cancelableTaskFactory;
         readonly LaunchGameParamsConverter _launchGameParamsConverter;
 
         string _launchName;
 
         public GameLauncher(IGameletClient gameletClient, SdkConfig.Factory sdkConfigFactory,
-                            bool launchGameApiEnabled)
+                            CancelableTask.Factory cancelableTaskFactory, bool launchGameApiEnabled)
         {
             _gameletClient = gameletClient;
+            _cancelableTaskFactory = cancelableTaskFactory;
             _launchGameParamsConverter =
                 new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
             LaunchGameApiEnabled = launchGameApiEnabled;
@@ -82,7 +85,7 @@ namespace YetiVSI.GameLaunch
         }
 
         public async Task<bool> LaunchGameAsync(YetiCommon.ChromeClientLauncher chromeLauncher,
-                                           string workingDirectory)
+                                                string workingDirectory)
         {
             // TODO: Show a progressbar of what's currently happening.
             Task<string> sdkCompatibilityTask = CheckSdkCompatibilityAsync(
@@ -141,6 +144,7 @@ namespace YetiVSI.GameLaunch
 
             LaunchGameResponse response = await _gameletClient.LaunchGameAsync(launchRequest);
             _launchName = response.GameLaunchName;
+
             string launchUrl = chromeLauncher.BuildLaunchUrlWithLaunchName(_launchName);
             chromeLauncher.StartChrome(launchUrl, workingDirectory);
             return true;

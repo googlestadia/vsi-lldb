@@ -30,6 +30,7 @@ namespace ChromeClientLauncher
             try
             {
                 var jsonUtil = new JsonUtil();
+                // TODO: use the launch API.
                 var gameLauncher = new YetiCommon.ChromeClientLauncher.Factory(
                     new BackgroundProcess.Factory(),
                     new ChromeClientLaunchCommandFormatter(jsonUtil),

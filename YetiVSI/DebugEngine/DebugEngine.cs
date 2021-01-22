@@ -1016,28 +1016,31 @@ namespace YetiVSI.DebugEngine
         {
             _taskContext.ThrowIfNotOnMainThread();
 
-            if (_gameLauncher.LaunchGameApiEnabled && _gameLauncher.CurrentLaunchExists)
+            if (_gameLauncher.LaunchGameApiEnabled)
             {
-                object status =
-                    _taskContext.Factory.Run(() => _gameLauncher.GetLaunchStateAsync());
-                // TODO: depending on the status either proceed or Fail now.
+                // TODO: poll for status while trying to attach as well.
+                bool status = _gameLauncher.GetLaunchState();
+
+                if (!status)
+                {
+                    Trace.WriteLine("Resume failed due to failed launch.");
+                    return VSConstants.E_ABORT;
+                }
             }
 
-            IDebugPort2 port;
-            if (process.GetPort(out port) != 0)
+            if (process.GetPort(out IDebugPort2 port) != 0)
             {
                 Trace.WriteLine("Resume failed. Could not get the port supplier from the process");
                 return VSConstants.E_FAIL;
             }
 
-            IDebugPortNotify2 portNotify;
             IDebugDefaultPort2 defaultPort = (IDebugDefaultPort2)port;
             if (defaultPort == null)
             {
                 Trace.WriteLine("Resume failed. Could not get the default port supplier");
                 return VSConstants.E_FAIL;
             }
-            if (defaultPort.GetPortNotify(out portNotify) != 0)
+            if (defaultPort.GetPortNotify(out IDebugPortNotify2 portNotify) != 0)
             {
                 Trace.WriteLine("Resume failed. Could not get the port notifier");
                 return VSConstants.E_FAIL;

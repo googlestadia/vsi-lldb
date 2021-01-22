@@ -81,7 +81,7 @@ namespace YetiVSI
         public const string NoCoreFileSelected = "Please select a core file to attach to.";
         public const string NoGameletsFound = "No instances found.  Run 'ggp instance reserve'.";
         public const string RpcFailure = "GRPC failure when communicating with the LLDB server. " +
-                                         "Check the logs for more information.";
+            "Check the logs for more information.";
         public const string SingleProgramExpected =
             "Debug engine expects only a single program while attaching.";
         public const string SymbolFileNameUnknown =
@@ -90,6 +90,26 @@ namespace YetiVSI
         public const string LaunchExistsDialogText =
             "Game cannot be launched as there is an active launch associated with the current " +
             "account.\nDo you want to stop it?";
+
+        public const string LaunchEndedCommonMessage = "Can not proceed with the game launch. ";
+        public const string LaunchEndedUnspecified = "Unknown reason.";
+        public const string LaunchEndedExitedByUser = "User requested the game session to end.";
+        public const string LaunchEndedInactivityTimeout = "Game shutdown due to user inactivity.";
+        public const string LaunchEndedClientNeverConnected =
+            "Game shutdown due to client never connecting to the session.";
+        public const string LaunchEndedGameExitedWithSuccessfulCode =
+            "Game process exited without an error code.";
+        public const string LaunchEndedGameExitedWithErrorCode =
+            "Game process exited with an error code, presumably crashed.";
+        public const string LaunchEndedGameShutdownBySystem = "Game shutdown by the system.";
+        public const string LaunchEndedUnexpectedGameShutdownBySystem =
+            "Game unexpectedly shutdown, presumably by an issue with the system";
+        public const string LaunchEndedGameBinaryNotFound = "The game binary was not found.";
+        public const string LaunchEndedQueueAbandonedByUser =
+            "The user explicitly requested to exit the queue.";
+        public const string LaunchEndedQueueReadyTimeout =
+            "The user didn't request to play when the queue was ready and it timed-out.";
+
         public static string BuildIdCheckDetails(IEnumerable<string> matchedFiles,
                                                  IEnumerable<string> searchedPaths) =>
             $"Executables matched by name: " + Environment.NewLine
