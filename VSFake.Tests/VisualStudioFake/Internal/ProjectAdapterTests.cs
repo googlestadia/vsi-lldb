@@ -17,7 +17,6 @@ using NUnit.Framework;
 using System.IO;
 using TestsCommon.TestSupport;
 using YetiCommon;
-using YetiVSITestsCommon.TestFilters;
 
 namespace Google.Tests.VisualStudioFake.Internal
 {

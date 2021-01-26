@@ -19,7 +19,6 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using YetiVSI;
 using YetiVSI.LLDBShell;
 using YetiVSI.LoadSymbols;
-using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
 
 namespace YetiVSITestsCommon.Services
