@@ -87,7 +87,9 @@ namespace YetiVSI
         public const string SymbolFileNameUnknown =
             "Unable to search for symbols. Symbol file name is unknown.";
         public const string StopRunningGame = "Stop running game?";
-        public const string LaunchEndedCommonMessage = "Can not proceed with the game launch. ";
+        public const string GameNotRunningDuringAttach =
+            "Cannot proceed with the attach. Game is not running.";
+        public const string LaunchEndedCommonMessage = "Cannot proceed with the game launch. ";
         public const string LaunchEndedUnspecified = "Unknown reason.";
         public const string LaunchEndedExitedByUser = "User requested the game session to end.";
         public const string LaunchEndedInactivityTimeout = "Game shutdown due to user inactivity.";

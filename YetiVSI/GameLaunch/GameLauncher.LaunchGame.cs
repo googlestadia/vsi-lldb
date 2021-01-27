@@ -30,7 +30,9 @@ namespace YetiVSI.GameLaunch
         Task<bool> LaunchGameAsync(YetiCommon.ChromeClientLauncher chromeLauncher,
                                    string workingDirectory);
 
-        bool GetLaunchState();
+        Task<GgpGrpc.Models.GameLaunch> GetLaunchStateAsync();
+        bool WaitUntilGameLaunched();
+        string GetEndReason(GameLaunchEnded gameLaunchEnded);
         Task StopGameAsync();
         Task<bool> DeleteLaunchAsync(string gameLaunchName, ICancelable task);
         Task<GgpGrpc.Models.GameLaunch> GetCurrentGameLaunchAsync(string testAccount);
@@ -58,8 +60,7 @@ namespace YetiVSI.GameLaunch
 
         public bool CurrentLaunchExists => !string.IsNullOrWhiteSpace(_launchName);
 
-        public async Task<GgpGrpc.Models.GameLaunch> GetCurrentGameLaunchAsync(
-            string testAccount)
+        public async Task<GgpGrpc.Models.GameLaunch> GetCurrentGameLaunchAsync(string testAccount)
         {
             GgpGrpc.Models.GameLaunch currentGameLaunch;
             try

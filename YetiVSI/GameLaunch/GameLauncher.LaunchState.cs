@@ -44,22 +44,25 @@ namespace YetiVSI.GameLaunch
             public static LaunchStatus Canceled() => new LaunchStatus(false, "");
         }
 
-        public bool GetLaunchState()
+        public bool WaitUntilGameLaunched()
         {
-            LaunchStatus status = LaunchStatus.Failed("");
             if (!CurrentLaunchExists)
             {
                 Trace.WriteLine("Current launch doesn't exist.");
                 return false;
             }
 
-            ICancelableTask pollForLaunchStatusTask = _cancelableTaskFactory.Create(
-                TaskMessages.LaunchingGame,
-                async (task) => { status = await PollForLaunchStatusAsync(task); });
+            ICancelableTask<LaunchStatus> pollForLaunchStatusTask = _cancelableTaskFactory.Create(
+                TaskMessages.LaunchingGame, async (task) => await PollForLaunchStatusAsync(task));
 
             // TODO: use RunAndRecord to collect metrics.
-            pollForLaunchStatusTask.Run();
+            if (!pollForLaunchStatusTask.Run())
+            {
+                Trace.WriteLine("Polling for the launch status has been canceled by user.");
+                return false;
+            }
 
+            LaunchStatus status = pollForLaunchStatusTask.Result;
             if (!status.GameLaunched && !string.IsNullOrEmpty(status.Error))
             {
                 Trace.WriteLine(status.Error);
@@ -74,34 +77,11 @@ namespace YetiVSI.GameLaunch
             await _gameletClient.DeleteGameLaunchAsync(_launchName);
         }
 
-        // Polling statuses until we see RunningGame or GameLaunchEnded. IncompleteLaunch,
-        // ReadyToPlay and DelayedLaunch are transitioning states.
-        async Task<LaunchStatus> PollForLaunchStatusAsync(ICancelable task)
-        {
-            while (!task.IsCanceled)
-            {
-                GgpGrpc.Models.GameLaunch launch =
-                    await _gameletClient.GetGameLaunchStateAsync(_launchName);
-
-                if (launch.GameLaunchState == GameLaunchState.RunningGame)
-                {
-                    return LaunchStatus.Success();
-                }
-
-                if (launch.GameLaunchState == GameLaunchState.GameLaunchEnded)
-                {
-                    string error = ProcessEndReason(launch.GameLaunchEnded);
-                    return LaunchStatus.Failed(error);
-                }
-
-                await Task.Delay(500);
-            }
-
-            return LaunchStatus.Canceled();
-        }
+        public async Task<GgpGrpc.Models.GameLaunch> GetLaunchStateAsync() =>
+            await _gameletClient.GetGameLaunchStateAsync(_launchName);
 
         // Some of the statuses might not be applicable for the dev flow.
-        string ProcessEndReason(GameLaunchEnded gameLaunchEnded)
+        public string GetEndReason(GameLaunchEnded gameLaunchEnded)
         {
             string message = ErrorStrings.LaunchEndedCommonMessage;
             switch (gameLaunchEnded.EndReason)
@@ -159,8 +139,7 @@ namespace YetiVSI.GameLaunch
 
             try
             {
-                launch =
-                    await _gameletClient.DeleteGameLaunchAsync(gameLaunchName);
+                launch = await _gameletClient.DeleteGameLaunchAsync(gameLaunchName);
             }
             catch (CloudException e) when ((e.InnerException as RpcException)?.StatusCode ==
                 StatusCode.NotFound)
@@ -176,6 +155,31 @@ namespace YetiVSI.GameLaunch
             }
 
             return launch.GameLaunchState == GameLaunchState.GameLaunchEnded;
+        }
+
+        // Polling statuses until we see RunningGame or GameLaunchEnded. IncompleteLaunch,
+        // ReadyToPlay and DelayedLaunch are transitioning states.
+        async Task<LaunchStatus> PollForLaunchStatusAsync(ICancelable task)
+        {
+            while (!task.IsCanceled)
+            {
+                GgpGrpc.Models.GameLaunch launch = await GetLaunchStateAsync();
+
+                if (launch.GameLaunchState == GameLaunchState.RunningGame)
+                {
+                    return LaunchStatus.Success();
+                }
+
+                if (launch.GameLaunchState == GameLaunchState.GameLaunchEnded)
+                {
+                    string error = GetEndReason(launch.GameLaunchEnded);
+                    return LaunchStatus.Failed(error);
+                }
+
+                await Task.Delay(500);
+            }
+
+            return LaunchStatus.Canceled();
         }
     }
 }

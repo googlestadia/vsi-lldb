@@ -12,11 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
-using DebuggerGrpcClient;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Debugger.Interop;
-using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,9 +21,16 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using DebuggerApi;
+using DebuggerGrpcClient;
+using GgpGrpc.Models;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiVSI.DebugEngine.CoreDumps;
 using YetiVSI.DebuggerOptions;
+using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using static YetiVSI.DebugEngine.DebugEngine;
 
@@ -39,7 +41,7 @@ namespace YetiVSI.DebugEngine
     {
         IDebugSessionLauncher Create(IDebugEngine3 debugEngine, LaunchOption launchOption,
                                      string coreFilePath, string executableFileName,
-                                     string executableFullPath);
+                                     string executableFullPath, IGameLauncher gameLauncher);
     }
 
 
@@ -47,11 +49,11 @@ namespace YetiVSI.DebugEngine
     {
         Task<ILldbAttachedProgram> LaunchAsync(ICancelable task, IDebugProcess2 process,
                                                Guid programId, uint? attachPid,
-                                               DebuggerOptions.DebuggerOptions
-                                                   debuggerOptions, HashSet<string> libPaths,
-                                               GrpcConnection grpcConnection,
-                                               int localDebuggerPort, string targetIpAddress,
-                                               int targetPort, IDebugEventCallback2 callback);
+                                               DebuggerOptions.DebuggerOptions debuggerOptions,
+                                               HashSet<string> libPaths,
+                                               GrpcConnection grpcConnection, int localDebuggerPort,
+                                               string targetIpAddress, int targetPort,
+                                               IDebugEventCallback2 callback);
     }
 
 
@@ -127,7 +129,8 @@ namespace YetiVSI.DebugEngine
             public IDebugSessionLauncher Create(IDebugEngine3 debugEngine,
                                                 LaunchOption launchOption, string coreFilePath,
                                                 string executableFileName,
-                                                string executableFullPath) =>
+                                                string executableFullPath,
+                                                IGameLauncher gameLauncher) =>
                 new DebugSessionLauncher(_taskContext, _lldbDebuggerFactory, _lldbListenerFactory,
                                          _lldbPlatformFactory, _lldbPlatformConnectOptionsFactory,
                                          _lldbPlatformShellCommandFactory, _attachedProgramFactory,
@@ -137,7 +140,7 @@ namespace YetiVSI.DebugEngine
                                          _exceptionManagerFactory, _fileSystem,
                                          _fastExpressionEvaluation, _moduleFileFinder,
                                          _dumpModulesProvider, _moduleSearchLogHolder,
-                                         _symbolSettingsProvider, _warningDialog);
+                                         _symbolSettingsProvider, _warningDialog, gameLauncher);
         }
 
         const string _remoteLldbPlatformName = "remote-stadia";
@@ -175,6 +178,7 @@ namespace YetiVSI.DebugEngine
         readonly IModuleSearchLogHolder _moduleSearchLogHolder;
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
         readonly CoreAttachWarningDialogUtil _warningDialog;
+        readonly IGameLauncher _gameLauncher;
 
         public DebugSessionLauncher(
             JoinableTaskContext taskContext, GrpcDebuggerFactory lldbDebuggerFactory,
@@ -189,7 +193,7 @@ namespace YetiVSI.DebugEngine
             bool fastExpressionEvaluation, IModuleFileFinder moduleFileFinder,
             IDumpModulesProvider dumpModulesProvider, IModuleSearchLogHolder moduleSearchLogHolder,
             ISymbolSettingsProvider symbolSettingsProvider,
-            CoreAttachWarningDialogUtil warningDialog)
+            CoreAttachWarningDialogUtil warningDialog, IGameLauncher gameLauncher)
         {
             _taskContext = taskContext;
             _lldbDebuggerFactory = lldbDebuggerFactory;
@@ -213,6 +217,7 @@ namespace YetiVSI.DebugEngine
             _moduleSearchLogHolder = moduleSearchLogHolder;
             _symbolSettingsProvider = symbolSettingsProvider;
             _warningDialog = warningDialog;
+            _gameLauncher = gameLauncher;
         }
 
         public async Task<ILldbAttachedProgram> LaunchAsync(
@@ -289,13 +294,24 @@ namespace YetiVSI.DebugEngine
 
                 SbPlatformConnectOptions lldbConnectOptions =
                     _lldbPlatformConnectOptionsFactory.Create(connectRemoteArgument);
+
+                bool TryConnectRemote()
+                {
+                    if (lldbPlatform.ConnectRemote(lldbConnectOptions).Success())
+                    {
+                        return true;
+                    }
+
+                    VerifyGameIsReady();
+                    return false;
+                }
+
                 try
                 {
-                    _actionRecorder.RecordToolAction(
-                        ActionType.DebugWaitDebugger,
-                        () => RetryWithTimeout(
-                            task, () => lldbPlatform.ConnectRemote(lldbConnectOptions).Success(),
-                            _launchRetryDelay, _launchTimeout, launchTimer));
+                    _actionRecorder.RecordToolAction(ActionType.DebugWaitDebugger,
+                                                     () => RetryWithTimeout(
+                                                         task, TryConnectRemote, _launchRetryDelay,
+                                                         _launchTimeout, launchTimer));
                 }
                 catch (TimeoutException e)
                 {
@@ -379,15 +395,25 @@ namespace YetiVSI.DebugEngine
                 case LaunchOption.LaunchGame:
                     // Since we have no way of knowing when the remote process actually
                     // starts, try a few times to get the pid.
+
+                    bool TryGetRemoteProcessId()
+                    {
+                        if (GetRemoteProcessId(_executableFileName, lldbPlatform, out processId))
+                        {
+                            return true;
+                        }
+
+                        VerifyGameIsReady();
+                        return false;
+                    }
+
                     try
                     {
-                        _actionRecorder.RecordToolAction(
-                            ActionType.DebugWaitProcess,
-                            () => RetryWithTimeout(task,
-                                                   () => GetRemoteProcessId(_executableFileName,
-                                                                            lldbPlatform,
-                                                                            out processId),
-                                                   _launchRetryDelay, _launchTimeout, launchTimer));
+                        _actionRecorder.RecordToolAction(ActionType.DebugWaitProcess,
+                                                         () => RetryWithTimeout(
+                                                             task, TryGetRemoteProcessId,
+                                                             _launchRetryDelay, _launchTimeout,
+                                                             launchTimer));
                     }
                     catch (TimeoutException e)
                     {
@@ -434,6 +460,29 @@ namespace YetiVSI.DebugEngine
             }
         }
 
+        /// <summary>
+        /// Verifies that the current launch is in RunningGame state, otherwise aborts the attach
+        /// process by throwing AttachException.
+        /// </summary>
+        void VerifyGameIsReady()
+        {
+            if (_gameLauncher.LaunchGameApiEnabled)
+            {
+                GgpGrpc.Models.GameLaunch state =
+                    _taskContext.Factory.Run(async () => await _gameLauncher.GetLaunchStateAsync());
+                if (state.GameLaunchState != GameLaunchState.RunningGame)
+                {
+                    string error = ErrorStrings.GameNotRunningDuringAttach;
+                    if (state.GameLaunchEnded != null)
+                    {
+                        error = _gameLauncher.GetEndReason(state.GameLaunchEnded);
+                    }
+
+                    throw new AttachException(VSConstants.E_FAIL, error);
+                }
+            }
+        }
+
         string RunShellCommand(string command, SbPlatform platform)
         {
             SbPlatformShellCommand shellCommand = _lldbPlatformShellCommandFactory.Create(command);
@@ -442,6 +491,7 @@ namespace YetiVSI.DebugEngine
             {
                 return null;
             }
+
             return shellCommand.GetOutput();
         }
 

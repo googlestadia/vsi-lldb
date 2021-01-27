@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerGrpcClient;
+using DebuggerGrpcClient;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
@@ -58,6 +58,7 @@ namespace YetiVSI.Test.DebugEngine
         YetiVSI.DebuggerOptions.DebuggerOptions _debuggerOptions;
         HashSet<string> _libPaths;
         Guid _programId;
+        IGameLauncher _gameLauncher;
 
         IDebugProcess2 _process;
         ICancelable _task;
@@ -74,15 +75,15 @@ namespace YetiVSI.Test.DebugEngine
             PipeCallInvoker callInvoker = callInvokerFactory.Create();
             _grpcConnection = new GrpcConnection(taskContext.Factory, callInvoker);
             _callback = Substitute.For<IDebugEventCallback2>();
-            _debuggerOptions =
-                new YetiVSI.DebuggerOptions.DebuggerOptions { [DebuggerOption.CLIENT_LOGGING] =
-                                                                  DebuggerOptionState.DISABLED };
+            _debuggerOptions = new YetiVSI.DebuggerOptions.DebuggerOptions
+                { [DebuggerOption.CLIENT_LOGGING] = DebuggerOptionState.DISABLED };
             _libPaths = new HashSet<string> { "some/path", "some/other/path", _gameBinary };
             _programId = Guid.Empty;
             _task = Substitute.For<ICancelable>();
             _process = new DebugProcessStub(enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM, _pid);
             _fileSystem = new MockFileSystem();
             _debugEngine = Substitute.For<IDebugEngine3>();
+            _gameLauncher = Substitute.For<IGameLauncher>();
         }
 
         [Test]
@@ -90,12 +91,13 @@ namespace YetiVSI.Test.DebugEngine
         {
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
-                                                  "some/core/path", "", "");
+                                                  "some/core/path", "", "", _gameLauncher);
             var attachedProgram = await LaunchAsync(launcher);
             Assert.That(attachedProgram, Is.Not.Null);
-            Assert.IsFalse(_debuggerFactory.Debugger.CommandInterpreter.HandledCommands.Contains(
-                               SbDebuggerExtensions.FastExpressionEvaluationCommand),
-                           _fastExpressionDisabledErrorMessage);
+            Assert.IsFalse(
+                _debuggerFactory.Debugger.CommandInterpreter.HandledCommands.Contains(
+                    SbDebuggerExtensions.FastExpressionEvaluationCommand),
+                _fastExpressionDisabledErrorMessage);
         }
 
         [Test]
@@ -103,12 +105,13 @@ namespace YetiVSI.Test.DebugEngine
         {
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
-                                                  _gameBinary, _gameBinary);
+                                                  _gameBinary, _gameBinary, _gameLauncher);
             var attachedProgram = await LaunchAsync(launcher);
             Assert.That(attachedProgram, Is.Not.Null);
-            Assert.IsFalse(_debuggerFactory.Debugger.CommandInterpreter.HandledCommands.Contains(
-                               SbDebuggerExtensions.FastExpressionEvaluationCommand),
-                           _fastExpressionDisabledErrorMessage);
+            Assert.IsFalse(
+                _debuggerFactory.Debugger.CommandInterpreter.HandledCommands.Contains(
+                    SbDebuggerExtensions.FastExpressionEvaluationCommand),
+                _fastExpressionDisabledErrorMessage);
         }
 
         [Test]
@@ -120,18 +123,20 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(false);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
-                                                  _gameBinary, _gameBinary);
+                                                  _gameBinary, _gameBinary, _gameLauncher);
             _debuggerFactory.SetTargetAttachError("Operation not permitted");
             _platformFactory.AddCommandOutput($"cat /proc/{_pid}/status",
                                               "Name:\tgame\n" + $"Pid:\t{_pid}\n" +
-                                                  $"PPid:\t{parentPid}\n" +
-                                                  $"TracerPid:\t{tracerPid}\n" + "FDSize:\t256\n");
+                                              $"PPid:\t{parentPid}\n" +
+                                              $"TracerPid:\t{tracerPid}\n" + "FDSize:\t256\n");
             _platformFactory.AddCommandOutput($"cat /proc/{tracerPid}/comm", tracerName);
 
             AttachException e =
                 Assert.ThrowsAsync<AttachException>(async () => await LaunchAsync(launcher));
-            Assert.That(e.Message, Is.EqualTo(ErrorStrings.FailedToAttachToProcessOtherTracer(
-                                       tracerName, tracerPid)));
+            Assert.That(e.Message,
+                        Is.EqualTo(
+                            ErrorStrings
+                                .FailedToAttachToProcessOtherTracer(tracerName, tracerPid)));
         }
 
         [Test]
@@ -141,12 +146,13 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(false);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
-                                                  _gameBinary, _gameBinary);
+                                                  _gameBinary, _gameBinary, _gameLauncher);
             _debuggerFactory.SetTargetAttachError("Operation not permitted");
-            _platformFactory.AddCommandOutput(
-                $"cat /proc/{_pid}/status",
-                "Name:\tgame\n" + $"Pid:\t{_pid}\n" + $"PPid:\t{tracerParentPid}\n" +
-                    $"TracerPid:\t{tracerParentPid}\n" + "FDSize:\t256\n");
+            _platformFactory.AddCommandOutput($"cat /proc/{_pid}/status",
+                                              "Name:\tgame\n" + $"Pid:\t{_pid}\n" +
+                                              $"PPid:\t{tracerParentPid}\n" +
+                                              $"TracerPid:\t{tracerParentPid}\n" +
+                                              "FDSize:\t256\n");
 
             AttachException e =
                 Assert.ThrowsAsync<AttachException>(async () => await LaunchAsync(launcher));
@@ -161,17 +167,18 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(false);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
-                                                  _gameBinary, _gameBinary);
+                                                  _gameBinary, _gameBinary, _gameLauncher);
             _debuggerFactory.SetTargetAttachError("Operation not permitted");
             _platformFactory.AddCommandOutput($"cat /proc/{_pid}/status",
                                               "Name:\tgame\n" + $"Pid:\t{_pid}\n" +
-                                                  $"PPid:\t{parentPid}\n" +
-                                                  $"TracerPid:\t{tracerPid}\n" + "FDSize:\t256\n");
+                                              $"PPid:\t{parentPid}\n" +
+                                              $"TracerPid:\t{tracerPid}\n" + "FDSize:\t256\n");
 
             AttachException e =
                 Assert.ThrowsAsync<AttachException>(async () => await LaunchAsync(launcher));
-            Assert.That(e.Message, Is.EqualTo(ErrorStrings.FailedToAttachToProcess(
-                                       "Operation not permitted")));
+            Assert.That(e.Message,
+                        Is.EqualTo(
+                            ErrorStrings.FailedToAttachToProcess("Operation not permitted")));
         }
 
         [Test]
@@ -179,14 +186,15 @@ namespace YetiVSI.Test.DebugEngine
         {
             var launcherFactory = CreateLauncherFactory(false);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
-                                                  _gameBinary, _gameBinary);
+                                                  _gameBinary, _gameBinary, _gameLauncher);
             _debuggerFactory.SetTargetAttachError("Operation not permitted");
             _platformFactory.AddCommandOutput($"cat /proc/{_pid}/status", null);
 
             AttachException e =
                 Assert.ThrowsAsync<AttachException>(async () => await LaunchAsync(launcher));
-            Assert.That(e.Message, Is.EqualTo(ErrorStrings.FailedToAttachToProcess(
-                                       "Operation not permitted")));
+            Assert.That(e.Message,
+                        Is.EqualTo(
+                            ErrorStrings.FailedToAttachToProcess("Operation not permitted")));
         }
 
         [Test]
@@ -194,12 +202,13 @@ namespace YetiVSI.Test.DebugEngine
         {
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
-                                                  _gameBinary, _gameBinary);
+                                                  _gameBinary, _gameBinary, _gameLauncher);
             var attachedProgram = await LaunchAsync(launcher);
             Assert.That(attachedProgram, Is.Not.Null);
-            Assert.IsFalse(_debuggerFactory.Debugger.CommandInterpreter.HandledCommands.Contains(
-                               SbDebuggerExtensions.FastExpressionEvaluationCommand),
-                           _fastExpressionDisabledErrorMessage);
+            Assert.IsFalse(
+                _debuggerFactory.Debugger.CommandInterpreter.HandledCommands.Contains(
+                    SbDebuggerExtensions.FastExpressionEvaluationCommand),
+                _fastExpressionDisabledErrorMessage);
         }
 
         [Test]
@@ -211,7 +220,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
-                                                  "some/core/path", "", "");
+                                                  "some/core/path", "", "", _gameLauncher);
             var attachedProgram = await LaunchAsync(launcher);
             Assert.IsTrue(_debuggerFactory.Debugger.IsInitFileSourced);
         }
@@ -225,33 +234,33 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
-                                                  "some/core/path", "", "");
+                                                  "some/core/path", "", "", _gameLauncher);
             var attachedProgram = await LaunchAsync(launcher);
             Assert.IsFalse(_debuggerFactory.Debugger.IsInitFileSourced);
         }
 
         [Test]
-        public async Task
-        TestConnectRemoteNotCalledWithAttachToCoreAsync([Values] bool stadiaPlatformAvailable)
+        public async Task TestConnectRemoteNotCalledWithAttachToCoreAsync(
+            [Values] bool stadiaPlatformAvailable)
         {
             var connectRemoteRecorder = new PlatformFactoryFakeConnectRecorder();
             var launcherFactory =
                 CreateLauncherFactory(stadiaPlatformAvailable, connectRemoteRecorder);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
-                                                  "some/core/path", "", "");
+                                                  "some/core/path", "", "", _gameLauncher);
             await LaunchAsync(launcher);
             Assert.That(connectRemoteRecorder.InvocationCount, Is.EqualTo(0));
         }
 
         [TestCase(LaunchOption.AttachToGame)]
         [TestCase(LaunchOption.LaunchGame)]
-        public async Task
-        TestConnectRemoteCalledForLinuxWithCorrectUrlAsync(LaunchOption launchOption)
+        public async Task TestConnectRemoteCalledForLinuxWithCorrectUrlAsync(
+            LaunchOption launchOption)
         {
             var connectRemoteRecorder = new PlatformFactoryFakeConnectRecorder();
             var launcherFactory = CreateLauncherFactory(false, connectRemoteRecorder);
-            var launcher =
-                launcherFactory.Create(_debugEngine, launchOption, "", _gameBinary, _gameBinary);
+            var launcher = launcherFactory.Create(_debugEngine, launchOption, "", _gameBinary,
+                                                  _gameBinary, _gameLauncher);
             await LaunchAsync(launcher);
             Assert.That(connectRemoteRecorder.InvocationCount, Is.EqualTo(1));
             Assert.That(connectRemoteRecorder.InvocationOptions[0].GetUrl(),
@@ -260,13 +269,13 @@ namespace YetiVSI.Test.DebugEngine
 
         [TestCase(LaunchOption.AttachToGame)]
         [TestCase(LaunchOption.LaunchGame)]
-        public async Task
-        TestConnectRemoteCalledForStadiaWithScpCommandAsExtraArgAsync(LaunchOption launchOption)
+        public async Task TestConnectRemoteCalledForStadiaWithScpCommandAsExtraArgAsync(
+            LaunchOption launchOption)
         {
             var connectRemoteRecorder = new PlatformFactoryFakeConnectRecorder();
             var launcherFactory = CreateLauncherFactory(true, connectRemoteRecorder);
-            var launcher =
-                launcherFactory.Create(_debugEngine, launchOption, "", _gameBinary, _gameBinary);
+            var launcher = launcherFactory.Create(_debugEngine, launchOption, "", _gameBinary,
+                                                  _gameBinary, _gameLauncher);
             await LaunchAsync(launcher);
             Assert.That(connectRemoteRecorder.InvocationCount, Is.EqualTo(1));
             Assert.That(connectRemoteRecorder.InvocationOptions.Count, Is.EqualTo(1));
@@ -282,8 +291,9 @@ namespace YetiVSI.Test.DebugEngine
                         Does.Contain("-oStrictHostKeyChecking=yes -oUserKnownHostsFile"));
         }
 
-        DebugSessionLauncher.Factory CreateLauncherFactory(
-            bool stadiaPlatformAvailable, PlatformFactoryFakeConnectRecorder connectRecorder = null)
+        DebugSessionLauncher.Factory CreateLauncherFactory(bool stadiaPlatformAvailable,
+                                                           PlatformFactoryFakeConnectRecorder
+                                                               connectRecorder = null)
         {
             _debuggerFactory =
                 new GrpcDebuggerFactoryFake(new TimeSpan(0), stadiaPlatformAvailable);
@@ -293,7 +303,9 @@ namespace YetiVSI.Test.DebugEngine
 
             // If stadiaPlatformAvailable is True the DebugSessionLauncher will connect
             // to the platform 'remote-stadia', otherwise it will use 'remote-linux'
-            var platformName = stadiaPlatformAvailable ? "remote-stadia" : "remote-linux";
+            var platformName = stadiaPlatformAvailable
+                ? "remote-stadia"
+                : "remote-linux";
             _platformFactory.AddFakeProcess(platformName, _gameBinary, 44);
             var exceptionManagerFactory =
                 new LldbExceptionManager.Factory(new Dictionary<int, Signal>());
@@ -339,25 +351,27 @@ namespace YetiVSI.Test.DebugEngine
                     actionRecorder, moduleFileLoadRecorderFactory, lldbModuleUtil,
                     symbolSettingsProvider),
                 new DebugThread.Factory(frameEnumFactory, taskExecutor).Create,
-                new DebugStackFrame
-                    .Factory(debugDocumentContextFactory, new ChildrenProvider.Factory(),
-                             debugCodeContextFactory,
-                             Substitute.For<DebugExpression.Factory>().Create, varInfoFactory,
-                             new VariableInformationEnum.Factory(taskExecutor),
-                             new RegisterSetsBuilder.Factory(varInfoFactory), taskExecutor)
-                    .Create,
-                lldbShell,
-                new LldbBreakpointManager.Factory(
-                    taskContext,
-                    new DebugPendingBreakpoint.Factory(
-                        taskContext,
-                        new DebugBoundBreakpoint.Factory(debugDocumentContextFactory,
-                                                         debugCodeContextFactory,
-                                                         new DebugBreakpointResolution.Factory()),
-                        new BreakpointErrorEnumFactory(), new BoundBreakpointEnumFactory()),
-                    new DebugWatchpoint.Factory(
-                        taskContext, new DebugWatchpointResolution.Factory(),
-                        new BreakpointErrorEnumFactory(), new BoundBreakpointEnumFactory())),
+                new DebugStackFrame.Factory(debugDocumentContextFactory,
+                                            new ChildrenProvider.Factory(), debugCodeContextFactory,
+                                            Substitute.For<DebugExpression.Factory>().Create,
+                                            varInfoFactory,
+                                            new VariableInformationEnum.Factory(taskExecutor),
+                                            new RegisterSetsBuilder.Factory(varInfoFactory),
+                                            taskExecutor).Create, lldbShell,
+                new LldbBreakpointManager.Factory(taskContext,
+                                                  new DebugPendingBreakpoint.Factory(
+                                                      taskContext,
+                                                      new DebugBoundBreakpoint.Factory(
+                                                          debugDocumentContextFactory,
+                                                          debugCodeContextFactory,
+                                                          new DebugBreakpointResolution.Factory()),
+                                                      new BreakpointErrorEnumFactory(),
+                                                      new BoundBreakpointEnumFactory()),
+                                                  new DebugWatchpoint.Factory(
+                                                      taskContext,
+                                                      new DebugWatchpointResolution.Factory(),
+                                                      new BreakpointErrorEnumFactory(),
+                                                      new BoundBreakpointEnumFactory())),
                 new SymbolLoader.Factory(lldbModuleUtil, mockBinaryFileUtil, moduleFileFinder),
                 new BinaryLoader.Factory(lldbModuleUtil, moduleFileFinder),
                 Substitute.For<IModuleFileLoaderFactory>());
@@ -365,12 +379,17 @@ namespace YetiVSI.Test.DebugEngine
             var coreAttachWarningDialog = new CoreAttachWarningDialogUtil(
                 taskContext, Substitute.For<IDialogUtil>());
 
-            return new DebugSessionLauncher.Factory(
-                taskContext, _debuggerFactory, listenerFactory, _platformFactory,
-                connectOptionsFactory, platformShellCommandFactory, attachedProgramFactory,
-                actionRecorder, moduleFileLoadRecorderFactory, exceptionManagerFactory, _fileSystem,
-                false, moduleFileFinder, new DumpModulesProvider(_fileSystem),
-                new ModuleSearchLogHolder(), symbolSettingsProvider, coreAttachWarningDialog);
+            return new DebugSessionLauncher.Factory(taskContext, _debuggerFactory, listenerFactory,
+                                                    _platformFactory, connectOptionsFactory,
+                                                    platformShellCommandFactory,
+                                                    attachedProgramFactory, actionRecorder,
+                                                    moduleFileLoadRecorderFactory,
+                                                    exceptionManagerFactory, _fileSystem, false,
+                                                    moduleFileFinder,
+                                                    new DumpModulesProvider(_fileSystem),
+                                                    new ModuleSearchLogHolder(),
+                                                    symbolSettingsProvider,
+                                                    coreAttachWarningDialog);
         }
 
         Task<ILldbAttachedProgram> LaunchAsync(IDebugSessionLauncher launcher)

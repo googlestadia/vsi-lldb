@@ -261,7 +261,7 @@ namespace YetiVSI.DebugEngine
         {
             public class Factory
             {
-                private ISerializer _serializer;
+                ISerializer _serializer;
 
                 public Factory(ISerializer serializer)
                 {
@@ -426,7 +426,7 @@ namespace YetiVSI.DebugEngine
             }
         }
 
-        private void OptionsGrid_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        void OptionsGrid_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(OptionPageGrid.NatvisLoggingLevel))
             {
@@ -437,7 +437,7 @@ namespace YetiVSI.DebugEngine
             }
         }
 
-        private void OnDebuggerOptionChanged(object sender, ValueChangedEventArgs args)
+        void OnDebuggerOptionChanged(object sender, ValueChangedEventArgs args)
         {
             Trace.WriteLine($"DebuggerOptionChanged: DebuggerOption[{args.Option}]={args.State}");
 
@@ -465,7 +465,7 @@ namespace YetiVSI.DebugEngine
             if (numPrograms != 1)
             {
                 Trace.WriteLine($"Debug Engine failed to attach. Attempted to attach to " +
-                    $"{numPrograms} programs; we only support attaching to one.");
+                                $"{numPrograms} programs; we only support attaching to one.");
                 _dialogUtil.ShowError(ErrorStrings.SingleProgramExpected);
                 return VSConstants.E_INVALIDARG;
             }
@@ -478,15 +478,12 @@ namespace YetiVSI.DebugEngine
             }
 
             // save the program ID provided to us
-            Guid programId;
-            IDebugProcess2 process;
-            programs[0].GetProgramId(out programId);
-            programs[0].GetProcess(out process);
+            programs[0].GetProgramId(out Guid programId);
+            programs[0].GetProcess(out IDebugProcess2 process);
 
             if (reason == enum_ATTACH_REASON.ATTACH_REASON_USER)
             {
-                IDebugPort2 port;
-                process.GetPort(out port);
+                process.GetPort(out IDebugPort2 port);
                 var debugPort = port as PortSupplier.DebugPort;
                 var gamelet = debugPort?.Gamelet;
                 if (gamelet != null && !string.IsNullOrEmpty(gamelet.IpAddr))
@@ -510,14 +507,14 @@ namespace YetiVSI.DebugEngine
             Trace.WriteLine("Extension Options:");
             foreach (var option in _extensionOptions.Options)
             {
-                Trace.WriteLine(string.Format("{0}: {1}", option.Name.ToLower(),
-                    option.Value.ToString().ToLower()));
+                Trace.WriteLine($"{option.Name.ToLower()}: {option.Value.ToString().ToLower()}");
             }
+
             Trace.WriteLine("Debugger Options:");
             foreach (var option in _debuggerOptions)
             {
-                Trace.WriteLine(string.Format("{0}: {1}", option.Key.ToString().ToLower(),
-                    option.Value.ToString().ToLower()));
+                Trace.WriteLine(
+                    $"{option.Key.ToString().ToLower()}: {option.Value.ToString().ToLower()}");
             }
 
             var libPaths = GetLldbSearchPaths();
@@ -617,7 +614,7 @@ namespace YetiVSI.DebugEngine
                         "Recording debugger parameters");
                     var launcher = _debugSessionLauncherFactory.Create(
                         Self, _launchOption, _coreFilePath, _executableFileName,
-                        _executableFullPath);
+                        _executableFullPath, _gameLauncher);
 
                     ILldbAttachedProgram program = await launcher.LaunchAsync(
                         task, process, programId, attachPid, _debuggerOptions, libPaths,
@@ -656,8 +653,8 @@ namespace YetiVSI.DebugEngine
             }
             catch (TaskAbortedException e) when (e.InnerException != null)
             {
-                Trace.WriteLine("Aborting attach because the debug session was aborted: "
-                    + e.InnerException.ToString());
+                Trace.WriteLine("Aborting attach because the debug session was aborted: " +
+                                e.InnerException);
                 exitInfo = ExitInfo.Error(e.InnerException);
                 result = VSConstants.E_ABORT;
             }
@@ -1018,8 +1015,7 @@ namespace YetiVSI.DebugEngine
 
             if (_gameLauncher.LaunchGameApiEnabled)
             {
-                // TODO: poll for status while trying to attach as well.
-                bool status = _gameLauncher.GetLaunchState();
+                bool status = _gameLauncher.WaitUntilGameLaunched();
 
                 if (!status)
                 {
@@ -1082,27 +1078,25 @@ namespace YetiVSI.DebugEngine
 
         #endregion
 
-        private uint? GetProcessId(IDebugProcess2 process)
+        uint? GetProcessId(IDebugProcess2 process)
         {
             _taskContext.ThrowIfNotOnMainThread();
 
-            AD_PROCESS_ID[] pid = new AD_PROCESS_ID[1];
-            if (process.GetPhysicalProcessId(pid) != VSConstants.S_OK ||
-                pid[0].ProcessIdType != (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM)
+            var pid = new AD_PROCESS_ID[1];
+            if (process.GetPhysicalProcessId(pid) != VSConstants.S_OK || pid[0].ProcessIdType !=
+                (uint) enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM)
             {
                 return null;
             }
+
             return pid[0].dwProcessId;
         }
 
-        private void StopTransportAndCleanup(ExitInfo exitInfo)
+        void StopTransportAndCleanup(ExitInfo exitInfo)
         {
             exitInfo.IfError(_exitDialogUtil.ShowExitDialog);
             _yetiTransport.Stop(exitInfo.ExitReason);
-            if (_symbolServerHttpClient != null)
-            {
-                _symbolServerHttpClient.Dispose();
-            }
+            _symbolServerHttpClient?.Dispose();
             if (_launchOption == LaunchOption.AttachToCore && File.Exists(_coreFilePath) &&
                 _deleteCoreFileAtCleanup)
             {
@@ -1131,7 +1125,7 @@ namespace YetiVSI.DebugEngine
             }
         }
 
-        private void Abort(Exception e)
+        void Abort(Exception e)
         {
             _attachOperation?.Abort(e);
             // This method can be called on a thread that isn't the main thread which means that
@@ -1144,7 +1138,7 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Destroy the program and cleanup all resources.
         /// </summary>
-        private void EndDebugSession(ExitInfo exitInfo)
+        void EndDebugSession(ExitInfo exitInfo)
         {
             RaiseSessionEnding(new EventArgs());
 
@@ -1181,7 +1175,7 @@ namespace YetiVSI.DebugEngine
         /// </summary>
         /// <remarks>Only called if debug session has started successfully.</remarks>
         /// <param name="exitInfo">details about why the session ended</param>
-        private void RecordDebugEnd(ExitInfo exitInfo)
+        void RecordDebugEnd(ExitInfo exitInfo)
         {
             exitInfo.HandleResult(
                 onNormal: reason => _actionRecorder.RecordSuccess(ActionType.DebugEnd,
@@ -1239,7 +1233,7 @@ namespace YetiVSI.DebugEngine
         }
 
         // Get the list of search paths that should be passed to LLDB.
-        private HashSet<string> GetLldbSearchPaths()
+        HashSet<string> GetLldbSearchPaths()
         {
             var libPaths = new HashSet<string>(SDKUtil.GetLibraryPaths());
 
@@ -1298,8 +1292,8 @@ namespace YetiVSI.DebugEngine
             return libPaths;
         }
 
-        private void RecordParameters(IAction action, IExtensionOptions extensionOptions,
-            DebuggerOptions.DebuggerOptions debuggerOptions)
+        void RecordParameters(IAction action, IExtensionOptions extensionOptions,
+                              DebuggerOptions.DebuggerOptions debuggerOptions)
         {
             var debugParams = new VSIDebugParameters();
             debugParams.ExtensionOptions.AddRange(BuildExtensionOptions(extensionOptions));

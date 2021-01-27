@@ -224,10 +224,11 @@ namespace YetiVSI.Test.DebugEngine
             IDebugSessionLauncher sessionLauncher)
         {
             var debugSessionLauncherFactory = Substitute.For<IDebugSessionLauncherFactory>();
-            debugSessionLauncherFactory
-                .Create(Arg.Any<IDebugEngine3>(),
-                        Arg.Any<YetiVSI.DebugEngine.DebugEngine.LaunchOption>(), Arg.Any<string>(),
-                        Arg.Any<string>(), Arg.Any<string>())
+            debugSessionLauncherFactory.Create(Arg.Any<IDebugEngine3>(),
+                                               Arg.Any<YetiVSI.DebugEngine.DebugEngine.
+                                                   LaunchOption>(), Arg.Any<string>(),
+                                               Arg.Any<string>(), Arg.Any<string>(),
+                                               Arg.Any<IGameLauncher>())
                 .Returns((x) => sessionLauncher);
             return debugSessionLauncherFactory;
         }
@@ -244,13 +245,13 @@ namespace YetiVSI.Test.DebugEngine
             SshTarget expectedTarget, Func<CallInfo, Task<ILldbAttachedProgram>> func = null)
         {
             var debugSessionLauncher = Substitute.For<IDebugSessionLauncher>();
-            debugSessionLauncher
-                .LaunchAsync(Arg.Any<ICancelableTask>(), Arg.Any<IDebugProcess2>(), Arg.Any<Guid>(),
-                             Arg.Any<uint?>(), Arg.Any<YetiVSI.DebuggerOptions.DebuggerOptions>(),
-                             Arg.Any<HashSet<string>>(), Arg.Any<GrpcConnection>(), Arg.Any<int>(),
-                             Arg.Is(expectedTarget?.IpAddress), Arg.Is(expectedTarget?.Port ?? 0),
-                             Arg.Any<IDebugEventCallback2>())
-                .Returns(func);
+            debugSessionLauncher.LaunchAsync(Arg.Any<ICancelableTask>(), Arg.Any<IDebugProcess2>(),
+                                             Arg.Any<Guid>(), Arg.Any<uint?>(),
+                                             Arg.Any<YetiVSI.DebuggerOptions.DebuggerOptions>(),
+                                             Arg.Any<HashSet<string>>(), Arg.Any<GrpcConnection>(),
+                                             Arg.Any<int>(), Arg.Is(expectedTarget?.IpAddress),
+                                             Arg.Is(expectedTarget?.Port ?? 0),
+                                             Arg.Any<IDebugEventCallback2>()).Returns(func);
 
             return debugSessionLauncher;
         }
