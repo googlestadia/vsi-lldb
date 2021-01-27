@@ -49,28 +49,6 @@ namespace YetiVSI.DebugEngine.CoreDumps
         }
 
         /// <summary>
-        /// Iterating through all program header absolute positions.
-        /// </summary>
-        public IEnumerable<ulong> GetAbsoluteProgramHeaderOffsets()
-        {
-            foreach (var offset in GetRelativeProgramHeaderOffsets())
-            {
-                yield return StartOffset + offset;
-            }
-        }
-
-        /// <summary>
-        /// Iterating through all program header relative positions.
-        /// </summary>
-        public IEnumerable<ulong> GetRelativeProgramHeaderOffsets()
-        {
-            for (int i = 0; i < EntriesCount; i++)
-            {
-                yield return (ulong)i * EntrySize;
-            }
-        }
-
-        /// <summary>
         /// Try to read elf header.
         /// </summary>
         /// <exception cref="ObjectDisposedException">

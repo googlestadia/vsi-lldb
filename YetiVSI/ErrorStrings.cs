@@ -38,7 +38,16 @@ namespace YetiVSI
             "and pass -Xlinker --build-id=sha1 parameters to the compiler.\n\n" +
             "Do you want to continue attaching?";
 
+        public const string CoreFileCorruptedWarningMessage =
+            "Core Dump file appears to be corrupted.\n" + "Do you want to continue attaching?";
+
+        public const string CoreFileTruncatedWarningMessage =
+            "Core Dump file appears to be truncated. Please make sure you download " +
+            "a complete core dump file.\n" +
+            "Do you want to continue attaching to the partial core dump?";
+
         public const string CoreFileDoesNotExist = "The specified core file does not exist.";
+
         public const string DialogTitleError = "Error";
         public const string DialogTitleWarning = "Warning";
         public const string FailedToCreateDebugger = "Failed to create LLDB SBDebugger object.";

@@ -48,9 +48,9 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var reader = new BinaryReader(new MemoryStream(data));
             Assert.IsTrue(ProgramHeader.TryRead(reader, out ProgramHeader h));
-            Assert.AreEqual(expectedOffset, h.OffsetInDump);
+            Assert.AreEqual(expectedOffset, h.OffsetInFile);
             Assert.AreEqual(expectedVaddr, h.VirtualAddress);
-            Assert.AreEqual(expectedSize, h.HeaderSize);
+            Assert.AreEqual(expectedSize, h.SizeInFile);
             Assert.AreEqual(ProgramHeader.Type.LoadableSegment, h.HeaderType);
         }
 
@@ -62,9 +62,9 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var reader = new BinaryReader(new MemoryStream(data));
             Assert.IsTrue(ProgramHeader.TryRead(reader, out ProgramHeader h));
-            Assert.AreEqual(expectedOffset, h.OffsetInDump);
+            Assert.AreEqual(expectedOffset, h.OffsetInFile);
             Assert.AreEqual(expectedVaddr, h.VirtualAddress);
-            Assert.AreEqual(expectedSize, h.HeaderSize);
+            Assert.AreEqual(expectedSize, h.SizeInFile);
             Assert.AreEqual(ProgramHeader.Type.NoteSegment, h.HeaderType);
         }
 
@@ -76,9 +76,9 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var reader = new BinaryReader(new MemoryStream(data));
             Assert.IsTrue(ProgramHeader.TryRead(reader, out ProgramHeader h));
-            Assert.AreEqual(expectedOffset, h.OffsetInDump);
+            Assert.AreEqual(expectedOffset, h.OffsetInFile);
             Assert.AreEqual(expectedVaddr, h.VirtualAddress);
-            Assert.AreEqual(expectedSize, h.HeaderSize);
+            Assert.AreEqual(expectedSize, h.SizeInFile);
             Assert.AreEqual(ProgramHeader.Type.Other, h.HeaderType);
         }
     }

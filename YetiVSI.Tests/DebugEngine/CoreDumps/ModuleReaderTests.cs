@@ -36,7 +36,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void CorrectBuildIdInSingleSegment()
         {
-            var data = TestData.GetNtFileBytes(TestData.expectedId);
+            var data = TestData.GetElfFileBytesFromBuildId(TestData.expectedId);
             var segment = new ProgramHeader(ProgramHeader.Type.LoadableSegment, 0, 0,
                 (ulong) data.Length);
 
@@ -48,7 +48,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void ElfHeaderEndsOutsideSegment()
         {
-            var data = TestData.GetNtFileBytes(TestData.expectedId);
+            var data = TestData.GetElfFileBytesFromBuildId(TestData.expectedId);
             var segment = new ProgramHeader(
                 ProgramHeader.Type.LoadableSegment, 0, 0, ElfHeader.Size - 1);
 
@@ -60,7 +60,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void ProgramHeaderEndsOutsideSegment()
         {
-            var data = TestData.GetNtFileBytes(TestData.expectedId);
+            var data = TestData.GetElfFileBytesFromBuildId(TestData.expectedId);
             var segment = new ProgramHeader(ProgramHeader.Type.LoadableSegment, 0, 0,
                                             ElfHeader.Size + ProgramHeader.Size - 1);
 
@@ -72,7 +72,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void BuildIdEndsOutsideSegment()
         {
-            var data = TestData.GetNtFileBytes(TestData.expectedId);
+            var data = TestData.GetElfFileBytesFromBuildId(TestData.expectedId);
             var segment = new ProgramHeader(
                 ProgramHeader.Type.LoadableSegment, 0, 0, (ulong)data.Length - 1);
 
@@ -84,7 +84,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void FileStartBeforeSegment()
         {
-            var data = TestData.GetNtFileBytes(TestData.expectedId);
+            var data = TestData.GetElfFileBytesFromBuildId(TestData.expectedId);
             var segment = new ProgramHeader(ProgramHeader.Type.LoadableSegment, 0, 1,
                 (ulong) data.Length);
 
@@ -96,7 +96,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void FileAtTheMiddleOfSegment()
         {
-            var buildIdFileData = TestData.GetNtFileBytes(TestData.expectedId);
+            var buildIdFileData = TestData.GetElfFileBytesFromBuildId(TestData.expectedId);
             var buildIdLength = buildIdFileData.Length;
             var data = new byte[buildIdLength].Concat(buildIdFileData).ToArray();
 
@@ -111,7 +111,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void ExecutableFileAtTheMiddleOfSegment()
         {
-            var buildIdFileData = TestData.GetNtFileBytes(TestData.expectedId, isExecutable: true);
+            var buildIdFileData =
+                TestData.GetElfFileBytesFromBuildId(TestData.expectedId, isExecutable: true);
             var buildIdLength = buildIdFileData.Length;
             var data = new byte[buildIdLength].Concat(buildIdFileData).ToArray();
 
@@ -127,7 +128,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void FileInSecondSegment()
         {
-            var buildIdFileData = TestData.GetNtFileBytes(TestData.expectedId);
+            var buildIdFileData = TestData.GetElfFileBytesFromBuildId(TestData.expectedId);
             var buildIdLength = buildIdFileData.Length;
             var data = new byte[buildIdLength].Concat(buildIdFileData).ToArray();
             var firstSegment = new ProgramHeader(ProgramHeader.Type.LoadableSegment, 0, 0,
@@ -147,7 +148,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [TestCase(ElfHeader.Size + ProgramHeader.Size + 10, TestName = "DataSeparated")]
         public void FileInSeveralSegments(int firstSegmentSize)
         {
-            var data = TestData.GetNtFileBytes(TestData.expectedId);
+            var data = TestData.GetElfFileBytesFromBuildId(TestData.expectedId);
             var secondSegmentSize = data.Length - firstSegmentSize;
             var firstSegment = new ProgramHeader(
                 ProgramHeader.Type.LoadableSegment, 0, 0, (ulong) firstSegmentSize);
@@ -165,8 +166,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void SeveralFilesInOneSegment()
         {
-            var firstFileBytes = TestData.GetNtFileBytes(TestData.expectedId);
-            var secondFileBytes = TestData.GetNtFileBytes(TestData.anotherExpectedId);
+            var firstFileBytes = TestData.GetElfFileBytesFromBuildId(TestData.expectedId);
+            var secondFileBytes = TestData.GetElfFileBytesFromBuildId(TestData.anotherExpectedId);
             var data = firstFileBytes.Concat(secondFileBytes).ToArray();
 
             var firstFileSection = new FileSection("", 0, (ulong) firstFileBytes.Length);
@@ -188,8 +189,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void SeveralFilesInSeveralSegments()
         {
-            var firstFileBytes = TestData.GetNtFileBytes(TestData.expectedId);
-            var secondFileBytes = TestData.GetNtFileBytes(TestData.anotherExpectedId);
+            var firstFileBytes = TestData.GetElfFileBytesFromBuildId(TestData.expectedId);
+            var secondFileBytes = TestData.GetElfFileBytesFromBuildId(TestData.anotherExpectedId);
             var data = firstFileBytes.Concat(secondFileBytes).ToArray();
 
             var firstFileSection = new FileSection("", 0, (ulong) firstFileBytes.Length);

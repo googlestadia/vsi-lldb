@@ -43,7 +43,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void ShortNoteStream()
         {
-            var minNote = TestData.GetNoteSectionData("", 0, new byte[0]);
+            var minNote = TestData.GetNoteSectionBytes("", 0, new byte[0]);
             var notEnoughBytes = minNote.Skip(1).ToArray();
             var emptyReader = new BinaryReader(new MemoryStream(notEnoughBytes));
             var sections = NoteSection.ReadModuleSections(emptyReader, minNote.Length).ToArray();
@@ -54,8 +54,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         public void CorrectNtFileNote()
         {
             var ntFile = GetExpectedNtFileBytes();
-            var noteBytes = TestData.GetNoteSectionData(
-                NoteSection.CoreName, NoteSection.NtFileType, ntFile);
+            var noteBytes =
+                TestData.GetNoteSectionBytes(NoteSection.CoreName, NoteSection.NtFileType, ntFile);
 
             var fileReader = new BinaryReader(new MemoryStream(noteBytes));
             var sections = NoteSection.ReadModuleSections(fileReader, ntFile.Length).ToArray();
@@ -71,7 +71,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         public void WrongNtFileName()
         {
             var ntFile = GetExpectedNtFileBytes();
-            var noteBytes = TestData.GetNoteSectionData("123", NoteSection.NtFileType, ntFile);
+            var noteBytes = TestData.GetNoteSectionBytes("123", NoteSection.NtFileType, ntFile);
 
             var fileReader = new BinaryReader(new MemoryStream(noteBytes));
             var sections = NoteSection.ReadModuleSections(fileReader, ntFile.Length).ToArray();
@@ -82,7 +82,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         public void WrongNtFileType()
         {
             var ntFile = GetExpectedNtFileBytes();
-            var noteBytes = TestData.GetNoteSectionData(NoteSection.CoreName, 0, ntFile);
+            var noteBytes = TestData.GetNoteSectionBytes(NoteSection.CoreName, 0, ntFile);
 
             var fileReader = new BinaryReader(new MemoryStream(noteBytes));
             var sections = NoteSection.ReadModuleSections(fileReader, ntFile.Length).ToArray();
@@ -99,8 +99,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var ntFile = TestData.GetNtFileSectionsBytes(StartAddresss, EndAddresss, offsets,
                 names);
-            var noteBytes = TestData.GetNoteSectionData(
-                NoteSection.CoreName, NoteSection.NtFileType, ntFile);
+            var noteBytes =
+                TestData.GetNoteSectionBytes(NoteSection.CoreName, NoteSection.NtFileType, ntFile);
 
             var fileReader = new BinaryReader(new MemoryStream(noteBytes));
             var sections = NoteSection.ReadModuleSections(fileReader, ntFile.Length).ToArray();
@@ -116,8 +116,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         public void ShortNtFile()
         {
             var ntFile = GetExpectedNtFileBytes().Skip(1).ToArray();
-            var noteBytes = TestData.GetNoteSectionData(
-                NoteSection.CoreName, NoteSection.NtFileType, ntFile);
+            var noteBytes =
+                TestData.GetNoteSectionBytes(NoteSection.CoreName, NoteSection.NtFileType, ntFile);
 
             var fileReader = new BinaryReader(new MemoryStream(noteBytes));
             var sections = NoteSection.ReadModuleSections(fileReader, ntFile.Length + 1).ToArray();
@@ -133,8 +133,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             var names = new string[] {expectedName, anotherExpectedName};
 
             var ntFiles = TestData.GetNtFileSectionsBytes(StartAddresss, EndAddresss, offsets, names);
-            var noteBytes = TestData.GetNoteSectionData(
-                NoteSection.CoreName, NoteSection.NtFileType, ntFiles);
+            var noteBytes =
+                TestData.GetNoteSectionBytes(NoteSection.CoreName, NoteSection.NtFileType, ntFiles);
 
             var fileReader = new BinaryReader(new MemoryStream(noteBytes));
             var sections = NoteSection.ReadModuleSections(fileReader, ntFiles.Length).ToArray();
@@ -155,16 +155,17 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         public void SeveralNtFilesNotes()
         {
             var firstNtFilesSection = GetExpectedNtFileBytes();
-            var firstNoteBytes = TestData.GetNoteSectionData(
+            var firstNoteBytes = TestData.GetNoteSectionBytes(
                 NoteSection.CoreName, NoteSection.NtFileType, firstNtFilesSection);
 
             var wrongNtFilesSection = GetExpectedNtFileBytes();
-            var wrongNoteBytes = TestData.GetNoteSectionData(
+            var wrongNoteBytes = TestData.GetNoteSectionBytes(
                 NoteSection.GnuName, NoteSection.NtFileType, wrongNtFilesSection);
 
-            var secondNtFileSection = TestData.GetFileSectionBytes(
-                anotherExpectedStartAddress, anotherExpectedEndAddress, expectedOffset, anotherExpectedName);
-            var secondNoteBytes = TestData.GetNoteSectionData(
+            var secondNtFileSection = TestData.GetNtFileSectionBytes(
+                anotherExpectedStartAddress, anotherExpectedEndAddress, expectedOffset,
+                anotherExpectedName);
+            var secondNoteBytes = TestData.GetNoteSectionBytes(
                 NoteSection.CoreName, NoteSection.NtFileType, secondNtFileSection);
 
             var fullNoteBytes = firstNoteBytes.Concat(wrongNoteBytes).Concat(secondNoteBytes)
@@ -188,9 +189,9 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void CorrectBuildIdNote()
         {
-            var noteBytes = TestData.GetNoteSectionData(NoteSection.GnuName,
-                                                        NoteSection.NtGnuBuildIdType,
-                                                        TestData.expectedId.Bytes.ToArray());
+            var noteBytes =
+                TestData.GetNoteSectionBytes(NoteSection.GnuName, NoteSection.NtGnuBuildIdType,
+                                             TestData.expectedId.Bytes.ToArray());
 
             var reader = new BinaryReader(new MemoryStream(noteBytes));
             var buildId = NoteSection.ReadBuildId(reader, noteBytes.Length);
@@ -200,8 +201,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void WrongIdNoteType()
         {
-            var noteBytes = TestData.GetNoteSectionData(NoteSection.GnuName, NoteSection.NtFileType,
-                                                        TestData.expectedId.Bytes.ToArray());
+            var noteBytes = TestData.GetNoteSectionBytes(
+                NoteSection.GnuName, NoteSection.NtFileType, TestData.expectedId.Bytes.ToArray());
 
             var reader = new BinaryReader(new MemoryStream(noteBytes));
             var buildId = NoteSection.ReadBuildId(reader, noteBytes.Length);
@@ -212,9 +213,9 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         [Test]
         public void WrongIdNameType()
         {
-            var noteBytes = TestData.GetNoteSectionData(NoteSection.CoreName,
-                                                        NoteSection.NtGnuBuildIdType,
-                                                        TestData.expectedId.Bytes.ToArray());
+            var noteBytes =
+                TestData.GetNoteSectionBytes(NoteSection.CoreName, NoteSection.NtGnuBuildIdType,
+                                             TestData.expectedId.Bytes.ToArray());
 
             var reader = new BinaryReader(new MemoryStream(noteBytes));
             var buildId = NoteSection.ReadBuildId(reader, noteBytes.Length);
@@ -224,8 +225,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
         byte[] GetExpectedNtFileBytes()
         {
-            return TestData.GetFileSectionBytes(expectedStartAddress, expectedEndAddress,
-                expectedOffset, expectedName);
+            return TestData.GetNtFileSectionBytes(expectedStartAddress, expectedEndAddress,
+                                                  expectedOffset, expectedName);
         }
     }
 }

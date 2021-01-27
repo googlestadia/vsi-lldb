@@ -59,8 +59,9 @@ namespace YetiVSI.DebugEngine.CoreDumps
                 {
                     // Iterate through the program headers, until we find the note with the build
                     // id.
-                    foreach (ulong offset in moduleHeader.GetRelativeProgramHeaderOffsets())
+                    for (ulong i = 0; i < moduleHeader.EntriesCount; ++i)
                     {
+                        ulong offset = i * moduleHeader.EntrySize;
                         headerReader.BaseStream.Seek((long)offset, SeekOrigin.Begin);
                         if (!ProgramHeader.TryRead(headerReader, out ProgramHeader header))
                         {
@@ -76,7 +77,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
                         }
 
                         ulong fileSize = file.EndAddress - file.StartAddress;
-                        ulong headerEnd = header.OffsetInDump + header.HeaderSize;
+                        ulong headerEnd = header.OffsetInFile + header.SizeInFile;
                         if (headerEnd > fileSize)
                         {
                             Trace.WriteLine(
@@ -85,16 +86,16 @@ namespace YetiVSI.DebugEngine.CoreDumps
                             continue;
                         }
 
-                        if (header.HeaderSize > int.MaxValue)
+                        if (header.SizeInFile > int.MaxValue)
                         {
                             Trace.WriteLine("Can't extract note sections from program header. " +
                                             "Note size is more then int.Max.");
                             continue;
                         }
 
-                        int size = (int)header.HeaderSize;
+                        int size = (int)header.SizeInFile;
                         byte[] noteSegmentBytes =
-                            ReadBlockByAddress(file.StartAddress + header.OffsetInDump, size);
+                            ReadBlockByAddress(file.StartAddress + header.OffsetInFile, size);
                         if (noteSegmentBytes.Length < size)
                         {
                             Trace.WriteLine("Can't extract build ids from note section. " +
@@ -106,7 +107,11 @@ namespace YetiVSI.DebugEngine.CoreDumps
                         using (var notesReader = new BinaryReader(notesStream))
                         {
                             BuildId buildId = NoteSection.ReadBuildId(notesReader, size);
-                            return new DumpModule(file.Path, buildId, moduleHeader.IsExecutable);
+                            if (buildId != BuildId.Empty)
+                            {
+                                return new DumpModule(file.Path, buildId,
+                                                      moduleHeader.IsExecutable);
+                            }
                         }
                     }
                 }
@@ -142,15 +147,21 @@ namespace YetiVSI.DebugEngine.CoreDumps
                 }
 
                 ulong offsetInSegment = startAddress - segment.VirtualAddress;
-                long offsetInDump = (long)(segment.OffsetInDump + offsetInSegment);
-                int blockSize = Math.Min((int)(segment.HeaderSize - offsetInSegment), remainSize);
+                long offsetInDump = (long)(segment.OffsetInFile + offsetInSegment);
+                int blockSize = Math.Min((int)(segment.SizeInFile - offsetInSegment), remainSize);
 
                 _dumpReader.BaseStream.Seek(offsetInDump, SeekOrigin.Begin);
 
                 byte[] blockBytes = _dumpReader.ReadBytes(blockSize);
-                Array.Copy(blockBytes, 0, result, size - remainSize, blockSize);
-                remainSize -= blockSize;
-                startAddress += (ulong)blockSize;
+                Array.Copy(blockBytes, 0, result, size - remainSize, blockBytes.Length);
+                remainSize -= blockBytes.Length;
+                startAddress += (ulong)blockBytes.Length;
+            }
+            if (remainSize > 0)
+            {
+                byte[] shrunkResult = new byte[size - remainSize];
+                Array.Copy(result, shrunkResult, shrunkResult.Length);
+                result = shrunkResult;
             }
 
             return result;
@@ -170,7 +181,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
             {
                 int mid = (min + max) / 2;
                 ProgramHeader segment = _sortedSegments[mid];
-                ulong end = segment.VirtualAddress + segment.HeaderSize;
+                ulong end = segment.VirtualAddress + segment.SizeInFile;
                 if (address < segment.VirtualAddress)
                 {
                     max = mid - 1;

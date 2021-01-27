@@ -89,7 +89,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             return phData;
         }
 
-        public static byte[] GetNoteSectionData(string name, int type, byte[] data)
+        public static byte[] GetNoteSectionBytes(string name, int type, byte[] data)
         {
             var nameBytes = GetStringBytes(name);
             var nameLength = nameBytes.Length;
@@ -119,9 +119,11 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             return noteData;
         }
 
-        public static byte[] GetFileSectionBytes(ulong start, ulong end, ulong offset, string name)
+        public static byte[] GetNtFileSectionBytes(ulong startAddress, ulong endAddress,
+                                                   ulong offset, string name)
         {
-            return GetNtFileSectionsBytes(new[] {start}, new[] {end}, new[] {offset}, new[] {name});
+            return GetNtFileSectionsBytes(new[] { startAddress }, new[] { endAddress },
+                                          new[] { offset }, new[] { name });
         }
 
         public static byte[] GetNtFileSectionsBytes(ulong[] starts, ulong[] ends, ulong[] offsets,
@@ -153,10 +155,10 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             return ntFilesData;
         }
 
-        public static byte[] GetNtFileBytes(BuildId id, bool isExecutable = false)
+        public static byte[] GetElfFileBytesFromBuildId(BuildId id, bool isExecutable = false)
         {
-            var idNote = GetNoteSectionData(NoteSection.GnuName, NoteSection.NtGnuBuildIdType,
-                                            id.Bytes.ToArray());
+            var idNote = GetNoteSectionBytes(NoteSection.GnuName, NoteSection.NtGnuBuildIdType,
+                                             id.Bytes.ToArray());
 
             var noteOffset = ProgramHeader.Size + ElfHeader.Size;
             var programHeader = GetProgramHeaderBytes(

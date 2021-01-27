@@ -22,7 +22,28 @@ namespace YetiVSI.DebugEngine.CoreDumps
 {
     public interface IDumpModulesProvider
     {
-        IEnumerable<DumpModule> GetModules(string dumpPath);
+        DumpReadResult GetModules(string dumpPath);
+    }
+
+    public enum DumpReadWarning
+    {
+        None,
+        FileDoesNotExist,
+        FileIsTruncated,
+        ElfHeaderIsCorrupted,
+        ExecutableBuildIdMissing,
+    }
+
+    public class DumpReadResult
+    {
+        public IEnumerable<DumpModule> Modules { get; }
+        public DumpReadWarning Warning;
+
+        public DumpReadResult(IEnumerable<DumpModule> modules, DumpReadWarning warning)
+        {
+            Modules = modules;
+            Warning = warning;
+        }
     }
 
     public class DumpModule
@@ -53,12 +74,12 @@ namespace YetiVSI.DebugEngine.CoreDumps
             _fileSystem = fileSystem;
         }
 
-        public IEnumerable<DumpModule> GetModules(string dumpPath)
+        public DumpReadResult GetModules(string dumpPath)
         {
             if (string.IsNullOrEmpty(dumpPath) || !_fileSystem.File.Exists(dumpPath))
             {
                 Trace.WriteLine($"Dump file {dumpPath} doesn't exists.");
-                return new DumpModule[0];
+                return new DumpReadResult(new DumpModule[0], DumpReadWarning.FileDoesNotExist);
             }
 
             Stream fileStream = _fileSystem.File.Open(
@@ -72,26 +93,36 @@ namespace YetiVSI.DebugEngine.CoreDumps
             }
         }
 
-        IEnumerable<DumpModule> GetModules(BinaryReader dumpReader)
+        DumpReadResult GetModules(BinaryReader dumpReader)
         {
+            ulong dumpSize = (ulong)dumpReader.BaseStream.Length;
             var moduleList = new List<DumpModule>();
             if (!ElfHeader.TryRead(dumpReader, out ElfHeader elfHeader))
             {
-                return moduleList;
+                return new DumpReadResult(moduleList, DumpReadWarning.ElfHeaderIsCorrupted);
             }
 
             var fileSections = new List<FileSection>();
             var loadSegments = new List<ProgramHeader>();
+            DumpReadWarning warning = DumpReadWarning.None;
 
             // Go through each program header sections, look for the notes sections and the
             // loadable segments.
-            foreach (ulong headerOffset in elfHeader.GetAbsoluteProgramHeaderOffsets())
+            for (ulong i = 0; i < elfHeader.EntriesCount; ++i)
             {
+                ulong headerOffset = elfHeader.StartOffset + i * elfHeader.EntrySize;
                 dumpReader.BaseStream.Seek((long)headerOffset, SeekOrigin.Begin);
 
                 if (!ProgramHeader.TryRead(dumpReader, out ProgramHeader header))
                 {
-                    continue;
+                    return new DumpReadResult(moduleList, DumpReadWarning.FileIsTruncated);
+                }
+
+                // Set the warning if the program header is outside of the file.
+                if (header.OffsetInFile + header.SizeInFile > dumpSize &&
+                    warning == DumpReadWarning.None)
+                {
+                    warning = DumpReadWarning.FileIsTruncated;
                 }
 
                 switch (header.HeaderType)
@@ -99,15 +130,15 @@ namespace YetiVSI.DebugEngine.CoreDumps
                     // We found the notes section. Now we need to extract module section from
                     // the NT_FILE notes.
                     case ProgramHeader.Type.NoteSegment:
-                        if (header.HeaderSize > int.MaxValue)
+                        if (header.SizeInFile > int.MaxValue)
                         {
                             Trace.WriteLine("Can't extract note segment sections from program" +
                                             "header. Note size is more then int.Max.");
                             continue;
                         }
 
-                        int size = (int)header.HeaderSize;
-                        dumpReader.BaseStream.Seek((long)header.OffsetInDump, SeekOrigin.Begin);
+                        int size = (int)header.SizeInFile;
+                        dumpReader.BaseStream.Seek((long)header.OffsetInFile, SeekOrigin.Begin);
                         byte[] notesBytes = dumpReader.ReadBytes(size);
                         var notesStream = new MemoryStream(notesBytes);
                         using (var notesReader = new BinaryReader(notesStream))
@@ -142,7 +173,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
                 }
             }
 
-            return moduleList;
+            return new DumpReadResult(moduleList, warning);
         }
     }
 }

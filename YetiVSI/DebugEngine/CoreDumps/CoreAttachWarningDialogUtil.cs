@@ -45,12 +45,34 @@ namespace YetiVSI.DebugEngine.CoreDumps
             _dialogUtil = dialogUtil;
         }
 
-        public async Task<bool> ShouldAttachWithoutBuildIdAsync()
+        public async Task<bool> ShouldAttachToIncosistentCoreFileAsync(DumpReadWarning warning)
         {
             await _taskContext.Factory.SwitchToMainThreadAsync();
 
-            return _dialogUtil.ShowYesNoWarning(ErrorStrings.CoreAttachBuildIdMissingWarningMessage,
-                                                ErrorStrings.CoreAttachBuildIdMissingWarningTitle);
+            string dialogMessage = null;
+            string dialogTitle = null;
+            switch (warning)
+            {
+            case DumpReadWarning.FileDoesNotExist:
+                _dialogUtil.ShowError(ErrorStrings.CoreFileDoesNotExist);
+                return false;
+            case DumpReadWarning.ElfHeaderIsCorrupted:
+                dialogTitle = ErrorStrings.DialogTitleWarning;
+                dialogMessage = ErrorStrings.CoreFileCorruptedWarningMessage;
+                break;
+            case DumpReadWarning.FileIsTruncated:
+                dialogTitle = ErrorStrings.DialogTitleWarning;
+                dialogMessage = ErrorStrings.CoreFileTruncatedWarningMessage;
+                break;
+            case DumpReadWarning.ExecutableBuildIdMissing:
+                dialogTitle = ErrorStrings.CoreAttachBuildIdMissingWarningTitle;
+                dialogMessage = ErrorStrings.CoreAttachBuildIdMissingWarningMessage;
+                break;
+            case DumpReadWarning.None:
+                break;
+            }
+
+            return _dialogUtil.ShowYesNoWarning(dialogMessage, dialogTitle);
         }
     }
 }

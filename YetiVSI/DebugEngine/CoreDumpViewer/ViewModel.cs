@@ -78,9 +78,9 @@ namespace YetiVSI.DebugEngine.CoreDumpViewer
             {
                 _modules = new List<ModuleNode>();
                 var moduleProvider = new DumpModulesProvider(new FileSystem());
-                IEnumerable<DumpModule> dumpModules = moduleProvider.GetModules(filename);
+                DumpReadResult dumpModules = moduleProvider.GetModules(filename);
 
-                foreach (DumpModule dumpModule in dumpModules)
+                foreach (DumpModule dumpModule in dumpModules.Modules)
                 {
                     var module = new ModuleNode(dumpModule);
                     if (module.IsExecutable)

@@ -79,10 +79,17 @@ namespace YetiVSI.DebugEngine.CoreDumpViewer
             }
             catch (COMException exception)
             {
-                string errorMessage = $"Failed to start debugger: {exception}";
-                Trace.WriteLine(errorMessage);
-                MessageBox.Show(ErrorStrings.FailedToStartDebugger, "Core dump debugger",
-                                MessageBoxButton.OK, MessageBoxImage.Error);
+                if (exception.ErrorCode == Microsoft.VisualStudio.VSConstants.E_ABORT)
+                {
+                    Trace.WriteLine("Opening of core file aborted by the user.");
+                }
+                else
+                {
+                    string errorMessage = $"Failed to start debugger: {exception}";
+                    Trace.WriteLine(errorMessage);
+                    MessageBox.Show(ErrorStrings.FailedToStartDebugger, "Core dump debugger",
+                                    MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
     }

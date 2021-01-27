@@ -81,30 +81,5 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             var dataReader = new BinaryReader(new MemoryStream(elfData));
             Assert.IsFalse(ElfHeader.TryRead(dataReader, out ElfHeader h));
         }
-
-        [Test]
-        public void CorrectEntry()
-        {
-            var dataReader = new BinaryReader(new MemoryStream(elfData));
-            var isSuccess = ElfHeader.TryRead(dataReader, out ElfHeader h);
-            var offsets = h.GetAbsoluteProgramHeaderOffsets().ToArray();
-            var relativeOffsets = h.GetRelativeProgramHeaderOffsets().ToArray();
-
-            Assert.IsTrue(isSuccess);
-            Assert.AreEqual(expectedStartOffset, h.StartOffset);
-            Assert.AreEqual(expectedEntriesCount, h.EntriesCount);
-            Assert.AreEqual(expectedEntrySize, h.EntrySize);
-            Assert.AreEqual(expectedEntriesCount, offsets.Length);
-            Assert.AreEqual(expectedEntriesCount, relativeOffsets.Length);
-
-            for (ulong i = 0; i < expectedEntriesCount; i++)
-            {
-                var offset = offsets[i];
-                var relativeOffset = relativeOffsets[i];
-
-                Assert.AreEqual(expectedStartOffset + i * expectedEntrySize, offset);
-                Assert.AreEqual(i * expectedEntrySize, relativeOffset);
-            }
-        }
     }
 }

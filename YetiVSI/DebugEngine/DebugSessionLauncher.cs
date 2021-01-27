@@ -628,12 +628,12 @@ namespace YetiVSI.DebugEngine
                 _moduleFileFinder.SetSearchPaths(combinedPath);
 
                 TextWriter searchLog = new StringWriter();
-                DumpModule[] modules = _dumpModulesProvider.GetModules(_coreFilePath).ToArray();
+                DumpReadResult dump = _dumpModulesProvider.GetModules(_coreFilePath);
 
                 DumpModule[] executableModules =
-                    modules.Where(module => module.IsExecutable).ToArray();
+                    dump.Modules.Where(module => module.IsExecutable).ToArray();
                 DumpModule[] nonExecutableModules =
-                    modules.Where(module => !module.IsExecutable).ToArray();
+                    dump.Modules.Where(module => !module.IsExecutable).ToArray();
 
                 // We should not pre-load non executable modules if there wasn't any successfully
                 // loaded executable modules. Otherwise lldb will not upgrade image list during the
@@ -649,10 +649,15 @@ namespace YetiVSI.DebugEngine
                     }
                 }
 
-                if (!executableModules.Any())
+                if (dump.Warning == DumpReadWarning.None && !executableModules.Any())
                 {
-                    var shouldAttach = _taskContext.Factory.Run(async () =>
-                        await _warningDialog.ShouldAttachWithoutBuildIdAsync());
+                    dump.Warning = DumpReadWarning.ExecutableBuildIdMissing;
+                }
+                if (dump.Warning != DumpReadWarning.None)
+                {
+                    var shouldAttach = _taskContext.Factory.Run(
+                        async () => await _warningDialog.ShouldAttachToIncosistentCoreFileAsync(
+                            dump.Warning));
                     if (!shouldAttach)
                     {
                         throw new CoreAttachStoppedException();

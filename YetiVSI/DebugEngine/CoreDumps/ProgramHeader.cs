@@ -30,18 +30,18 @@ namespace YetiVSI.DebugEngine.CoreDumps
         public const int Size = 0x38;
 
         public readonly Type HeaderType;
-        public readonly ulong OffsetInDump;
+        public readonly ulong OffsetInFile;
         public readonly ulong VirtualAddress;
-        public readonly ulong HeaderSize;
+        public readonly ulong SizeInFile;
 
         static readonly ProgramHeader EmptyHeader = new ProgramHeader(Type.Other, 0, 0, 0);
 
         public ProgramHeader(Type type, ulong offsetInDump, ulong virtualAddress, ulong size)
         {
             HeaderType = type;
-            OffsetInDump = offsetInDump;
+            OffsetInFile = offsetInDump;
             VirtualAddress = virtualAddress;
-            HeaderSize = size;
+            SizeInFile = size;
         }
 
         /// <summary>
