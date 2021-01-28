@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using DebuggerGrpcClient;
-using Microsoft.VisualStudio.Debugger.Interop;
-using Microsoft.VisualStudio.Threading;
-using NSubstitute;
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO.Abstractions.TestingHelpers;
 using System.Threading.Tasks;
+using DebuggerGrpcClient;
+using GgpGrpc.Models;
+using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Threading;
+using NSubstitute;
+using NUnit.Framework;
 using YetiCommon;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.CoreDumps;
@@ -209,6 +210,127 @@ namespace YetiVSI.Test.DebugEngine
                 _debuggerFactory.Debugger.CommandInterpreter.HandledCommands.Contains(
                     SbDebuggerExtensions.FastExpressionEvaluationCommand),
                 _fastExpressionDisabledErrorMessage);
+        }
+
+        [Test]
+        public void LaunchGameAbortsWhenLaunchEndedWhileCheckingConnectRemoteStatus()
+        {
+            var runningGame = new GgpGrpc.Models.GameLaunch
+            {
+                GameLaunchState = GameLaunchState.RunningGame
+            };
+            var endedGame = new GgpGrpc.Models.GameLaunch
+            {
+                GameLaunchState = GameLaunchState.GameLaunchEnded,
+                GameLaunchEnded = new GameLaunchEnded(EndReason.GameBinaryNotFound)
+            };
+
+            string error = "attach error";
+            _gameLauncher.LaunchGameApiEnabled.Returns(true);
+            _gameLauncher.GetLaunchStateAsync()
+                .Returns(Task.FromResult(runningGame), Task.FromResult(endedGame));
+            _gameLauncher.GetEndReason(Arg.Any<GameLaunchEnded>()).Returns(error);
+
+            var launcherFactory = CreateLauncherFactory(true);
+            var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
+                                                  _gameBinary, _gameBinary, _gameLauncher);
+
+            _platformFactory.AddConnectRemoteStatuses(false, false);
+
+            Assert.ThrowsAsync<AttachException>(async () => await LaunchAsync(launcher), error);
+        }
+
+
+        [Test]
+        public void LaunchGameAbortsWhenLaunchEndedWhilePollingForPid()
+        {
+            var runningGame = new GgpGrpc.Models.GameLaunch
+            {
+                GameLaunchState = GameLaunchState.RunningGame
+            };
+            var endedGame = new GgpGrpc.Models.GameLaunch
+            {
+                GameLaunchState = GameLaunchState.GameLaunchEnded,
+                GameLaunchEnded = new GameLaunchEnded(EndReason.GameBinaryNotFound)
+            };
+
+            string error = "attach error";
+            _gameLauncher.LaunchGameApiEnabled.Returns(true);
+            _gameLauncher.GetLaunchStateAsync()
+                .Returns(Task.FromResult(runningGame), Task.FromResult(endedGame));
+            _gameLauncher.GetEndReason(Arg.Any<GameLaunchEnded>()).Returns(error);
+
+            var launcherFactory = CreateLauncherFactory(true);
+            var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
+                                                  _gameBinary, _gameBinary, _gameLauncher);
+
+            _platformFactory.AddRunStatuses(false, false);
+
+            Assert.ThrowsAsync<AttachException>(async () => await LaunchAsync(launcher), error);
+        }
+
+        [Test]
+        public async Task LaunchGamePollsForConnectStatusWhenGameIsRunningAsync()
+        {
+            var launch = new GgpGrpc.Models.GameLaunch
+            {
+                GameLaunchState = GameLaunchState.RunningGame
+            };
+
+            _gameLauncher.LaunchGameApiEnabled.Returns(true);
+            _gameLauncher.GetLaunchStateAsync().Returns(Task.FromResult(launch));
+
+            var launcherFactory = CreateLauncherFactory(true);
+            var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
+                                                  _gameBinary, _gameBinary, _gameLauncher);
+
+            _platformFactory.AddConnectRemoteStatuses(false, false, true);
+
+            var program = await LaunchAsync(launcher);
+            Assert.That(program, Is.Not.Null);
+        }
+
+        [Test]
+        public async Task LaunchGamePollsForPidWhenGameIsRunningAsync()
+        {
+            var launch = new GgpGrpc.Models.GameLaunch
+            {
+                GameLaunchState = GameLaunchState.RunningGame
+            };
+
+            _gameLauncher.LaunchGameApiEnabled.Returns(true);
+            _gameLauncher.GetLaunchStateAsync().Returns(Task.FromResult(launch));
+
+            var launcherFactory = CreateLauncherFactory(true);
+            var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
+                                                  _gameBinary, _gameBinary, _gameLauncher);
+
+            _platformFactory.AddRunStatuses(false, false, true);
+
+            var program = await LaunchAsync(launcher);
+            Assert.That(program, Is.Not.Null);
+        }
+
+        [Test]
+        public async Task LaunchStatusIsIgnoredInLegacyFlowAsync()
+        {
+            var launch = new GgpGrpc.Models.GameLaunch
+            {
+                GameLaunchState = GameLaunchState.GameLaunchEnded,
+                GameLaunchEnded = new GameLaunchEnded(EndReason.GameBinaryNotFound)
+            };
+
+            _gameLauncher.LaunchGameApiEnabled.Returns(false);
+            _gameLauncher.GetLaunchStateAsync().Returns(Task.FromResult(launch));
+
+            var launcherFactory = CreateLauncherFactory(true);
+            var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
+                                                  _gameBinary, _gameBinary, _gameLauncher);
+
+            _platformFactory.AddConnectRemoteStatuses(false, true);
+
+            var program = await LaunchAsync(launcher);
+            Assert.That(program, Is.Not.Null);
         }
 
         [Test]

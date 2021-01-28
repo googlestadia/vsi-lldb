@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
+using DebuggerApi;
 using DebuggerGrpcClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using YetiCommon.Util;
 
 namespace YetiVSI.Test.TestSupport.Lldb
 {
@@ -37,11 +38,14 @@ namespace YetiVSI.Test.TestSupport.Lldb
 
     public class GrpcPlatformFactoryFake : GrpcPlatformFactory
     {
-        readonly List<PlatformProcess> platformProcesses = new List<PlatformProcess>();
+        readonly List<PlatformProcess> _platformProcesses = new List<PlatformProcess>();
         readonly Dictionary<string, string> _processCommandToOutput =
             new Dictionary<string, string>();
 
         readonly PlatformFactoryFakeConnectRecorder _connectRecorder;
+        readonly Queue<bool> _connectRemoteStatuses = new Queue<bool>();
+        readonly Queue<bool> _runStatuses = new Queue<bool>();
+
         public GrpcPlatformFactoryFake(PlatformFactoryFakeConnectRecorder connectRecorder)
         {
             _connectRecorder = connectRecorder;
@@ -49,11 +53,12 @@ namespace YetiVSI.Test.TestSupport.Lldb
 
         public override SbPlatform Create(string platformName, GrpcConnection grpcConnection) =>
             new SbPlatformFake(platformName,
-                               platformProcesses.Where(p => p.PlatformName == platformName),
-                               _connectRecorder, _processCommandToOutput);
+                               _platformProcesses.Where(p => p.PlatformName == platformName),
+                               _connectRecorder, _processCommandToOutput, _connectRemoteStatuses,
+                               _runStatuses);
 
-        public void AddFakeProcess(string platformName, string processName, uint pid)
-            => platformProcesses.Add(new PlatformProcess
+        public void AddFakeProcess(string platformName, string processName, uint pid) =>
+            _platformProcesses.Add(new PlatformProcess
             {
                 PlatformName = platformName,
                 Name = processName,
@@ -65,6 +70,16 @@ namespace YetiVSI.Test.TestSupport.Lldb
             _processCommandToOutput[command] = output;
         }
 
+        public void AddConnectRemoteStatuses(params bool[] statuses)
+        {
+            statuses.ForEach(status => _connectRemoteStatuses.Enqueue(status));
+        }
+
+        public void AddRunStatuses(params bool[] statuses)
+        {
+            statuses.ForEach(status => _runStatuses.Enqueue(status));
+        }
+
         /// <summary>
         /// This fake supports seeding with process name / pid pairs and running a single command
         /// type (pidof) to fetch the pid for a particular process. Other types of commands will
@@ -72,18 +87,24 @@ namespace YetiVSI.Test.TestSupport.Lldb
         /// </summary>
         class SbPlatformFake : SbPlatform
         {
-            readonly IEnumerable<PlatformProcess> processes;
+            readonly IEnumerable<PlatformProcess> _processes;
             readonly PlatformFactoryFakeConnectRecorder _connectRecorder;
             readonly Dictionary<string, string> _processCommandToOutput;
+            readonly Queue<bool> _connectRemoteStatuses;
+            readonly Queue<bool> _runStatuses;
+
             public SbPlatformFake(string name, IEnumerable<PlatformProcess> processes,
                                   PlatformFactoryFakeConnectRecorder connectRecorder,
-                                  Dictionary<string, string> processCommandToOutput)
+                                  Dictionary<string, string> processCommandToOutput,
+                                  Queue<bool> connectRemoteStatuses, Queue<bool> runStatuses)
             {
                 Name = name;
 
-                this.processes = processes;
+                _processes = processes;
                 _connectRecorder = connectRecorder;
                 _processCommandToOutput = processCommandToOutput;
+                _connectRemoteStatuses = connectRemoteStatuses;
+                _runStatuses = runStatuses;
             }
 
             public string Name { get; }
@@ -91,18 +112,25 @@ namespace YetiVSI.Test.TestSupport.Lldb
             public SbError ConnectRemote(SbPlatformConnectOptions connectOptions)
             {
                 _connectRecorder?.Add(connectOptions);
-                return new SbErrorStub(true);
+                return _connectRemoteStatuses.Count > 0
+                    ? new SbErrorStub(_connectRemoteStatuses.Dequeue())
+                    : new SbErrorStub(true);
             }
 
             public SbError Run(SbPlatformShellCommand command)
             {
+                if (_runStatuses.Count > 0)
+                {
+                    return new SbErrorStub(_runStatuses.Dequeue());
+                }
+
                 var commandText = command.GetCommand();
                 if (commandText.StartsWith("pidof"))
                 {
                     var processName = commandText.Substring("pidof".Length + 1)
                         .TrimStart('"')
                         .TrimEnd('"');
-                    var process = processes.FirstOrDefault(p => p.Name == processName);
+                    var process = _processes.FirstOrDefault(p => p.Name == processName);
                     if (process == null)
                     {
                         return new SbErrorStub(false, $"unknown process: {processName}");
@@ -129,7 +157,7 @@ namespace YetiVSI.Test.TestSupport.Lldb
             }
         }
 
-        private class PlatformProcess
+        class PlatformProcess
         {
             public string PlatformName { get; set; }
 
