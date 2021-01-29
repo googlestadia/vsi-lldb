@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiCommon.VSProject;
@@ -46,13 +47,14 @@ namespace YetiVSI.GameLaunch
         readonly GameletMountChecker _mountChecker;
         readonly SdkConfig.Factory _sdkConfigFactory;
         readonly YetiVSIService _yetiVsiService;
+        readonly JoinableTaskContext _taskContext;
 
         public GameletSelector(IDialogUtil dialogUtil, ICloudRunner runner,
                                GameletSelectionWindow.Factory gameletSelectionWindowFactory,
                                CancelableTask.Factory cancelableTaskFactory,
                                GameletClient.Factory gameletClientFactory, ISshManager sshManager,
                                IRemoteCommand remoteCommand, SdkConfig.Factory sdkConfigFactory,
-                               YetiVSIService yetiVsiService)
+                               YetiVSIService yetiVsiService, JoinableTaskContext taskContext)
         {
             _dialogUtil = dialogUtil;
             _runner = runner;
@@ -65,6 +67,7 @@ namespace YetiVSI.GameLaunch
                 new GameletMountChecker(remoteCommand, dialogUtil, cancelableTaskFactory);
             _sdkConfigFactory = sdkConfigFactory;
             _yetiVsiService = yetiVsiService;
+            _taskContext = taskContext;
         }
 
         /// <summary>
@@ -116,8 +119,9 @@ namespace YetiVSI.GameLaunch
         {
             // TODO: record actions.
             IGameletClient gameletClient = _gameletClientFactory.Create(_runner);
-            var gameLauncher = new GameLauncher(gameletClient, _sdkConfigFactory,
-                                                _cancelableTaskFactory, _yetiVsiService);
+            var gameLauncher = new GameLaunchManager(gameletClient, _sdkConfigFactory,
+                                                     _cancelableTaskFactory, _yetiVsiService,
+                                                     _taskContext);
             ICancelableTask<GgpGrpc.Models.GameLaunch> currentGameLaunchTask =
                 _cancelableTaskFactory.Create(TaskMessages.LookingForTheCurrentLaunch,
                         async task => await gameLauncher.GetCurrentGameLaunchAsync(testAccount));

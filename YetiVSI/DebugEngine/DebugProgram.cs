@@ -54,7 +54,7 @@ namespace YetiVSI.DebugEngine
             DebugProgram.ThreadCreator threadCreator,
             IDebugProcess2 process, Guid programId, SbProcess lldbProcess,
             RemoteTarget lldbTarget,
-            IDebugModuleCache debugModuleCache, bool isCoreAttach);
+            IDebugModuleCache debugModuleCache, bool isCoreAttach, IVsiGameLaunch gameLaunch);
     }
 
     // DebugProgram contains execution information about a process.
@@ -73,7 +73,7 @@ namespace YetiVSI.DebugEngine
             readonly ThreadEnumFactory _threadsEnumFactory;
             readonly ModuleEnumFactory _moduleEnumFactory;
             readonly CodeContextEnumFactory _codeContextEnumFactory;
-            readonly IGameLauncher _gameLauncher;
+            readonly IGameLaunchManager _gameLaunchManager;
 
             public Factory(JoinableTaskContext taskContext,
                 DebugDisassemblyStream.Factory debugDisassemblyStreamFactory,
@@ -82,7 +82,7 @@ namespace YetiVSI.DebugEngine
                 ThreadEnumFactory threadsEnumFactory,
                 ModuleEnumFactory moduleEnumFactory,
                 CodeContextEnumFactory codeContextEnumFactory,
-                IGameLauncher gameLauncher)
+                IGameLaunchManager gameLaunchManager)
             {
                 _taskContext = taskContext;
                 _debugDisassemblyStreamFactory = debugDisassemblyStreamFactory;
@@ -91,21 +91,21 @@ namespace YetiVSI.DebugEngine
                 _threadsEnumFactory = threadsEnumFactory;
                 _moduleEnumFactory = moduleEnumFactory;
                 _codeContextEnumFactory = codeContextEnumFactory;
-                _gameLauncher = gameLauncher;
+                _gameLaunchManager = gameLaunchManager;
             }
 
             public IGgpDebugProgram Create(IDebugEngineHandler debugEngineHandler,
                 ThreadCreator threadCreator,
                 IDebugProcess2 process, Guid programId, SbProcess lldbProcess,
                 RemoteTarget lldbTarget,
-                IDebugModuleCache debugModuleCache, bool isCoreAttach)
+                IDebugModuleCache debugModuleCache, bool isCoreAttach, IVsiGameLaunch gameLaunch)
             {
                 return new DebugProgram(_taskContext, threadCreator,
                     _debugDisassemblyStreamFactory,
                     _documentContextFactory, _codeContextFactory, _threadsEnumFactory,
                     _moduleEnumFactory, _codeContextEnumFactory, debugEngineHandler, process,
                     programId, lldbProcess, lldbTarget, debugModuleCache, isCoreAttach,
-                    _gameLauncher);
+                    _gameLaunchManager, gameLaunch);
             }
         }
 
@@ -127,7 +127,8 @@ namespace YetiVSI.DebugEngine
         readonly ThreadEnumFactory _threadEnumFactory;
         readonly ModuleEnumFactory _moduleEnumFactory;
         readonly CodeContextEnumFactory _codeContextEnumFactory;
-        readonly IGameLauncher _gameLauncher;
+        readonly IGameLaunchManager _gameLaunchManager;
+        readonly IVsiGameLaunch _gameLaunch;
 
         DebugProgram(
             JoinableTaskContext taskContext,
@@ -145,7 +146,8 @@ namespace YetiVSI.DebugEngine
             RemoteTarget lldbTarget,
             IDebugModuleCache debugModuleCache,
             bool isCoreAttach,
-            IGameLauncher gameLauncher)
+            IGameLaunchManager gameLaunchManager,
+            IVsiGameLaunch gameLaunch)
         {
             _id = programId;
             _process = process;
@@ -163,7 +165,8 @@ namespace YetiVSI.DebugEngine
             _moduleEnumFactory = moduleEnumFactory;
             _codeContextEnumFactory = codeContextEnumFactory;
             _debugModuleCache = debugModuleCache;
-            _gameLauncher = gameLauncher;
+            _gameLaunchManager = gameLaunchManager;
+            _gameLaunch = gameLaunch;
         }
 
         #region IGgpDebugProgram functions
@@ -463,9 +466,10 @@ namespace YetiVSI.DebugEngine
         public int Terminate()
         {
             TerminationRequested = true;
-            if (_gameLauncher.LaunchGameApiEnabled)
+            if (_gameLaunchManager.LaunchGameApiEnabled)
             {
-                _gameLauncher.StopGame();
+                SafeErrorUtil.SafelyLogErrorAndForget(() => _gameLaunch.StopGameAsync(),
+                                        $"Couldn't delete the launch '{_gameLaunch.LaunchName}'");
             }
             else
             {

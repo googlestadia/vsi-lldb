@@ -52,7 +52,7 @@ using YetiVSI.DebugEngine.DiagnosticTools;
 using YetiVSI.DebugEngine.Interfaces;
 using YetiCommon.Cloud;
 using YetiVSI.DebugEngine.CoreDumps;
-using GameLauncher = YetiVSI.GameLaunch.GameLauncher;
+using YetiVSI.GameLaunch;
 
 namespace YetiVSI.DebugEngine
 {
@@ -310,8 +310,9 @@ namespace YetiVSI.DebugEngine
                                          debugThreadAsyncFactory.Create : debugThreadFactory.Create;
             var gameletFactory = new GameletClient.Factory();
             IGameletClient gameletClient = gameletFactory.Create(GetCloudRunner());
-            var gameLauncher = new GameLauncher(gameletClient, GetSdkConfigFactory(),
-                                                cancelableTaskFactory, GetVsiService());
+            var gameLauncher = new GameLaunchManager(gameletClient, GetSdkConfigFactory(),
+                                                cancelableTaskFactory, GetVsiService(),
+                                                GetJoinableTaskContext());
             var debugProgramFactory =
                 GetFactoryDecorator().Decorate<IDebugProgramFactory>(new DebugProgram.Factory(
                     GetJoinableTaskContext(),

@@ -238,9 +238,10 @@
       <DependentUpon>ErrorDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="ErrorStrings.cs" />
-    <Compile Include="GameLaunch\GameLauncher.LaunchGame.cs" />
-    <Compile Include="GameLaunch\GameLauncher.LaunchState.cs" />
+    <Compile Include="GameLaunch\GameLaunchManager.cs" />
     <Compile Include="GameLaunch\GameletSelector.cs" />
+    <Compile Include="GameLaunch\LaunchUtils.cs" />
+    <Compile Include="GameLaunch\VsiGameLaunch.cs" />
     <Compile Include="GameletMountChecker.cs" />
     <Compile Include="GgpDebugQueryTargetCompRoot.cs" />
     <Compile Include="IIncementalProgress.cs" />

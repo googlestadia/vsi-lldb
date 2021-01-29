@@ -40,8 +40,9 @@ namespace YetiVSI.DebugEngine
     public interface IDebugSessionLauncherFactory
     {
         IDebugSessionLauncher Create(IDebugEngine3 debugEngine, LaunchOption launchOption,
-                                     string coreFilePath, string executableFileName,
-                                     string executableFullPath, IGameLauncher gameLauncher);
+                                 string coreFilePath, string executableFileName,
+                                 string executableFullPath, IGameLaunchManager gameLaunchManager,
+                                 IVsiGameLaunch gameLaunch);
     }
 
 
@@ -130,7 +131,8 @@ namespace YetiVSI.DebugEngine
                                                 LaunchOption launchOption, string coreFilePath,
                                                 string executableFileName,
                                                 string executableFullPath,
-                                                IGameLauncher gameLauncher) =>
+                                                IGameLaunchManager gameLaunchManager,
+                                                IVsiGameLaunch gameLaunch) =>
                 new DebugSessionLauncher(_taskContext, _lldbDebuggerFactory, _lldbListenerFactory,
                                          _lldbPlatformFactory, _lldbPlatformConnectOptionsFactory,
                                          _lldbPlatformShellCommandFactory, _attachedProgramFactory,
@@ -140,7 +142,8 @@ namespace YetiVSI.DebugEngine
                                          _exceptionManagerFactory, _fileSystem,
                                          _fastExpressionEvaluation, _moduleFileFinder,
                                          _dumpModulesProvider, _moduleSearchLogHolder,
-                                         _symbolSettingsProvider, _warningDialog, gameLauncher);
+                                         _symbolSettingsProvider, _warningDialog, gameLaunchManager,
+                                         gameLaunch);
         }
 
         const string _remoteLldbPlatformName = "remote-stadia";
@@ -178,7 +181,8 @@ namespace YetiVSI.DebugEngine
         readonly IModuleSearchLogHolder _moduleSearchLogHolder;
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
         readonly CoreAttachWarningDialogUtil _warningDialog;
-        readonly IGameLauncher _gameLauncher;
+        readonly IGameLaunchManager _gameLaunchManager;
+        readonly IVsiGameLaunch _gameLaunch;
 
         public DebugSessionLauncher(
             JoinableTaskContext taskContext, GrpcDebuggerFactory lldbDebuggerFactory,
@@ -193,7 +197,8 @@ namespace YetiVSI.DebugEngine
             bool fastExpressionEvaluation, IModuleFileFinder moduleFileFinder,
             IDumpModulesProvider dumpModulesProvider, IModuleSearchLogHolder moduleSearchLogHolder,
             ISymbolSettingsProvider symbolSettingsProvider,
-            CoreAttachWarningDialogUtil warningDialog, IGameLauncher gameLauncher)
+            CoreAttachWarningDialogUtil warningDialog, IGameLaunchManager gameLaunchManager,
+            IVsiGameLaunch gameLaunch)
         {
             _taskContext = taskContext;
             _lldbDebuggerFactory = lldbDebuggerFactory;
@@ -217,7 +222,8 @@ namespace YetiVSI.DebugEngine
             _moduleSearchLogHolder = moduleSearchLogHolder;
             _symbolSettingsProvider = symbolSettingsProvider;
             _warningDialog = warningDialog;
-            _gameLauncher = gameLauncher;
+            _gameLaunchManager = gameLaunchManager;
+            _gameLaunch = gameLaunch;
         }
 
         public async Task<ILldbAttachedProgram> LaunchAsync(
@@ -376,7 +382,7 @@ namespace YetiVSI.DebugEngine
                         process, programId, _debugEngine, callback, lldbDebugger, lldbTarget,
                         listenerSubscriber, lldbDebuggerProcess,
                         lldbDebugger.GetCommandInterpreter(), true, new NullExceptionManager(),
-                        _moduleSearchLogHolder, remotePid: 0);
+                        _moduleSearchLogHolder, remotePid: 0, gameLaunch: _gameLaunch);
                 }
 
                 // Get process ID.
@@ -451,7 +457,7 @@ namespace YetiVSI.DebugEngine
                 return _attachedProgramFactory.Create(
                     process, programId, _debugEngine, callback, lldbDebugger, lldbTarget,
                     listenerSubscriber, debuggerProcess, lldbDebugger.GetCommandInterpreter(),
-                    false, exceptionManager, _moduleSearchLogHolder, processId);
+                    false, exceptionManager, _moduleSearchLogHolder, processId, _gameLaunch);
             }
             finally
             {
@@ -466,16 +472,16 @@ namespace YetiVSI.DebugEngine
         /// </summary>
         void VerifyGameIsReady()
         {
-            if (_gameLauncher.LaunchGameApiEnabled)
+            if (_gameLaunchManager.LaunchGameApiEnabled)
             {
                 GgpGrpc.Models.GameLaunch state =
-                    _taskContext.Factory.Run(async () => await _gameLauncher.GetLaunchStateAsync());
+                    _taskContext.Factory.Run(async () => await _gameLaunch.GetLaunchStateAsync());
                 if (state.GameLaunchState != GameLaunchState.RunningGame)
                 {
                     string error = ErrorStrings.GameNotRunningDuringAttach;
                     if (state.GameLaunchEnded != null)
                     {
-                        error = _gameLauncher.GetEndReason(state.GameLaunchEnded);
+                        error = LaunchUtils.GetEndReason(state.GameLaunchEnded);
                     }
 
                     throw new AttachException(VSConstants.E_FAIL, error);

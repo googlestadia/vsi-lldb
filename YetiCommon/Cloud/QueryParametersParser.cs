@@ -363,7 +363,7 @@ namespace YetiCommon.Cloud
                     if (!allowedValues.Contains(queryParams[QueryParamMapping.VulkanDriverVariant]
                                                     .ToLower()))
                     {
-                        status.AppendWarning(ErrorStrings.QueryParameterNotInAllowedRange(
+                        status.AppendWarning(ErrorStrings.InvalidEnumValue(
                                                  QueryParamMapping.VulkanDriverVariant,
                                                  queryParams[QueryParamMapping.VulkanDriverVariant],
                                                  allowedValues));

@@ -97,6 +97,8 @@ namespace YetiVSI
         public const string GameNotRunningDuringAttach =
             "Cannot proceed with the attach. Game is not running.";
         public const string LaunchEndedCommonMessage = "Cannot proceed with the game launch. ";
+        public const string LaunchEndedTimeout =
+            LaunchEndedCommonMessage + "Timed out waiting for the game to launch.";
         public const string LaunchEndedUnspecified = "Unknown reason.";
         public const string LaunchEndedExitedByUser = "User requested the game session to end.";
         public const string LaunchEndedInactivityTimeout = "Game shutdown due to user inactivity.";
@@ -114,10 +116,9 @@ namespace YetiVSI
             "The user explicitly requested to exit the queue.";
         public const string LaunchEndedQueueReadyTimeout =
             "The user didn't request to play when the queue was ready and it timed-out.";
-        public const string GameNotStopped =
-            "Could not stop the game. See logs for further details";
-        public const string GameStoppedWithError =
-            "Game was stopped, but the end reason was unexpected. ";
+        public const string ErrorWhileSdkCheck =
+            "Could not check SDK compatibility. See logs for further details.";
+        public const string SeeLogs = "See logs for further details.";
         public const string ThisInstance = "this instance";
         public static string LaunchExistsDialogText (string gameletName) =>
             $"A game is currently running on {gameletName}. Only one game can be running for" +

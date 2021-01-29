@@ -221,7 +221,7 @@ namespace YetiCommon.Tests.Cloud
                                 new[]
                                 {
                                     $"Parameter's '{paramName}' value '{{0}}' is invalid.",
-                                    "opt, optprintasserts, dbgtrapasserts"
+                                    "'opt', 'optprintasserts', 'dbgtrapasserts'"
                                 });
         }
 

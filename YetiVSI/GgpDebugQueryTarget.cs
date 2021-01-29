@@ -51,7 +51,7 @@ namespace YetiVSI
         readonly Versions.SdkVersion _sdkVersion;
         readonly ChromeClientLaunchCommandFormatter _launchCommandFormatter;
         readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
-        readonly IGameLauncher _gameLauncher;
+        readonly IGameLaunchManager _gameLaunchManager;
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
@@ -66,7 +66,7 @@ namespace YetiVSI
                                    Versions.SdkVersion sdkVersion,
                                    ChromeClientLaunchCommandFormatter launchCommandFormatter,
                                    DebugEngine.DebugEngine.Params.Factory paramsFactory,
-                                   IGameLauncher gameLauncher)
+                                   IGameLaunchManager gameLaunchManager)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -85,7 +85,7 @@ namespace YetiVSI
             _sdkVersion = sdkVersion;
             _launchCommandFormatter = launchCommandFormatter;
             _paramsFactory = paramsFactory;
-            _gameLauncher = gameLauncher;
+            _gameLaunchManager = gameLaunchManager;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -183,14 +183,16 @@ namespace YetiVSI
 
                 if (launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
                 {
-                    if (_gameLauncher.LaunchGameApiEnabled)
+                    if (_gameLaunchManager.LaunchGameApiEnabled)
                     {
-                        string launchName = await _gameLauncher.CreateLaunchAsync(launchParams);
-                        if (launchName != null)
+                        IVsiGameLaunch launch =
+                            await _gameLaunchManager.CreateLaunchAsync(
+                                launchParams, new NothingToCancel());
+                        if (launch != null)
                         {
                             debugLaunchSettings.Arguments =
                                 _launchCommandFormatter.CreateWithLaunchName(
-                                    launchParams, launchName);
+                                    launchParams, launch.LaunchName);
                         }
                         else
                         {

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc;
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
@@ -24,7 +23,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
-using System.Text;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.Cloud;
@@ -52,7 +50,6 @@ namespace YetiVSI.Test
         const string _testTestAccountId = "testaccount123";
         const string _sdkVersionString = "1.22.1.7456";
         const string _customQueryParams = "test1=5&test2=10";
-        const string _launchName = "launch_name";
         readonly Versions.SdkVersion _sdkVersion = Versions.SdkVersion.Create("7456.1.22.1");
 
         IGameletClient _gameletClient;
@@ -71,7 +68,8 @@ namespace YetiVSI.Test
         string _targetPath;
         string _outputDirectory;
         GgpDebugQueryTarget _ggpDebugQueryTarget;
-        IGameLauncher _gameLauncher;
+        IGameLaunchManager _gameLaunchManager;
+        IVsiGameLaunch _gameLaunch;
 
         [SetUp]
         public void SetUp()
@@ -145,8 +143,10 @@ namespace YetiVSI.Test
             _launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             _paramsFactory = new YetiVSI.DebugEngine.DebugEngine.Params.Factory(serializer);
 
-            _gameLauncher = Substitute.For<IGameLauncher>();
-            _gameLauncher.LaunchGameApiEnabled.Returns(false);
+            _gameLaunchManager = Substitute.For<IGameLaunchManager>();
+            _gameLaunchManager.LaunchGameApiEnabled.Returns(false);
+            _gameLaunch = Substitute.For<IVsiGameLaunch>();
+            _gameLaunch.LaunchName.Returns("launch_name");
             _ggpDebugQueryTarget = new GgpDebugQueryTarget(fileSystem, sdkConfigFactory,
                                                            gameletClientFactory,
                                                            applicationClientFactory,
@@ -156,7 +156,7 @@ namespace YetiVSI.Test
                                                            _testAccountClientFactory,
                                                            _gameletSelector, cloudRunner,
                                                            _sdkVersion, _launchCommandFormatter,
-                                                           _paramsFactory, _gameLauncher);
+                                                           _paramsFactory, _gameLaunchManager);
         }
 
         [Test]
@@ -251,9 +251,10 @@ namespace YetiVSI.Test
                     return true;
                 });
 
-            _gameLauncher.LaunchGameApiEnabled.Returns(true);
-            _gameLauncher.CreateLaunchAsync(Arg.Any<ChromeClientLauncher.Params>())
-                .Returns(_launchName);
+            _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
+            _gameLaunchManager
+                .CreateLaunchAsync(Arg.Any<ChromeClientLauncher.Params>(), Arg.Any<ICancelable>())
+                .Returns(Task.FromResult(_gameLaunch));
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
             Assert.That(launchSettings.Count, Is.EqualTo(1));
@@ -268,7 +269,7 @@ namespace YetiVSI.Test
                                           out string launchName);
             Assert.That(launchParams.Account, Is.EqualTo(_testAccount));
             Assert.That(launchParams.SdkVersion, Is.EqualTo(_sdkVersionString));
-            Assert.That(launchName, Is.EqualTo(_launchName));
+            Assert.That(launchName, Is.EqualTo(_gameLaunch.LaunchName));
 
             await _remoteDeploy.Received()
                 .DeployGameExecutableAsync(_project, gamelets[0], Arg.Any<ICancelable>(),
@@ -308,9 +309,10 @@ namespace YetiVSI.Test
                     return true;
                 });
 
-            _gameLauncher.LaunchGameApiEnabled.Returns(true);
-            _gameLauncher.CreateLaunchAsync(Arg.Any<ChromeClientLauncher.Params>())
-                .Returns(Task.FromResult<string>(null));
+            _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
+            _gameLaunchManager
+                .CreateLaunchAsync(Arg.Any<ChromeClientLauncher.Params>(), Arg.Any<ICancelable>())
+                .Returns(Task.FromResult<IVsiGameLaunch>(null));
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
             Assert.That(launchSettings.Count, Is.EqualTo(0));

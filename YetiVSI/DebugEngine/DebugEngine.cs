@@ -163,7 +163,7 @@ namespace YetiVSI.DebugEngine
             readonly DebugEventCallbackTransform _debugEventCallbackDecorator;
             readonly ISymbolSettingsProvider _symbolSettingsProvider;
             readonly bool _deployLldbServer;
-            readonly IGameLauncher _gameLauncher;
+            readonly IGameLaunchManager _gameLaunchManager;
 
             public Factory(JoinableTaskContext taskContext, ServiceManager serviceManager,
                            DebugSessionMetrics debugSessionMetrics,
@@ -183,7 +183,7 @@ namespace YetiVSI.DebugEngine
                            IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
-                           IGameLauncher gameLauncher)
+                           IGameLaunchManager gameLaunchManager)
             {
                 _taskContext = taskContext;
                 _serviceManager = serviceManager;
@@ -210,7 +210,7 @@ namespace YetiVSI.DebugEngine
                 _debugEventCallbackDecorator = debugEventCallbackDecorator;
                 _symbolSettingsProvider = symbolSettingsProvider;
                 _deployLldbServer = deployLldbServer;
-                _gameLauncher = gameLauncher;
+                _gameLaunchManager = gameLaunchManager;
             }
 
             /// <summary>
@@ -237,7 +237,8 @@ namespace YetiVSI.DebugEngine
                     _natvisExpander, _natvisLogger, _exitDialogUtil, _preflightBinaryChecker,
                     _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
                     _debugEngineCommands, _debugEventCallbackDecorator, envDteService?.RegistryRoot,
-                    sessionNotifier, _symbolSettingsProvider, _deployLldbServer, _gameLauncher);
+                    sessionNotifier, _symbolSettingsProvider, _deployLldbServer,
+                    _gameLaunchManager);
             }
         }
 
@@ -317,7 +318,7 @@ namespace YetiVSI.DebugEngine
         readonly DebugEventCallbackTransform _debugEventCallbackDecorator;
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
         readonly bool _deployLldbServer;
-        readonly IGameLauncher _gameLauncher;
+        readonly IGameLaunchManager _gameLaunchManager;
 
         // Keep track of the attach operation, so that it can be aborted by transport errors.
         ICancelableTask _attachOperation;
@@ -332,6 +333,7 @@ namespace YetiVSI.DebugEngine
         string _coreFilePath;
         LaunchOption _launchOption;
         bool _deleteCoreFileAtCleanup;
+        IVsiGameLaunch _vsiGameLaunch;
 
         // Attached program is set after successfully attaching.
         ILldbAttachedProgram _attachedProgram;
@@ -360,7 +362,7 @@ namespace YetiVSI.DebugEngine
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            string vsRegistryRoot, ISessionNotifier sessionNotifier,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
-                           IGameLauncher gameLauncher)
+                           IGameLaunchManager gameLaunchManager)
             : base(self)
         {
             taskContext.ThrowIfNotOnMainThread();
@@ -397,7 +399,7 @@ namespace YetiVSI.DebugEngine
             _sessionNotifier = sessionNotifier;
             _symbolSettingsProvider = symbolSettingsProvider;
             _deployLldbServer = deployLldbServer;
-            _gameLauncher = gameLauncher;
+            _gameLaunchManager = gameLaunchManager;
 
             // Register observers on long lived objects last so that they don't hold a reference
             // to this if an exception is thrown during construction.
@@ -613,7 +615,7 @@ namespace YetiVSI.DebugEngine
                         "Recording debugger parameters");
                     var launcher = _debugSessionLauncherFactory.Create(
                         Self, _launchOption, _coreFilePath, _executableFileName,
-                        _executableFullPath, _gameLauncher);
+                        _executableFullPath, _gameLaunchManager, _vsiGameLaunch);
 
                     ILldbAttachedProgram program = await launcher.LaunchAsync(
                         task, process, programId, attachPid, _debuggerOptions, libPaths,
@@ -953,11 +955,14 @@ namespace YetiVSI.DebugEngine
                 _rgpEnabled = chromeLauncher.LaunchParams.Rgp;
                 _renderDocEnabled = chromeLauncher.LaunchParams.RenderDoc;
 
-                if (_gameLauncher.LaunchGameApiEnabled)
+                if (_gameLaunchManager.LaunchGameApiEnabled)
                 {
-                    bool launchIsSuccessful = _taskContext.Factory.Run(
-                        () => _gameLauncher.LaunchGameAsync(chromeLauncher, _workingDirectory));
-                    if (!launchIsSuccessful)
+                    _vsiGameLaunch = _gameLaunchManager.CreateLaunch(chromeLauncher.LaunchParams);
+                    if (_vsiGameLaunch != null)
+                    {
+                        _vsiGameLaunch.LaunchInChrome(chromeLauncher, _workingDirectory);
+                    }
+                    else
                     {
                         process = null;
                         return VSConstants.E_FAIL;
@@ -1011,9 +1016,9 @@ namespace YetiVSI.DebugEngine
         {
             _taskContext.ThrowIfNotOnMainThread();
 
-            if (_gameLauncher.LaunchGameApiEnabled)
+            if (_gameLaunchManager.LaunchGameApiEnabled)
             {
-                bool status = _gameLauncher.WaitUntilGameLaunched();
+                bool status = _vsiGameLaunch.WaitUntilGameLaunched();
 
                 if (!status)
                 {

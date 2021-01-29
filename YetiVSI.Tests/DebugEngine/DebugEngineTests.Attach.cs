@@ -171,7 +171,7 @@ namespace YetiVSI.Test.DebugEngine
             IDebugSessionLauncherFactory debugSessionLauncherFactory, IRemoteDeploy remoteDeploy)
         {
             var compRoot = new DebugEngineFactoryCompRootStub(
-                debugSessionLauncherFactory, remoteDeploy, Substitute.For<IGameLauncher>());
+                debugSessionLauncherFactory, remoteDeploy, Substitute.For<IGameLaunchManager>());
             _metrics = Substitute.For<IMetrics>();
             _metrics.NewDebugSessionId().Returns(_debugSessionId);
             ISessionNotifier sessionNotifier = Substitute.For<ISessionNotifier>();
@@ -228,7 +228,8 @@ namespace YetiVSI.Test.DebugEngine
                                                Arg.Any<YetiVSI.DebugEngine.DebugEngine.
                                                    LaunchOption>(), Arg.Any<string>(),
                                                Arg.Any<string>(), Arg.Any<string>(),
-                                               Arg.Any<IGameLauncher>())
+                                               Arg.Any<IGameLaunchManager>(),
+                                               Arg.Any<IVsiGameLaunch>())
                 .Returns((x) => sessionLauncher);
             return debugSessionLauncherFactory;
         }

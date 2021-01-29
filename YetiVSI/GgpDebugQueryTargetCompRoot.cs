@@ -82,18 +82,18 @@ namespace YetiVSI
             IGameletSelector gameletSelector = launchGameApiEnabled
                 ? new GameletSelector(_dialogUtil, cloudRunner, GetGameletSelectorWindowFactory(),
                                       GetCancelableTaskFactory(), gameletClientFactory, sshManager,
-                                      remoteCommand, sdkConfigFactory, yetiVsiService)
+                                      remoteCommand, sdkConfigFactory, yetiVsiService, taskContext)
                 : (IGameletSelector) new GameletSelectorLegacyFlow(_dialogUtil, cloudRunner,
-                                                                   GetGameletSelectorWindowFactory(),
-                                                                   GetCancelableTaskFactory(),
-                                                                   gameletClientFactory, sshManager,
-                                                                   remoteCommand);
+                                                               GetGameletSelectorWindowFactory(),
+                                                               GetCancelableTaskFactory(),
+                                                               gameletClientFactory, sshManager,
+                                                               remoteCommand);
             var serializer = new JsonUtil();
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(serializer);
-            var gameLauncher = new GameLauncher(new GameletClient.Factory().Create(cloudRunner),
-                                                sdkConfigFactory, _cancelableTaskFactory,
-                                                yetiVsiService);
+            var gameLauncher = new GameLaunchManager(
+                new GameletClient.Factory().Create(cloudRunner), sdkConfigFactory,
+                _cancelableTaskFactory, yetiVsiService, taskContext);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, metrics, _serviceManager,

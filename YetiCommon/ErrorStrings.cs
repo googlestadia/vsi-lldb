@@ -26,17 +26,10 @@ namespace YetiCommon
         public const string MalformedBuildID = "The build-id section is malformed.";
         public const string MalformedDebugLink = "The debuglink section is malformed.";
         public const string NoDebugLink = "Unable to extract the file's debuglink section.";
-        public const string NoOrInvalidCredentials = "Credential file does not exist or is " +
-            "invalid. Run 'ggp init' to authorize.";
         public const string QueryParametersWrongFormat =
             "The 'Custom Query Parameters' value is in a wrong format and will be ignored. " +
             " The setting should be in the form " +
             "'{param_1}={value_1}&{param_2=value_2}&{param_n=value_n}'. " +
-            "Please edit the setting in 'Project Properties' -> " +
-            "'Debugging' -> 'Custom Query Parameters'.";
-
-        public const string GameletNameNotAllowed =
-            "Gamelet name can not be overriden by the query parameter 'gamelet_name'. " +
             "Please edit the setting in 'Project Properties' -> " +
             "'Debugging' -> 'Custom Query Parameters'.";
         public static string ErrorWaitingForProcess(string process, string message) =>
@@ -113,19 +106,10 @@ namespace YetiCommon
             $"Parameter's '{parameterName}' value '{value}' is invalid. Valid " +
             $"values are: {string.Join(", ", expectedValues.Select(v => $"'{v}'"))}.";
 
-        public static string QueryParameterNotInAllowedRange(
-            string parameterName, string value, IEnumerable<string> allowedValues) =>
-            $"Parameter's '{parameterName}' value '{value}' is invalid. " +
-            "The value should be one of the following: " +
-            string.Join(", ", allowedValues);
-
         public static string InvalidBinaryName(string expected, string actual) =>
             $"Invalid binary name in 'cmd' query parameter. Expected: '{expected}', received: " +
             $"{(string.IsNullOrWhiteSpace(actual) ? "an empty value" : $"'{actual}'")}. " +
             "If you want to specify command-line parameters for the binary, use the setting in " +
             "'Project Properties' -> 'Debugging' -> 'Stadia Launch Arguments'.";
-
-        public static string InvalidCommandArgumentsString(string argumentsString) =>
-            $"Invalid command arguments string: '{argumentsString}'";
     }
 }
