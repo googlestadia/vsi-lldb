@@ -45,12 +45,14 @@ namespace YetiVSI.GameLaunch
         readonly ICloudRunner _runner;
         readonly GameletMountChecker _mountChecker;
         readonly SdkConfig.Factory _sdkConfigFactory;
+        readonly YetiVSIService _yetiVsiService;
 
         public GameletSelector(IDialogUtil dialogUtil, ICloudRunner runner,
                                GameletSelectionWindow.Factory gameletSelectionWindowFactory,
                                CancelableTask.Factory cancelableTaskFactory,
                                GameletClient.Factory gameletClientFactory, ISshManager sshManager,
-                               IRemoteCommand remoteCommand, SdkConfig.Factory sdkConfigFactory)
+                               IRemoteCommand remoteCommand, SdkConfig.Factory sdkConfigFactory,
+                               YetiVSIService yetiVsiService)
         {
             _dialogUtil = dialogUtil;
             _runner = runner;
@@ -62,6 +64,7 @@ namespace YetiVSI.GameLaunch
             _mountChecker =
                 new GameletMountChecker(remoteCommand, dialogUtil, cancelableTaskFactory);
             _sdkConfigFactory = sdkConfigFactory;
+            _yetiVsiService = yetiVsiService;
         }
 
         /// <summary>
@@ -114,8 +117,7 @@ namespace YetiVSI.GameLaunch
             // TODO: record actions.
             IGameletClient gameletClient = _gameletClientFactory.Create(_runner);
             var gameLauncher = new GameLauncher(gameletClient, _sdkConfigFactory,
-                                _cancelableTaskFactory,
-                                /*The new Game launch API is always enabled in this flow*/true);
+                                                _cancelableTaskFactory, _yetiVsiService);
             ICancelableTask<GgpGrpc.Models.GameLaunch> currentGameLaunchTask =
                 _cancelableTaskFactory.Create(TaskMessages.LookingForTheCurrentLaunch,
                         async task => await gameLauncher.GetCurrentGameLaunchAsync(testAccount));

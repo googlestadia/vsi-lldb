@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Text;
 using YetiCommon;
 
 namespace ChromeClientLauncher
@@ -30,32 +32,40 @@ namespace ChromeClientLauncher
             try
             {
                 var jsonUtil = new JsonUtil();
-                // TODO: use the launch API.
+
                 var gameLauncher = new YetiCommon.ChromeClientLauncher.Factory(
                     new BackgroundProcess.Factory(),
                     new ChromeClientLaunchCommandFormatter(jsonUtil),
                     new SdkConfig.Factory(jsonUtil)).Create(args[0]);
-                var urlBuildStatus = gameLauncher.BuildLaunchUrl(out string launchUrl);
-                // TODO: Currently the status severity can not be higher than Warning.
-                // Once the Game Launch Api is used, the Error severity
-                // case should be implemented. http://(internal)
-                if (urlBuildStatus.IsWarningLevel)
-                {
-                    Console.WriteLine($"Warning: {urlBuildStatus.WarningMessage}");
-                }
-                else if (!urlBuildStatus.IsOk)
-                {
-                    throw new NotImplementedException();
-                }
 
-                gameLauncher.StartChrome(launchUrl, Directory.GetCurrentDirectory());
+                // new launch api is enabled.
+                if (args.Length == 2)
+                {
+                    string launchName = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
+                    var launchUrl = gameLauncher.BuildLaunchUrlWithLaunchName(launchName);
+                    gameLauncher.StartChrome(launchUrl, Directory.GetCurrentDirectory());
+                }
+                else
+                {
+                    var urlBuildStatus = gameLauncher.BuildLaunchUrl(out string launchUrl);
+                    if (urlBuildStatus.IsWarningLevel)
+                    {
+                        Console.WriteLine($"Warning: {urlBuildStatus.WarningMessage}");
+                    }
+                    else if (!urlBuildStatus.IsOk)
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    gameLauncher.StartChrome(launchUrl, Directory.GetCurrentDirectory());
+                }
             }
             catch (Exception ex) when (LogException(ex))
             {
             }
         }
 
-        private static bool LogException(Exception ex)
+        static bool LogException(Exception ex)
         {
             Console.Error.WriteLine($"Unable to launch chrome client, reason: {ex.Message}");
             return false;

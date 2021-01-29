@@ -64,7 +64,7 @@ namespace YetiVSI
             var remoteCommand = new RemoteCommand(managedProcessFactory);
             var socketSender = new LocalSocketSender();
             var transportSessionFactory =
-                new DebugEngine.LldbTransportSession.Factory(new MemoryMappedFileFactory());
+                new LldbTransportSession.Factory(new MemoryMappedFileFactory());
             var remoteFile = new RemoteFile(managedProcessFactory, transportSessionFactory,
                                             socketSender, fileSystem);
             var remoteDeploy = new RemoteDeploy(remoteCommand, remoteFile, managedProcessFactory,
@@ -80,25 +80,26 @@ namespace YetiVSI
             bool launchGameApiEnabled =
                 yetiVsiService.Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
             IGameletSelector gameletSelector = launchGameApiEnabled
-                ? new GameletSelector(_dialogUtil, cloudRunner,
-                                                   GetGameletSelectorWindowFactory(),
-                                                   GetCancelableTaskFactory(),
-                                                   gameletClientFactory, sshManager,
-                                                   remoteCommand, sdkConfigFactory)
+                ? new GameletSelector(_dialogUtil, cloudRunner, GetGameletSelectorWindowFactory(),
+                                      GetCancelableTaskFactory(), gameletClientFactory, sshManager,
+                                      remoteCommand, sdkConfigFactory, yetiVsiService)
                 : (IGameletSelector) new GameletSelectorLegacyFlow(_dialogUtil, cloudRunner,
-                                                         GetGameletSelectorWindowFactory(),
-                                                         GetCancelableTaskFactory(),
-                                                         gameletClientFactory, sshManager,
-                                                         remoteCommand);
+                                                                   GetGameletSelectorWindowFactory(),
+                                                                   GetCancelableTaskFactory(),
+                                                                   gameletClientFactory, sshManager,
+                                                                   remoteCommand);
             var serializer = new JsonUtil();
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(serializer);
+            var gameLauncher = new GameLauncher(new GameletClient.Factory().Create(cloudRunner),
+                                                sdkConfigFactory, _cancelableTaskFactory,
+                                                yetiVsiService);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, metrics, _serviceManager,
                                            credentialManager, testAccountClientFactory,
                                            gameletSelector, cloudRunner, sdkVersion,
-                                           launchCommandFormatter, paramsFactory);
+                                           launchCommandFormatter, paramsFactory, gameLauncher);
         }
 
         public virtual CancelableTask.Factory GetCancelableTaskFactory()

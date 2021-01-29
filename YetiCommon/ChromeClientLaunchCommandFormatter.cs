@@ -44,17 +44,29 @@ namespace YetiCommon
         /// <summary>
         /// Create a launch command that can execute using Cmd.exe
         /// </summary>
-        public string Create(ChromeClientLauncher.Params launchParams)
+        public string CreateFromParams(ChromeClientLauncher.Params launchParams)
             => $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)}\"";
+
+        /// <summary>
+        /// Create a launch command that can execute using Cmd.exe
+        /// </summary>
+        public string CreateWithLaunchName(ChromeClientLauncher.Params launchParams,
+                                           string launchName) =>
+            $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)} " +
+            $"{EncodeLaunchName(launchName)}\"";
 
         /// <summary>
         /// Parse a launch command and return the launch arguments.
         /// </summary>
         /// <exception cref="ArgumentException">Thrown if the command is malformed</exception>
         /// <exception cref="ArgumentNullException">Thrown if the command is null</exception>
-        public ChromeClientLauncher.Params Parse(string command)
+        public void Parse(string command, out ChromeClientLauncher.Params launchParams,
+                          out string launchName)
         {
-            if (command == null) { throw new ArgumentNullException(nameof(command)); }
+            if (command == null)
+            {
+                throw new ArgumentNullException(nameof(command));
+            }
 
             var ccCmd = $"/c \"\"{launcherPath}\" ";
             if (!command.StartsWith(ccCmd))
@@ -64,7 +76,19 @@ namespace YetiCommon
 
             var args = command.Substring(ccCmd.Length);
             args = args.Substring(0, args.Length - 1);
-            return DecodeLaunchParams(args);
+
+            string launchParamsArg = args;
+            string launchNameArg = null;
+            if (args.Contains(" "))
+            {
+                launchParamsArg = args.Substring(0, args.IndexOf(" ", StringComparison.Ordinal));
+                launchNameArg = args.Substring(args.IndexOf(" ", StringComparison.Ordinal));
+            }
+
+            launchParams = DecodeLaunchParams(launchParamsArg);
+            launchName = launchNameArg == null
+                ? null
+                : Encoding.UTF8.GetString(Convert.FromBase64String(launchNameArg));
         }
 
         /// <summary>
@@ -82,5 +106,12 @@ namespace YetiCommon
             Convert.ToBase64String(
                 Encoding.UTF8.GetBytes(
                     serializer.Serialize(launchParams)));
+
+        /// <summary>
+        /// base64 encode launch name
+        /// </summary>
+        public string EncodeLaunchName(string launchName) =>
+            Convert.ToBase64String(
+                Encoding.UTF8.GetBytes(launchName));
     }
 }

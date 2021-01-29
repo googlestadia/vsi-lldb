@@ -18,12 +18,15 @@ using GgpGrpc.Models;
 using Grpc.Core;
 using YetiCommon;
 using YetiCommon.Cloud;
+using YetiVSI.DebugEngine;
 
 namespace YetiVSI.GameLaunch
 {
     public interface IGameLauncher
     {
         bool LaunchGameApiEnabled { get; }
+        Task<string> CreateLaunchAsync(YetiCommon.ChromeClientLauncher.Params launchParams);
+
         Task<bool> LaunchGameAsync(YetiCommon.ChromeClientLauncher chromeLauncher,
                                    string workingDirectory);
 
@@ -54,23 +57,25 @@ namespace YetiVSI.GameLaunch
     {
         readonly IGameletClient _gameletClient;
         readonly CancelableTask.Factory _cancelableTaskFactory;
+        readonly YetiVSIService _vsiService;
         readonly LaunchGameParamsConverter _launchGameParamsConverter;
         readonly DialogUtil _dialogUtil;
 
         string _launchName;
 
         public GameLauncher(IGameletClient gameletClient, SdkConfig.Factory sdkConfigFactory,
-                            CancelableTask.Factory cancelableTaskFactory, bool launchGameApiEnabled)
+                            CancelableTask.Factory cancelableTaskFactory, YetiVSIService vsiService)
         {
             _gameletClient = gameletClient;
             _cancelableTaskFactory = cancelableTaskFactory;
+            _vsiService = vsiService;
             _launchGameParamsConverter =
                 new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
             _dialogUtil = new DialogUtil();
-            LaunchGameApiEnabled = launchGameApiEnabled;
         }
 
-        public bool LaunchGameApiEnabled { get; }
+        public bool LaunchGameApiEnabled =>
+            _vsiService.Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
 
         bool CurrentLaunchExists => !string.IsNullOrWhiteSpace(_launchName);
 
@@ -102,17 +107,16 @@ namespace YetiVSI.GameLaunch
                 : sdkCompatibility.Message;
         }
 
-        public async Task<bool> LaunchGameAsync(YetiCommon.ChromeClientLauncher chromeLauncher,
-                                                string workingDirectory)
+        public async Task<string> CreateLaunchAsync(
+            YetiCommon.ChromeClientLauncher.Params launchParams)
         {
-            // TODO: Show a progressbar of what's currently happening.
             Task<string> sdkCompatibilityTask = CheckSdkCompatibilityAsync(
-                chromeLauncher.LaunchParams.GameletName, chromeLauncher.LaunchParams.SdkVersion);
+                launchParams.GameletName, launchParams.SdkVersion);
 
             LaunchGameRequest launchRequest = null;
             Task<ConfigStatus> parsingTask =
                 Task.Run(() => _launchGameParamsConverter.ToLaunchGameRequest(
-                             chromeLauncher.LaunchParams, out launchRequest));
+                             launchParams, out launchRequest));
 
             ConfigStatus parsingState = await parsingTask;
             if (parsingState.IsErrorLevel)
@@ -120,7 +124,7 @@ namespace YetiVSI.GameLaunch
                 // Critical error occurred while parsing the configuration.
                 // Launch can not proceed.
                 _dialogUtil.ShowError(parsingState.ErrorMessage);
-                return false;
+                return null;
             }
 
             if (parsingState.IsWarningLevel)
@@ -138,8 +142,21 @@ namespace YetiVSI.GameLaunch
             }
 
             LaunchGameResponse response = await _gameletClient.LaunchGameAsync(launchRequest);
-            _launchName = response.GameLaunchName;
+            return response.GameLaunchName;
+        }
 
+        public async Task<bool> LaunchGameAsync(YetiCommon.ChromeClientLauncher chromeLauncher,
+                                                string workingDirectory)
+        {
+            // TODO: Show a progressbar of what's currently happening.
+            string launchName = await CreateLaunchAsync(chromeLauncher.LaunchParams);
+            if (string.IsNullOrEmpty(launchName))
+            {
+                return false;
+            }
+
+            // TODO: refactor GameLauncher to not store launchName.
+            _launchName = launchName;
             string launchUrl = chromeLauncher.BuildLaunchUrlWithLaunchName(_launchName);
             chromeLauncher.StartChrome(launchUrl, workingDirectory);
             return true;

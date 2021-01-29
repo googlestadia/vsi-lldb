@@ -51,6 +51,7 @@ namespace YetiVSI
         readonly Versions.SdkVersion _sdkVersion;
         readonly ChromeClientLaunchCommandFormatter _launchCommandFormatter;
         readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
+        readonly IGameLauncher _gameLauncher;
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
@@ -64,7 +65,8 @@ namespace YetiVSI
                                    IGameletSelector gameletSelector, ICloudRunner cloudRunner,
                                    Versions.SdkVersion sdkVersion,
                                    ChromeClientLaunchCommandFormatter launchCommandFormatter,
-                                   DebugEngine.DebugEngine.Params.Factory paramsFactory)
+                                   DebugEngine.DebugEngine.Params.Factory paramsFactory,
+                                   IGameLauncher gameLauncher)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -83,6 +85,7 @@ namespace YetiVSI
             _sdkVersion = sdkVersion;
             _launchCommandFormatter = launchCommandFormatter;
             _paramsFactory = paramsFactory;
+            _gameLauncher = gameLauncher;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -155,7 +158,7 @@ namespace YetiVSI
                 debugLaunchSettings.LaunchOperation = DebugLaunchOperation.CreateProcess;
                 debugLaunchSettings.CurrentDirectory = await project.GetAbsoluteRootPathAsync();
 
-                if ((launchOptions & DebugLaunchOptions.NoDebug) != DebugLaunchOptions.NoDebug)
+                if (!launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
                 {
                     var parameters = _paramsFactory.Create();
                     parameters.TargetIp = new SshTarget(gamelet).GetString();
@@ -178,11 +181,32 @@ namespace YetiVSI
                     return new IDebugLaunchSettings[] { };
                 }
 
-                if ((launchOptions & DebugLaunchOptions.NoDebug) == DebugLaunchOptions.NoDebug)
+                if (launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
                 {
+                    if (_gameLauncher.LaunchGameApiEnabled)
+                    {
+                        string launchName = await _gameLauncher.CreateLaunchAsync(launchParams);
+                        if (launchName != null)
+                        {
+                            debugLaunchSettings.Arguments =
+                                _launchCommandFormatter.CreateWithLaunchName(
+                                    launchParams, launchName);
+                        }
+                        else
+                        {
+                            Trace.WriteLine("Unable to retrieve launch name from the launch api.");
+                            return new IDebugLaunchSettings[] { };
+                        }
+                    }
+                    else
+                    {
+                        debugLaunchSettings.Arguments =
+                            _launchCommandFormatter.CreateFromParams(launchParams);
+                    }
+
                     debugLaunchSettings.Executable =
                         Path.Combine(Environment.SystemDirectory, YetiConstants.Command);
-                    debugLaunchSettings.Arguments = _launchCommandFormatter.Create(launchParams);
+
                     debugLaunchSettings.LaunchOptions = DebugLaunchOptions.NoDebug |
                         DebugLaunchOptions.MergeEnvironment;
                 }

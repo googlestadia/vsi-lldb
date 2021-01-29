@@ -172,7 +172,7 @@ namespace YetiCommon
         /// collision, the custom parameter will be selected.
         /// </summary>
         ConfigStatus TryMergeCustomQueryString(IEnumerable<QueryParam> queryParams,
-                                      out IEnumerable<QueryParam> outParams)
+                                               out IEnumerable<QueryParam> outParams)
         {
             var paramsByName = queryParams.Where(p => p != null).ToDictionary(p => p.Name);
             var status = TryParseQueryString(launchParams.QueryParams,

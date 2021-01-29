@@ -308,12 +308,10 @@ namespace YetiVSI.DebugEngine
                     GetFactoryDecorator().Decorate(new FrameEnumFactory()), _taskExecutor));
             var debugThreadCreator = asyncInterfacesEnabled ?(CreateDebugThreadDelegate)
                                          debugThreadAsyncFactory.Create : debugThreadFactory.Create;
-            bool launchGameApiEnabled =
-                GetVsiService().Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
             var gameletFactory = new GameletClient.Factory();
             IGameletClient gameletClient = gameletFactory.Create(GetCloudRunner());
             var gameLauncher = new GameLauncher(gameletClient, GetSdkConfigFactory(),
-                                                cancelableTaskFactory, launchGameApiEnabled);
+                                                cancelableTaskFactory, GetVsiService());
             var debugProgramFactory =
                 GetFactoryDecorator().Decorate<IDebugProgramFactory>(new DebugProgram.Factory(
                     GetJoinableTaskContext(),

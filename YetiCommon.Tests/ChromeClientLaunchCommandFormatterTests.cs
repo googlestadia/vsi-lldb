@@ -42,9 +42,10 @@ namespace YetiCommon.Tests
                 Debug = true,
             };
 
-            var command = launchCommand.Create(launchParams);
-            var parsedLaunchParams = launchCommand.Parse(command);
-            Assert.Multiple(() => {
+            var command = launchCommand.CreateFromParams(launchParams);
+            launchCommand.Parse(command, out ChromeClientLauncher.Params parsedLaunchParams, out _);
+            Assert.Multiple(() =>
+            {
                 Assert.That(parsedLaunchParams.ApplicationName,
                             Is.EqualTo(launchParams.ApplicationName));
                 Assert.That(parsedLaunchParams.GameletName, Is.EqualTo(launchParams.GameletName));
@@ -59,6 +60,28 @@ namespace YetiCommon.Tests
                 Assert.That(parsedLaunchParams.Rgp, Is.EqualTo(launchParams.Rgp));
                 Assert.That(parsedLaunchParams.RenderDoc, Is.EqualTo(launchParams.RenderDoc));
                 Assert.That(parsedLaunchParams.Debug, Is.EqualTo(launchParams.Debug));
+            });
+        }
+
+        [Test]
+        public void TestCreateAndParseWithLaunchName()
+        {
+            var launchCommand = new ChromeClientLaunchCommandFormatter(new JsonUtil(), LauncherDir);
+            string launchName = "launchName";
+            var launchParams = new ChromeClientLauncher.Params()
+            {
+                Account = "test@example.com",
+                SdkVersion = "sdkVersion",
+            };
+
+            var command = launchCommand.CreateWithLaunchName(launchParams, launchName);
+            launchCommand.Parse(command, out ChromeClientLauncher.Params parsedLaunchParams,
+                                out string parsedLaunchName);
+            Assert.Multiple(() =>
+            {
+                Assert.That(parsedLaunchParams.Account, Is.EqualTo(launchParams.Account));
+                Assert.That(parsedLaunchParams.SdkVersion, Is.EqualTo(launchParams.SdkVersion));
+                Assert.That(parsedLaunchName, Is.EqualTo(launchName));
             });
         }
     }
