@@ -5,15 +5,22 @@ extension is developed and maintained by the Stadia team.
 
 ## Prerequisites
 
+1. Download and install the latest Stadia SDK from the Stadia Partner Resource
+   Center.
+
+1. Check out the vsi-lldb source code. We recommend to start from the tag that
+   corresponds to the SDK version number you installed, for example:
+
+   ```bash
+   git checkout tags/1.57 -b <branch-name>
+   ```
+
 1. Initialize the required submodules:
 
    ```bash
    git submodule init
    git submodule update
    ```
-
-1. Download and install the latest Stadia SDK from the Stadia Partner Resource
-   Center.
 
 1. Make sure the following tools are installed on your system (minimal
    recommended version is specified in parenthesis):
