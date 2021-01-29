@@ -94,11 +94,11 @@ namespace YetiVSI
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(serializer);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
-                                           applicationClientFactory, options,
-                                           GetCancelableTaskFactory(), _dialogUtil, remoteDeploy,
-                                           metrics, _serviceManager, credentialManager,
-                                           testAccountClientFactory, gameletSelector, cloudRunner,
-                                           sdkVersion, launchCommandFormatter, paramsFactory);
+                                           applicationClientFactory, GetCancelableTaskFactory(),
+                                           _dialogUtil, remoteDeploy, metrics, _serviceManager,
+                                           credentialManager, testAccountClientFactory,
+                                           gameletSelector, cloudRunner, sdkVersion,
+                                           launchCommandFormatter, paramsFactory);
         }
 
         public virtual CancelableTask.Factory GetCancelableTaskFactory()

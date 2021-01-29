@@ -143,11 +143,15 @@ namespace YetiVSI.Test
             var serializer = new JsonUtil();
             launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             paramsFactory = new YetiVSI.DebugEngine.DebugEngine.Params.Factory(serializer);
-            ggpDebugQueryTarget = new GgpDebugQueryTarget(
-                fileSystem, sdkConfigFactory, gameletClientFactory, applicationClientFactory,
-                options, cancelableTaskFactory, dialogUtil, remoteDeploy, metrics, serviceManager,
-                credentialManager, testAccountClientFactory, gameletSelector, cloudRunner,
-                SDK_VERSION, launchCommandFormatter, paramsFactory);
+            ggpDebugQueryTarget = new GgpDebugQueryTarget(fileSystem, sdkConfigFactory,
+                                                          gameletClientFactory,
+                                                          applicationClientFactory,
+                                                          cancelableTaskFactory, dialogUtil,
+                                                          remoteDeploy, metrics, serviceManager,
+                                                          credentialManager,
+                                                          testAccountClientFactory, gameletSelector,
+                                                          cloudRunner, SDK_VERSION,
+                                                          launchCommandFormatter, paramsFactory);
         }
 
         [Test]

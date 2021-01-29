@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using GgpGrpc.Cloud;
+using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
@@ -35,30 +35,27 @@ namespace YetiVSI
 {
     public class GgpDebugQueryTarget
     {
-        readonly IFileSystem fileSystem;
-        readonly SdkConfig.Factory sdkConfigFactory;
-        readonly GameletClient.Factory gameletClientFactory;
-        readonly ApplicationClient.Factory applicationClientFactory;
-        readonly IExtensionOptions options;
-        readonly CancelableTask.Factory cancelableTaskFactory;
-        readonly IDialogUtil dialogUtil;
-        readonly IRemoteDeploy remoteDeploy;
-        readonly IMetrics metrics;
-        readonly ServiceManager serviceManager;
-        readonly ICredentialManager credentialManager;
-        readonly TestAccountClient.Factory testAccountClientFactory;
-        readonly ICloudRunner cloudRunner;
-        readonly YetiVSIService yetiVsiService;
-        readonly IGameletSelector gameletSelector;
-        readonly Versions.SdkVersion sdkVersion;
-        readonly ChromeClientLaunchCommandFormatter launchCommandFormatter;
-        readonly DebugEngine.DebugEngine.Params.Factory paramsFactory;
+        readonly IFileSystem _fileSystem;
+        readonly SdkConfig.Factory _sdkConfigFactory;
+        readonly GameletClient.Factory _gameletClientFactory;
+        readonly ApplicationClient.Factory _applicationClientFactory;
+        readonly CancelableTask.Factory _cancelableTaskFactory;
+        readonly IDialogUtil _dialogUtil;
+        readonly IRemoteDeploy _remoteDeploy;
+        readonly IMetrics _metrics;
+        readonly ICredentialManager _credentialManager;
+        readonly TestAccountClient.Factory _testAccountClientFactory;
+        readonly ICloudRunner _cloudRunner;
+        readonly YetiVSIService _yetiVsiService;
+        readonly IGameletSelector _gameletSelector;
+        readonly Versions.SdkVersion _sdkVersion;
+        readonly ChromeClientLaunchCommandFormatter _launchCommandFormatter;
+        readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
                                    GameletClient.Factory gameletClientFactory,
                                    ApplicationClient.Factory applicationClientFactory,
-                                   IExtensionOptions options,
                                    CancelableTask.Factory cancelableTaskFactory,
                                    IDialogUtil dialogUtil, IRemoteDeploy remoteDeploy,
                                    IMetrics metrics, ServiceManager serviceManager,
@@ -69,25 +66,23 @@ namespace YetiVSI
                                    ChromeClientLaunchCommandFormatter launchCommandFormatter,
                                    DebugEngine.DebugEngine.Params.Factory paramsFactory)
         {
-            this.fileSystem = fileSystem;
-            this.sdkConfigFactory = sdkConfigFactory;
-            this.gameletClientFactory = gameletClientFactory;
-            this.applicationClientFactory = applicationClientFactory;
-            this.options = options;
-            this.cancelableTaskFactory = cancelableTaskFactory;
-            this.dialogUtil = dialogUtil;
-            this.remoteDeploy = remoteDeploy;
-            this.metrics = metrics;
-            this.serviceManager = serviceManager;
-            this.credentialManager = credentialManager;
-            this.testAccountClientFactory = testAccountClientFactory;
-            this.cloudRunner = cloudRunner;
-            yetiVsiService =
+            _fileSystem = fileSystem;
+            _sdkConfigFactory = sdkConfigFactory;
+            _gameletClientFactory = gameletClientFactory;
+            _applicationClientFactory = applicationClientFactory;
+            _cancelableTaskFactory = cancelableTaskFactory;
+            _dialogUtil = dialogUtil;
+            _remoteDeploy = remoteDeploy;
+            _metrics = metrics;
+            _credentialManager = credentialManager;
+            _testAccountClientFactory = testAccountClientFactory;
+            _cloudRunner = cloudRunner;
+            _yetiVsiService =
                 (YetiVSIService) serviceManager.GetGlobalService(typeof(YetiVSIService));
-            this.gameletSelector = gameletSelector;
-            this.sdkVersion = sdkVersion;
-            this.launchCommandFormatter = launchCommandFormatter;
-            this.paramsFactory = paramsFactory;
+            _gameletSelector = gameletSelector;
+            _sdkVersion = sdkVersion;
+            _launchCommandFormatter = launchCommandFormatter;
+            _paramsFactory = paramsFactory;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -97,14 +92,14 @@ namespace YetiVSI
             {
                 // Make sure we can find the target executable.
                 var targetPath = await project.GetTargetPathAsync();
-                if (!fileSystem.File.Exists(targetPath))
+                if (!_fileSystem.File.Exists(targetPath))
                 {
                     Trace.WriteLine($"Unable to find target executable: {targetPath}");
-                    dialogUtil.ShowError(ErrorStrings.UnableToFindTargetExecutable(targetPath));
+                    _dialogUtil.ShowError(ErrorStrings.UnableToFindTargetExecutable(targetPath));
                     return new IDebugLaunchSettings[] { };
                 }
 
-                var debugSessionMetrics = new DebugSessionMetrics(metrics);
+                var debugSessionMetrics = new DebugSessionMetrics(_metrics);
                 debugSessionMetrics.UseNewDebugSessionId();
                 var actionRecorder = new ActionRecorder(debugSessionMetrics);
 
@@ -122,13 +117,13 @@ namespace YetiVSI
                     QueryParams = await project.GetQueryParamsAsync()
                 };
 
-                if (sdkVersion != null && !string.IsNullOrEmpty(sdkVersion.ToString()))
+                if (_sdkVersion != null && !string.IsNullOrEmpty(_sdkVersion.ToString()))
                 {
-                    launchParams.SdkVersion = sdkVersion.ToString();
+                    launchParams.SdkVersion = _sdkVersion.ToString();
                 }
 
-                SetupQueriesResult setupQueriesResult;
-                if (!TrySetupQueries(project, actionRecorder, out setupQueriesResult))
+                if (!TrySetupQueries(project, actionRecorder,
+                                     out SetupQueriesResult setupQueriesResult))
                 {
                     return new IDebugLaunchSettings[] { };
                 }
@@ -139,12 +134,11 @@ namespace YetiVSI
                     launchParams.TestAccount = setupQueriesResult.TestAccount.Name;
                 }
 
-                Gamelet gamelet;
                 DeployOnLaunchSetting deployOnLaunchAsync = await project.GetDeployOnLaunchAsync();
 
-                if (!gameletSelector.TrySelectAndPrepareGamelet(
-                    targetPath, deployOnLaunchAsync, actionRecorder,
-                    setupQueriesResult.Gamelets, launchParams.TestAccount, out gamelet))
+                if (!_gameletSelector.TrySelectAndPrepareGamelet(
+                    targetPath, deployOnLaunchAsync, actionRecorder, setupQueriesResult.Gamelets,
+                    launchParams.TestAccount, out Gamelet gamelet))
                 {
                     return new IDebugLaunchSettings[] { };
                 }
@@ -153,30 +147,30 @@ namespace YetiVSI
                 launchParams.PoolId = gamelet.PoolId;
                 launchParams.GameletEnvironmentVars =
                     await project.GetGameletEnvironmentVariablesAsync();
-                launchParams.Account = credentialManager.LoadAccount();
+                launchParams.Account = _credentialManager.LoadAccount();
 
                 // Prepare for debug launch using these settings.
-                var debug_launch_settings = new DebugLaunchSettings(launchOptions);
-                debug_launch_settings.Environment["PATH"] = await project.GetExecutablePathAsync();
-                debug_launch_settings.LaunchOperation = DebugLaunchOperation.CreateProcess;
-                debug_launch_settings.CurrentDirectory = await project.GetAbsoluteRootPathAsync();
+                var debugLaunchSettings = new DebugLaunchSettings(launchOptions);
+                debugLaunchSettings.Environment["PATH"] = await project.GetExecutablePathAsync();
+                debugLaunchSettings.LaunchOperation = DebugLaunchOperation.CreateProcess;
+                debugLaunchSettings.CurrentDirectory = await project.GetAbsoluteRootPathAsync();
 
                 if ((launchOptions & DebugLaunchOptions.NoDebug) != DebugLaunchOptions.NoDebug)
                 {
-                    var parameters = paramsFactory.Create();
+                    var parameters = _paramsFactory.Create();
                     parameters.TargetIp = new SshTarget(gamelet).GetString();
                     parameters.DebugSessionId = debugSessionMetrics.DebugSessionId;
-                    debug_launch_settings.Options = paramsFactory.Serialize(parameters);
+                    debugLaunchSettings.Options = _paramsFactory.Serialize(parameters);
                 }
 
                 var action = actionRecorder.CreateToolAction(ActionType.RemoteDeploy);
-                var isDeployed = cancelableTaskFactory.Create(
-                    TaskMessages.DeployingExecutable,
-                    async task =>
+                bool isDeployed = _cancelableTaskFactory.Create(
+                    TaskMessages.DeployingExecutable, async task =>
                     {
-                        await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
+                        await _remoteDeploy.DeployGameExecutableAsync(
+                            project, gamelet, task, action);
                         task.Progress.Report(TaskMessages.CustomDeployCommand);
-                        await remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
+                        await _remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
                     }).RunAndRecord(action);
 
                 if (!isDeployed)
@@ -186,15 +180,15 @@ namespace YetiVSI
 
                 if ((launchOptions & DebugLaunchOptions.NoDebug) == DebugLaunchOptions.NoDebug)
                 {
-                    debug_launch_settings.Executable =
+                    debugLaunchSettings.Executable =
                         Path.Combine(Environment.SystemDirectory, YetiConstants.Command);
-                    debug_launch_settings.Arguments = launchCommandFormatter.Create(launchParams);
-                    debug_launch_settings.LaunchOptions = DebugLaunchOptions.NoDebug |
+                    debugLaunchSettings.Arguments = _launchCommandFormatter.Create(launchParams);
+                    debugLaunchSettings.LaunchOptions = DebugLaunchOptions.NoDebug |
                         DebugLaunchOptions.MergeEnvironment;
                 }
                 else
                 {
-                    if (yetiVsiService.DebuggerOptions[DebuggerOption.SKIP_WAIT_LAUNCH] ==
+                    if (_yetiVsiService.DebuggerOptions[DebuggerOption.SKIP_WAIT_LAUNCH] ==
                         DebuggerOptionState.DISABLED)
                     {
                         launchParams.Debug = true;
@@ -203,54 +197,51 @@ namespace YetiVSI
                     // TODO: This should really be the game_client executable, since
                     // the args we pass are for game_client as well.  We just need to find another
                     // way to pass the game executable.
-                    debug_launch_settings.Executable = targetPath;
-                    debug_launch_settings.LaunchDebugEngineGuid = YetiConstants.DebugEngineGuid;
-                    debug_launch_settings.Arguments =
-                        launchCommandFormatter.EncodeLaunchParams(launchParams);
-                    debug_launch_settings.LaunchOptions = DebugLaunchOptions.MergeEnvironment;
+                    debugLaunchSettings.Executable = targetPath;
+                    debugLaunchSettings.LaunchDebugEngineGuid = YetiConstants.DebugEngineGuid;
+                    debugLaunchSettings.Arguments =
+                        _launchCommandFormatter.EncodeLaunchParams(launchParams);
+                    debugLaunchSettings.LaunchOptions = DebugLaunchOptions.MergeEnvironment;
                 }
 
-                return new IDebugLaunchSettings[] {debug_launch_settings};
+                return new IDebugLaunchSettings[] { debugLaunchSettings };
             }
             catch (Exception e)
             {
                 Trace.WriteLine(e.ToString());
-                dialogUtil.ShowError(e.Message, e.ToString());
+                _dialogUtil.ShowError(e.Message, e.ToString());
                 return new IDebugLaunchSettings[] { };
             }
         }
 
         // Query project information required to initialize the debugger. Will return false if the
         // action is canceled by the user.
-        private bool TrySetupQueries(IAsyncProject project, ActionRecorder actionRecorder,
-                                     out SetupQueriesResult result)
+        bool TrySetupQueries(IAsyncProject project, ActionRecorder actionRecorder,
+                             out SetupQueriesResult result)
         {
-            var sdkConfig = sdkConfigFactory.LoadOrDefault();
+            var sdkConfig = _sdkConfigFactory.LoadOrDefault();
             var action = actionRecorder.CreateToolAction(ActionType.DebugSetupQueries);
 
-            Func<Task<SetupQueriesResult>> queryInformationTask =
-                    async delegate ()
-                    {
-                        var runner = cloudRunner.Intercept(action);
-                        var loadApplicationTask =
-                            LoadApplicationAsync(runner, await project.GetApplicationAsync());
-                        var loadGameletsTask =
-                            gameletClientFactory.Create(runner).ListGameletsAsync();
-                        var loadTestAccountTask =
-                            LoadTestAccountAsync(
-                                runner, sdkConfig.OrganizationId, sdkConfig.ProjectId,
-                                await project.GetTestAccountAsync());
+            Func<Task<SetupQueriesResult>> queryInformationTask = async delegate()
+            {
+                var runner = _cloudRunner.Intercept(action);
+                var loadApplicationTask =
+                    LoadApplicationAsync(runner, await project.GetApplicationAsync());
+                var loadGameletsTask = _gameletClientFactory.Create(runner).ListGameletsAsync();
+                var loadTestAccountTask = LoadTestAccountAsync(
+                    runner, sdkConfig.OrganizationId, sdkConfig.ProjectId,
+                    await project.GetTestAccountAsync());
 
-                        return new SetupQueriesResult
-                        {
-                            Application = await loadApplicationTask,
-                            Gamelets = await loadGameletsTask,
-                            TestAccount = await loadTestAccountTask
-                        };
-                    };
+                return new SetupQueriesResult
+                {
+                    Application = await loadApplicationTask,
+                    Gamelets = await loadGameletsTask,
+                    TestAccount = await loadTestAccountTask
+                };
+            };
 
-            var task = cancelableTaskFactory.Create("Querying project information...",
-                                                    queryInformationTask);
+            var task = _cancelableTaskFactory.Create("Querying project information...",
+                                                     queryInformationTask);
 
             if (!task.RunAndRecord(action))
             {
@@ -269,15 +260,15 @@ namespace YetiVSI
         /// </exception>
         /// <exception cref="ConfigurationException">Thrown if applicationNameOrId is null
         /// or empty</exception>
-        private async Task<Application> LoadApplicationAsync(ICloudRunner runner,
-                                                             string applicationNameOrId)
+        async Task<Application> LoadApplicationAsync(ICloudRunner runner,
+                                                     string applicationNameOrId)
         {
             if (string.IsNullOrEmpty(applicationNameOrId))
             {
                 throw new ConfigurationException(ErrorStrings.NoApplicationConfigured);
             }
 
-            var application = await applicationClientFactory.Create(runner)
+            var application = await _applicationClientFactory.Create(runner)
                 .LoadByNameOrIdAsync(applicationNameOrId);
             if (application == null)
             {
@@ -295,16 +286,15 @@ namespace YetiVSI
         /// <exception cref="ConfigurationException">Thrown if the given test account doesn't exist
         /// or if there is more than one test account with the given name.
         /// </exception>
-        private async Task<TestAccount> LoadTestAccountAsync(ICloudRunner runner,
-                                                             string organizationId,
-                                                             string projectId, string testAccount)
+        async Task<TestAccount> LoadTestAccountAsync(ICloudRunner runner, string organizationId,
+                                                     string projectId, string testAccount)
         {
             if (string.IsNullOrEmpty(testAccount))
             {
                 return null;
             }
 
-            var testAccounts = await testAccountClientFactory.Create(runner)
+            var testAccounts = await _testAccountClientFactory.Create(runner)
                 .LoadByIdOrGamerTagAsync(organizationId, projectId, testAccount);
             if (testAccounts.Count == 0)
             {
@@ -320,7 +310,7 @@ namespace YetiVSI
             return testAccounts[0];
         }
 
-        private class SetupQueriesResult
+        class SetupQueriesResult
         {
             public Application Application { get; set; }
             public List<Gamelet> Gamelets { get; set; }
