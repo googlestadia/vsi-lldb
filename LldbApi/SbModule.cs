@@ -35,6 +35,9 @@ namespace LldbApi
         // Returns the starting load address of this module's code section.
         ulong GetCodeLoadAddress();
 
+        // Returns the starting address of the module's object file.
+        SbAddress GetObjectFileHeaderAddress();
+
         // Returns the size in bytes of this module's code section.
         ulong GetCodeSize();
 
@@ -61,9 +64,6 @@ namespace LldbApi
 
         // Returns the section at |index|.
         SbSection GetSectionAtIndex(ulong index);
-
-        // Returns the first code section.
-        SbSection GetFirstCodeSection();
 
         // Returns true if this module and the given module are equal, false otherwise.
         bool EqualTo(SbModule other);

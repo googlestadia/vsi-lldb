@@ -109,6 +109,7 @@ namespace DebuggerGrpcClientServer.Tests
         {
             public ConcurrentDictionary<int, SbProcess> Process { get; } =
                 new ConcurrentDictionary<int, SbProcess>();
+            public ObjectStore<SbAddress> Address { get; } = new ObjectStore<SbAddress>();
             public ObjectStore<RemoteFrame> Frame { get; } =
                 new ObjectStore<RemoteFrame>();
             public ObjectStore<RemoteThread> Thread { get; } =
@@ -175,8 +176,8 @@ namespace DebuggerGrpcClientServer.Tests
             var remoteFrameRpc =
                 new RemoteFrameRpcServiceImpl(stores.Value, stores.Function, stores.Symbol,
                                               stores.Module, stores.Frame, stores.Thread);
-            var remoteModuleRpc =
-                new SbModuleRpcServiceImpl(stores.Module, stores.Section, mockFactories.FileSpec);
+            var remoteModuleRpc = new SbModuleRpcServiceImpl(
+                stores.Module, stores.Address, stores.Section, mockFactories.FileSpec);
             var remoteThreadRpc = new RemoteThreadRpcServiceImpl(
                 stores.Process, stores.Thread,
                 stores.Frame, stores.Module);

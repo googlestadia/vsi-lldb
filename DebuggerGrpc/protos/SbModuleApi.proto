@@ -35,6 +35,9 @@ service SbModuleRpcService {
   rpc GetCodeLoadAddress(GetCodeLoadAddressRequest)
       returns (GetCodeLoadAddressResponse) {
   }
+  rpc GetObjectFileHeaderAddress(GetObjectFileHeaderAddressRequest)
+      returns (GetObjectFileHeaderAddressResponse) {
+  }
   rpc GetCodeSize(GetCodeSizeRequest) returns (GetCodeSizeResponse) {
   }
   rpc Is64Bit(Is64BitRequest) returns (Is64BitResponse) {
@@ -55,9 +58,6 @@ service SbModuleRpcService {
   }
   rpc GetSectionAtIndex(GetSectionAtIndexRequest)
       returns (GetSectionAtIndexResponse) {
-  }
-  rpc GetFirstCodeSection(GetFirstCodeSectionRequest)
-      returns (GetFirstCodeSectionResponse) {
   }
 }
 
@@ -107,6 +107,14 @@ message GetCodeLoadAddressRequest {
 
 message GetCodeLoadAddressResponse {
   uint64 code_load_address = 1;
+}
+
+message GetObjectFileHeaderAddressRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetObjectFileHeaderAddressResponse {
+  Common.GrpcSbAddress address = 1;
 }
 
 message GetCodeSizeRequest {
@@ -180,13 +188,5 @@ message GetSectionAtIndexRequest {
 }
 
 message GetSectionAtIndexResponse {
-  Common.GrpcSbSection section = 1;
-}
-
-message GetFirstCodeSectionRequest {
-  Common.GrpcSbModule module = 1;
-}
-
-message GetFirstCodeSectionResponse {
   Common.GrpcSbSection section = 1;
 }

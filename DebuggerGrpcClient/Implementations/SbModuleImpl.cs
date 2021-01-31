@@ -39,6 +39,7 @@ namespace DebuggerGrpcClient
         readonly GrpcConnection connection;
         readonly GrpcSbModule grpcSbModule;
         readonly SbModuleRpcServiceClient client;
+        readonly GrpcAddressFactory addressFactory;
         readonly GrpcFileSpecFactory fileSpecFactory;
         readonly GrpcSectionFactory sectionFactory;
         readonly GCHandle gcHandle;
@@ -47,17 +48,19 @@ namespace DebuggerGrpcClient
 
         internal SbModuleImpl(GrpcConnection connection, GrpcSbModule grpcSbModule)
             : this(connection, grpcSbModule, new SbModuleRpcServiceClient(connection.CallInvoker),
-                   new GrpcFileSpecFactory(), new GrpcSectionFactory())
+                   new GrpcAddressFactory(), new GrpcFileSpecFactory(), new GrpcSectionFactory())
         {
         }
 
         internal SbModuleImpl(GrpcConnection connection, GrpcSbModule grpcSbModule,
-                              SbModuleRpcServiceClient client, GrpcFileSpecFactory fileSpecFactory,
+                              SbModuleRpcServiceClient client, GrpcAddressFactory addressFactory,
+                              GrpcFileSpecFactory fileSpecFactory,
                               GrpcSectionFactory sectionFactory)
         {
             this.connection = connection;
             this.grpcSbModule = grpcSbModule;
             this.client = client;
+            this.addressFactory = addressFactory;
             this.fileSpecFactory = fileSpecFactory;
             this.sectionFactory = sectionFactory;
 
@@ -112,8 +115,7 @@ namespace DebuggerGrpcClient
         public ulong GetCodeLoadAddress()
         {
             GetCodeLoadAddressResponse response = null;
-            if (connection.InvokeRpc(() =>
-                {
+            if (connection.InvokeRpc(() => {
                     response = client.GetCodeLoadAddress(
                         new GetCodeLoadAddressRequest() { Module = grpcSbModule });
                 }))
@@ -121,6 +123,19 @@ namespace DebuggerGrpcClient
                 return response.CodeLoadAddress;
             }
             return 0;
+        }
+
+        public SbAddress GetObjectFileHeaderAddress()
+        {
+            GetObjectFileHeaderAddressResponse response = null;
+            if (connection.InvokeRpc(() => {
+                    response = client.GetObjectFileHeaderAddress(
+                        new GetObjectFileHeaderAddressRequest() { Module = grpcSbModule });
+                }))
+            {
+                return addressFactory.Create(connection, response.Address);
+            }
+            return null;
         }
 
         public ulong GetCodeSize()
@@ -338,26 +353,6 @@ namespace DebuggerGrpcClient
                             Index = index,
                         });
                 }))
-            {
-                if (response.Section != null && response.Section.Id != 0)
-                {
-                    return sectionFactory.Create(connection, response.Section);
-                }
-            }
-            return null;
-        }
-
-        public SbSection GetFirstCodeSection()
-        {
-            GetFirstCodeSectionResponse response = null;
-            if (connection.InvokeRpc(() =>
-            {
-                response = client.GetFirstCodeSection(
-                    new GetFirstCodeSectionRequest
-                    {
-                        Module = grpcSbModule,
-                    });
-            }))
             {
                 if (response.Section != null && response.Section.Id != 0)
                 {

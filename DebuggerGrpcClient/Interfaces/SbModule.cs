@@ -35,6 +35,9 @@ namespace DebuggerApi
         // Returns the starting load address of this module's code section.
         ulong GetCodeLoadAddress();
 
+        // Returns the starting address of the module's object file.
+        SbAddress GetObjectFileHeaderAddress();
+
         // Returns the size in bytes of this module's code section.
         ulong GetCodeSize();
 
@@ -61,9 +64,6 @@ namespace DebuggerApi
 
         // Returns the section at |index|.
         SbSection GetSectionAtIndex(ulong index);
-
-        // Returns the first code section.
-        SbSection GetFirstCodeSection();
 
         // A unique identifier for the module. Not part of the LLDB API.
         long GetId();

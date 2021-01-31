@@ -23,6 +23,9 @@ namespace LldbApi
         // Get the line entry.
         SbLineEntry GetLineEntry();
 
+        // Get the file address.
+        ulong GetFileAddress();
+
         // Get the load address.
         ulong GetLoadAddress(SbTarget target);
 

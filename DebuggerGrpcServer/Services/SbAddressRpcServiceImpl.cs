@@ -66,6 +66,14 @@ namespace DebuggerGrpcServer
             return Task.FromResult(new GetLoadAddressResponse { LoadAddress = loadAddress });
         }
 
+        public override Task<GetFileAddressResponse> GetFileAddress(GetFileAddressRequest request,
+                                                                    ServerCallContext context)
+        {
+            SbAddress address = addressStore.GetObject(request.Address.Id);
+            ulong fileAddress = address.GetFileAddress();
+            return Task.FromResult(new GetFileAddressResponse { FileAddress = fileAddress });
+        }
+
         public override Task<GetFunctionResponse> GetFunction(GetFunctionRequest request,
             ServerCallContext context)
         {

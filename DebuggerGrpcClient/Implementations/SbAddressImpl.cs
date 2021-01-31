@@ -122,6 +122,20 @@ namespace DebuggerGrpcClient
             return 0;
         }
 
+        public ulong GetFileAddress()
+        {
+            GetFileAddressResponse response = null;
+            if (connection.InvokeRpc(() => {
+                    response = client.GetFileAddress(new GetFileAddressRequest {
+                        Address = grpcSbAddress,
+                    });
+                }))
+            {
+                return response.FileAddress;
+            }
+            return 0;
+        }
+
         public SbFunction GetFunction()
         {
             GetFunctionResponse response = null;

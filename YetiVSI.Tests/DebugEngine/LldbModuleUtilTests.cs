@@ -99,21 +99,18 @@ namespace YetiVSI.Test.DebugEngine
         [TestCase(2000u)]
         public void GetAndApplyPlaceholderProperties(ulong fileBaseAddress)
         {
-            ulong codeSectionFileAddress = fileBaseAddress + CODE_SECTION_FILE_OFFSET;
             long slide = (long)BASE_LOAD_ADDRESS - (long)fileBaseAddress;
 
             SbModule placeholderModule = CreatePlaceholderModule();
 
-            var codeSection = Substitute.For<SbSection>();
-            codeSection.GetSectionType().Returns(SectionType.Code);
-            codeSection.GetFileAddress().Returns(codeSectionFileAddress);
-            codeSection.GetFileOffset().Returns(CODE_SECTION_FILE_OFFSET);
+            var headerAddress = Substitute.For<SbAddress>();
+            headerAddress.GetFileAddress().Returns(fileBaseAddress);
 
             var containerSection = Substitute.For<SbSection>();
             containerSection.GetSectionType().Returns(SectionType.Container);
 
             var otherModule = Substitute.For<SbModule>();
-            otherModule.GetFirstCodeSection().Returns(codeSection);
+            otherModule.GetObjectFileHeaderAddress().Returns(headerAddress);
             otherModule.SetPlatformFileSpec(Arg.Any<SbFileSpec>()).Returns(true);
 
             PlaceholderModuleProperties properties =

@@ -109,12 +109,12 @@ namespace YetiVSI.DebugEngine
             PlaceholderModuleProperties properties, RemoteTarget lldbTarget)
         {
             long slide = properties.Slide;
-            SbSection section = destModule.GetFirstCodeSection();
-            if (section != null)
+            SbAddress headerAddress = destModule.GetObjectFileHeaderAddress();
+            if (headerAddress != null)
             {
                 // For libraries this will generally equal 0, for executables it will equal
                 // |placeholderBaseLoadAddress|.
-                ulong fileBaseAddress = section.GetFileAddress() - section.GetFileOffset();
+                ulong fileBaseAddress = headerAddress.GetFileAddress();
                 slide -= (long)fileBaseAddress;
             }
 

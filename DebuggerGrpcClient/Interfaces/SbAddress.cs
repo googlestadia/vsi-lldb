@@ -25,6 +25,9 @@ namespace DebuggerApi
         // Get the line entry.
         LineEntryInfo GetLineEntry();
 
+        // Get the file address.
+        ulong GetFileAddress();
+
         // Get the load address.
         ulong GetLoadAddress(RemoteTarget target);
 

@@ -132,8 +132,8 @@ namespace DebuggerGrpcServer
             var sbFunctionRpc = new SbFunctionRpcServiceImpl(
                 addressManager, functionManager, instructionManager, targetManager);
             var sbSymbolRpc = new SbSymbolRpcServiceImpl(addressManager, symbolManager);
-            var sbModuleRpc =
-                new SbModuleRpcServiceImpl(moduleManager, sectionManager, fileSpecFactory);
+            var sbModuleRpc = new SbModuleRpcServiceImpl(moduleManager, addressManager,
+                                                         sectionManager, fileSpecFactory);
             var sbSectionRpc = new SbSectionRpcServiceImpl(sectionManager, targetManager);
 
             sbDebuggerRpc.Initialize(sbPlatformRpc);

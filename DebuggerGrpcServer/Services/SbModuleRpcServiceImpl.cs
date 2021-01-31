@@ -24,14 +24,17 @@ namespace DebuggerGrpcServer
     public class SbModuleRpcServiceImpl : SbModuleRpcService.SbModuleRpcServiceBase
     {
         readonly UniqueObjectStore<SbModule> moduleStore;
+        readonly ObjectStore<SbAddress> addressStore;
         readonly ObjectStore<SbSection> sectionStore;
         readonly ILldbFileSpecFactory fileSpecFactory;
 
         public SbModuleRpcServiceImpl(UniqueObjectStore<SbModule> moduleStore,
+                                      ObjectStore<SbAddress> addressStore,
                                       ObjectStore<SbSection> sectionStore,
                                       ILldbFileSpecFactory fileSpecFactory)
         {
             this.moduleStore = moduleStore;
+            this.addressStore = addressStore;
             this.sectionStore = sectionStore;
             this.fileSpecFactory = fileSpecFactory;
         }
@@ -116,6 +119,19 @@ namespace DebuggerGrpcServer
                 new GetCodeLoadAddressResponse { CodeLoadAddress = module.GetCodeLoadAddress() });
         }
 
+        public override Task<GetObjectFileHeaderAddressResponse> GetObjectFileHeaderAddress(
+            GetObjectFileHeaderAddressRequest request, ServerCallContext context)
+        {
+            var module = moduleStore.GetObject(request.Module.Id);
+            SbAddress address = module.GetObjectFileHeaderAddress();
+            var response = new GetObjectFileHeaderAddressResponse();
+            if (address != null)
+            {
+                response.Address = new GrpcSbAddress { Id = addressStore.AddObject(address) };
+            }
+            return Task.FromResult(response);
+        }
+
         public override Task<GetCodeSizeResponse> GetCodeSize(
             GetCodeSizeRequest request, ServerCallContext context)
         {
@@ -190,19 +206,6 @@ namespace DebuggerGrpcServer
             var module = moduleStore.GetObject(request.Module.Id);
             var section = module.GetSectionAtIndex(request.Index);
             var response = new GetSectionAtIndexResponse();
-            if (section != null)
-            {
-                response.Section = new GrpcSbSection { Id = sectionStore.AddObject(section) };
-            }
-            return Task.FromResult(response);
-        }
-
-        public override Task<GetFirstCodeSectionResponse> GetFirstCodeSection(
-            GetFirstCodeSectionRequest request, ServerCallContext context)
-        {
-            SbModule module = moduleStore.GetObject(request.Module.Id);
-            SbSection section = module.GetFirstCodeSection();
-            var response = new GetFirstCodeSectionResponse();
             if (section != null)
             {
                 response.Section = new GrpcSbSection { Id = sectionStore.AddObject(section) };

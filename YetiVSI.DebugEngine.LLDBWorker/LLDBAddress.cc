@@ -45,6 +45,10 @@ uint64_t LLDBAddress::GetLoadAddress(SbTarget ^ target) {
   return address_->GetLoadAddress(sbTarget);
 }
 
+uint64_t LLDBAddress::GetFileAddress() {
+  return address_->GetFileAddress();
+}
+
 SbFunction ^ LLDBAddress::GetFunction() {
   auto function = address_->GetFunction();
   if (!function.IsValid()) {

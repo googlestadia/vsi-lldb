@@ -23,6 +23,8 @@ service SbAddressRpcService {
   }
   rpc GetLineEntry(GetLineEntryRequest) returns (GetLineEntryResponse) {
   }
+  rpc GetFileAddress(GetFileAddressRequest) returns (GetFileAddressResponse) {
+  }
   rpc GetLoadAddress(GetLoadAddressRequest) returns (GetLoadAddressResponse) {
   }
   rpc GetFunction(GetFunctionRequest) returns (GetFunctionResponse) {
@@ -53,6 +55,14 @@ message GetLoadAddressRequest {
 
 message GetLoadAddressResponse {
   uint64 load_address = 1;
+}
+
+message GetFileAddressRequest {
+  Common.GrpcSbAddress address = 1;
+}
+
+message GetFileAddressResponse {
+  uint64 file_address = 1;
 }
 
 message GetFunctionRequest {

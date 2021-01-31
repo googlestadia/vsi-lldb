@@ -36,6 +36,7 @@ ref class LLDBModule sealed : SbModule {
   virtual bool SetPlatformFileSpec(SbFileSpec ^ fileSpec);
   virtual SbFileSpec ^ GetSymbolFileSpec();
   virtual uint64_t GetCodeLoadAddress();
+  virtual SbAddress^ GetObjectFileHeaderAddress();
   virtual uint64_t GetCodeSize();
   virtual bool Is64Bit();
   virtual bool HasSymbols();
@@ -45,7 +46,6 @@ ref class LLDBModule sealed : SbModule {
   virtual SbSection ^ FindSection(System::String ^ name);
   virtual uint64_t GetNumSections();
   virtual SbSection ^ GetSectionAtIndex(uint64_t index);
-  virtual SbSection ^ GetFirstCodeSection();
   virtual bool EqualTo(SbModule ^ otherModule);
 
   // Get the underlying lldb object.

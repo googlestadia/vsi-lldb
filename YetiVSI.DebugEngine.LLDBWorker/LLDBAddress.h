@@ -34,6 +34,7 @@ ref class LLDBAddress sealed : SbAddress {
   virtual int64_t GetId();
   virtual SbLineEntry ^ GetLineEntry();
   virtual uint64_t GetLoadAddress(SbTarget ^ target);
+  virtual uint64_t GetFileAddress();
   virtual SbFunction ^ GetFunction();
   virtual SbSymbol ^ GetSymbol();
 

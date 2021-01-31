@@ -20,6 +20,7 @@
 
 #include "lldb/API/SBSection.h"
 
+#include "LLDBAddress.h"
 #include "LLDBFileSpec.h"
 #include "LLDBObject.h"
 #include "LLDBSection.h"
@@ -118,6 +119,15 @@ uint64_t LLDBModule::GetCodeLoadAddress() {
   return code_section_->GetLoadAddress(*(*target_));
 }
 
+SbAddress^ LLDBModule::GetObjectFileHeaderAddress() {
+  auto address = module_->GetObjectFileHeaderAddress();
+  if (address.IsValid())
+  {
+    return gcnew LLDBAddress(address);
+  }
+  return nullptr;
+}
+
 uint64_t LLDBModule::GetCodeSize() {
   if (code_section_ == nullptr) {
     return 0;
@@ -152,13 +162,6 @@ uint64_t LLDBModule::GetNumSections() { return module_->GetNumSections(); }
 LldbApi::SbSection ^ LLDBModule::GetSectionAtIndex(uint64_t index) {
   auto section = module_->GetSectionAtIndex(index);
   return section.IsValid() ? gcnew LLDBSection(section) : nullptr;
-}
-
-LldbApi::SbSection ^ LLDBModule::GetFirstCodeSection() {
-  if (code_section_ == nullptr) {
-    return nullptr;
-  }
-  return gcnew LLDBSection(*(*code_section_));
 }
 
 bool LLDBModule::EqualTo(SbModule ^ otherModule) {
