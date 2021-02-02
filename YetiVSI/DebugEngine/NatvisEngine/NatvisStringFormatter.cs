@@ -145,7 +145,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             {
                 if (++_curFormatStringElementDepth > _maxFormatDepth)
                 {
-                    return await fallbackValue.Invoke();
+                    return "...";
                 }
 
                 foreach (var element in formatStringContext.StringElements)
