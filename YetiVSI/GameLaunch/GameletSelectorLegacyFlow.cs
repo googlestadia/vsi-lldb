@@ -189,24 +189,37 @@ namespace YetiVSI.GameLaunch
         bool TrySelectGamelet(List<Gamelet> gamelets, out Gamelet result)
         {
             Gamelet gamelet = result = null;
-            if (!_actionRecorder.RecordUserAction(ActionType.GameletSelect, delegate {
+            bool res = _actionRecorder.RecordUserAction(ActionType.GameletSelect, delegate
+            {
+                bool isValid;
                 switch (gamelets.Count)
                 {
                     case 0:
                         throw new ConfigurationException(ErrorStrings.NoGameletsFound);
                     case 1:
                         gamelet = gamelets[0];
-                        return true;
+                        isValid = true;
+                        break;
                     default:
                         gamelet = _gameletSelectionWindowFactory.Create(gamelets).Run();
-                        return gamelet != null;
+                        isValid = gamelet != null;
+                        break;
                 }
-            }))
-            {
-                return false;
-            }
-            result = EnsureValidState(gamelet);
-            return true;
+
+                if (!isValid)
+                {
+                    return false;
+                }
+
+                if (gamelet.State != GameletState.InUse && gamelet.State != GameletState.Reserved)
+                {
+                    throw new InvalidStateException(ErrorStrings.GameletInUnexpectedState(gamelet));
+                }
+
+                return true;
+            });
+            result = gamelet;
+            return res;
         }
 
         /// <summary>
@@ -418,31 +431,6 @@ namespace YetiVSI.GameLaunch
                                      e.ToString());
                 return false;
             }
-        }
-
-        /// <summary>
-        /// Ensure that the gamelet is either in use or reserved. All other states will throw
-        /// an InvalidStateException.
-        /// </summary>
-        Gamelet EnsureValidState(Gamelet gamelet)
-        {
-            if (gamelet.State == GameletState.InUse || gamelet.State == GameletState.Reserved)
-            {
-                return gamelet;
-            }
-            var error = new InvalidStateException(ErrorStrings.GameletInUnexpectedState(gamelet));
-            try
-            {
-                _actionRecorder.RecordFailure(
-                    ActionType.GameletPrepare, error,
-                    new DeveloperLogEvent { GameletData = GameletData.FromGamelet(gamelet) });
-            }
-            catch
-            {
-                // We ignore errors from recording and instead throw the actual error below.
-                // TODO ((internal)) Implement safe logging for catch and finally statements.
-            }
-            throw error;
         }
     }
 }

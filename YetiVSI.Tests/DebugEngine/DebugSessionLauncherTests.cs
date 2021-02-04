@@ -255,7 +255,7 @@ namespace YetiVSI.Test.DebugEngine
             };
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
-            _gameLaunch.GetLaunchStateAsync()
+            _gameLaunch.GetLaunchStateAsync(Arg.Any<IAction>())
                 .Returns(Task.FromResult(runningGame), Task.FromResult(endedGame));
 
             var launcherFactory = CreateLauncherFactory(true);
@@ -265,7 +265,7 @@ namespace YetiVSI.Test.DebugEngine
 
             _platformFactory.AddConnectRemoteStatuses(false, false);
 
-            Assert.ThrowsAsync<AttachException>(async () => await LaunchAsync(launcher),
+            Assert.ThrowsAsync<GameLaunchAttachException>(async () => await LaunchAsync(launcher),
                                                 _binaryNotFound);
         }
 
@@ -284,7 +284,7 @@ namespace YetiVSI.Test.DebugEngine
             };
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
-            _gameLaunch.GetLaunchStateAsync()
+            _gameLaunch.GetLaunchStateAsync(Arg.Any<IAction>())
                 .Returns(Task.FromResult(runningGame), Task.FromResult(endedGame));
 
             var launcherFactory = CreateLauncherFactory(true);
@@ -294,8 +294,8 @@ namespace YetiVSI.Test.DebugEngine
 
             _platformFactory.AddRunStatuses(false, false);
 
-            Assert.ThrowsAsync<AttachException>(async () => await LaunchAsync(launcher),
-                                                _binaryNotFound);
+            Assert.ThrowsAsync<GameLaunchAttachException>(async () => await LaunchAsync(launcher),
+                                                          _binaryNotFound);
             CheckLldbListenerStops();
         }
 
@@ -308,7 +308,7 @@ namespace YetiVSI.Test.DebugEngine
             };
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
-            _gameLaunch.GetLaunchStateAsync().Returns(Task.FromResult(launch));
+            _gameLaunch.GetLaunchStateAsync(Arg.Any<IAction>()).Returns(Task.FromResult(launch));
 
             var launcherFactory = CreateLauncherFactory(true);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
@@ -330,7 +330,7 @@ namespace YetiVSI.Test.DebugEngine
             };
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
-            _gameLaunch.GetLaunchStateAsync().Returns(Task.FromResult(launch));
+            _gameLaunch.GetLaunchStateAsync(Arg.Any<IAction>()).Returns(Task.FromResult(launch));
 
             var launcherFactory = CreateLauncherFactory(true);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
@@ -353,7 +353,7 @@ namespace YetiVSI.Test.DebugEngine
             };
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(false);
-            _gameLaunch.GetLaunchStateAsync().Returns(Task.FromResult(launch));
+            _gameLaunch.GetLaunchStateAsync(Arg.Any<IAction>()).Returns(Task.FromResult(launch));
 
             var launcherFactory = CreateLauncherFactory(true);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",

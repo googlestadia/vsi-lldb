@@ -26,6 +26,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using GgpGrpc.Models;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
@@ -596,7 +597,13 @@ namespace YetiVSI.DebugEngine
             // asynchronously if the YetiTransport fails to start.
             int result = VSConstants.S_OK;
             var exitInfo = ExitInfo.Normal(ExitReason.Unknown);
+            var glData = new GameLaunchData
+            {
+                LaunchId = _vsiGameLaunch?.LaunchId
+            };
+
             var startAction = _actionRecorder.CreateToolAction(ActionType.DebugStart);
+            startAction.UpdateEvent(new DeveloperLogEvent { GameLaunchData = glData });
             var attachTask =
                 _cancelableTaskFactory.Create(TaskMessages.AttachingToProcess, async task => {
                     if (lldbDeployTask != null)
@@ -883,16 +890,20 @@ namespace YetiVSI.DebugEngine
         /// set up the connection.
         /// </summary>
         public override int LaunchSuspended(string server, IDebugPort2 port,
-            string executableFullPath, string args, string dir, string env, string options,
-            enum_LAUNCH_FLAGS launchFlags, uint stdInput, uint stdOutput, uint stdError,
-            IDebugEventCallback2 callback, out IDebugProcess2 process)
+                                            string executableFullPath, string args, string dir,
+                                            string env, string options,
+                                            enum_LAUNCH_FLAGS launchFlags, uint stdInput,
+                                            uint stdOutput, uint stdError,
+                                            IDebugEventCallback2 callback,
+                                            out IDebugProcess2 process)
         {
+            process = null;
             if (_attachedProgram != null)
             {
                 Trace.WriteLine("Unable to launch while another program is attached");
-                process = null;
                 return VSConstants.E_FAIL;
             }
+
             callback = _debugEventCallbackDecorator(callback);
 
             _executableFullPath = executableFullPath;
@@ -911,7 +922,6 @@ namespace YetiVSI.DebugEngine
                 catch (SerializationException e)
                 {
                     Trace.WriteLine($"Failed to parse launch arguments: {e}");
-                    process = null;
                     return VSConstants.E_FAIL;
                 }
             }
@@ -942,10 +952,10 @@ namespace YetiVSI.DebugEngine
             {
                 if (chromeLauncher == null)
                 {
-                    Trace.WriteLine($"Chrome Client parameters have not been supplied");
-                    process = null;
+                    Trace.WriteLine("Chrome Client parameters have not been supplied");
                     return VSConstants.E_FAIL;
                 }
+
                 _rgpEnabled = chromeLauncher.LaunchParams.Rgp;
                 _renderDocEnabled = chromeLauncher.LaunchParams.RenderDoc;
 
@@ -958,7 +968,6 @@ namespace YetiVSI.DebugEngine
                     }
                     else
                     {
-                        process = null;
                         return VSConstants.E_FAIL;
                     }
                 }
@@ -968,14 +977,17 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
-            AD_PROCESS_ID pid = new AD_PROCESS_ID();
-            pid.ProcessIdType = (int)enum_AD_PROCESS_ID.AD_PROCESS_ID_GUID;
-            pid.guidProcessId = Guid.NewGuid();
+            var pid = new AD_PROCESS_ID
+            {
+                ProcessIdType = (int) enum_AD_PROCESS_ID.AD_PROCESS_ID_GUID,
+                guidProcessId = Guid.NewGuid()
+            };
             if (port.GetProcess(pid, out process) != 0)
             {
                 Trace.WriteLine("Launch failed. Could not get a process from the port supplier");
                 return VSConstants.E_FAIL;
             }
+
             return VSConstants.S_OK;
         }
 
@@ -1175,21 +1187,30 @@ namespace YetiVSI.DebugEngine
         void RecordDebugEnd(ExitInfo exitInfo)
         {
             exitInfo.HandleResult(
-                onNormal: reason => _actionRecorder.RecordSuccess(ActionType.DebugEnd,
-                    CreateDebugSessionEndData(MapExitReason(reason))),
+                onNormal: reason =>
+                {
+                    DebugSessionEndData.Types.EndReason exitReason = MapExitReason(reason);
+                    DeveloperLogEvent endData = CreateDebugSessionEndData(exitReason);
+                    _actionRecorder.RecordSuccess(ActionType.DebugEnd, endData);
+
+                    if (_gameLaunchManager.LaunchGameApiEnabled)
+                    {
+                        SafeErrorUtil.SafelyLogErrorAndForget(
+                            _vsiGameLaunch.WaitForGameLaunchEndedAndRecordAsync,
+                            "Failed to retrieve game launch end status.");
+                    }
+                },
                 onError: ex => _actionRecorder.RecordFailure(ActionType.DebugEnd, ex,
                     CreateDebugSessionEndData(
                         DebugSessionEndData.Types.EndReason.DebuggerError)));
         }
 
         static DeveloperLogEvent CreateDebugSessionEndData(
-            DebugSessionEndData.Types.EndReason reason)
-        {
-            return new DeveloperLogEvent
+            DebugSessionEndData.Types.EndReason reason) =>
+            new DeveloperLogEvent
             {
-                DebugSessionEndData = new DebugSessionEndData {EndReason = reason}
+                DebugSessionEndData = new DebugSessionEndData { EndReason = reason }
             };
-        }
 
         static DebugSessionEndData.Types.EndReason MapExitReason(ExitReason reason)
         {
@@ -1213,9 +1234,9 @@ namespace YetiVSI.DebugEngine
 
         public class AttachException : Exception, IUserVisibleError
         {
-            public string UserDetails { get { return null; } }
+            public string UserDetails => null;
 
-            public int Result { get; private set; }
+            public int Result { get; }
 
             public AttachException(int result, string message) : base(message)
             {
@@ -1226,6 +1247,13 @@ namespace YetiVSI.DebugEngine
                 : base(message, inner)
             {
                 Result = result;
+            }
+        }
+
+        public class GameLaunchAttachException : AttachException, IGameLaunchFailError
+        {
+            public GameLaunchAttachException(int result, string message) : base(result, message)
+            {
             }
         }
 

@@ -143,6 +143,7 @@ namespace YetiVSI.Test
             _serviceManager.GetGlobalService(typeof(YetiVSIService)).Returns(_yetiVsiService);
             _metrics = Substitute.For<IMetrics>();
             _metrics.NewDebugSessionId().Returns(_testDebugSessionId);
+            var debugMetrics = new DebugSessionMetrics(_metrics);
             var cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager,
                                               new CloudConnection(), new GgpSDKUtil());
             _gameletSelector = Substitute.For<IGameletSelector>();
@@ -161,8 +162,8 @@ namespace YetiVSI.Test
                                                            gameletClientFactory,
                                                            applicationClientFactory,
                                                            cancelableTaskFactory, _dialogUtil,
-                                                           _remoteDeploy, _metrics, _serviceManager,
-                                                           credentialManager,
+                                                           _remoteDeploy, debugMetrics,
+                                                           _serviceManager, credentialManager,
                                                            _testAccountClientFactory,
                                                            _gameletSelectorFactory, cloudRunner,
                                                            _sdkVersion, _launchCommandFormatter,
@@ -263,9 +264,8 @@ namespace YetiVSI.Test
             });
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
-            _gameLaunchManager
-                .CreateLaunchAsync(Arg.Any<ChromeTestClientLauncher.Params>(),
-                                   Arg.Any<ICancelable>()).Returns(Task.FromResult(_gameLaunch));
+            _gameLaunchManager.CreateLaunch(Arg.Any<ChromeTestClientLauncher.Params>())
+                .Returns(_gameLaunch);
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
             Assert.That(launchSettings.Count, Is.EqualTo(1));
@@ -321,10 +321,8 @@ namespace YetiVSI.Test
             });
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
-            _gameLaunchManager
-                .CreateLaunchAsync(Arg.Any<ChromeTestClientLauncher.Params>(),
-                                   Arg.Any<ICancelable>())
-                .Returns(Task.FromResult<IVsiGameLaunch>(null));
+            _gameLaunchManager.CreateLaunch(Arg.Any<ChromeTestClientLauncher.Params>())
+                .Returns((IVsiGameLaunch) null);
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
             Assert.That(launchSettings.Count, Is.EqualTo(0));

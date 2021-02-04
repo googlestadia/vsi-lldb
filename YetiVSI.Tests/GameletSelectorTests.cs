@@ -223,7 +223,7 @@ namespace YetiVSI.Test
 
             Assert.That(result.Message,
                         Is.EqualTo(ErrorStrings.GameletInUnexpectedState(_gamelet1)));
-            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsPrepare,
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsSelect,
                                  DeveloperEventStatus.Types.Code.InvalidObjectState);
         }
 

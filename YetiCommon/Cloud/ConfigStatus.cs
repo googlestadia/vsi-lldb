@@ -79,6 +79,19 @@ namespace YetiCommon.Cloud
 
         public bool IsErrorLevel => SeverityLevel == ErrorLevel.Error;
 
+        public void CompressMessages()
+        {
+            if (_warningMessages.Any())
+            {
+                _warningMessages = new List<string> { WarningMessage };
+            }
+
+            if (_errorMessages.Any())
+            {
+                _errorMessages = new List<string> { ErrorMessage };
+            }
+        }
+
         public List<string> MessagesByErrorLevel(ErrorLevel errorLevel)
         {
             switch (errorLevel)

@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using YetiVSI.Shared.Metrics;
+using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Metrics
 {
@@ -46,6 +46,12 @@ namespace YetiVSI.Metrics
         ProcessList,
         RemoteDeploy,
         LldbServerDeploy,
+        GameLaunchStopPrompt,
+        GameLaunchDeleteExisting,
+        GameLaunchWaitForStart,
+        GameLaunchCreate,
+        GameLaunchWaitForEnd,
+        GameLaunchGetExisting,
     }
 
     class ActionTypeMapping
@@ -108,6 +114,18 @@ namespace YetiVSI.Metrics
                     return DeveloperEventType.Types.Type.VsiDeployLldbServer;
                 case ActionType.DebugPreflightBinaryChecks:
                     return DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck;
+                case ActionType.GameLaunchStopPrompt:
+                    return DeveloperEventType.Types.Type.VsiGameLaunchStopPrompt;
+                case ActionType.GameLaunchDeleteExisting:
+                    return DeveloperEventType.Types.Type.VsiGameLaunchDeleteExisting;
+                case ActionType.GameLaunchWaitForStart:
+                    return DeveloperEventType.Types.Type.VsiGameLaunchWaitForStart;
+                case ActionType.GameLaunchCreate:
+                    return DeveloperEventType.Types.Type.VsiGameLaunchCreate;
+                case ActionType.GameLaunchWaitForEnd:
+                    return DeveloperEventType.Types.Type.VsiGameLaunchWaitForEnd;
+                case ActionType.GameLaunchGetExisting:
+                    return DeveloperEventType.Types.Type.VsiGameLaunchGetExisting;
             }
             return DeveloperEventType.Types.Type.UnknownEventType;
         }

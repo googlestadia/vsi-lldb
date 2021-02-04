@@ -77,4 +77,19 @@ namespace YetiCommon
         // UserDetails is nullable
         string UserDetails { get; }
     }
+
+    /// <summary>
+    /// Exceptions implementing this tag are reported as a game launch failure.
+    /// Indicates that this action failed because the game launch ended with an error reason.
+    /// </summary>
+    public interface IGameLaunchFailError
+    {
+    }
+
+    public class GameLaunchFailError : Exception, IGameLaunchFailError
+    {
+        public GameLaunchFailError(string message) : base(message)
+        {
+        }
+    }
 }

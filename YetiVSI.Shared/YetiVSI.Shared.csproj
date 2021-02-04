@@ -55,6 +55,7 @@
     <Compile Include="Metrics\DeveloperEventStatus.cs" />
     <Compile Include="Metrics\DeveloperLogEvent.cs" />
     <Compile Include="Metrics\DeveloperEventType.cs" />
+    <Compile Include="Metrics\GameLaunchData.cs" />
     <Compile Include="Metrics\GrpcServiceCallDetails.cs" />
     <Compile Include="Metrics\VSIBoundBreakpointsData.cs" />
     <Compile Include="Metrics\VSIDebugEventBatch.cs" />

@@ -119,6 +119,10 @@ namespace YetiVSI.Metrics
             {
                 return DeveloperEventStatus.Types.Code.Timeout;
             }
+            if (e is IGameLaunchFailError)
+            {
+                return DeveloperEventStatus.Types.Code.GameLaunchFailure;
+            }
             return DeveloperEventStatus.Types.Code.UnknownStatus;
         }
 

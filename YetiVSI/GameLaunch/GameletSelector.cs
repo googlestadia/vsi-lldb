@@ -27,7 +27,6 @@ using YetiCommon;
 using YetiCommon.SSH;
 using YetiCommon.VSProject;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.GameLaunch
 {
@@ -199,17 +198,18 @@ namespace YetiVSI.GameLaunch
                                      string devAccount, List<Gamelet> gamelets,
                                      Gamelet selectedGamelet)
         {
-            // TODO: record actions.
+            IAction getExistingAction =
+                _actionRecorder.CreateToolAction(ActionType.GameLaunchGetExisting);
             IGameletClient gameletClient = _gameletClientFactory.Create(_runner);
             var gameLauncher = new GameLaunchManager(gameletClient, _sdkConfigFactory,
                                                      _cancelableTaskFactory, _yetiVsiService,
-                                                     _taskContext);
+                                                     _taskContext, _actionRecorder);
             ICancelableTask<GgpGrpc.Models.GameLaunch> currentGameLaunchTask =
                 _cancelableTaskFactory.Create(TaskMessages.LookingForTheCurrentLaunch,
                                               async task =>
                                                   await gameLauncher.GetCurrentGameLaunchAsync(
-                                                      testAccount?.Name));
-            if (!currentGameLaunchTask.Run())
+                                                      testAccount?.Name, getExistingAction));
+            if (!currentGameLaunchTask.RunAndRecord(getExistingAction))
             {
                 return false;
             }
@@ -220,26 +220,24 @@ namespace YetiVSI.GameLaunch
                 return true;
             }
 
-            if (!PromptToDeleteLaunch(currentGameLaunch, gamelets, selectedGamelet,
+            if (!PromptToDeleteLaunch(currentGameLaunch, gamelets, selectedGamelet, _actionRecorder,
                                       testAccount?.GamerStadiaName, devAccount))
             {
                 return false;
             }
 
-            ICancelableTask<GgpGrpc.Models.GameLaunch> stopTask = _cancelableTaskFactory.Create(
+            IAction deleteAction =
+                _actionRecorder.CreateToolAction(ActionType.GameLaunchDeleteExisting);
+            ICancelableTask<DeleteLaunchResult> stopTask = _cancelableTaskFactory.Create(
                 TaskMessages.WaitingForGameStop,
-                async task => await gameLauncher.DeleteLaunchAsync(currentGameLaunch.Name, task));
-            if (stopTask.Run())
-            {
-                return stopTask.Result == null ||
-                    stopTask.Result.GameLaunchState == GameLaunchState.GameLaunchEnded;
-            }
-
-            return false;
+                async task => await gameLauncher.DeleteLaunchAsync(currentGameLaunch.Name, task,
+                    deleteAction));
+            return stopTask.RunAndRecord(deleteAction) && stopTask.Result.IsSuccessful;
         }
 
         bool PromptToDeleteLaunch(GgpGrpc.Models.GameLaunch currentGameLaunch,
                                   List<Gamelet> gamelets, Gamelet selectedGamelet,
+                                  ActionRecorder actionRecorder,
                                   string testAccount, string devAccount)
         {
             if (currentGameLaunch.GameLaunchState == GameLaunchState.IncompleteLaunch)
@@ -250,11 +248,13 @@ namespace YetiVSI.GameLaunch
             bool thisInstance = selectedGamelet.Name == currentGameLaunch.GameletName;
             string instanceName = gamelets.Single(g => g.Name == currentGameLaunch.GameletName)
                 .DisplayName;
-            MessageDialogCommand dialogRes = MessageDialog.Show(
-                ErrorStrings.StopRunningGame,
-                ErrorStrings.LaunchExistsDialogText(thisInstance, instanceName, testAccount,
-                                                    devAccount), MessageDialogCommandSet.YesNo);
-            if (dialogRes != MessageDialogCommand.Yes)
+            bool okToStop = actionRecorder.RecordUserAction(ActionType.GameLaunchStopPrompt,
+                                                            () => _dialogUtil.ShowYesNo(
+                                                                ErrorStrings.LaunchExistsDialogText(
+                                                                    thisInstance, instanceName,
+                                                                    testAccount, devAccount),
+                                                                ErrorStrings.StopRunningGame));
+            if (!okToStop)
             {
                 // Developer opted to not stop the existing launch.
                 // Launch can not proceed.
@@ -271,24 +271,37 @@ namespace YetiVSI.GameLaunch
         bool TrySelectGamelet(List<Gamelet> gamelets, out Gamelet result)
         {
             Gamelet gamelet = result = null;
-            if (!_actionRecorder.RecordUserAction(ActionType.GameletSelect, delegate {
+            bool res = _actionRecorder.RecordUserAction(ActionType.GameletSelect, delegate
+            {
+                bool isValid;
                 switch (gamelets.Count)
                 {
                     case 0:
                         throw new ConfigurationException(ErrorStrings.NoGameletsFound);
                     case 1:
                         gamelet = gamelets[0];
-                        return true;
+                        isValid = true;
+                        break;
                     default:
                         gamelet = _gameletSelectionWindowFactory.Create(gamelets).Run();
-                        return gamelet != null;
+                        isValid = gamelet != null;
+                        break;
                 }
-            }))
-            {
-                return false;
-            }
-            result = EnsureValidState(gamelet);
-            return true;
+
+                if (!isValid)
+                {
+                    return false;
+                }
+
+                if (gamelet.State != GameletState.InUse && gamelet.State != GameletState.Reserved)
+                {
+                    throw new InvalidStateException(ErrorStrings.GameletInUnexpectedState(gamelet));
+                }
+
+                return true;
+            });
+            result = gamelet;
+            return res;
         }
 
         /// <summary>
@@ -443,32 +456,6 @@ namespace YetiVSI.GameLaunch
                                      e.ToString());
                 return false;
             }
-        }
-
-        /// <summary>
-        /// Ensure that the gamelet is either in use or reserved. All other states will throw
-        /// an InvalidStateException.
-        /// </summary>
-        Gamelet EnsureValidState(Gamelet gamelet)
-        {
-            if (gamelet.State == GameletState.InUse || gamelet.State == GameletState.Reserved)
-            {
-                return gamelet;
-            }
-
-            var error = new InvalidStateException(ErrorStrings.GameletInUnexpectedState(gamelet));
-            try
-            {
-                _actionRecorder.RecordFailure(
-                    ActionType.GameletPrepare, error,
-                    new DeveloperLogEvent { GameletData = GameletData.FromGamelet(gamelet) });
-            }
-            catch
-            {
-                // We ignore errors from recording and instead throw the actual error below.
-                // TODO ((internal)) Implement safe logging for catch and finally statements.
-            }
-            throw error;
         }
     }
 }

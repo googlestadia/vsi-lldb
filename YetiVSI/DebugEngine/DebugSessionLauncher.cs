@@ -32,6 +32,7 @@ using YetiVSI.DebugEngine.CoreDumps;
 using YetiVSI.DebuggerOptions;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
+using YetiVSI.Shared.Metrics;
 using static YetiVSI.DebugEngine.DebugEngine;
 
 namespace YetiVSI.DebugEngine
@@ -301,6 +302,9 @@ namespace YetiVSI.DebugEngine
                 SbPlatformConnectOptions lldbConnectOptions =
                     _lldbPlatformConnectOptionsFactory.Create(connectRemoteArgument);
 
+                IAction debugerWaitAction =
+                    _actionRecorder.CreateToolAction(ActionType.DebugWaitDebugger);
+
                 bool TryConnectRemote()
                 {
                     if (lldbPlatform.ConnectRemote(lldbConnectOptions).Success())
@@ -308,16 +312,15 @@ namespace YetiVSI.DebugEngine
                         return true;
                     }
 
-                    VerifyGameIsReady();
+                    VerifyGameIsReady(debugerWaitAction);
                     return false;
                 }
 
                 try
                 {
-                    _actionRecorder.RecordToolAction(ActionType.DebugWaitDebugger,
-                                                     () => RetryWithTimeout(
-                                                         task, TryConnectRemote, _launchRetryDelay,
-                                                         _launchTimeout, launchTimer));
+                    debugerWaitAction.Record(() => RetryWithTimeout(
+                                                 task, TryConnectRemote, _launchRetryDelay,
+                                                 _launchTimeout, launchTimer));
                 }
                 catch (TimeoutException e)
                 {
@@ -402,6 +405,9 @@ namespace YetiVSI.DebugEngine
                     // Since we have no way of knowing when the remote process actually
                     // starts, try a few times to get the pid.
 
+                    IAction debugWaitAction =
+                        _actionRecorder.CreateToolAction(ActionType.DebugWaitProcess);
+
                     bool TryGetRemoteProcessId()
                     {
                         if (GetRemoteProcessId(_executableFileName, lldbPlatform, out processId))
@@ -409,17 +415,15 @@ namespace YetiVSI.DebugEngine
                             return true;
                         }
 
-                        VerifyGameIsReady();
+                        VerifyGameIsReady(debugWaitAction);
                         return false;
                     }
 
                     try
                     {
-                        _actionRecorder.RecordToolAction(ActionType.DebugWaitProcess,
-                                                         () => RetryWithTimeout(
-                                                             task, TryGetRemoteProcessId,
-                                                             _launchRetryDelay, _launchTimeout,
-                                                             launchTimer));
+                        debugWaitAction.Record(() => RetryWithTimeout(
+                                                   task, TryGetRemoteProcessId, _launchRetryDelay,
+                                                   _launchTimeout, launchTimer));
                     }
                     catch (TimeoutException e)
                     {
@@ -471,25 +475,37 @@ namespace YetiVSI.DebugEngine
             }
         }
 
+        // TODO: remove once the backend bug is fixed.
         /// <summary>
         /// Verifies that the current launch is in RunningGame state, otherwise aborts the attach
         /// process by throwing AttachException.
         /// </summary>
-        void VerifyGameIsReady()
+        void VerifyGameIsReady(IAction action)
         {
             if (_gameLaunchManager.LaunchGameApiEnabled)
             {
                 GgpGrpc.Models.GameLaunch state =
-                    _taskContext.Factory.Run(async () => await _gameLaunch.GetLaunchStateAsync());
+                    _taskContext.Factory.Run(async () =>
+                                                 await _gameLaunch.GetLaunchStateAsync(action));
                 if (state.GameLaunchState != GameLaunchState.RunningGame)
                 {
+                    var devEvent = new DeveloperLogEvent
+                    {
+                        GameLaunchData = new GameLaunchData
+                        {
+                            LaunchId = _gameLaunch.LaunchId
+                        }
+                    };
                     string error = ErrorStrings.GameNotRunningDuringAttach;
                     if (state.GameLaunchEnded != null)
                     {
+                        devEvent.GameLaunchData.EndReason = (int)state.GameLaunchEnded.EndReason;
                         error = LaunchUtils.GetEndReason(state.GameLaunchEnded);
                     }
 
-                    throw new AttachException(VSConstants.E_FAIL, error);
+                    action.UpdateEvent(devEvent);
+
+                    throw new GameLaunchAttachException(VSConstants.E_FAIL, error);
                 }
             }
         }

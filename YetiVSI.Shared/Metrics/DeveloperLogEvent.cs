@@ -391,6 +391,7 @@ namespace YetiVSI.Shared.Metrics
         public CustomCommandData CustomCommand { get; set; }
         public List<VSIExceptionData> ExceptionsData { get; set; }
         public VSIBoundBreakpointsData BoundBreakpointsData { get; set; }
+        public GameLaunchData GameLaunchData { get; set; }
 
         public DeveloperLogEvent()
         {
@@ -556,6 +557,11 @@ namespace YetiVSI.Shared.Metrics
                 return false;
             }
 
+            if (!object.Equals(other.GameLaunchData, GameLaunchData))
+            {
+                return false;
+            }
+
             return true;
         }
 
@@ -577,6 +583,7 @@ namespace YetiVSI.Shared.Metrics
             clone.CustomCommand = CustomCommand?.Clone();
             clone.ExceptionsData = ExceptionsData?.Select(x => x.Clone()).ToList();
             clone.BoundBreakpointsData = BoundBreakpointsData?.Clone();
+            clone.GameLaunchData = GameLaunchData?.Clone();
             return clone;
         }
 
@@ -795,6 +802,16 @@ namespace YetiVSI.Shared.Metrics
                 }
 
                 BoundBreakpointsData.MergeFrom(other.BoundBreakpointsData);
+            }
+
+            if (other.GameLaunchData != null)
+            {
+                if (GameLaunchData == null)
+                {
+                    GameLaunchData = new GameLaunchData();
+                }
+
+                GameLaunchData.MergeFrom(other.GameLaunchData);
             }
         }
     }

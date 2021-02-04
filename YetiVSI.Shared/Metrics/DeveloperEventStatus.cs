@@ -35,6 +35,7 @@
                 UnknownStatus,
                 FeatureDisabled,
                 Cancelled,
+                GameLaunchFailure
             }
         }
     }

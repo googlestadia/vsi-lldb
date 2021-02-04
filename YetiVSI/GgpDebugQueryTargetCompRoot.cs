@@ -19,6 +19,7 @@ using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiVSI.DebugEngine;
 using YetiVSI.GameLaunch;
+using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 
@@ -84,16 +85,18 @@ namespace YetiVSI
             var serializer = new JsonUtil();
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(serializer);
+            var debugSessionMetrics = new DebugSessionMetrics(metrics);
+            var actionRecorder = new ActionRecorder(debugSessionMetrics);
             var gameLauncher = new GameLaunchManager(
                 new GameletClient.Factory().Create(cloudRunner), sdkConfigFactory,
-                _cancelableTaskFactory, yetiVsiService, taskContext);
+                _cancelableTaskFactory, yetiVsiService, taskContext, actionRecorder);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
-                                           _dialogUtil, remoteDeploy, metrics, _serviceManager,
-                                           credentialManager, testAccountClientFactory,
-                                           gameletSelectorFactory, cloudRunner, sdkVersion,
-                                           launchCommandFormatter, paramsFactory, gameLauncher,
-                                           yetiVsiService);
+                                           _dialogUtil, remoteDeploy, debugSessionMetrics,
+                                           _serviceManager, credentialManager,
+                                           testAccountClientFactory, gameletSelectorFactory,
+                                           cloudRunner, sdkVersion, launchCommandFormatter,
+                                           paramsFactory, gameLauncher, yetiVsiService);
         }
 
         public virtual CancelableTask.Factory GetCancelableTaskFactory()

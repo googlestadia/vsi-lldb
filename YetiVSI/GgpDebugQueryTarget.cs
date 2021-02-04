@@ -43,7 +43,7 @@ namespace YetiVSI
         readonly CancelableTask.Factory _cancelableTaskFactory;
         readonly IDialogUtil _dialogUtil;
         readonly IRemoteDeploy _remoteDeploy;
-        readonly IMetrics _metrics;
+        readonly DebugSessionMetrics _metrics;
         readonly ICredentialManager _credentialManager;
         readonly TestAccountClient.Factory _testAccountClientFactory;
         readonly ICloudRunner _cloudRunner;
@@ -60,7 +60,7 @@ namespace YetiVSI
                                    ApplicationClient.Factory applicationClientFactory,
                                    CancelableTask.Factory cancelableTaskFactory,
                                    IDialogUtil dialogUtil, IRemoteDeploy remoteDeploy,
-                                   IMetrics metrics, ServiceManager serviceManager,
+                                   DebugSessionMetrics metrics, ServiceManager serviceManager,
                                    ICredentialManager credentialManager,
                                    TestAccountClient.Factory testAccountClientFactory,
                                    IGameletSelectorFactory gameletSelectorFactory,
@@ -103,9 +103,8 @@ namespace YetiVSI
                     return new IDebugLaunchSettings[] { };
                 }
 
-                var debugSessionMetrics = new DebugSessionMetrics(_metrics);
-                debugSessionMetrics.UseNewDebugSessionId();
-                var actionRecorder = new ActionRecorder(debugSessionMetrics);
+                _metrics.UseNewDebugSessionId();
+                var actionRecorder = new ActionRecorder(_metrics);
 
                 var targetFileName = await project.GetTargetFileNameAsync();
                 var gameletCommand = (targetFileName + " " +
@@ -166,11 +165,11 @@ namespace YetiVSI
                 {
                     var parameters = _paramsFactory.Create();
                     parameters.TargetIp = new SshTarget(gamelet).GetString();
-                    parameters.DebugSessionId = debugSessionMetrics.DebugSessionId;
+                    parameters.DebugSessionId = _metrics.DebugSessionId;
                     debugLaunchSettings.Options = _paramsFactory.Serialize(parameters);
                 }
 
-                var action = actionRecorder.CreateToolAction(ActionType.RemoteDeploy);
+                IAction action = actionRecorder.CreateToolAction(ActionType.RemoteDeploy);
                 bool isDeployed = _cancelableTaskFactory.Create(
                     TaskMessages.DeployingExecutable, async task =>
                     {
@@ -189,9 +188,7 @@ namespace YetiVSI
                 {
                     if (_gameLaunchManager.LaunchGameApiEnabled)
                     {
-                        IVsiGameLaunch launch =
-                            await _gameLaunchManager.CreateLaunchAsync(
-                                launchParams, new NothingToCancel());
+                        IVsiGameLaunch launch = _gameLaunchManager.CreateLaunch(launchParams);
                         if (launch != null)
                         {
                             debugLaunchSettings.Arguments =
