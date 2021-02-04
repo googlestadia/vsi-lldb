@@ -250,7 +250,7 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(status.AllMessages.Count, Is.EqualTo(3));
             Assert.That(status.WarningMessages[0].Contains("overrides the setting variable"));
             Assert.That(status.WarningMessages[1].Contains("overrides the setting variable"));
-            Assert.That(status.WarningMessages[2].Contains("Please edit the setting"));
+            Assert.That(status.WarningMessages[2].Contains("edit the setting"));
             Assert.IsNotNull(request);
             Assert.That(request.EnvironmentVariablePairs, Is.EqualTo(new Dictionary<string, string>
             {
@@ -281,7 +281,7 @@ namespace YetiCommon.Tests.Cloud
                     m => m.Contains("Invalid format of environment variable")), Is.EqualTo(2));
             Assert.That(status.WarningMessages.Count(m => m.Contains("is assigned more than once")),
                         Is.EqualTo(1));
-            Assert.That(status.WarningMessages.Count(m => m.Contains("Please edit the setting")),
+            Assert.That(status.WarningMessages.Count(m => m.Contains("edit the setting")),
                         Is.EqualTo(1));
             Assert.That(request.EnvironmentVariablePairs, Is.EqualTo(new Dictionary<string, string>
             {

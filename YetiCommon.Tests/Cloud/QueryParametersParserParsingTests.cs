@@ -142,9 +142,8 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(status.IsErrorLevel, Is.EqualTo(true));
             Assert.That(status.ErrorMessages.Count, Is.EqualTo(1));
             Assert.That(status.AllMessages.Count, Is.EqualTo(1));
-            Assert.That(status.ErrorMessages[0]
-                            .Contains("Invalid binary name in 'cmd' query parameter." +
-                                      " Expected: 'some_bin'"));
+            Assert.That(status.ErrorMessages[0].Contains("invalid binary name"));
+            Assert.That(status.ErrorMessages[0].Contains("Expected: 'some_bin'"));
             Assert.That(parameters.Cmd, Is.EqualTo("some_bin arg1"));
         }
 
@@ -190,8 +189,7 @@ namespace YetiCommon.Tests.Cloud
             CheckValidEnvVars(paramName, envVarName, validEnvVarsValues);
             CheckInvalidEnvVars(paramName, invalidEnvVarsValues, new[]
             {
-                "Can not convert query parameter's " +
-                $"'{paramName}' value '{{0}}' to {typeof(bool)}"
+                $"Can't convert query parameter's '{paramName}' value '{{0}}' to {typeof(bool)}."
             });
         }
 
@@ -220,7 +218,7 @@ namespace YetiCommon.Tests.Cloud
             CheckInvalidEnvVars(paramName, invalidEnvVarsValues,
                                 new[]
                                 {
-                                    $"Parameter's '{paramName}' value '{{0}}' is invalid.",
+                                    $"The parameter '{paramName}' has an invalid value: '{{0}}'",
                                     "'opt', 'optprintasserts', 'dbgtrapasserts'"
                                 });
         }
@@ -342,8 +340,8 @@ namespace YetiCommon.Tests.Cloud
                 { "0", false }
             };
             ParseValueSuccess(paramName, launchRequest, propertyName, validBooleanValues);
-            string errorTemplate = $"Can not convert query parameter's '{paramName}'" +
-                $" value '{{0}}' to {typeof(bool)}. ";
+            string errorTemplate = $"Can't convert query parameter's '{paramName}' value '{{0}}' " +
+                $"to {typeof(bool)}.";
             Dictionary<string, Tuple<string, ConfigStatus.ErrorLevel>> invalidBooleanValues =
                 new Dictionary<string, ConfigStatus.ErrorLevel>
                 {
@@ -388,8 +386,8 @@ namespace YetiCommon.Tests.Cloud
                 { ulong.MaxValue.ToString(), ulong.MaxValue }
             };
             ParseValueSuccess(paramName, launchRequest, propertyName, validUlongValues);
-            string errorTemplate = $"Can not convert query parameter's '{paramName}'" +
-                $" value '{{0}}' to {typeof(ulong)}. ";
+            string errorTemplate = $"Can't convert query parameter's '{paramName}' value '{{0}}' " +
+                $"to {typeof(ulong)}.";
             Dictionary<string, Tuple<string, ConfigStatus.ErrorLevel>> invalidUlongValues =
                 new Dictionary<string, ConfigStatus.ErrorLevel>
                 {
@@ -424,8 +422,8 @@ namespace YetiCommon.Tests.Cloud
                 { int.MinValue.ToString(), int.MinValue }
             };
             ParseValueSuccess(paramName, launchRequest, propertyName, validIntValues);
-            string errorTemplate = $"Can not convert query parameter's '{paramName}'" +
-                $" value '{{0}}' to {typeof(int)}. ";
+            string errorTemplate = $"Can't convert query parameter's '{paramName}' value '{{0}}' " +
+                $"to {typeof(int)}.";
             Dictionary<string, Tuple<string, ConfigStatus.ErrorLevel>> invalidIntValues =
                 new Dictionary<string, ConfigStatus.ErrorLevel>
                 {
@@ -474,8 +472,8 @@ namespace YetiCommon.Tests.Cloud
                 { "NoNe", VideoResolution.Unspecified }
             };
             ParseValueSuccess(paramName, launchRequest, propertyName, validEnumValues);
-            string errorTemplate = $"Parameter's '{paramName}' value '{{0}}' is invalid. Valid " +
-                "values are: 'none', '720p', '1080p', '1440p', '4k'.";
+            string errorTemplate = $"The parameter '{paramName}' has an invalid value: '{{0}}'. " +
+                "Valid values are: 'none', '720p', '1080p', '1440p', '4k'.";
             Dictionary<string, Tuple<string, ConfigStatus.ErrorLevel>> invalidEnumValues =
                 new Dictionary<string, ConfigStatus.ErrorLevel>
                 {
@@ -497,8 +495,8 @@ namespace YetiCommon.Tests.Cloud
                 { "HDR10", DynamicRange.Hdr10 }
             };
             ParseValueSuccess(paramName, launchRequest, propertyName, validEnumValues);
-            string errorTemplate = $"Parameter's '{paramName}' value '{{0}}' is invalid. Valid " +
-                "values are: 'SDR', 'HDR10'.";
+            string errorTemplate = $"The parameter '{paramName}' has an invalid value: '{{0}}'. " +
+                "Valid values are: 'SDR', 'HDR10'.";
             Dictionary<string, Tuple<string, ConfigStatus.ErrorLevel>> invalidEnumValues =
                 new Dictionary<string, ConfigStatus.ErrorLevel>
                 {
@@ -521,8 +519,8 @@ namespace YetiCommon.Tests.Cloud
                 { "vp9", Codec.Vp9 }
             };
             ParseValueSuccess(paramName, launchRequest, propertyName, validEnumValues);
-            string errorTemplate = $"Parameter's '{paramName}' value '{{0}}' is invalid. Valid " +
-                "values are: 'H264', 'VP9'.";
+            string errorTemplate = $"The parameter '{paramName}' has an invalid value: '{{0}}'. " +
+                "Valid values are: 'H264', 'VP9'.";
             Dictionary<string, Tuple<string, ConfigStatus.ErrorLevel>> invalidEnumValues =
                 new Dictionary<string, ConfigStatus.ErrorLevel>
                 {
@@ -547,8 +545,8 @@ namespace YetiCommon.Tests.Cloud
                 { "SURROUND51", ChannelMode.Surround51True }
             };
             ParseValueSuccess(paramName, launchRequest, propertyName, validEnumValues);
-            string errorTemplate = $"Parameter's '{paramName}' value '{{0}}' is invalid. Valid " +
-                "values are: 'STEREO', 'SURROUND51'.";
+            string errorTemplate = $"The parameter '{paramName}' has an invalid value: '{{0}}'. " +
+                "Valid values are: 'STEREO', 'SURROUND51'.";
             Dictionary<string, Tuple<string, ConfigStatus.ErrorLevel>> invalidEnumValues =
                 new Dictionary<string, ConfigStatus.ErrorLevel>
                 {
@@ -576,8 +574,8 @@ namespace YetiCommon.Tests.Cloud
                 { "BLOCK", SurfaceEnforcementSetting.Block }
             };
             ParseValueSuccess(paramName, launchRequest, propertyName, validEnumValues);
-            string errorTemplate = $"Parameter's '{paramName}' value '{{0}}' is invalid. Valid " +
-                "values are: 'UNKNOWN', 'OFF', 'WARN', 'BLOCK'.";
+            string errorTemplate = $"The parameter '{paramName}' has an invalid value: '{{0}}'. " +
+                "Valid values are: 'UNKNOWN', 'OFF', 'WARN', 'BLOCK'.";
             Dictionary<string, Tuple<string, ConfigStatus.ErrorLevel>> invalidEnumValues =
                 new Dictionary<string, ConfigStatus.ErrorLevel>
                 {
@@ -604,8 +602,8 @@ namespace YetiCommon.Tests.Cloud
                 { "HIGH_VISUAL_QUALITY", StreamQualityPreset.HighVisualQuality }
             };
             ParseValueSuccess(paramName, launchRequest, propertyName, validEnumValues);
-            string errorTemplate = $"Parameter's '{paramName}' value '{{0}}' is invalid. Valid " +
-                "values are: '', 'LOW_LATENCY', 'BALANCED', 'HIGH_VISUAL_QUALITY'.";
+            string errorTemplate = $"The parameter '{paramName}' has an invalid value: '{{0}}'. " +
+                "Valid values are: '', 'LOW_LATENCY', 'BALANCED', 'HIGH_VISUAL_QUALITY'.";
             Dictionary<string, Tuple<string, ConfigStatus.ErrorLevel>> invalidEnumValues =
                 new Dictionary<string, ConfigStatus.ErrorLevel>
                 {

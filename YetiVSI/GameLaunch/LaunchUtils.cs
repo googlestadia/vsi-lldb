@@ -20,10 +20,7 @@ namespace YetiVSI.GameLaunch
     public static class LaunchUtils
     {
         // Some of the statuses might not be applicable for the dev flow.
-        public static string GetEndReason(GameLaunchEnded gameLaunchEnded) =>
-            ErrorStrings.LaunchEndedCommonMessage + GetEndReasonSuffix(gameLaunchEnded);
-
-        public static string GetEndReasonSuffix(GameLaunchEnded gameLaunchEnded)
+        public static string GetEndReason(GameLaunchEnded gameLaunchEnded)
         {
             switch (gameLaunchEnded.EndReason)
             {

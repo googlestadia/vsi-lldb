@@ -96,26 +96,35 @@ namespace YetiVSI
         public const string StopRunningGame = "Stop running game?";
         public const string GameNotRunningDuringAttach =
             "Cannot proceed with the attach. Game is not running.";
-        public const string LaunchEndedCommonMessage = "Cannot proceed with the game launch. ";
+        public const string LaunchEndedCommonMessage = "The game launch expired.";
         public const string LaunchEndedTimeout =
-            LaunchEndedCommonMessage + "Timed out waiting for the game to launch.";
-        public const string LaunchEndedUnspecified = "Unknown reason.";
-        public const string LaunchEndedExitedByUser = "User requested the game session to end.";
-        public const string LaunchEndedInactivityTimeout = "Game shutdown due to user inactivity.";
+            LaunchEndedCommonMessage + " Timed out waiting for the game to launch.";
+        public const string LaunchEndedUnspecified =
+            "The game launch expired because of an unknown error.";
+        public const string LaunchEndedExitedByUser =
+            "The game launch expired because a user ended the session.";
+        public const string LaunchEndedInactivityTimeout =
+            "The game launch expired because the game stopped due to player inactivity.";
         public const string LaunchEndedClientNeverConnected =
-            "Game shutdown due to client never connecting to the session.";
+            "The game launch expired because a player endpoint never connected.";
         public const string LaunchEndedGameExitedWithSuccessfulCode =
-            "Game process exited without an error code.";
+            "The game launch expired because the game exited.";
         public const string LaunchEndedGameExitedWithErrorCode =
-            "Game process exited with an error code, presumably crashed.";
-        public const string LaunchEndedGameShutdownBySystem = "Game shutdown by the system.";
+            "The game launch expired because the game exited with an error code. " +
+            "The game may have crashed.";
+        public const string LaunchEndedGameShutdownBySystem =
+            "The game launch expired because the game stopped unexpectedly. " +
+            "This shouldn't happen. Try relaunching the game in a few minutes.";
         public const string LaunchEndedUnexpectedGameShutdownBySystem =
             "Game unexpectedly shutdown, presumably by an issue with the system";
-        public const string LaunchEndedGameBinaryNotFound = "The game binary was not found.";
+        public const string LaunchEndedGameBinaryNotFound =
+            "The game launch expired because the game binary was not found. This may be due to an " +
+            "invalid executable path.";
         public const string LaunchEndedQueueAbandonedByUser =
-            "The user explicitly requested to exit the queue.";
+            "The game launch expired because the player left the queue.";
         public const string LaunchEndedQueueReadyTimeout =
-            "The user didn't request to play when the queue was ready and it timed-out.";
+            "The game launch expired because the player didn't start the game when the queue " +
+            "was ready, and it timed out.";
         public const string ErrorWhileSdkCheck =
             "Could not check SDK compatibility. See logs for further details.";
         public const string SeeLogs = "See logs for further details.";

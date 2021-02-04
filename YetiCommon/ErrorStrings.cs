@@ -75,41 +75,43 @@ namespace YetiCommon
 
         public static string InvalidEnvironmentVariable(string value) =>
             $"Invalid format of environment variable: '{value}'." +
-            " Should be in the form '<KEY>=<VALUE>'";
+            " Valid format: '<KEY>=<VALUE>'.";
 
         public static string
-            MultipleEnvironmentVariableKeys(string key, IEnumerable<string> values) =>
-            $"The environment variable '{key}' is assigned more than once. " +
-            "The following values will be ignored: " +
-            string.Join(", ", values.Select(v => $"'{v}'")) + ".";
+            MultipleEnvironmentVariableKeys(string key, IList<string> values) =>
+            $"The environment variable '{key}' is assigned more than once, so only the last " +
+            $"assigned value '{values.Last()}' will be used. The following values will " +
+            "be ignored: " +
+            string.Join(", ", values.Take(values.Count() - 1).Select(v => $"'{v}'")) + ".";
 
         public static string EnvironmentVariableOverride(string variableName) =>
             $"The custom environment variable '{variableName}' overrides the setting variable.";
 
         public const string EditEnvironmentVariables =
-            "Please edit the setting in 'Project Properties' -> " +
-            "'Debugging' -> 'Stadia Environment Variables' or remove 'vars' parameter out of " +
-            "'Project Properties' -> 'Debugging' -> 'Custom Query Parameters'";
+            "Either edit the setting in 'Project Properties' -> 'Debugging' -> " +
+            "'Stadia Environment Variables', or remove the 'vars' parameter from " +
+            "'Project Properties' -> 'Debugging' -> 'Custom Query Parameters'.";
 
         public static string QueryParametersIgnored(IEnumerable<string> parameters) =>
-            "The following query parameters will be ignored, because they should be " +
-            "either set via VSI setting or inferred from another configuration: " +
+            "The following query parameters will be ignored — they can only be set via a VSI " +
+            "setting or inferred from another configuration: " +
             string.Join(", ", parameters.Select(v => $"'{v}'")) + ".";
 
-        public static string InvalidQueryParameterType(
-            string parameterName, string value, Type type) =>
-            $"Can not convert query parameter's '{parameterName}' value '{value}' to {type}. " +
-            $"Parameter '{parameterName}' is ignored.";
+        public static string InvalidQueryParameterType(string parameterName, string value,
+                                                       Type type) =>
+            $"Can't convert query parameter's '{parameterName}' value '{value}' to {type}. " +
+            $"The parameter '{parameterName}' will be ignored.";
 
         public static string InvalidEnumValue(string parameterName, string value,
                                               IEnumerable<string> expectedValues) =>
-            $"Parameter's '{parameterName}' value '{value}' is invalid. Valid " +
+            $"The parameter '{parameterName}' has an invalid value: '{value}'. Valid " +
             $"values are: {string.Join(", ", expectedValues.Select(v => $"'{v}'"))}.";
 
         public static string InvalidBinaryName(string expected, string actual) =>
-            $"Invalid binary name in 'cmd' query parameter. Expected: '{expected}', received: " +
+            "The query parameter 'cmd' has an invalid binary name: " + 
             $"{(string.IsNullOrWhiteSpace(actual) ? "an empty value" : $"'{actual}'")}. " +
-            "If you want to specify command-line parameters for the binary, use the setting in " +
+            $"Expected: '{expected}'. " + Environment.NewLine +
+            "To specify command line parameters for the binary, use the setting in " +
             "'Project Properties' -> 'Debugging' -> 'Stadia Launch Arguments'.";
     }
 }

@@ -25,7 +25,7 @@ namespace YetiCommon
         public const string CheckingMountInfo = "Checking mounts configuration...";
         public const string WaitingForGameStop = "Waiting for game to stop...";
         public const string ClearingInstanceLogs = "Clearing instance logs...";
-        public const string AttachingToProcess = "Attaching to Process...";
+        public const string AttachingToProcess = "Attaching to process...";
         public const string LaunchingGame = "Launching the game...";
         public const string StoppingGame = "Stopping the game...";
         public const string LookingForTheCurrentLaunch = "Looking for the current launch...";

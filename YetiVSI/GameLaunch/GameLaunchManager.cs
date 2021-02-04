@@ -214,10 +214,10 @@ namespace YetiVSI.GameLaunch
             {
                 response = await _gameletClient.LaunchGameAsync(launchRequest);
             }
-            catch (CloudException)
+            catch (CloudException e)
             {
                 await _taskContext.Factory.SwitchToMainThreadAsync();
-                _dialogUtil.ShowError(ErrorStrings.LaunchEndedCommonMessage + ErrorStrings.SeeLogs);
+                _dialogUtil.ShowError(ErrorStrings.LaunchEndedCommonMessage + " " + e.Message);
                 return null;
             }
 

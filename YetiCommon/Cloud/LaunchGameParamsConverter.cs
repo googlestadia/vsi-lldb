@@ -146,7 +146,7 @@ namespace YetiCommon.Cloud
                         {
                             status.AppendWarning(
                                 ErrorStrings.MultipleEnvironmentVariableKeys(
-                                    tuple.Key, tuple.Skip(1).Select(t => t.Item2)));
+                                    tuple.Key, tuple.Select(t => t.Item2).ToList()));
                         }
 
                         return tuple;
