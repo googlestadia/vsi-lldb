@@ -126,7 +126,7 @@ namespace YetiVSI
             "The game launch expired because the player didn't start the game when the queue " +
             "was ready, and it timed out.";
         public const string ErrorWhileSdkCheck =
-            "Could not check SDK compatibility. See logs for further details.";
+            "Could not check the SDK compatibility. See logs for further details.";
         public const string SeeLogs = "See logs for further details.";
         public const string ThisInstance = "this instance";
         public static string LaunchExistsDialogText (string gameletName) =>

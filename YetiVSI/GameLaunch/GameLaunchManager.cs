@@ -152,7 +152,7 @@ namespace YetiVSI.GameLaunch
             catch (Exception e)
             {
                 Trace.WriteLine(
-                    $"Exception happened while checking SDK compatibility. {e.Message}");
+                    $"Exception happened while checking the SDK compatibility. {e.Message}");
                 return ErrorStrings.ErrorWhileSdkCheck;
             }
 

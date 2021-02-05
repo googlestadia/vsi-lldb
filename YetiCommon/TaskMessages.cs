@@ -23,11 +23,10 @@ namespace YetiCommon
         public const string CheckingBinaries = "Checking local and remote binaries...";
         public const string CheckingRemoteBinary = "Checking remote binary...";
         public const string CheckingMountInfo = "Checking mounts configuration...";
-        public const string WaitingForGameStop = "Waiting for game to stop...";
+        public const string WaitingForGameStop = "Waiting for the game to stop...";
         public const string ClearingInstanceLogs = "Clearing instance logs...";
-        public const string AttachingToProcess = "Attaching to process...";
+        public const string AttachingToProcess = "Attaching to the process...";
         public const string LaunchingGame = "Launching the game...";
-        public const string StoppingGame = "Stopping the game...";
         public const string LookingForTheCurrentLaunch = "Looking for the current launch...";
         public const string DeployingExecutable = "Deploying executable...";
         public const string CustomDeployCommand = "Running custom deploy command...";
