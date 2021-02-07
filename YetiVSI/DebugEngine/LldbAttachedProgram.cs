@@ -81,7 +81,8 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Load the symbols. Skips modules that already have their symbols loaded.
         /// </summary>
-        int LoadModuleFiles(SymbolInclusionSettings symbolsSettings, ICancelable task,
+        int LoadModuleFiles(SymbolInclusionSettings symbolsSettings, bool useSymbolsStores,
+                            ICancelable task,
                             IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
 
         /// <summary>
@@ -355,13 +356,15 @@ namespace YetiVSI.DebugEngine
         /// Load missing binaries and symbols. Skips modules that already have their symbols loaded
         /// or that are excluded via Include / Exclude options on symbols settings page.
         /// </summary>
-        public int LoadModuleFiles(SymbolInclusionSettings symbolsSettings, ICancelable task,
+        public int LoadModuleFiles(SymbolInclusionSettings symbolsSettings, bool useSymbolStores,
+                                   ICancelable task,
                                    IModuleFileLoadMetricsRecorder moduleFileLoadRecorder) =>
             _moduleFileLoader.LoadModuleFiles(Enumerable.Range(0, NumLoadedModules)
                                                   .Select(_target.GetModuleAtIndex)
                                                   .Where(m => m != null)
                                                   .ToList(),
-                                              symbolsSettings, task, moduleFileLoadRecorder);
+                                              symbolsSettings, useSymbolStores, task,
+                                              moduleFileLoadRecorder);
 
         public IList<IDebugModule3> GetModulesByName(string moduleName)
         {

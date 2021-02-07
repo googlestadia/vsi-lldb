@@ -359,6 +359,58 @@ namespace YetiCommon.Tests
         }
 
         [Test]
+        public void ReadSymbolFileDir_Success()
+        {
+            string[] outputLines = new string[] {
+                @"",
+                @"C:\Users\jarin\source\repos\StadiaCppProject1\GGP\Debug\StadiaCppProject1:     file format elf64-x86-64",
+                @"",
+                @"Contents of section.note.debug_info_dir:",
+                @" 0000 433a5c55 73657273 5c6a6172 696e5c73  C:\Users\jarin\s",
+                @" 0010 6f757263 655c7265 706f735c 53746164  ource\repos\Stad",
+                @" 0020 69614370 7050726f 6a656374 315c4747  iaCppProject1\GG",
+                @" 0030 505c4465 6275675c                    P\Debug\        ",
+            };
+
+            mockProcess.When(x => x.RunToExitAsync()).Do(x => {
+                OutputTestData(mockProcess, outputLines);
+            });
+
+            var directory = elfFileUtil.ReadSymbolFileDir(fakeFilename);
+
+            Assert.That(directory,
+                        Is.EqualTo(@"C:\Users\jarin\source\repos\StadiaCppProject1\GGP\Debug\"));
+        }
+
+        [Test]
+        public void ReadSymbolFileDir_Missing()
+        {
+            string[] outputLines = new string[] {
+                @"",
+                @"C:\Users\jarin\source\repos\StadiaCppProject1\GGP\Debug\StadiaCppProject1:     file format elf64-x86-64",
+                @"",
+            };
+
+            mockProcess.When(x => x.RunToExitAsync()).Do(x => {
+                OutputTestData(mockProcess, outputLines);
+            });
+
+            Assert.Throws<BinaryFileUtilException>(() =>
+                                                       elfFileUtil.ReadSymbolFileDir(fakeFilename));
+        }
+
+        [Test]
+        public void ReadSymbolFileDir_ProcessException()
+        {
+            mockProcess.RunToExitAsync().Returns(
+                Task.FromException<int>(new ProcessException("test")));
+
+            var ex = Assert.Throws<BinaryFileUtilException>(
+                () => elfFileUtil.ReadSymbolFileDir(fakeFilename));
+            Assert.IsInstanceOf<ProcessException>(ex.InnerException);
+        }
+
+        [Test]
         public void VerifySymbolFile_Success([Values(false, true)] bool isDebugInfoFile)
         {
             string output = @"

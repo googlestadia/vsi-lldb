@@ -51,7 +51,9 @@ namespace YetiVSI.Test.DebugEngine
             fakeModuleFileLoadRecorder = new FakeModuleFileLoadRecorder();
 
             mockSymbolLoader = Substitute.For<ISymbolLoader>();
-            mockSymbolLoader.LoadSymbols(Arg.Any<SbModule>(), Arg.Any<TextWriter>()).Returns(false);
+            mockSymbolLoader
+                .LoadSymbols(Arg.Any<SbModule>(), Arg.Any<TextWriter>(), Arg.Any<bool>())
+                .Returns(false);
             mockBinaryLoader = Substitute.For<IBinaryLoader>();
             var anyModule = Arg.Any<SbModule>();
             mockBinaryLoader.LoadBinary(ref anyModule, Arg.Any<TextWriter>()).Returns(false);
@@ -104,7 +106,7 @@ namespace YetiVSI.Test.DebugEngine
             var settings =
                 new SymbolInclusionSettings(useIncludeList, new List<string>(), includeList);
 
-            Assert.That(moduleFileLoader.LoadModuleFiles(modules, settings, mockTask,
+            Assert.That(moduleFileLoader.LoadModuleFiles(modules, settings, true, mockTask,
                                                          fakeModuleFileLoadRecorder),
                         Is.EqualTo(VSConstants.S_OK));
 
@@ -126,7 +128,7 @@ namespace YetiVSI.Test.DebugEngine
             var settings =
                 new SymbolInclusionSettings(useIncludeList, excludeList, new List<string>());
 
-            Assert.That(moduleFileLoader.LoadModuleFiles(modules, settings, mockTask,
+            Assert.That(moduleFileLoader.LoadModuleFiles(modules, settings, true, mockTask,
                                                          fakeModuleFileLoadRecorder),
                         Is.EqualTo(VSConstants.S_OK));
 
@@ -159,8 +161,10 @@ namespace YetiVSI.Test.DebugEngine
             Assert.Throws<OperationCanceledException>(() =>
                 moduleFileLoader.LoadModuleFiles(modules, mockTask, fakeModuleFileLoadRecorder));
 
-            mockSymbolLoader.Received().LoadSymbols(modules[0], Arg.Any<TextWriter>());
-            mockSymbolLoader.DidNotReceive().LoadSymbols(modules[1], Arg.Any<TextWriter>());
+            mockSymbolLoader.Received().LoadSymbols(modules[0], Arg.Any<TextWriter>(),
+                                                    Arg.Any<bool>());
+            mockSymbolLoader.DidNotReceive().LoadSymbols(modules[1], Arg.Any<TextWriter>(),
+                                                         Arg.Any<bool>());
             Assert.AreEqual(fakeModuleFileLoadRecorder.ModulesRecordedBeforeLoad, modules);
         }
 
@@ -173,7 +177,7 @@ namespace YetiVSI.Test.DebugEngine
                 new[] { module }, mockTask, fakeModuleFileLoadRecorder));
 
             AssertLoadBinaryReceived(module);
-            mockSymbolLoader.DidNotReceiveWithAnyArgs().LoadSymbols(null, null);
+            mockSymbolLoader.DidNotReceiveWithAnyArgs().LoadSymbols(null, null, true);
         }
 
         [Test]
@@ -186,7 +190,8 @@ namespace YetiVSI.Test.DebugEngine
                 x[0] = newModule;
                 return true;
             });
-            mockSymbolLoader.LoadSymbols(newModule, Arg.Any<TextWriter>()).Returns(true);
+            mockSymbolLoader.LoadSymbols(newModule, Arg.Any<TextWriter>(), Arg.Any<bool>())
+                .Returns(true);
             var modules = new[] { placeholderModule };
 
             Assert.AreEqual(VSConstants.S_OK, moduleFileLoader.LoadModuleFiles(
@@ -254,7 +259,8 @@ namespace YetiVSI.Test.DebugEngine
             module.GetPlatformFileSpec().GetFilename().Returns(name);
             mockBinaryLoader.LoadBinary(ref module, Arg.Any<TextWriter>())
                 .Returns(loadBinarySuccess);
-            mockSymbolLoader.LoadSymbols(module, Arg.Any<TextWriter>()).Returns(loadSymbolsSuccess);
+            mockSymbolLoader.LoadSymbols(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
+                .Returns(loadSymbolsSuccess);
             return module;
         }
 
@@ -265,7 +271,7 @@ namespace YetiVSI.Test.DebugEngine
 
         void AssertLoadSymbolsReceived(SbModule module)
         {
-            mockSymbolLoader.Received().LoadSymbols(module, Arg.Any<TextWriter>());
+            mockSymbolLoader.Received().LoadSymbols(module, Arg.Any<TextWriter>(), Arg.Any<bool>());
         }
 
         void AssertLoadBinaryNotReceived(SbModule module)
@@ -275,7 +281,8 @@ namespace YetiVSI.Test.DebugEngine
 
         void AssertLoadSymbolsNotReceived(SbModule module)
         {
-            mockSymbolLoader.DidNotReceive().LoadSymbols(module, Arg.Any<TextWriter>());
+            mockSymbolLoader.DidNotReceive().LoadSymbols(module, Arg.Any<TextWriter>(),
+                                                         Arg.Any<bool>());
         }
 
         class FakeModuleFileLoadRecorder : IModuleFileLoadMetricsRecorder

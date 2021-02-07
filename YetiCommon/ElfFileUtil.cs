@@ -120,6 +120,59 @@ namespace YetiCommon
         }
 
         /// <summary>
+        /// Parses an elf binary or symbol file and returns the debug symbol file directory encoded
+        /// in the .note.debug_info_dir section of the file.
+        /// </summary>
+        /// <param name="filepath">The local file path.</param>
+        /// <returns>A non-empty string.</returns>
+        /// <exception cref="BinaryFileUtilException">
+        /// Thrown when an error is encountered reading or parsing the debug symbol file directory.
+        /// InnerException contains more details.
+        /// </exception>
+        public string ReadSymbolFileDir(string filepath)
+        {
+            return taskFactory.Run(async () => await ReadSymbolFileDirAsync(filepath));
+        }
+
+        async Task<string> ReadSymbolFileDirAsync(string filepath)
+        {
+            try
+            {
+                List<string> outputLines =
+                    await ReadSectionFromFileAsync(".note.debug_info_dir", filepath, null);
+                var hexString = ParseHexDump(outputLines);
+                var symbolFileDir = ParseObjdumpHexString(hexString);
+                if (string.IsNullOrEmpty(symbolFileDir))
+                {
+                    throw new BinaryFileUtilException(
+                        ErrorStrings.FailedToReadSymbolFileDir(filepath, ErrorStrings.NoDebugDir));
+                }
+                return symbolFileDir;
+            }
+            catch (ProcessExecutionException e)
+            {
+                LogObjdumpOutput(e);
+
+                // objdump returned a non-zero exit code.
+                throw new BinaryFileUtilException(
+                    ErrorStrings.FailedToReadSymbolFileDir(filepath, e.Message), e);
+            }
+            catch (ProcessException e)
+            {
+                // objdump failed to launch. The specific filepath was never accessed,
+                // so it is not part of the error.
+                throw new BinaryFileUtilException(ErrorStrings.FailedToReadSymbolFileDir(e.Message),
+                                                  e);
+            }
+            catch (FormatException e)
+            {
+                throw new BinaryFileUtilException(ErrorStrings.FailedToReadSymbolFileDir(
+                                                      filepath, ErrorStrings.MalformedDebugDir),
+                                                  e);
+            }
+        }
+
+        /// <summary>
         /// Parses an elf binary or symbol file and returns the debug symbol file name encoded
         /// in the .gnu_debuglink section of the file.
         /// </summary>
@@ -141,7 +194,7 @@ namespace YetiCommon
             {
                 outputLines = await ReadSectionFromFileAsync(".gnu_debuglink", filepath, null);
                 var hexString = ParseHexDump(outputLines);
-                var symbolFileName = ParseDebugLinkOutput(hexString);
+                var symbolFileName = ParseObjdumpHexString(hexString);
                 if (string.IsNullOrEmpty(symbolFileName))
                 {
                     throw new BinaryFileUtilException(
@@ -361,14 +414,15 @@ namespace YetiCommon
         }
 
         /// <summary>
-        /// Given the content of the debug link section, returns the debug symbol file name.
+        /// Given the hex-encoded content of a section with a string (such as debuglink),
+        /// this method decodes and returns the string.
         /// </summary>
         /// <param name="hexString">The content of the section represented in hex.</param>
         /// <returns>A valid ASCII string or the empty string.</returns>
         /// <exception cref="FormatException">
         /// Thrown when the input does not encode a valid ASCII string.
         /// </exception>
-        string ParseDebugLinkOutput(string hexString)
+        string ParseObjdumpHexString(string hexString)
         {
             // Convert a string of hex digits into an array of raw byte values.
             var rawBytes = PairChars(hexString).Select(s => Convert.ToByte(s, 16));

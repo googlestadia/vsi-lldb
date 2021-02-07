@@ -25,7 +25,9 @@ namespace YetiCommon
         public const string EmptyBuildId = "The file must have a non-empty build ID.";
         public const string MalformedBuildID = "The build-id section is malformed.";
         public const string MalformedDebugLink = "The debuglink section is malformed.";
+        public const string MalformedDebugDir = "The debug_info_dir section is malformed.";
         public const string NoDebugLink = "Unable to extract the file's debuglink section.";
+        public const string NoDebugDir = "Unable to extract the file's debug_info_dir section.";
         public const string QueryParametersWrongFormat =
             "The 'Custom Query Parameters' value is in a wrong format and will be ignored. " +
             " The setting should be in the form " +
@@ -62,8 +64,12 @@ namespace YetiCommon
             $"Failed to read symbol file '{filepath}'. {message}";
         public static string FailedToReadSymbolFileName(string message) =>
             $"Failed to read symbol file name. {message}";
+        public static string FailedToReadSymbolFileDir(string message) =>
+            $"Failed to read symbol file directory. {message}";
         public static string FailedToReadSymbolFileName(string filepath, string message) =>
             $"Failed to read symbol file name of '{filepath}'. {message}";
+        public static string FailedToReadSymbolFileDir(string filepath, string message) =>
+            $"Failed to read symbol file directory of '{filepath}'. {message}";
         public static string FailedToWriteKnownHostsFile(string message) =>
             $"Failed to write known_hosts file. {message}";
         public static string ProcessExitedWithErrorCode(string process, int errorCode) =>

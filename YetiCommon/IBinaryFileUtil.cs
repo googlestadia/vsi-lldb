@@ -57,6 +57,17 @@ namespace YetiCommon
         string ReadSymbolFileName(string filepath);
 
         /// <summary>
+        /// Parses a binary file and returns the directory of the debug symbol file.
+        /// </summary>
+        ///
+        /// <exception cref="BinaryFileUtilException">
+        /// Thrown on failure, including when the file cannot be found or the symbol file directory
+        /// cannot be extracted. If there was an error executing the tool used to extract
+        /// information, the InnerException will be a ProcessException.
+        /// </exception>
+        string ReadSymbolFileDir(string filepath);
+
+        /// <summary>
         /// Verifies that the symbol file is a valid elf file. Optionally, it checks if the file
         /// contains .debug_info section.
         /// </summary>

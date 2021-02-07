@@ -54,6 +54,11 @@ namespace SymbolStores.Tests
             throw new NotImplementedTestDoubleException();
         }
 
+        public string ReadSymbolFileDir(string filepath)
+        {
+            throw new NotImplementedTestDoubleException();
+        }
+
         public void VerifySymbolFile(string filepath, bool isDebugInfoFile)
         {
             BuildId buildId = ReadBuildId(filepath);

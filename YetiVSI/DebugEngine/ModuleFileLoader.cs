@@ -43,7 +43,7 @@ namespace YetiVSI.DebugEngine
         /// via SymbolInclusionSettings.
         /// </summary>
         int LoadModuleFiles(IList<SbModule> modules, SymbolInclusionSettings symbolSettings,
-                            ICancelable task,
+                            bool useSymbolStores, ICancelable task,
                             IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
     }
 
@@ -120,7 +120,7 @@ namespace YetiVSI.DebugEngine
         }
 
         public int LoadModuleFiles(IList<SbModule> modules, SymbolInclusionSettings symbolSettings,
-                                   ICancelable task,
+                                   bool useSymbolStores, ICancelable task,
                                    IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
         {
             if (modules == null)
@@ -169,7 +169,7 @@ namespace YetiVSI.DebugEngine
 
                     task.ThrowIfCancellationRequested();
                     task.Progress.Report($"Loading symbols for {name} ({i}/{modules.Count})");
-                    if (!_symbolLoader.LoadSymbols(module, searchLog))
+                    if (!_symbolLoader.LoadSymbols(module, searchLog, useSymbolStores))
                     {
                         result = VSConstants.E_FAIL;
                         continue;
@@ -189,7 +189,7 @@ namespace YetiVSI.DebugEngine
 
         public int LoadModuleFiles(IList<SbModule> modules, ICancelable task,
                                    IModuleFileLoadMetricsRecorder moduleFileLoadRecorder) =>
-            LoadModuleFiles(modules, null, task, moduleFileLoadRecorder);
+            LoadModuleFiles(modules, null, true, task, moduleFileLoadRecorder);
 
         bool SkipModule(string module, SymbolInclusionSettings settings)
         {

@@ -34,7 +34,7 @@ namespace YetiVSI.DebugEngine
         /// otherwise.
         /// </returns>
         /// <exception cref="ArgumentNullException">Thrown when |lldbModule| is null.</exception>
-        bool LoadSymbols(SbModule lldbModule, TextWriter searchLog);
+        bool LoadSymbols(SbModule lldbModule, TextWriter searchLog, bool useSymbolStores);
     }
 
     public class SymbolLoader : ISymbolLoader
@@ -72,7 +72,8 @@ namespace YetiVSI.DebugEngine
             this.lldbCommandInterpreter = lldbCommandInterpreter;
         }
 
-        public virtual bool LoadSymbols(SbModule lldbModule, TextWriter searchLog)
+        public virtual bool LoadSymbols(SbModule lldbModule, TextWriter searchLog,
+                                        bool useSymbolStores)
         {
             if (lldbModule == null) { throw new ArgumentNullException(nameof(lldbModule)); }
             searchLog = searchLog ?? TextWriter.Null;
@@ -80,7 +81,7 @@ namespace YetiVSI.DebugEngine
             // Return early if symbols are already loaded
             if (moduleUtil.HasSymbolsLoaded(lldbModule)) { return true; }
 
-            var symbolFileName = GetSymbolFileName(lldbModule, searchLog);
+            var (symbolFileDir, symbolFileName) = GetSymbolFileDirAndName(lldbModule, searchLog);
             if (string.IsNullOrEmpty(symbolFileName))
             {
                 searchLog.WriteLine(ErrorStrings.SymbolFileNameUnknown);
@@ -89,13 +90,38 @@ namespace YetiVSI.DebugEngine
             }
             BuildId uuid = new BuildId(lldbModule.GetUUIDString());
 
-            var filepath = moduleFileFinder.FindFile(symbolFileName, uuid, true, searchLog);
+            // If we have a search directory, let us look up the symbol file in there.
+            if (!string.IsNullOrEmpty(symbolFileDir))
+            {
+                string symbolFilePath = string.Empty;
+                try
+                {
+                    symbolFilePath = Path.Combine(symbolFileDir, symbolFileName);
+                    BuildId fileUUID = binaryFileUtil.ReadBuildId(symbolFilePath);
+                    if (fileUUID == uuid)
+                    {
+                        return AddSymbolFile(symbolFilePath, lldbModule, searchLog);
+                    }
+                }
+                catch (Exception e) when (e is InvalidBuildIdException ||
+                                          e is BinaryFileUtilException || e is ArgumentException)
+                {
+                    // Just ignore the symbol file path if we could not read the build Id.
+                    Trace.WriteLine($"Could not read build Id from {symbolFilePath} " +
+                                    $"for module {lldbModule.GetFileSpec().GetFilename()} " +
+                                    $"(Message: {e.Message}).");
+                }
+            }
+
+            var filepath = useSymbolStores
+                               ? moduleFileFinder.FindFile(symbolFileName, uuid, true, searchLog)
+                               : null;
             if (filepath == null) { return false; }
 
             return AddSymbolFile(filepath, lldbModule, searchLog);
         }
 
-        string GetSymbolFileName(SbModule lldbModule, TextWriter log)
+        (string, string) GetSymbolFileDirAndName(SbModule lldbModule, TextWriter log)
         {
             var symbolFileSpec = lldbModule.GetSymbolFileSpec();
             var symbolFileDirectory = symbolFileSpec?.GetDirectory();
@@ -105,40 +131,64 @@ namespace YetiVSI.DebugEngine
             var binaryDirectory = binaryFileSpec?.GetDirectory();
             var binaryFilename = binaryFileSpec?.GetFilename();
 
-            // When lldb can't find the symbol file, it sets the symbol file spec to the path of
-            // the binary file. We check for that so we can attempt to extract the symbol file name
-            // ourselves.
-            if (!string.IsNullOrEmpty(binaryDirectory) && !string.IsNullOrEmpty(binaryFilename) &&
-                (string.IsNullOrEmpty(symbolFileName) || (symbolFileDirectory == binaryDirectory &&
-                symbolFileName == binaryFilename)))
+            // If there is no path to the binary, there is nothing we can do.
+            if (string.IsNullOrEmpty(binaryDirectory) || string.IsNullOrEmpty(binaryFilename))
             {
-                string symbolPath;
-                try
-                {
-                    symbolPath = Path.Combine(binaryDirectory, binaryFilename);
-                }
-                catch (ArgumentException e)
-                {
-                    var errorString = ErrorStrings.InvalidBinaryPathOrName(binaryDirectory,
-                        binaryFilename, e.Message);
-                    Trace.WriteLine(errorString);
-                    log.WriteLine(errorString);
-                    return null;
-                }
-
-                try
-                {
-                    symbolFileName = binaryFileUtil.ReadSymbolFileName(symbolPath);
-                }
-                catch (BinaryFileUtilException e)
-                {
-                    Trace.WriteLine(e.ToString());
-                    log.WriteLine(e.Message);
-                    return null;
-                }
+                return (symbolFileDirectory, symbolFileName);
             }
 
-            return symbolFileName;
+            // When lldb can't find the symbol file, it sets the symbol file spec to the path of
+            // the binary file. If the file name or path is different, we just return the filename
+            // (if it is not empty).
+            if (!string.IsNullOrEmpty(symbolFileName) &&
+                (symbolFileDirectory != binaryDirectory || symbolFileName != binaryFilename))
+            {
+                return (symbolFileDirectory, symbolFileName);
+            }
+
+            symbolFileDirectory = null;
+            symbolFileName = null;
+
+            // Let us look up the symbol file name and directory in the binary.
+            string binaryPath;
+            try
+            {
+                binaryPath = Path.Combine(binaryDirectory, binaryFilename);
+            }
+            catch (ArgumentException e)
+            {
+                var errorString = ErrorStrings.InvalidBinaryPathOrName(binaryDirectory,
+                                                                       binaryFilename, e.Message);
+                Trace.WriteLine(errorString);
+                log.WriteLine(errorString);
+                return (null, null);
+            }
+
+            // Read the symbol file name from the binary.
+            try
+            {
+                symbolFileName = binaryFileUtil.ReadSymbolFileName(binaryPath);
+            }
+            catch (BinaryFileUtilException e)
+            {
+                Trace.WriteLine(e.ToString());
+                log.WriteLine(e.Message);
+                return (null, null);
+            }
+
+            // Try to read the debug info directory.
+            try
+            {
+                symbolFileDirectory = binaryFileUtil.ReadSymbolFileDir(binaryPath);
+            }
+            catch (BinaryFileUtilException e)
+            {
+                // Just log the message (the directory section is optional).
+                Trace.WriteLine(e.Message);
+                log.WriteLine(e.Message);
+            }
+
+            return (symbolFileDirectory, symbolFileName);
         }
 
         bool AddSymbolFile(string filepath, SbModule module, TextWriter searchLog)

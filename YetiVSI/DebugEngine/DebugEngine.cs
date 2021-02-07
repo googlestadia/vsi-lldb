@@ -839,20 +839,14 @@ namespace YetiVSI.DebugEngine
                 return VSConstants.E_FAIL;
             }
 
-            // Due to performance implications we do not use symbols servers paths by default,
-            // but require to turn on "Enable symbol server support" option in Stadia settings.
-            if (!_symbolSettingsProvider.IsSymbolServerEnabled)
-            {
-                return VSConstants.S_OK;
-            }
-
             var action = _actionRecorder.CreateToolAction(ActionType.DebugEngineLoadSymbols);
 
             int result = VSConstants.S_OK;
             var inclusionSettings = _symbolSettingsProvider.GetInclusionSettings();
             var loadSymbolsTask = _cancelableTaskFactory.Create("Loading symbols...", task => {
                 result = _attachedProgram.LoadModuleFiles(
-                    inclusionSettings, task, _moduleFileLoadRecorderFactory.Create(action));
+                    inclusionSettings, _symbolSettingsProvider.IsSymbolServerEnabled, task,
+                    _moduleFileLoadRecorderFactory.Create(action));
             });
             return loadSymbolsTask.RunAndRecord(action) ? result : VSConstants.E_ABORT;
         }

@@ -288,10 +288,10 @@ namespace YetiVSI.Test
             var symbolSettings =
                 new SymbolInclusionSettings(true, new List<string>(), new List<string>());
             var moduleFileLoadRecorder = Substitute.For<IModuleFileLoadMetricsRecorder>();
-            _attachedProgram.LoadModuleFiles(symbolSettings, task, moduleFileLoadRecorder);
+            _attachedProgram.LoadModuleFiles(symbolSettings, true, task, moduleFileLoadRecorder);
 
             _moduleFileLoader.Received(1).LoadModuleFiles(
-                Arg.Is<IList<SbModule>>(l => l.SequenceEqual(modules)), symbolSettings, task,
+                Arg.Is<IList<SbModule>>(l => l.SequenceEqual(modules)), symbolSettings, true, task,
                 moduleFileLoadRecorder);
         }
 
