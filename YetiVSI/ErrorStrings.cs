@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using GgpGrpc.Models;
+using GgpGrpc.Models;
 using System;
 using System.Collections.Generic;
+using YetiCommon;
 
 namespace YetiVSI
 {
@@ -117,9 +118,10 @@ namespace YetiVSI
             "This shouldn't happen. Try relaunching the game in a few minutes.";
         public const string LaunchEndedUnexpectedGameShutdownBySystem =
             "Game unexpectedly shutdown, presumably by an issue with the system";
-        public const string LaunchEndedGameBinaryNotFound =
-            "The game launch expired because the game binary was not found. This may be due to an " +
-            "invalid executable path.";
+        public static readonly string LaunchEndedGameBinaryNotFound =
+            "The game launch expired because the game binary was not found. Check your settings " +
+            "in 'Project Properties' -> 'Debugging' -> 'Deploy executable on launch', " +
+            $"and that a valid executable is in {YetiConstants.RemoteDeployPath}, then try again.";
         public const string LaunchEndedQueueAbandonedByUser =
             "The game launch expired because the player left the queue.";
         public const string LaunchEndedQueueReadyTimeout =
