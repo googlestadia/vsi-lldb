@@ -111,7 +111,8 @@ namespace DebuggerGrpcServer
         /// <summary>
         /// Evaluates an expression in the variable context using lldb-eval.
         /// </summary>
-        RemoteValue EvaluateExpressionLldbEval(string expression);
+        RemoteValue EvaluateExpressionLldbEval(string expression,
+                                               IDictionary<string, SbValue> contextVariables);
 
         /// <summary>
         /// Dereferences a variable if it is a pointer.

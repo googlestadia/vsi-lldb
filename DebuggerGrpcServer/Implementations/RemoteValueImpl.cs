@@ -88,8 +88,10 @@ namespace DebuggerGrpcServer
             return _valueFactory.Create(_sbValue.EvaluateExpression(expression, options));
         }
 
-        public RemoteValue EvaluateExpressionLldbEval(string expression) =>
-            _valueFactory.Create(LldbEval.EvaluateExpression(_sbValue, expression));
+        public RemoteValue EvaluateExpressionLldbEval(
+            string expression, IDictionary<string, SbValue> contextVariables) =>
+            _valueFactory.Create(LldbEval.EvaluateExpression(_sbValue, expression,
+                                                             contextVariables));
 
         public RemoteValue Dereference() => _valueFactory.Create(_sbValue.Dereference());
 

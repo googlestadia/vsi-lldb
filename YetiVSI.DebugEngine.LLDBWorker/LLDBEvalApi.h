@@ -30,7 +30,8 @@ ref class LldbEval abstract sealed {
       EvaluateExpression(SbFrame ^ frame, System::String ^ expression);
 
   static SbValue ^
-      EvaluateExpression(SbValue ^ value, System::String ^ expression);
+      EvaluateExpression(SbValue ^ value, System::String ^ expression,
+          System::Collections::Generic::IDictionary<System::String ^, SbValue ^> ^ contextVars);
 };
 
 }  // namespace DebugEngine

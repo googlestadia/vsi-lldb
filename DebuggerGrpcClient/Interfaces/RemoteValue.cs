@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Debugger.Common;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -38,6 +39,11 @@ namespace DebuggerApi
     /// </summary>
     public interface RemoteValue
     {
+        /// <summary>
+        /// Return the value representation that can be used in gRPC messages.
+        /// </summary>
+        GrpcSbValue GrpcValue { get; }
+
         /// <summary>
         /// Returns the node's name.
         /// </summary>
@@ -120,7 +126,8 @@ namespace DebuggerApi
         /// <summary>
         /// Evaluates an expression asynchronously in a variable context using lldb-eval.
         /// </summary>
-        Task<RemoteValue> EvaluateExpressionLldbEvalAsync(string expression);
+        Task<RemoteValue> EvaluateExpressionLldbEvalAsync(
+            string expression, IDictionary<string, RemoteValue> contextVariables = null);
 
         /// <summary>
         /// Dereferences a variable if it is a pointer.

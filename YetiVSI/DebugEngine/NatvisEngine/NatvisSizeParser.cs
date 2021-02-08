@@ -40,7 +40,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// </summary>
         /// <returns></returns>
         internal async Task<uint> ParseSizeAsync(SizeType[] sizes, IVariableInformation varInfo,
-                                                 IDictionary<string, string> scopedNames)
+                                                 NatvisScope natvisScope)
         {
             if (sizes == null)
             {
@@ -55,8 +55,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 {
                     if (!NatvisViewsUtil.IsViewVisible(varInfo.FormatSpecifier, curSize.IncludeView,
                                                        curSize.ExcludeView) ||
-                        !await _evaluator.EvaluateConditionAsync(
-                            curSize.Condition, varInfo, scopedNames))
+                        !await _evaluator.EvaluateConditionAsync(curSize.Condition, varInfo,
+                                                                 natvisScope))
                     {
                         continue;
                     }
@@ -68,7 +68,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     else
                     {
                         IVariableInformation sizeVarInfo = await _evaluator.EvaluateExpressionAsync(
-                            curSize.Value, varInfo, scopedNames, null);
+                            curSize.Value, varInfo, natvisScope, null);
 
                         sizeVarInfo.FallbackValueFormat = ValueFormat.Default;
                         sizeText = await sizeVarInfo.ValueAsync();

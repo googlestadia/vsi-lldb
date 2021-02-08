@@ -24,22 +24,19 @@ namespace YetiVSI.DebugEngine.NatvisEngine
     {
         readonly NatvisStringFormatter _stringFormatter;
         readonly NatvisCollectionEntity.Factory _natvisCollectionFactory;
-        readonly IDictionary<string, string> _scopedNames;
+        readonly NatvisScope _natvisScope;
         readonly SyntheticItemType _syntheticItemType;
         readonly string _displayValue;
 
-        internal NatvisSyntheticVariableInformation(NatvisStringFormatter stringFormatter,
-                                                    NatvisCollectionEntity.Factory
-                                                        natvisCollectionFactory,
-                                                    IDictionary<string, string> scopedNames,
-                                                    SyntheticItemType syntheticItemType,
-                                                    IVariableInformation varInfo,
-                                                    string displayValue)
+        internal NatvisSyntheticVariableInformation(
+            NatvisStringFormatter stringFormatter,
+            NatvisCollectionEntity.Factory natvisCollectionFactory, NatvisScope natvisScope,
+            SyntheticItemType syntheticItemType, IVariableInformation varInfo, string displayValue)
             : base(varInfo)
         {
             _stringFormatter = stringFormatter;
             _natvisCollectionFactory = natvisCollectionFactory;
-            _scopedNames = scopedNames;
+            _natvisScope = natvisScope;
             _syntheticItemType = syntheticItemType;
             _displayValue = displayValue;
 
@@ -64,12 +61,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         }
 
         public override IChildAdapter GetChildAdapter() =>
-            _natvisCollectionFactory.Create(VarInfo, _syntheticItemType.Expand, _scopedNames);
+            _natvisCollectionFactory.Create(VarInfo, _syntheticItemType.Expand, _natvisScope);
 
-        public override IVariableInformation GetCachedView()
-            => new NatvisSyntheticVariableInformation(_stringFormatter, _natvisCollectionFactory,
-                                                      _scopedNames, _syntheticItemType,
-                                                      VarInfo.GetCachedView(), _displayValue);
+        public override IVariableInformation GetCachedView() =>
+            new NatvisSyntheticVariableInformation(_stringFormatter, _natvisCollectionFactory,
+                                                   _natvisScope, _syntheticItemType,
+                                                   VarInfo.GetCachedView(), _displayValue);
 
         public override string StringView
         {
@@ -78,12 +75,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 NatvisStringFormatter.FormatStringContext formatStringContext =
                     _syntheticItemType.StringView == null
                         ? new NatvisStringFormatter.FormatStringContext()
-                        : new NatvisStringFormatter.FormatStringContext
-                        {
-                            StringElements = _syntheticItemType.StringView.Select(
-                                e => new StringViewElement(e)),
-                            ScopedNames = _scopedNames
-                        };
+                        : new NatvisStringFormatter.FormatStringContext {
+                              StringElements = _syntheticItemType.StringView.Select(
+                                  e => new StringViewElement(e)),
+                              NatvisScope = _natvisScope
+                          };
                 return _stringFormatter.FormatStringView(formatStringContext, VarInfo);
             }
         }

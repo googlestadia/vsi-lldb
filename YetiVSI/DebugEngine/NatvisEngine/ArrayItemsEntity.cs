@@ -42,10 +42,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 _sizeParser = sizeParser;
             }
 
-            public INatvisEntity Create(IVariableInformation variable,
-                                        IDictionary<string, string> scopedNames,
+            public INatvisEntity Create(IVariableInformation variable, NatvisScope natvisScope,
                                         ArrayItemsType arrayItems) =>
-                new ArrayItemsEntity(variable, scopedNames, arrayItems, _logger,
+                new ArrayItemsEntity(variable, natvisScope, arrayItems, _logger,
                                      new NatvisEntityStore(), _evaluator, _sizeParser);
         }
 
@@ -61,11 +60,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         protected override bool Optional => _arrayListItems.Optional;
         protected override string VisualizerName => "<ArrayItems>";
 
-        ArrayItemsEntity(IVariableInformation variable, IDictionary<string, string> scopedNames,
+        ArrayItemsEntity(IVariableInformation variable, NatvisScope natvisScope,
                          ArrayItemsType arrayListItems, NatvisDiagnosticLogger logger,
                          NatvisEntityStore store, NatvisExpressionEvaluator evaluator,
-                         NatvisSizeParser sizeParser) : base(
-            variable, logger, evaluator, scopedNames)
+                         NatvisSizeParser sizeParser)
+            : base(variable, logger, evaluator, natvisScope)
         {
             _arrayListItems = arrayListItems;
             _store = store;
@@ -95,10 +94,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             for (int index = from; index < from + count; index++)
             {
                 IVariableInformation varInfo = await _store.GetOrEvaluateAsync(
-                    index,
-                    async i => await _evaluator.GetExpressionValueOrErrorAsync(
-                        $"({_valuePointer.Value})[{i}]", _variable, _scopedNames, $"[{i}]",
-                        "ArrayItems"));
+                    index, async i => await _evaluator.GetExpressionValueOrErrorAsync(
+                               $"({_valuePointer.Value})[{i}]", _variable, _natvisScope, $"[{i}]",
+                               "ArrayItems"));
 
                 result.Add(varInfo);
             }
@@ -116,11 +114,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         protected override async Task ValidateAsync()
         {
-            Task<ValuePointerType> valuePointerTask = _arrayListItems.ValuePointer
-                ?.Where(v => !string.IsNullOrWhiteSpace(v.Value))
-                .FirstOrDefaultAsync(async v =>
-                                         await _evaluator.EvaluateConditionAsync(
-                                             v.Condition, _variable, _scopedNames));
+            Task<ValuePointerType> valuePointerTask =
+                _arrayListItems.ValuePointer?.Where(v => !string.IsNullOrWhiteSpace(v.Value))
+                    .FirstOrDefaultAsync(async v => await _evaluator.EvaluateConditionAsync(
+                                             v.Condition, _variable, _natvisScope));
 
             if (valuePointerTask != null)
             {
@@ -134,7 +131,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         }
 
         protected override async Task<int> InitChildrenCountAsync() =>
-            (int) await _sizeParser.ParseSizeAsync(_arrayListItems.Size, _variable, _scopedNames);
+            (int)await _sizeParser.ParseSizeAsync(_arrayListItems.Size, _variable, _natvisScope);
 
         async Task InitAsync()
         {

@@ -21,13 +21,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
     class CustomListItemsContext
     {
         public IVariableInformation Variable { get; }
-        public IDictionary<string, string> ScopedNames { get; }
+        public NatvisScope NatvisScope { get; }
         public int ItemAutoIndex { get; set; }
 
-        public CustomListItemsContext(IDictionary<string, string> scopedNames,
-                                      IVariableInformation variable)
+        public CustomListItemsContext(NatvisScope natvisScope, IVariableInformation variable)
         {
-            ScopedNames = scopedNames;
+            NatvisScope = natvisScope;
             Variable = variable;
         }
     }

@@ -8107,11 +8107,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
 
-            list.AddValueFromExpression($"auto cur=this->head; cur",
-                                        RemoteValueFakeUtil.CreatePointer(
-                                            "Node*", "head", MEM_ADDRESS1));
-            list.AddValueFromExpression("auto index=0; index",
-                RemoteValueFakeUtil.CreateSimpleInt("index", 0));
+            var cur_var = RemoteValueFakeUtil.CreatePointer("Node*", "head", MEM_ADDRESS1);
+            list.AddValueFromExpression("auto cur=this->head; cur", cur_var);
+            list.AddValueFromExpression("cur", cur_var);
+            RemoteValue index_var = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", index_var);
+            list.AddValueFromExpression("index", index_var);
             list.AddValueFromExpression("index", RemoteValueFakeUtil.CreateSimpleInt("tmp", 1));
             list.AddValueFromExpression("item_expr",
                 RemoteValueFakeUtil.CreateSimpleInt("tmp", 15));
@@ -8216,10 +8217,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
 
             // Variable declarations
-            list.AddValueFromExpression($"auto cur=this->head; cur",
-                RemoteValueFakeUtil.CreatePointer("Node*", "head", MEM_ADDRESS1));
-            list.AddValueFromExpression("auto index=0; index",
-                RemoteValueFakeUtil.CreateSimpleInt("index", 0));
+            var cur_var = RemoteValueFakeUtil.CreatePointer("Node*", "head", MEM_ADDRESS1);
+            list.AddValueFromExpression("auto cur=this->head; cur", cur_var);
+            list.AddValueFromExpression("cur", cur_var);
+            var index_var = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", index_var);
+            list.AddValueFromExpression("index", index_var);
             // First outer loop iteration
             list.AddValueFromExpression("outerloop_cond",
                 RemoteValueFakeUtil.CreateSimpleBool("tmp", true));
@@ -8412,11 +8415,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
 
-            list.AddValueFromExpression($"auto cur=this->head; cur",
-                                        RemoteValueFakeUtil.CreatePointer(
-                                            "Node*", "head", MEM_ADDRESS1));
-            list.AddValueFromExpression("auto index=0; index",
-                RemoteValueFakeUtil.CreateSimpleInt("index", 0));
+            var cur_var = RemoteValueFakeUtil.CreatePointer("Node*", "head", MEM_ADDRESS1);
+            list.AddValueFromExpression("auto cur=this->head; cur", cur_var);
+            list.AddValueFromExpression("cur", cur_var);
+            RemoteValue index_var = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", index_var);
+            list.AddValueFromExpression("index", index_var);
             // First loop iteration
             list.AddValueFromExpression("cur != nullptr",
                 RemoteValueFakeUtil.CreateSimpleBool("tmp", true));
@@ -8477,8 +8481,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
 
             // Variable declarations
-            list.AddValueFromExpression("auto index=0; index",
-                                        RemoteValueFakeUtil.CreateSimpleInt("index", 0));
+            RemoteValue index_var = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", index_var);
+            list.AddValueFromExpression("index", index_var);
+
             // First loop iteration
             list.AddValueFromExpression("break_condition",
                                         RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
@@ -8537,11 +8543,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
 
-            list.AddValueFromExpression($"auto cur=this->head; cur",
-                                        RemoteValueFakeUtil.CreatePointer(
-                                            "Node*", "head", MEM_ADDRESS1));
-            list.AddValueFromExpression("auto index=0; index",
-                RemoteValueFakeUtil.CreateSimpleInt("index", 0));
+            var cur_var = RemoteValueFakeUtil.CreatePointer("Node*", "head", MEM_ADDRESS1);
+            list.AddValueFromExpression("auto cur=this->head; cur", cur_var);
+            list.AddValueFromExpression("cur", cur_var);
+            var index_var = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", index_var);
+            list.AddValueFromExpression("index", index_var);
             // First loop iteration
             list.AddValueFromExpression("cur != nullptr",
                 RemoteValueFakeUtil.CreateSimpleBool("tmp", true));
@@ -8635,10 +8642,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
 
             // Variable declarations
-            list.AddValueFromExpression($"auto cur=this->head; cur",
-                RemoteValueFakeUtil.CreatePointer("Node*", "head", MEM_ADDRESS1));
-            list.AddValueFromExpression("auto index=0; index",
-                RemoteValueFakeUtil.CreateSimpleInt("index", 0));
+            var cur_var = RemoteValueFakeUtil.CreatePointer("Node*", "head", MEM_ADDRESS1);
+            list.AddValueFromExpression("auto cur=this->head; cur", cur_var);
+            list.AddValueFromExpression("cur", cur_var);
+            var index_var = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", index_var);
+            list.AddValueFromExpression("index", index_var);
             // First loop iteration
             list.AddValueFromExpression("cur == nullptr",
                 RemoteValueFakeUtil.CreateSimpleBool("tmp", false));

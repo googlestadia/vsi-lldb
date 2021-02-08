@@ -20,16 +20,16 @@ namespace YetiVSI.DebugEngine.NatvisEngine
     public class VisualizerInfo
     {
         public VisualizerType Visualizer { get; }
-        public Dictionary<string, string> ScopedNames { get; }
+        public NatvisScope NatvisScope { get; }
 
         public VisualizerInfo(VisualizerType viz, TypeName name)
         {
             Visualizer = viz;
             // add the template parameter macro values
-            ScopedNames = new Dictionary<string, string>();
+            NatvisScope = new NatvisScope();
             for (int i = 0; i < name.Args.Count; ++i)
             {
-                ScopedNames[$"$T{i + 1}"] = name.Args[i].FullyQualifiedName;
+                NatvisScope.SetScopedName($"$T{i + 1}", name.Args[i].FullyQualifiedName);
             }
         }
 

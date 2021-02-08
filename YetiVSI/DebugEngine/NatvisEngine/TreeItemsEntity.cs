@@ -42,10 +42,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 _sizeParser = sizeParser;
             }
 
-            public INatvisEntity Create(IVariableInformation variable,
-                                        IDictionary<string, string> scopedNames,
+            public INatvisEntity Create(IVariableInformation variable, NatvisScope natvisScope,
                                         TreeItemsType treeItems) =>
-                new TreeItemsEntity(variable, scopedNames, treeItems, _logger,
+                new TreeItemsEntity(variable, natvisScope, treeItems, _logger,
                                     new NatvisEntityStore(), _evaluator, _sizeParser);
         }
 
@@ -66,11 +65,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         protected override bool Optional => _treeItems.Optional;
         protected override string VisualizerName => "<TreeItems>";
 
-        TreeItemsEntity(IVariableInformation variable, IDictionary<string, string> scopedNames,
+        TreeItemsEntity(IVariableInformation variable, NatvisScope natvisScope,
                         TreeItemsType treeItems, NatvisDiagnosticLogger logger,
                         NatvisEntityStore store, NatvisExpressionEvaluator evaluator,
-                        NatvisSizeParser sizeParser) : base(variable, logger, evaluator,
-                                                            scopedNames)
+                        NatvisSizeParser sizeParser)
+            : base(variable, logger, evaluator, natvisScope)
         {
             _treeItems = treeItems;
             _store = store;
@@ -150,7 +149,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             if (_treeItems.Size != null)
             {
                 IVariableInformation sizeVariable = await _evaluator.EvaluateExpressionAsync(
-                    _treeItems.Size, _variable, _scopedNames, null);
+                    _treeItems.Size, _variable, _natvisScope, null);
 
                 sizeVariable.FallbackValueFormat = ValueFormat.Default;
 
@@ -271,9 +270,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
             else
             {
-                treeRoot =
-                    await _evaluator.EvaluateExpressionAsync(
-                        _treeItems.HeadPointer, _variable, _scopedNames, null);
+                treeRoot = await _evaluator.EvaluateExpressionAsync(_treeItems.HeadPointer,
+                                                                    _variable, _natvisScope, null);
             }
 
             await AddNodesUpToLeftMostToNodeStackAsync(treeRoot);
@@ -292,7 +290,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             try
             {
                 IVariableInformation nextNode = await _evaluator.EvaluateExpressionAsync(
-                    _treeItems.RightPointer, currentNode, _scopedNames, null);
+                    _treeItems.RightPointer, currentNode, _natvisScope, null);
 
                 await AddNodesUpToLeftMostToNodeStackAsync(nextNode);
             }
@@ -314,8 +312,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             while (!node.IsNullPointer())
             {
                 _nodeStack.Push(node);
-                node = await _evaluator.EvaluateExpressionAsync(
-                    _treeItems.LeftPointer, node, _scopedNames, null);
+                node = await _evaluator.EvaluateExpressionAsync(_treeItems.LeftPointer, node,
+                                                                _natvisScope, null);
             }
         }
 
@@ -329,9 +327,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return new NamedVariableInformation(node, elementName);
             }
 
-            return await _evaluator.GetExpressionValueOrErrorAsync(_treeItems.ValueNode.Value, node,
-                                                                   _scopedNames, elementName,
-                                                                   "TreeItems");
+            return await _evaluator.GetExpressionValueOrErrorAsync(
+                _treeItems.ValueNode.Value, node, _natvisScope, elementName, "TreeItems");
         }
     }
 }

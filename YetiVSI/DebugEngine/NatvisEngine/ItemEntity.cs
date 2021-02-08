@@ -39,10 +39,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 _evaluator = evaluator;
             }
 
-            public INatvisEntity Create(IVariableInformation variable,
-                                        IDictionary<string, string> scopedNames, ItemType item) =>
-                new ItemEntity(variable, scopedNames, item, _logger, new NatvisEntityStore(),
-                               _evaluator);
+            public INatvisEntity Create(IVariableInformation variable, NatvisScope natvisScope,
+                                        ItemType item) => new ItemEntity(variable, natvisScope,
+                                                                         item, _logger,
+                                                                         new NatvisEntityStore(),
+                                                                         _evaluator);
         }
 
         readonly ItemType _item;
@@ -55,10 +56,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         protected override bool Optional => _item.Optional;
         protected override string VisualizerName => "<Item>";
 
-        ItemEntity(IVariableInformation variable, IDictionary<string, string> scopedNames,
-                   ItemType item, NatvisDiagnosticLogger logger, NatvisEntityStore store,
-                   NatvisExpressionEvaluator evaluator) : base(
-            variable, logger, evaluator, scopedNames)
+        ItemEntity(IVariableInformation variable, NatvisScope natvisScope, ItemType item,
+                   NatvisDiagnosticLogger logger, NatvisEntityStore store,
+                   NatvisExpressionEvaluator evaluator)
+            : base(variable, logger, evaluator, natvisScope)
         {
             _item = item;
             _store = store;
@@ -100,10 +101,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         }
 
         async Task<IVariableInformation> EvaluateItemAsync() => await _store.GetOrEvaluateAsync(
-            0,
-            async i =>
-                await _evaluator.EvaluateExpressionAsync(_item.Value, _variable, _scopedNames,
-                                                         _item.Name));
+            0, async i => await _evaluator.EvaluateExpressionAsync(_item.Value, _variable,
+                                                                   _natvisScope, _item.Name));
 
         async Task InitAsync()
         {

@@ -65,7 +65,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             public INatvisEntity Create(IVariableInformation variable, ExpandType expandType,
-                                        IDictionary<string, string> scopedName)
+                                        NatvisScope natvisScope)
             {
                 var children = new List<INatvisEntity>();
                 if (expandType?.Items == null)
@@ -78,53 +78,50 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 {
                     if (item is ItemType itemType)
                     {
-                        children.Add(_itemFactory.Create(variable, scopedName, itemType));
+                        children.Add(_itemFactory.Create(variable, natvisScope, itemType));
                     }
                     else if (item is SyntheticItemType syntheticItemType)
                     {
-                        children.Add(_syntheticItemFactory.Create(variable, scopedName,
+                        children.Add(_syntheticItemFactory.Create(variable, natvisScope,
                                                                   syntheticItemType, this));
                     }
                     else if (item is ExpandedItemType expandedItemType)
                     {
-                        children.Add(_expandedItemFactory.Create(variable, scopedName,
-                                                                 expandedItemType));
+                        children.Add(
+                            _expandedItemFactory.Create(variable, natvisScope, expandedItemType));
                     }
                     else if (item is IndexListItemsType indexListItems)
                     {
                         children.Add(RangedNatvisEntityDecorator.First(
-                                         _maxChildrenPerRangeIndexListItems,
-                                         _indexListItemsFactory.Create(
-                                             variable, scopedName, indexListItems)));
+                            _maxChildrenPerRangeIndexListItems,
+                            _indexListItemsFactory.Create(variable, natvisScope, indexListItems)));
                     }
                     else if (item is ArrayItemsType arrayItems)
                     {
                         children.Add(RangedNatvisEntityDecorator.First(
-                                         _maxChildrenPerRangeArrayItems,
-                                         _arrayItemsFactory.Create(
-                                             variable, scopedName, arrayItems)));
+                            _maxChildrenPerRangeArrayItems,
+                            _arrayItemsFactory.Create(variable, natvisScope, arrayItems)));
                     }
                     else if (item is LinkedListItemsType linkedListItems)
                     {
                         children.Add(RangedNatvisEntityDecorator.First(
-                                         _maxChildrenPerRangeLinkedListItems,
-                                         _linkedListItemsFactory.Create(
-                                             variable, scopedName, linkedListItems)));
+                            _maxChildrenPerRangeLinkedListItems,
+                            _linkedListItemsFactory.Create(variable, natvisScope,
+                                                           linkedListItems)));
                     }
                     else if (item is TreeItemsType treeItems)
                     {
                         children.Add(RangedNatvisEntityDecorator.First(
-                                         _maxChildrenPerRangeTreeItems,
-                                         _treeItemsFactory.Create(
-                                             variable, scopedName, treeItems)));
+                            _maxChildrenPerRangeTreeItems,
+                            _treeItemsFactory.Create(variable, natvisScope, treeItems)));
                     }
                     else if (item is CustomListItemsType customListItems &&
                         _natvisExperimentsEnabled())
                     {
                         children.Add(RangedNatvisEntityDecorator.First(
-                                         _maxChildrenPerRangeCustomListItems,
-                                         _customListItemsFactory.Create(
-                                             variable, scopedName, customListItems)));
+                            _maxChildrenPerRangeCustomListItems,
+                            _customListItemsFactory.Create(variable, natvisScope,
+                                                           customListItems)));
                     }
                     else
                     {

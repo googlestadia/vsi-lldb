@@ -42,10 +42,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 _sizeParser = sizeParser;
             }
 
-            public INatvisEntity Create(IVariableInformation variable,
-                                        IDictionary<string, string> scopedNames,
+            public INatvisEntity Create(IVariableInformation variable, NatvisScope natvisScope,
                                         LinkedListItemsType linkedListItems) =>
-                new LinkedListItemsEntity(variable, scopedNames, linkedListItems, _logger,
+                new LinkedListItemsEntity(variable, natvisScope, linkedListItems, _logger,
                                           new NatvisEntityStore(), _evaluator, _sizeParser);
         }
 
@@ -67,12 +66,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         protected override bool Optional => _linkedListItems.Optional;
         protected override string VisualizerName => "<LinkedListItems>";
 
-        LinkedListItemsEntity(IVariableInformation variable,
-                              IDictionary<string, string> scopedNames,
+        LinkedListItemsEntity(IVariableInformation variable, NatvisScope natvisScope,
                               LinkedListItemsType linkedListItems, NatvisDiagnosticLogger logger,
                               NatvisEntityStore store, NatvisExpressionEvaluator evaluator,
-                              NatvisSizeParser sizeParser) : base(
-            variable, logger, evaluator, scopedNames)
+                              NatvisSizeParser sizeParser)
+            : base(variable, logger, evaluator, natvisScope)
         {
             _linkedListItems = linkedListItems;
             _store = store;
@@ -145,8 +143,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             if (_linkedListItems.Size != null && _linkedListItems.Size.Length > 0)
             {
                 _sizeDefined = true;
-                return (int) await _sizeParser.ParseSizeAsync(
-                    _linkedListItems.Size, _variable, _scopedNames);
+                return (int)await _sizeParser.ParseSizeAsync(_linkedListItems.Size, _variable,
+                                                             _natvisScope);
             }
 
             return await EvaluateChildrenCountAsync();
@@ -226,7 +224,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             return await _evaluator.EvaluateExpressionAsync(_linkedListItems.HeadPointer, _variable,
-                                                            _scopedNames,
+                                                            _natvisScope,
                                                             _linkedListItems.HeadPointer);
         }
 
@@ -234,8 +232,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         {
             try
             {
-                return await _evaluator.EvaluateExpressionAsync(
-                    _linkedListItems.NextPointer, current, _scopedNames, null);
+                return await _evaluator.EvaluateExpressionAsync(_linkedListItems.NextPointer,
+                                                                current, _natvisScope, null);
             }
             catch (ExpressionEvaluationFailed ex)
             {
@@ -256,9 +254,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return new NamedVariableInformation(node, elementName);
             }
 
-            return await _evaluator.GetExpressionValueOrErrorAsync(
-                _linkedListItems.ValueNode.Value, node, _scopedNames, elementName,
-                "LinkedListItems");
+            return await _evaluator.GetExpressionValueOrErrorAsync(_linkedListItems.ValueNode.Value,
+                                                                   node, _natvisScope, elementName,
+                                                                   "LinkedListItems");
         }
     }
 }

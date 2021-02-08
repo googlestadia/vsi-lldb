@@ -263,9 +263,15 @@ message GetValueAsUnsignedResponse {
   uint64 value = 1;
 }
 
+message ContextVariable {
+  string name = 1;
+  Common.GrpcSbValue value = 2;
+}
+
 message EvaluateExpressionLldbEvalRequest {
   Common.GrpcSbValue value = 1;
   string expression = 2;
+  repeated ContextVariable contextVariables = 3;
 }
 
 message EvaluateExpressionLldbEvalResponse {

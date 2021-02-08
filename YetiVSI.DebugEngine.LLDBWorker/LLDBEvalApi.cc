@@ -28,6 +28,8 @@
 namespace YetiVSI {
 namespace DebugEngine {
 
+using System::Collections::Generic::IDictionary;
+
 SbValue ^
     LldbEval::EvaluateExpression(SbFrame ^ frame, System::String ^ expression) {
   std::string expr = msclr::interop::marshal_as<std::string>(expression);
@@ -35,19 +37,32 @@ SbValue ^
 
   lldb::SBError error;
   lldb::SBValue value =
-      lldb_eval::EvaluateExpression(sbFrame, expr.c_str(), error);
+    lldb_eval::EvaluateExpression(sbFrame, expr.c_str(), error);
 
   return gcnew LLDBValue(value, error);
 }
 
 SbValue ^
-    LldbEval::EvaluateExpression(SbValue ^ value, System::String ^ expression) {
+    LldbEval::EvaluateExpression(
+        SbValue ^ value, System::String ^ expression,
+        IDictionary<System::String ^, SbValue ^> ^ contextVars) {
   std::string expr = msclr::interop::marshal_as<std::string>(expression);
-  lldb::SBValue sbValue = safe_cast<LLDBValue ^>(value)->GetNativeObject();
+  lldb::SBValue sbValue = safe_cast<LLDBValue^>(value)->GetNativeObject();
+
+  // Convert `IDictionary` to `std::vector`.
+  msclr::interop::marshal_context context;
+  std::vector<lldb_eval::ContextVariable> vars;
+  for each (auto var in contextVars) {
+    const char* name = context.marshal_as<const char*>(var.Key);
+    lldb::SBValue value = safe_cast<LLDBValue ^>(var.Value)->GetNativeObject();
+    vars.push_back({name, value});
+  }
+
+  lldb_eval::ContextVariableList var_list{vars.data(), vars.size()};
 
   lldb::SBError error;
   lldb::SBValue result =
-      lldb_eval::EvaluateExpression(sbValue, expr.c_str(), error);
+    lldb_eval::EvaluateExpression(sbValue, expr.c_str(), var_list, error);
 
   return gcnew LLDBValue(result, error);
 }

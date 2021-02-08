@@ -20,6 +20,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using YetiCommon;
+using System.Collections.Generic;
 
 namespace DebuggerGrpcServer
 {
@@ -178,8 +179,20 @@ namespace DebuggerGrpcServer
             EvaluateExpressionLldbEvalRequest request, ServerCallContext context)
         {
             var value = valueStore.GetObject(request.Value.Id);
-            var result =
-                value.EvaluateExpressionLldbEval(request.Expression);
+            IDictionary<string, SbValue> contextValues = new Dictionary<string, SbValue>();
+            if (request.ContextVariables != null)
+            {
+                foreach (var contextVariable in request.ContextVariables)
+                {
+                    var val = valueStore.GetObject(contextVariable.Value.Id);
+
+                    if (val != null)
+                    {
+                        contextValues.Add(contextVariable.Name, val.GetSbValue());
+                    }
+                }
+            }
+            var result = value.EvaluateExpressionLldbEval(request.Expression, contextValues);
             var response = new EvaluateExpressionLldbEvalResponse();
             if (result != null)
             {

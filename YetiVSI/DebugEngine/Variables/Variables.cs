@@ -62,6 +62,8 @@ namespace YetiVSI.DebugEngine.Variables
     /// </summary>
     public interface IVariableInformation
     {
+        RemoteValue GetRemoteValue();
+
         /// <summary>
         /// Get the non-contextual name that can be evaluated within the scope of a stack frame.
         /// </summary>
@@ -173,8 +175,9 @@ namespace YetiVSI.DebugEngine.Variables
         /// <param name="displayName">Display name of the resulting variable.</param>
         /// <param name="expression">The expression to evaluate.</param>
         /// <returns></returns>
-        Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(string displayName,
-            VsExpression expression);
+        Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
+            string displayName, VsExpression expression,
+            IDictionary<string, RemoteValue> contextVariables = null);
 
         /// <summary>
         /// Dereferences a variable if it is a pointer.
@@ -232,6 +235,8 @@ namespace YetiVSI.DebugEngine.Variables
 
         #region IVariableInformation
 
+        public RemoteValue GetRemoteValue() => VarInfo.GetRemoteValue();
+
         public bool Error => VarInfo.Error;
 
         public string ErrorMessage => VarInfo.ErrorMessage;
@@ -287,8 +292,10 @@ namespace YetiVSI.DebugEngine.Variables
             await VarInfo.EvaluateExpressionAsync(displayName, expression);
 
         public async Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
-            string displayName, VsExpression expression) =>
-            await VarInfo.EvaluateExpressionLldbEvalAsync(displayName, expression);
+            string displayName, VsExpression expression,
+            IDictionary<string, RemoteValue> contextVariables = null) =>
+            await VarInfo.EvaluateExpressionLldbEvalAsync(displayName, expression,
+                                                          contextVariables);
 
         public IVariableInformation Dereference() => VarInfo.Dereference();
 
@@ -338,6 +345,8 @@ namespace YetiVSI.DebugEngine.Variables
         }
 
         #region IVariableInformation
+
+        public RemoteValue GetRemoteValue() => throw new NotImplementedException();
 
         public bool Error => true;
 
@@ -399,8 +408,9 @@ namespace YetiVSI.DebugEngine.Variables
             throw new NotImplementedException();
         }
 
-        public Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(string displayName,
-                                                                          VsExpression expression)
+        public Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
+            string displayName, VsExpression expression,
+            IDictionary<string, RemoteValue> conhtextVariables = null)
         {
             throw new NotImplementedException();
         }
@@ -493,6 +503,8 @@ namespace YetiVSI.DebugEngine.Variables
             FallbackValueFormat = fallbackValueFormat;
             CustomVisualizer = customVisualizer;
         }
+
+        public RemoteValue GetRemoteValue() => _remoteValue;
 
         public string Fullname() => _remoteValue.GetValueType() == DebuggerApi.ValueType.Register
             ? $"{ExpressionConstants.RegisterPrefix}{_remoteValue.GetName()}"
@@ -671,11 +683,12 @@ namespace YetiVSI.DebugEngine.Variables
                                                 formatSpecifier: vsExpression.FormatSpecifier);
         }
 
-        public async Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(string displayName,
-                                                                                VsExpression vsExpression)
+        public async Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
+            string displayName, VsExpression vsExpression,
+            IDictionary<string, RemoteValue> contextVariables = null)
         {
-            RemoteValue resultValue =
-                await _remoteValue.EvaluateExpressionLldbEvalAsync(vsExpression.Value);
+            RemoteValue resultValue = await _remoteValue.EvaluateExpressionLldbEvalAsync(
+                vsExpression.Value, contextVariables);
             return resultValue == null
                        ? null
                        : _varInfoBuilder.Create(resultValue, displayName,
@@ -779,6 +792,8 @@ namespace YetiVSI.DebugEngine.Variables
             _childAdapter = childAdapter;
         }
 
+        public RemoteValue GetRemoteValue() => throw new NotImplementedException();
+
         public string Fullname() => "[More]";
 
         public string DisplayName => "[More]";
@@ -834,7 +849,8 @@ namespace YetiVSI.DebugEngine.Variables
             throw new NotImplementedException();
 
         public Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
-            string displayName, VsExpression expression) =>
+            string displayName, VsExpression expression,
+            IDictionary<string, RemoteValue> contextVariables = null) =>
             throw new NotImplementedException();
 
         public IVariableInformation Dereference() => throw new NotImplementedException();

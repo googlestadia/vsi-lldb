@@ -61,9 +61,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("value2", 22));
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
-            IVariableInformation exprVarInfo =
-                await _evaluator.EvaluateExpressionAsync("value1", varInfo,
-                                                         new Dictionary<string, string>(), null);
+            IVariableInformation exprVarInfo = await _evaluator.EvaluateExpressionAsync(
+                "value1", varInfo, new NatvisScope(), null);
 
             Assert.That(exprVarInfo.DisplayName, Is.EqualTo("value1"));
             Assert.That(await exprVarInfo.ValueAsync(), Is.EqualTo("true"));
@@ -79,9 +78,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("value2", 22));
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
-            IVariableInformation exprVarInfo =
-                await _evaluator.EvaluateExpressionAsync("value2", varInfo,
-                                                         new Dictionary<string, string>(), null);
+            IVariableInformation exprVarInfo = await _evaluator.EvaluateExpressionAsync(
+                "value2", varInfo, new NatvisScope(), null);
 
             Assert.That(exprVarInfo.DisplayName, Is.EqualTo("value2"));
             Assert.That(await exprVarInfo.ValueAsync(), Is.EqualTo("22"));
@@ -102,7 +100,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             IVariableInformation varInfo = _varInfoFactory.Create(pointerValue);
             IVariableInformation exprVarInfo = await _evaluator.EvaluateExpressionAsync(
-                "field + 1", varInfo, new Dictionary<string, string>(), null);
+                "field + 1", varInfo, new NatvisScope(), null);
 
             Assert.That(exprVarInfo.DisplayName, Is.EqualTo("result"));
             Assert.That(await exprVarInfo.ValueAsync(), Is.EqualTo("23"));
@@ -123,7 +121,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             IVariableInformation varInfo = _varInfoFactory.Create(referenceValue);
             IVariableInformation exprVarInfo = await _evaluator.EvaluateExpressionAsync(
-                "field + 1", varInfo, new Dictionary<string, string>(), null);
+                "field + 1", varInfo, new NatvisScope(), null);
 
             Assert.That(exprVarInfo.DisplayName, Is.EqualTo("result"));
             Assert.That(await exprVarInfo.ValueAsync(), Is.EqualTo("23"));
@@ -137,8 +135,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
             IVariableInformation exprVarInfo =
-                await _evaluator.EvaluateExpressionAsync("[3]", varInfo,
-                                                         new Dictionary<string, string>(), null);
+                await _evaluator.EvaluateExpressionAsync("[3]", varInfo, new NatvisScope(), null);
 
             Assert.That(exprVarInfo.DisplayName, Is.EqualTo("[3]"));
             Assert.That(await exprVarInfo.ValueAsync(), Is.EqualTo("6"));
@@ -150,12 +147,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             RemoteValueFake remoteValue =
                 RemoteValueFakeUtil.CreateSimpleIntArray("myArray", 3, 4, 5, 6);
 
+            var natvisScope = new NatvisScope();
+            natvisScope.SetScopedName("$i", "2");
+
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
-            IVariableInformation exprVarInfo = await _evaluator.EvaluateExpressionAsync(
-                "[$i]", varInfo, new Dictionary<string, string>()
-                {
-                    {"$i", "2"}
-                }, null);
+            IVariableInformation exprVarInfo =
+                await _evaluator.EvaluateExpressionAsync("[$i]", varInfo, natvisScope, null);
 
             Assert.That(exprVarInfo.DisplayName, Is.EqualTo("[2]"));
             Assert.That(await exprVarInfo.ValueAsync(), Is.EqualTo("5"));
@@ -170,10 +167,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                                                RemoteValueFakeUtil.CreateSimpleInt("dummy", 66));
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
-            IVariableInformation exprVarInfo =
-                await _evaluator.EvaluateExpressionAsync("test1", varInfo,
-                                                         new Dictionary<string, string>(),
-                                                         "result");
+            IVariableInformation exprVarInfo = await _evaluator.EvaluateExpressionAsync(
+                "test1", varInfo, new NatvisScope(), "result");
 
             Assert.That(exprVarInfo.DisplayName, Is.EqualTo("result"));
             Assert.That(await exprVarInfo.ValueAsync(), Is.EqualTo("66"));
@@ -187,10 +182,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
 
-            Assert.That(
-                async () => await _evaluator.EvaluateExpressionAsync(
-                    "test1", varInfo, new Dictionary<string, string>(), "result"),
-                Throws.TypeOf<ExpressionEvaluationFailed>().With.Message.Contains("test1"));
+            Assert.That(async () => await _evaluator.EvaluateExpressionAsync(
+                            "test1", varInfo, new NatvisScope(), "result"),
+                        Throws.TypeOf<ExpressionEvaluationFailed>().With.Message.Contains("test1"));
         }
     }
 
@@ -235,10 +229,13 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             _optionPageGrid.ExpressionEvaluationEngine = engineFlag;
 
             RemoteValue mockVariable = CreateMockVariable();
-            await _evaluator.EvaluateExpressionAsync("2 + 2", _varInfoFactory.Create(mockVariable),
-                                                     new Dictionary<string, string>(), "result");
+            var natvisScope = new NatvisScope();
 
-            await mockVariable.Received(1).EvaluateExpressionLldbEvalAsync(Arg.Is("2 + 2"));
+            await _evaluator.EvaluateExpressionAsync("2 + 2", _varInfoFactory.Create(mockVariable),
+                                                     natvisScope, "result");
+
+            await mockVariable.Received(1).EvaluateExpressionLldbEvalAsync(
+                Arg.Is("2 + 2"), Arg.Is(natvisScope.ContextVariables));
         }
 
         [Test]
@@ -248,7 +245,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             RemoteValue mockVariable = CreateMockVariable();
             await _evaluator.EvaluateExpressionAsync("expr", _varInfoFactory.Create(mockVariable),
-                                                     new Dictionary<string, string>(), "result");
+                                                     new NatvisScope(), "result");
 
             await mockVariable.DidNotReceiveWithAnyArgs().EvaluateExpressionLldbEvalAsync(
                 Arg.Any<string>());
@@ -266,13 +263,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             RemoteValue mockVariable = CreateMockVariable();
             RemoteValue errorValue = RemoteValueFakeUtil.CreateLldbEvalError(lldbEvalErrorCode);
+            var natvisScope = new NatvisScope();
 
-            mockVariable.EvaluateExpressionLldbEvalAsync(Arg.Any<string>()).Returns(errorValue);
+            mockVariable
+                .EvaluateExpressionLldbEvalAsync(Arg.Any<string>(),
+                                                 Arg.Any<IDictionary<string, RemoteValue>>())
+                .Returns(errorValue);
 
             await _evaluator.EvaluateExpressionAsync("expr", _varInfoFactory.Create(mockVariable),
-                                                     new Dictionary<string, string>(), "result");
+                                                     natvisScope, "result");
 
-            await mockVariable.Received(1).EvaluateExpressionLldbEvalAsync(Arg.Is("expr"));
+            await mockVariable.Received(1).EvaluateExpressionLldbEvalAsync(
+                Arg.Is("expr"), Arg.Is(natvisScope.ContextVariables));
             mockVariable.DidNotReceiveWithAnyArgs().GetValueForExpressionPath(Arg.Any<string>());
             await mockVariable.Received(1).EvaluateExpressionAsync(Arg.Is("expr"));
         }
@@ -289,12 +291,14 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             RemoteValue errorValue =
                 RemoteValueFakeUtil.CreateLldbEvalError(lldbEvalErrorCode, "the error message");
 
-            mockVariable.EvaluateExpressionLldbEvalAsync(Arg.Any<string>()).Returns(errorValue);
+            mockVariable
+                .EvaluateExpressionLldbEvalAsync(Arg.Any<string>(),
+                                                 Arg.Any<IDictionary<string, RemoteValue>>())
+                .Returns(errorValue);
 
             var exception = Assert.ThrowsAsync<ExpressionEvaluationFailed>(
                 async () => await _evaluator.EvaluateExpressionAsync(
-                    "2 + 2", _varInfoFactory.Create(mockVariable), new Dictionary<string, string>(),
-                    "result"));
+                    "2 + 2", _varInfoFactory.Create(mockVariable), new NatvisScope(), "result"));
 
             Assert.That(exception.Message, Does.Contain("the error message"));
         }
@@ -313,12 +317,14 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             RemoteValue errorValue =
                 RemoteValueFakeUtil.CreateLldbEvalError(lldbEvalErrorCode, "the error message");
 
-            mockVariable.EvaluateExpressionLldbEvalAsync(Arg.Any<string>()).Returns(errorValue);
+            mockVariable
+                .EvaluateExpressionLldbEvalAsync(Arg.Any<string>(),
+                                                 Arg.Any<IDictionary<string, RemoteValue>>())
+                .Returns(errorValue);
 
             var exception = Assert.ThrowsAsync<ExpressionEvaluationFailed>(
                 async () => await _evaluator.EvaluateExpressionAsync(
-                    "expr", _varInfoFactory.Create(mockVariable), new Dictionary<string, string>(),
-                    "result"));
+                    "expr", _varInfoFactory.Create(mockVariable), new NatvisScope(), "result"));
 
             mockVariable.DidNotReceiveWithAnyArgs().GetValueForExpressionPath(Arg.Any<string>());
 
@@ -326,41 +332,28 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
-        public async Task DoNotUseLldbEvalWithScratchVariablesAsync()
+        public async Task LldbEvalWithContextVarsAsync()
         {
             _optionPageGrid.ExpressionEvaluationEngine =
                 ExpressionEvaluationEngineFlag.LLDB_EVAL_WITH_FALLBACK;
 
             RemoteValue mockVariable = CreateMockVariable();
 
+            var natvisScope = new NatvisScope();
+            var contextVar = RemoteValueFakeUtil.CreateSimpleInt("var", 14);
+            natvisScope.SetScopedName("var", "$var_0");
+            natvisScope.AddContextVariable("$var_0", contextVar);
+
             await _evaluator.EvaluateExpressionAsync(
-                "2 + var", _varInfoFactory.Create(mockVariable),
-                new Dictionary<string, string>() { { "var", "$var_0" } }, "result");
+                "2 + var", _varInfoFactory.Create(mockVariable), natvisScope, "result");
 
-            await mockVariable.DidNotReceiveWithAnyArgs().EvaluateExpressionLldbEvalAsync(
-                Arg.Any<string>());
-            await mockVariable.Received(1).EvaluateExpressionAsync(Arg.Is("2 + $var_0"));
-        }
+            await mockVariable.Received(1).EvaluateExpressionLldbEvalAsync(
+                Arg.Is("2 + $var_0"), Arg.Is(natvisScope.ContextVariables));
+            Assert.That(natvisScope.ContextVariables.Count, Is.EqualTo(1));
+            Assert.That(natvisScope.ContextVariables.ContainsKey("$var_0"));
+            Assert.That(natvisScope.ContextVariables["$var_0"], Is.EqualTo(contextVar));
 
-        [Test]
-        public async Task DoNotFallbackToLldbIfThereAreScratchVarsAsync()
-        {
-            _optionPageGrid.ExpressionEvaluationEngine = ExpressionEvaluationEngineFlag.LLDB_EVAL;
-
-            RemoteValue mockVariable = CreateMockVariable();
-
-            var exception = Assert.ThrowsAsync<ExpressionEvaluationFailed>(
-                async () => await _evaluator.EvaluateExpressionAsync(
-                    "2 + var", _varInfoFactory.Create(mockVariable),
-                    new Dictionary<string, string>() { { "var", "$var_0" } }, "result"));
-
-            await mockVariable.DidNotReceiveWithAnyArgs().EvaluateExpressionLldbEvalAsync(
-                Arg.Any<string>());
-            await mockVariable.DidNotReceiveWithAnyArgs().EvaluateExpressionAsync(
-                Arg.Any<string>());
-
-            Assert.That(exception.Message, Does.Contain("Failed to evaluate expression"));
-            Assert.That(exception.Message, Does.Contain("expression: 2 + $var_0"));
+            await mockVariable.DidNotReceive().EvaluateExpressionAsync(Arg.Any<string>());
         }
 
         [Test]
@@ -370,11 +363,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             RemoteValue mockVariable = CreateMockVariable();
 
-            await _evaluator.EvaluateExpressionAsync(
-                "($T1)3.14 + $i", _varInfoFactory.Create(mockVariable),
-                new Dictionary<string, string>() { { "$T1", "int" }, { "$i", "2" } }, "result");
+            var natvisScope = new NatvisScope();
+            natvisScope.SetScopedName("$T1", "int");
+            natvisScope.SetScopedName("$i", "2U");
 
-            await mockVariable.Received(1).EvaluateExpressionLldbEvalAsync(Arg.Is("(int)3.14 + 2"));
+            await _evaluator.EvaluateExpressionAsync(
+                "($T1)3.14 + $i", _varInfoFactory.Create(mockVariable), natvisScope, "result");
+
+            await mockVariable.Received(1).EvaluateExpressionLldbEvalAsync(
+                Arg.Is("(int)3.14 + 2U"), Arg.Is(natvisScope.ContextVariables));
         }
 
         [Test]
@@ -383,9 +380,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             _optionPageGrid.ExpressionEvaluationEngine = ExpressionEvaluationEngineFlag.LLDB;
 
             RemoteValue mockVariable = CreateMockVariable();
+            var natvisScope = new NatvisScope();
 
             await _evaluator.EvaluateExpressionAsync("2 + 2", _varInfoFactory.Create(mockVariable),
-                                                     new Dictionary<string, string>(), "result");
+                                                     natvisScope, "result");
 
             await mockVariable.DidNotReceiveWithAnyArgs().EvaluateExpressionLldbEvalAsync(
                 Arg.Any<string>());
@@ -397,9 +395,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             _optionPageGrid.ExpressionEvaluationEngine = ExpressionEvaluationEngineFlag.LLDB_EVAL;
 
             await _evaluator.EvaluateExpressionAsync("3 + 3", _varInfoFactory.Create(mockVariable),
-                                                     new Dictionary<string, string>(), "result");
+                                                     natvisScope, "result");
 
-            await mockVariable.Received(1).EvaluateExpressionLldbEvalAsync(Arg.Is("3 + 3"));
+            await mockVariable.Received(1).EvaluateExpressionLldbEvalAsync(
+                Arg.Is("3 + 3"), Arg.Is(natvisScope.ContextVariables));
 
             mockVariable.ClearReceivedCalls();
 
@@ -407,7 +406,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             _optionPageGrid.ExpressionEvaluationEngine = ExpressionEvaluationEngineFlag.LLDB;
 
             await _evaluator.EvaluateExpressionAsync("4 + 4", _varInfoFactory.Create(mockVariable),
-                                                     new Dictionary<string, string>(), "result");
+                                                     natvisScope, "result");
 
             await mockVariable.DidNotReceiveWithAnyArgs().EvaluateExpressionLldbEvalAsync(
                 Arg.Any<string>());
@@ -449,44 +448,21 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
-        public async Task DeclareSimpleTypeAsync()
-        {
-            RemoteValueFake remoteValue = RemoteValueFakeUtil.CreateSimpleChar("testVar", 'c');
-            remoteValue.AddValueFromExpression("auto $test=22; $test",
-                RemoteValueFakeUtil.CreateSimpleInt("$test", 22));
-
-            var scopedNames = new Dictionary<string, string>() {{"test", "$test"}};
-            IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
-            await _evaluator.DeclareVariableAsync(varInfo, "test", "22", scopedNames);
-        }
-
-        [Test]
         public async Task DeclareVariableAsync()
         {
             RemoteValueFake remoteValue = RemoteValueFakeUtil.CreateSimpleChar("testVar", 'c');
-            remoteValue.AddValueFromExpression($"auto $test=var1+var2; $test",
-                RemoteValueFakeUtil.CreateSimpleInt("$test", 22));
+            RemoteValueFake createdValue = RemoteValueFakeUtil.CreateSimpleInt("$test", 22);
+            remoteValue.AddValueFromExpression("auto $test=var1+var2; $test", createdValue);
+            remoteValue.AddValueFromExpression("$test", createdValue);
 
-            var scopedNames = new Dictionary<string, string>() {{"test", "$test"}};
+            var natvisScope = new NatvisScope();
+            natvisScope.SetScopedName("test", "$test");
+
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
-            await _evaluator.DeclareVariableAsync(varInfo, "test", "var1+var2", scopedNames);
-        }
+            await _evaluator.DeclareVariableAsync(varInfo, "test", "var1+var2", natvisScope);
 
-        [Test]
-        public async Task DeclareVariableWithMemberFieldAsync(
-            [Values("m_var1+var2", "this->m_var1+var2")]
-            string expression)
-        {
-            RemoteValueFake remoteValue =
-                RemoteValueFakeUtil.CreateClass("MyType", "myType", "myValue");
-            remoteValue.AddValueFromExpression($"auto $test=m_var1+var2; $test",
-                                               RemoteValueFakeUtil.CreateSimpleInt("$test", 102));
-            remoteValue.AddValueFromExpression("auto $test=this->m_var1+var2; $test",
-                RemoteValueFakeUtil.CreateSimpleInt($"test", 102));
-
-            var scopedNames = new Dictionary<string, string>() {{"test", "$test"}};
-            IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
-            await _evaluator.DeclareVariableAsync(varInfo, "test", expression, scopedNames);
+            Assert.That(natvisScope.ContextVariables, Does.ContainKey("$test"));
+            Assert.That(natvisScope.ContextVariables["$test"], Is.EqualTo(createdValue));
         }
 
         [Test]
@@ -497,11 +473,13 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression($"auto $test=5; $test",
                                                RemoteValueFakeUtil.CreateError("declaration error"));
 
+            var natvisScope = new NatvisScope();
+            natvisScope.SetScopedName("test", "$test");
+
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
             var exception = Assert.ThrowsAsync<ExpressionEvaluationFailed>(
-                async () => await _evaluator.DeclareVariableAsync(varInfo, "test", "5",
-                                                                  new Dictionary<string, string>()
-                                                                      {{"test", "$test"}}));
+                async () =>
+                    await _evaluator.DeclareVariableAsync(varInfo, "test", "5", natvisScope));
 
             Assert.That(exception.Message, Does.Contain("test"));
             Assert.That(exception.Message, Does.Contain("5"));

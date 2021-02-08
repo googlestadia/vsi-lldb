@@ -52,10 +52,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 _nameTransformer = nameTransformer;
             }
 
-            public INatvisEntity Create(IVariableInformation variable,
-                                        IDictionary<string, string> scopedNames,
+            public INatvisEntity Create(IVariableInformation variable, NatvisScope natvisScope,
                                         CustomListItemsType customListItems) =>
-                new CustomListItemsEntity(variable, scopedNames, customListItems, _logger,
+                new CustomListItemsEntity(variable, natvisScope, customListItems, _logger,
                                           new NatvisEntityStore(), _evaluator, _nameTransformer,
                                           new CodeBlockParser(_evaluator));
         }
@@ -79,12 +78,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         protected override bool Optional => _customList.Optional;
         protected override string VisualizerName => "<CustomListItems>";
 
-        CustomListItemsEntity(IVariableInformation variable,
-                              IDictionary<string, string> scopedNames,
+        CustomListItemsEntity(IVariableInformation variable, NatvisScope natvisScope,
                               CustomListItemsType customList, NatvisDiagnosticLogger logger,
                               NatvisEntityStore store, NatvisExpressionEvaluator evaluator,
-                              IVariableNameTransformer nameTransformer, CodeBlockParser parser) :
-            base(variable, logger, evaluator, scopedNames)
+                              IVariableNameTransformer nameTransformer, CodeBlockParser parser)
+            : base(variable, logger, evaluator, natvisScope)
         {
             _customList = customList;
             _store = store;
@@ -195,14 +193,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return;
             }
 
-            _ctx = new CustomListItemsContext(new Dictionary<string, string>(_scopedNames),
-                                              _variable);
+            _ctx = new CustomListItemsContext(new NatvisScope(_natvisScope), _variable);
 
             foreach (var varType in _customList.Variable ?? Enumerable.Empty<VariableType>())
             {
-                _ctx.ScopedNames.Add(varType.Name, _nameTransformer.TransformName(varType.Name));
+                _ctx.NatvisScope.SetScopedName(varType.Name,
+                                               _nameTransformer.TransformName(varType.Name));
                 await _evaluator.DeclareVariableAsync(_variable, varType.Name, varType.InitialValue,
-                                                      _ctx.ScopedNames);
+                                                      _ctx.NatvisScope);
             }
 
             _blocks = new MultipleInstructionsBlock(

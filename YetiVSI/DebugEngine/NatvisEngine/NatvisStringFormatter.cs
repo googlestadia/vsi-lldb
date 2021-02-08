@@ -30,8 +30,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             internal IEnumerable<IStringElement> StringElements { get; set; }
                 = Enumerable.Empty<IStringElement>();
 
-            internal IDictionary<string, string> ScopedNames { get; set; }
-                = new Dictionary<string, string>();
+            internal NatvisScope NatvisScope { get; set; } = new NatvisScope();
         }
 
         readonly NatvisExpressionEvaluator _evaluator;
@@ -158,13 +157,13 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                                                            element.IncludeView,
                                                            element.ExcludeView) ||
                             !await _evaluator.EvaluateConditionAsync(
-                                element.Condition, variable, formatStringContext.ScopedNames))
+                                element.Condition, variable, formatStringContext.NatvisScope))
                         {
                             continue;
                         }
 
                         return await FormatValueAsync(element.Value, variable,
-                                                      formatStringContext.ScopedNames,
+                                                      formatStringContext.NatvisScope,
                                                       subexpressionFormatter);
                     }
                     catch (ExpressionEvaluationFailed ex)
@@ -217,15 +216,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// </summary>
         /// <remarks>
         /// Examples:
-        ///   FormatValueAsync("Some literal text and an {expression}", varInfo, scopedNames,
+        ///   FormatValueAsync("Some literal text and an {expression}", varInfo, natvisScope,
         ///   subexpressionFormatter);
-        ///   FormatValueAsync("{{Escaped, literal text.}}", varInfo, scopedNames,
+        ///   FormatValueAsync("{{Escaped, literal text.}}", varInfo, natvisScope,
         ///   subexpressionFormatter);
         /// </remarks>
-        async Task<string> FormatValueAsync(string format, IVariableInformation variable,
-                                            IDictionary<string, string> scopedNames,
-                                            Func<IVariableInformation, Task<string>>
-                                                subexpressionFormatter)
+        async Task<string> FormatValueAsync(
+            string format, IVariableInformation variable, NatvisScope natvisScope,
+            Func<IVariableInformation, Task<string>> subexpressionFormatter)
         {
             if (string.IsNullOrWhiteSpace(format))
             {
@@ -250,7 +248,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     {
                         string expression = format.Substring(i + 1, m.Length - 2);
                         IVariableInformation exprValue = await _evaluator.EvaluateExpressionAsync(
-                            expression, variable, scopedNames, null);
+                            expression, variable, natvisScope, null);
                         value.Append(await subexpressionFormatter(exprValue));
                         i += m.Length - 1;
                     }
@@ -299,11 +297,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     .Where(e => !string.IsNullOrWhiteSpace(e.Value))
                     .Select(e => new SmartPointerStringElement(e)));
 
-            return new FormatStringContext
-            {
-                StringElements = stringElements,
-                ScopedNames = visualizer.ScopedNames
-            };
+            return new FormatStringContext { StringElements = stringElements,
+                                             NatvisScope = visualizer.NatvisScope };
         }
     }
 }

@@ -47,10 +47,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 _sizeParser = sizeParser;
             }
 
-            public INatvisEntity Create(IVariableInformation variable,
-                                        IDictionary<string, string> scopedNames,
+            public INatvisEntity Create(IVariableInformation variable, NatvisScope natvisScope,
                                         IndexListItemsType indexListItems) =>
-                new IndexListItemsEntity(variable, scopedNames, indexListItems, _logger,
+                new IndexListItemsEntity(variable, natvisScope, indexListItems, _logger,
                                          new NatvisEntityStore(), _evaluator, _sizeParser);
         }
 
@@ -66,11 +65,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         protected override bool Optional => _indexListItems.Optional;
         protected override string VisualizerName => "<IndexListItems>";
 
-        IndexListItemsEntity(IVariableInformation variable, IDictionary<string, string> scopedNames,
+        IndexListItemsEntity(IVariableInformation variable, NatvisScope natvisScope,
                              IndexListItemsType indexListItems, NatvisDiagnosticLogger logger,
                              NatvisEntityStore store, NatvisExpressionEvaluator evaluator,
-                             NatvisSizeParser sizeParser) : base(
-            variable, logger, evaluator, scopedNames)
+                             NatvisSizeParser sizeParser)
+            : base(variable, logger, evaluator, natvisScope)
         {
             _indexListItems = indexListItems;
             _store = store;
@@ -98,12 +97,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return result.GetRange(from, count);
             }
 
-            var indexDic = new Dictionary<string, string>(_scopedNames);
+            var indexDic = new NatvisScope(_natvisScope);
             for (int index = from; index < from + count; index++)
             {
-                IVariableInformation varInfo = await _store.GetOrEvaluateAsync(index, async i =>
-                {
-                    indexDic["$i"] = $"{i}U";  // unsigned constant
+                IVariableInformation varInfo = await _store.GetOrEvaluateAsync(index, async i => {
+                    indexDic.SetScopedName("$i", $"{i}U");
                     string displayName = $"[{i}]";
 
                     // From the list of all <ValueNode> children, filter all with non-empty body
@@ -156,7 +154,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         }
 
         protected override async Task<int> InitChildrenCountAsync() =>
-            (int) await _sizeParser.ParseSizeAsync(_indexListItems.Size, _variable, _scopedNames);
+            (int)await _sizeParser.ParseSizeAsync(_indexListItems.Size, _variable, _natvisScope);
 
         async Task InitAsync()
         {

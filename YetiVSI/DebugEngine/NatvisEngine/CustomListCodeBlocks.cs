@@ -330,15 +330,15 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             State = BlockState.Done;
 
-            if (!await _evaluator.EvaluateConditionAsync(
-                _customListItem.Condition, _ctx.Variable,  _ctx.ScopedNames))
+            if (!await _evaluator.EvaluateConditionAsync(_customListItem.Condition, _ctx.Variable,
+                                                         _ctx.NatvisScope))
             {
                 return EvaluateResult.None();
             }
 
             string name = await EvaluateItemNameAsync(_customListItem.Name, _ctx);
             IVariableInformation result = await _evaluator.EvaluateExpressionAsync(
-                _customListItem.Value, _ctx.Variable, _ctx.ScopedNames, name);
+                _customListItem.Value, _ctx.Variable, _ctx.NatvisScope, name);
 
             return EvaluateResult.Some(result);
         }
@@ -394,9 +394,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                         j++;
                     }
 
-                    IVariableInformation result =
-                        await _evaluator.EvaluateExpressionAsync(
-                            expressionBuilder.ToString(), _ctx.Variable, _ctx.ScopedNames, null);
+                    IVariableInformation result = await _evaluator.EvaluateExpressionAsync(
+                        expressionBuilder.ToString(), _ctx.Variable, _ctx.NatvisScope, null);
 
                     stringBuilder.Append(await result.ValueAsync());
                     i = j;
@@ -449,11 +448,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             State = BlockState.Done;
 
-            if (await _evaluator.EvaluateConditionAsync(
-                _exec.Condition, _ctx.Variable, _ctx.ScopedNames))
+            if (await _evaluator.EvaluateConditionAsync(_exec.Condition, _ctx.Variable,
+                                                        _ctx.NatvisScope))
             {
-                await _evaluator.EvaluateExpressionAsync(
-                    _exec.Value, _ctx.Variable, _ctx.ScopedNames, null);
+                await _evaluator.EvaluateExpressionAsync(_exec.Value, _ctx.Variable,
+                                                         _ctx.NatvisScope, null);
             }
 
             return EvaluateResult.None();
@@ -493,10 +492,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             State = BlockState.Done;
 
-            return await _evaluator.EvaluateConditionAsync(
-                _breakType.Condition, _ctx.Variable, _ctx.ScopedNames)
-                ? EvaluateResult.Break()
-                : EvaluateResult.None();
+            return await _evaluator.EvaluateConditionAsync(_breakType.Condition, _ctx.Variable,
+                                                           _ctx.NatvisScope)
+                       ? EvaluateResult.Break()
+                       : EvaluateResult.None();
         }
 
         public void Reset() => State = BlockState.New;
@@ -542,7 +541,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             if (_loopInstructions.State == BlockState.New &&
                 !await _evaluator.EvaluateConditionAsync(_loop.Condition, _ctx.Variable,
-                                                         _ctx.ScopedNames))
+                                                         _ctx.NatvisScope))
             {
                 State = BlockState.Done;
                 return EvaluateResult.None();
@@ -608,8 +607,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 for (int i = 0; i < _conditionGroup.ConditionalCode.Count; i++)
                 {
                     ConditionalCodeBlock branch = _conditionGroup.ConditionalCode[i];
-                    if (await _evaluator.EvaluateConditionAsync(
-                        branch.Condition, _ctx.Variable, _ctx.ScopedNames))
+                    if (await _evaluator.EvaluateConditionAsync(branch.Condition, _ctx.Variable,
+                                                                _ctx.NatvisScope))
                     {
                         _trueBlock = _innerBlocks[i];
                         break;

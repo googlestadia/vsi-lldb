@@ -153,6 +153,7 @@
     <Compile Include="DebugEngine\NatvisEngine\CustomListItemsEntity.cs" />
     <Compile Include="DebugEngine\NatvisEngine\ExpandedItemEntity.cs" />
     <Compile Include="DebugEngine\NatvisEngine\NatvisExpander.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisScope.cs" />
     <Compile Include="DebugEngine\NatvisEngine\NatvisTextMatcher.cs" />
     <Compile Include="DebugEngine\NatvisEngine\RangedNatvisEntityDecorator.cs" />
     <Compile Include="DebugEngine\NatvisEngine\SseAdapter.cs" />

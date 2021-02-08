@@ -41,11 +41,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 _stringFormatter = stringFormatter;
             }
 
-            public INatvisEntity Create(IVariableInformation variable,
-                                        IDictionary<string, string> scopedNames,
+            public INatvisEntity Create(IVariableInformation variable, NatvisScope natvisScope,
                                         SyntheticItemType item,
                                         NatvisCollectionEntity.Factory natvisCollectionFactory) =>
-                new SyntheticItemEntity(variable, scopedNames, item, _logger,
+                new SyntheticItemEntity(variable, natvisScope, item, _logger,
                                         new NatvisEntityStore(), _evaluator, _stringFormatter,
                                         natvisCollectionFactory);
         }
@@ -63,12 +62,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         protected override bool Optional => _item.Optional;
         protected override string VisualizerName => "<Synthetic>";
 
-        SyntheticItemEntity(IVariableInformation variable, IDictionary<string, string> scopedNames,
+        SyntheticItemEntity(IVariableInformation variable, NatvisScope natvisScope,
                             SyntheticItemType item, NatvisDiagnosticLogger logger,
                             NatvisEntityStore store, NatvisExpressionEvaluator evaluator,
                             NatvisStringFormatter stringFormatter,
-                            NatvisCollectionEntity.Factory natvisCollectionFactory) : base(
-            variable, logger, evaluator, scopedNames)
+                            NatvisCollectionEntity.Factory natvisCollectionFactory)
+            : base(variable, logger, evaluator, natvisScope)
         {
             _item = item;
             _store = store;
@@ -119,19 +118,19 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             var formatStringContext = _item.DisplayString == null
-                ? new NatvisStringFormatter.FormatStringContext()
-                : new NatvisStringFormatter.FormatStringContext
-                {
-                    StringElements = _item.DisplayString.Select(e => new DisplayStringElement(e)),
-                    ScopedNames = _scopedNames
-                };
+                                          ? new NatvisStringFormatter.FormatStringContext()
+                                          : new NatvisStringFormatter.FormatStringContext {
+                                                StringElements = _item.DisplayString.Select(
+                                                    e => new DisplayStringElement(e)),
+                                                NatvisScope = _natvisScope
+                                            };
 
             string displayName =
                 await _stringFormatter.FormatDisplayStringAsync(formatStringContext, _variable);
 
-            IVariableInformation syntheticInfo = new NatvisSyntheticVariableInformation(
-                _stringFormatter, _natvisCollectionFactory, _scopedNames, _item, _variable,
-                displayName);
+            IVariableInformation syntheticInfo =
+                new NatvisSyntheticVariableInformation(_stringFormatter, _natvisCollectionFactory,
+                                                       _natvisScope, _item, _variable, displayName);
 
             _store.SaveVariable(0, syntheticInfo);
             return syntheticInfo;

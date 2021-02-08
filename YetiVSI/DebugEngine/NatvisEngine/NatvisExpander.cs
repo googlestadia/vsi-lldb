@@ -98,15 +98,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             if (expandType != null)
             {
                 return _natvisCollectionFactory.Create(variable, expandType,
-                                                       visualizer.ScopedNames);
+                                                       visualizer.NatvisScope);
             }
 
             SmartPointerType smartPointerType = visualizer.GetSmartPointerType();
             if (smartPointerType != null)
             {
-                return _smartPointerFactory.Create(variable, smartPointerType,
-                                                   visualizer.ScopedNames,
-                                                   variable.GetChildAdapter());
+                return _smartPointerFactory.Create(
+                    variable, smartPointerType, visualizer.NatvisScope, variable.GetChildAdapter());
             }
 
             return variable.GetChildAdapter();

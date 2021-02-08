@@ -45,10 +45,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 _evaluator = evaluator;
             }
 
-            public INatvisEntity Create(IVariableInformation variable,
-                                        IDictionary<string, string> scopedNames,
+            public INatvisEntity Create(IVariableInformation variable, NatvisScope natvisScope,
                                         ExpandedItemType expandedItem) =>
-                new ExpandedItemEntity(variable, scopedNames, expandedItem, _logger,
+                new ExpandedItemEntity(variable, natvisScope, expandedItem, _logger,
                                        new NatvisEntityStore(), _evaluator);
         }
 
@@ -64,10 +63,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         protected override bool Optional => _expandedItem.Optional;
         protected override string VisualizerName => "<ExpandedItem>";
 
-        ExpandedItemEntity(IVariableInformation variable, IDictionary<string, string> scopedNames,
+        ExpandedItemEntity(IVariableInformation variable, NatvisScope natvisScope,
                            ExpandedItemType expandedItem, NatvisDiagnosticLogger logger,
-                           NatvisEntityStore store, NatvisExpressionEvaluator evaluator) : base(
-            variable, logger, evaluator, scopedNames)
+                           NatvisEntityStore store, NatvisExpressionEvaluator evaluator)
+            : base(variable, logger, evaluator, natvisScope)
         {
             _expandedItem = expandedItem;
             _store = store;
@@ -126,7 +125,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             if (_childAdapter == null)
             {
                 IVariableInformation expandInfo = await _evaluator.EvaluateExpressionAsync(
-                    _expandedItem.Value, _variable, _scopedNames, null);
+                    _expandedItem.Value, _variable, _natvisScope, null);
 
                 _childAdapter = expandInfo.GetChildAdapter();
             }

@@ -43,9 +43,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             public SmartPointerEntity Create(IVariableInformation variable,
                                              SmartPointerType smartPointerItem,
-                                             IDictionary<string, string> scopedNames,
+                                             NatvisScope natvisScope,
                                              IChildAdapter fallbackAdapter) =>
-                new SmartPointerEntity(_evaluator, _logger, variable, smartPointerItem, scopedNames,
+                new SmartPointerEntity(_evaluator, _logger, variable, smartPointerItem, natvisScope,
                                        fallbackAdapter);
         }
 
@@ -53,7 +53,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         readonly NatvisDiagnosticLogger _logger;
         readonly IVariableInformation _variable;
         readonly SmartPointerType _smartPointerItem;
-        readonly IDictionary<string, string> _scopedNames;
+        readonly NatvisScope _natvisScope;
         readonly IChildAdapter _fallbackAdapter;
 
         IChildAdapter _adapter;
@@ -62,13 +62,13 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         SmartPointerEntity(NatvisExpressionEvaluator evaluator, NatvisDiagnosticLogger logger,
                            IVariableInformation variable, SmartPointerType smartPointerItem,
-                           IDictionary<string, string> scopedNames, IChildAdapter fallbackAdapter)
+                           NatvisScope natvisScope, IChildAdapter fallbackAdapter)
         {
             _evaluator = evaluator;
             _logger = logger;
             _variable = variable;
             _smartPointerItem = smartPointerItem;
-            _scopedNames = scopedNames;
+            _natvisScope = natvisScope;
             _fallbackAdapter = fallbackAdapter;
         }
 
@@ -107,7 +107,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             try
             {
                 IVariableInformation expandInfo = await _evaluator.EvaluateExpressionAsync(
-                    _smartPointerItem.Value, _variable, _scopedNames, null);
+                    _smartPointerItem.Value, _variable, _natvisScope, null);
 
                 _adapter = expandInfo.GetChildAdapter();
             }

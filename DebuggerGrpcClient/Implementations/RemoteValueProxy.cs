@@ -106,6 +106,8 @@ namespace DebuggerGrpcClient
 
         #endregion
 
+        public GrpcSbValue GrpcValue => grpcSbValue;
+
         public string GetValue(DebuggerApi.ValueFormat format)
         {
             GetValueResponse response = null;
@@ -321,15 +323,26 @@ namespace DebuggerGrpcClient
             return null;
         }
 
-        public async Task<RemoteValue> EvaluateExpressionLldbEvalAsync(string expression)
+        public async Task<RemoteValue> EvaluateExpressionLldbEvalAsync(
+            string expression, IDictionary<string, RemoteValue> contextVariables = null)
         {
-            EvaluateExpressionLldbEvalResponse response = null;
-            if (await connection.InvokeRpcAsync(async () =>
+            EvaluateExpressionLldbEvalRequest request =
+                new EvaluateExpressionLldbEvalRequest { Value = grpcSbValue,
+                                                        Expression = expression };
+            if (contextVariables != null)
             {
-                response = await client.EvaluateExpressionLldbEvalAsync(
-                    new EvaluateExpressionLldbEvalRequest
-                    { Value = grpcSbValue, Expression = expression });
-            }))
+                foreach (var variable in contextVariables)
+                {
+                    request.ContextVariables.Add(
+                        new ContextVariable { Name = variable.Key,
+                                              Value = variable.Value.GrpcValue });
+                }
+            }
+
+            EvaluateExpressionLldbEvalResponse response = null;
+            if (await connection.InvokeRpcAsync(async () => {
+                    response = await client.EvaluateExpressionLldbEvalAsync(request);
+                }))
             {
                 if (response.Value != null && response.Value.Id != 0)
                 {

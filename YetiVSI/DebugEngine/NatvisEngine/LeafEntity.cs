@@ -53,16 +53,15 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         protected readonly IVariableInformation _variable;
         protected readonly NatvisDiagnosticLogger _logger;
         protected readonly NatvisExpressionEvaluator _evaluator;
-        protected readonly IDictionary<string, string> _scopedNames;
+        protected readonly NatvisScope _natvisScope;
 
         protected LeafEntity(IVariableInformation variable, NatvisDiagnosticLogger logger,
-                             NatvisExpressionEvaluator evaluator,
-                             IDictionary<string, string> scopedNames)
+                             NatvisExpressionEvaluator evaluator, NatvisScope natvisScope)
         {
             _variable = variable;
             _logger = logger;
             _evaluator = evaluator;
-            _scopedNames = scopedNames;
+            _natvisScope = natvisScope;
         }
 
         protected abstract string IncludeView { get; }
@@ -169,6 +168,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         async Task<bool> ShouldBeExpandedAsync() =>
             NatvisViewsUtil.IsViewVisible(_variable.FormatSpecifier, IncludeView, ExcludeView) &&
-            await _evaluator.EvaluateConditionAsync(Condition, _variable, _scopedNames);
+            await _evaluator.EvaluateConditionAsync(Condition, _variable, _natvisScope);
     }
 }

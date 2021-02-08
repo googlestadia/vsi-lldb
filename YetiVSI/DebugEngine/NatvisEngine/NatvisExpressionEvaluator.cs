@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
+using DebuggerApi;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using YetiVSI.DebugEngine.Interfaces;
 using YetiVSI.DebugEngine.Variables;
 
 namespace YetiVSI.DebugEngine.NatvisEngine
@@ -58,12 +56,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// Invokes GetExpressionValue, but returns error variable in case of evaluation error.
         /// </summary>
         public async Task<IVariableInformation> GetExpressionValueOrErrorAsync(
-            string expression, IVariableInformation variable,
-            IDictionary<string, string> scopedNames, string displayName, string natvisType)
+            string expression, IVariableInformation variable, NatvisScope natvisScope,
+            string displayName, string natvisType)
         {
             try
             {
-                return await EvaluateExpressionAsync(expression, variable, scopedNames,
+                return await EvaluateExpressionAsync(expression, variable, natvisScope,
                                                      displayName);
             }
             catch (ExpressionEvaluationFailed e)
@@ -89,15 +87,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// <param name="displayName">The display name given to the result. If null the underlying
         /// debugger's context specific name is used.</param>
         /// <returns>The expression result.</returns>
-
         public async Task<IVariableInformation> EvaluateExpressionAsync(
-            string expression, IVariableInformation variable,
-            IDictionary<string, string> scopedNames, string displayName)
+            string expression, IVariableInformation variable, NatvisScope natvisScope,
+            string displayName)
         {
             var vsExpression =
                 await _vsExpressionCreator.CreateAsync(expression, async (sizeExpression) => {
                     IVariableInformation value = await EvaluateLldbExpressionAsync(
-                        _vsExpressionCreator.Create(sizeExpression, ""), variable, scopedNames,
+                        _vsExpressionCreator.Create(sizeExpression, ""), variable, natvisScope,
                         displayName);
                     uint size;
                     if (!uint.TryParse(await value.ValueAsync(), out size))
@@ -106,7 +103,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     }
                     return size;
                 });
-            return await EvaluateLldbExpressionAsync(vsExpression, variable, scopedNames,
+            return await EvaluateLldbExpressionAsync(vsExpression, variable, natvisScope,
                                                      displayName);
         }
 
@@ -118,17 +115,18 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// </summary>
         /// <param name="expression">The expression to be evaluated.</param>
         /// <param name="variable">The evaluation context.</param>
-        /// <param name="scopedNames">The Natvis tokens to be resolved before evaluation.</param>
+        /// <param name="natvisScope">The Natvis tokens to be resolved before evaluation.</param>
         /// <param name="displayName">The display name given to the result. If null the underlying
         /// debugger's context specific name is used.</param>
         /// <returns>The expression result.</returns>
-        async Task<IVariableInformation> EvaluateLldbExpressionAsync(
-            VsExpression expression, IVariableInformation variable,
-            IDictionary<string, string> scopedNames, string displayName)
+        async Task<IVariableInformation> EvaluateLldbExpressionAsync(VsExpression expression,
+                                                                     IVariableInformation variable,
+                                                                     NatvisScope natvisScope,
+                                                                     string displayName)
         {
             bool variableReplaced = false;
-            expression =
-                expression.MapValue(v => ReplaceScopedNames(v, scopedNames, out variableReplaced));
+            expression = expression.MapValue(
+                v => ReplaceScopedNames(v, natvisScope?.ScopedNames, out variableReplaced));
 
             var lldbErrors = new List<string>();
             ExpressionEvaluationEngine engine = _extensionOptions.ExpressionEvaluationEngine;
@@ -149,15 +147,13 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return new ExpressionEvaluationFailed(exceptionMsg);
             };
 
-            // TODO: Come up with a solution to use scratch variables in the lldb-eval.
-            // Don't use lldb-eval if there were scratch variables replaced in during scoped names
-            // substitution.
-            if (IsLldbEvalEnabled() && !variableReplaced)
+            if (engine == ExpressionEvaluationEngine.LLDB_EVAL ||
+                engine == ExpressionEvaluationEngine.LLDB_EVAL_WITH_FALLBACK)
             {
                 // Try to evaluate expression using lldb-eval. This is much faster approach than
                 // using a full featured expression evaluation by LLDB.
-                var value =
-                    await EvaluateExpressionLldbEvalAsync(variable, expression, displayName);
+                var value = await EvaluateExpressionLldbEvalAsync(variable, expression, displayName,
+                                                                  natvisScope);
                 if (value != null)
                 {
                     var errorCode = (LldbEvalErrorCode)Enum.ToObject(typeof(LldbEvalErrorCode),
@@ -222,13 +218,13 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// Expression to declare the variable failed to evaluate.
         /// </exception>
         public async Task DeclareVariableAsync(IVariableInformation variable, string variableName,
-                                               string valueExpression,
-                                               IDictionary<string, string> scopedNames)
+                                               string valueExpression, NatvisScope natvisScope)
         {
-            string scratchVar = ReplaceScopedNames(variableName, scopedNames, out bool ignore);
+            string scratchVar =
+                ReplaceScopedNames(variableName, natvisScope?.ScopedNames, out bool ignore);
             VsExpression vsExpression =
                 _vsExpressionCreator.Create(valueExpression, "")
-                    .MapValue(e => ReplaceScopedNames(e, scopedNames, out ignore));
+                    .MapValue(e => ReplaceScopedNames(e, natvisScope?.ScopedNames, out ignore));
 
             // Declare variable and return it. Pure declaration expressions will always return
             // error because these expressions don't return a valid value.
@@ -244,11 +240,28 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     throw new ExpressionEvaluationFailed(failMsg);
                 }
             }
+
+            // TODO: Split the logic for LLDB and lldb-eval. Currently, LLDB is always
+            // used to create a scratch variable (even if lldb-eval is the selected engine).
             IVariableInformation result =
                 await variable.EvaluateExpressionAsync(variableName, createExpression);
-            if (result != null && !result.Error)
+            if (result != null && !result.Error && natvisScope != null)
             {
-                return;
+                // Result of 'auto {scratchVar}={e}; {scratchVar}' creates a copy of the scratch
+                // variable. Evaluating '{scratchVar}' returns the reference to the original
+                // variable. By using the original variable we make sure that the we always use its
+                // up-to-date value.
+                // TODO: Use RemoteFrame.FindValue to get the scratch variable.
+                // EvaluateExpression method already is optimised for the case of fetching scratch
+                // variables, but it isn't a convenient one.
+                result = await variable.EvaluateExpressionAsync(
+                    variableName, _vsExpressionCreator.Create($"{scratchVar}", ""));
+
+                if (result != null && !result.Error)
+                {
+                    natvisScope.AddContextVariable(scratchVar, result.GetRemoteValue());
+                    return;
+                }
             }
 
             string msg = $"Failed to declare variable: Name: {variableName}, " +
@@ -270,15 +283,15 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// <returns>The result of the condition evaluation.</returns>
         public async Task<bool> EvaluateConditionAsync(string condition,
                                                        IVariableInformation variable,
-                                                       IDictionary<string, string> scopedNames)
+                                                       NatvisScope natvisScope)
         {
             if (string.IsNullOrWhiteSpace(condition))
             {
                 return true;
             }
 
-            IVariableInformation exprValue = 
-                await EvaluateExpressionAsync(condition, variable, scopedNames, null);
+            IVariableInformation exprValue =
+                await EvaluateExpressionAsync(condition, variable, natvisScope, null);
             return exprValue.IsTruthy;
         }
 
@@ -339,13 +352,15 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// if the expression can't be evaluated using lldb-eval.
         /// </summary>
         async Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
-            IVariableInformation variable, VsExpression vsExpression, string displayName)
+            IVariableInformation variable, VsExpression vsExpression, string displayName,
+            NatvisScope natvisScope)
         {
             if (variable.IsPointer || variable.IsReference)
             {
                 variable = variable.Dereference();
             }
-            return await variable?.EvaluateExpressionLldbEvalAsync(displayName, vsExpression);
+            return await variable?.EvaluateExpressionLldbEvalAsync(displayName, vsExpression,
+                                                                   natvisScope?.ContextVariables);
         }
 
         /// <summary>
@@ -432,13 +447,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             return result.ToString();
-        }
-
-        bool IsLldbEvalEnabled()
-        {
-            ExpressionEvaluationEngine engine = _extensionOptions.ExpressionEvaluationEngine;
-            return engine == ExpressionEvaluationEngine.LLDB_EVAL ||
-                   engine == ExpressionEvaluationEngine.LLDB_EVAL_WITH_FALLBACK;
         }
     }
 }

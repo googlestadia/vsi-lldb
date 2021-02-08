@@ -65,6 +65,8 @@ namespace YetiVSI.Test.TestSupport
             dereference = null;
         }
 
+        public Debugger.Common.GrpcSbValue GrpcValue => null;
+
         public void SetAddressOf(RemoteValue addressOf)
         {
             this.addressOf = addressOf;
@@ -169,7 +171,8 @@ namespace YetiVSI.Test.TestSupport
         public Task<RemoteValue> EvaluateExpressionAsync(string expression) =>
             Task.FromResult(EvaluateExpression(expression));
 
-        public Task<RemoteValue> EvaluateExpressionLldbEvalAsync(string expression) =>
+        public Task<RemoteValue> EvaluateExpressionLldbEvalAsync(
+            string expression, IDictionary<string, RemoteValue> contextVariables = null) =>
             EvaluateExpressionAsync(expression);
 
         public RemoteValue Dereference()

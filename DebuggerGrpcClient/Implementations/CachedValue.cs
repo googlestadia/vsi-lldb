@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
+using DebuggerApi;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -78,6 +78,8 @@ namespace DebuggerGrpcClient.Implementations
 
         #region Prefetched members getters
 
+        public Debugger.Common.GrpcSbValue GrpcValue => remoteProxy.GrpcValue;
+
         public RemoteValue AddressOf() => addressOf;
 
         public SbError GetError() => error;
@@ -130,8 +132,9 @@ namespace DebuggerGrpcClient.Implementations
         public async Task<RemoteValue> EvaluateExpressionAsync(string expression) =>
             await remoteProxy.EvaluateExpressionAsync(expression);
 
-        public async Task<RemoteValue> EvaluateExpressionLldbEvalAsync(string expression) =>
-            await remoteProxy.EvaluateExpressionLldbEvalAsync(expression);
+        public async Task<RemoteValue> EvaluateExpressionLldbEvalAsync(
+            string expression, IDictionary<string, RemoteValue> scratchVariables = null) =>
+            await remoteProxy.EvaluateExpressionLldbEvalAsync(expression, scratchVariables);
 
         public RemoteValue Dereference() => remoteProxy.Dereference();
 
