@@ -14,12 +14,12 @@
 
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
-using Microsoft.VisualStudio.PlatformUI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiCommon.SSH;
@@ -48,13 +48,15 @@ namespace YetiVSI.GameLaunch
         readonly SdkConfig.Factory _sdkConfigFactory;
         readonly YetiVSIService _yetiVsiService;
         readonly JoinableTaskContext _taskContext;
+        readonly ActionRecorder _actionRecorder;
 
         public GameletSelector(IDialogUtil dialogUtil, ICloudRunner runner,
                                GameletSelectionWindow.Factory gameletSelectionWindowFactory,
                                CancelableTask.Factory cancelableTaskFactory,
                                GameletClient.Factory gameletClientFactory, ISshManager sshManager,
                                IRemoteCommand remoteCommand, SdkConfig.Factory sdkConfigFactory,
-                               YetiVSIService yetiVsiService, JoinableTaskContext taskContext)
+                               YetiVSIService yetiVsiService, JoinableTaskContext taskContext,
+                               ActionRecorder actionRecorder)
         {
             _dialogUtil = dialogUtil;
             _runner = runner;
@@ -68,6 +70,7 @@ namespace YetiVSI.GameLaunch
             _sdkConfigFactory = sdkConfigFactory;
             _yetiVsiService = yetiVsiService;
             _taskContext = taskContext;
+            _actionRecorder = actionRecorder;
         }
 
         /// <summary>
@@ -81,32 +84,30 @@ namespace YetiVSI.GameLaunch
         /// <returns>True if the gamelet was prepared successfully, false otherwise.</returns>
         public bool TrySelectAndPrepareGamelet(string targetPath,
                                                DeployOnLaunchSetting deployOnLaunchSetting,
-                                               ActionRecorder actionRecorder,
                                                List<Gamelet> gamelets, TestAccount testAccount,
                                                string devAccount, out Gamelet result)
         {
-            if (!TrySelectGamelet(actionRecorder, gamelets, out result))
+            if (!TrySelectGamelet(gamelets, out result))
             {
                 return false;
             }
 
-            if (!StopGameLaunchIfPresent(actionRecorder, testAccount, devAccount, gamelets, result))
+            if (!StopGameLaunchIfPresent(testAccount, devAccount, gamelets, result))
             {
                 return false;
             }
 
-            if (!EnableSsh(actionRecorder, result))
+            if (!EnableSsh(result))
             {
                 return false;
             }
 
-            if (!ValidateMountConfiguration(targetPath, deployOnLaunchSetting, actionRecorder,
-                                            result))
+            if (!ValidateMountConfiguration(targetPath, deployOnLaunchSetting, result))
             {
                 return false;
             }
 
-            if (!ClearLogs(actionRecorder, result))
+            if (!ClearLogs(result))
             {
                 return false;
             }
@@ -114,7 +115,7 @@ namespace YetiVSI.GameLaunch
             return true;
         }
 
-        bool StopGameLaunchIfPresent(ActionRecorder actionRecorder, TestAccount testAccount,
+        bool StopGameLaunchIfPresent(TestAccount testAccount,
                                      string devAccount, List<Gamelet> gamelets,
                                      Gamelet selectedGamelet)
         {
@@ -187,11 +188,10 @@ namespace YetiVSI.GameLaunch
         /// Select the first available gamelet, or let the user pick from multiple gamelets.
         /// Ensure the selected gamelet is in a valid state before returning.
         /// </summary>
-        bool TrySelectGamelet(ActionRecorder actionRecorder, List<Gamelet> gamelets,
-                              out Gamelet result)
+        bool TrySelectGamelet(List<Gamelet> gamelets, out Gamelet result)
         {
             Gamelet gamelet = result = null;
-            if (!actionRecorder.RecordUserAction(ActionType.GameletSelect, delegate {
+            if (!_actionRecorder.RecordUserAction(ActionType.GameletSelect, delegate {
                 switch (gamelets.Count)
                 {
                     case 0:
@@ -207,18 +207,18 @@ namespace YetiVSI.GameLaunch
             {
                 return false;
             }
-            result = EnsureValidState(actionRecorder, gamelet);
+            result = EnsureValidState(gamelet);
             return true;
         }
 
         /// <summary>
         /// Enable SSH for communication with the gamelet.
         /// </summary>
-        bool EnableSsh(ActionRecorder actionRecorder, Gamelet gamelet)
+        bool EnableSsh(Gamelet gamelet)
         {
             try
             {
-                IAction action = actionRecorder.CreateToolAction(ActionType.GameletEnableSsh);
+                IAction action = _actionRecorder.CreateToolAction(ActionType.GameletEnableSsh);
                 ICancelableTask enableSshTask =
                     _cancelableTaskFactory.Create(TaskMessages.EnablingSSH, async _ => {
                         await _sshManager.EnableSshAsync(gamelet, action);
@@ -241,16 +241,14 @@ namespace YetiVSI.GameLaunch
         /// </summary>
         /// <param name="targetPath">Path to the generated binary.</param>
         /// <param name="deployOnLaunchSetting">Project's "Deploy On Launch" value.</param>
-        /// <param name="actionRecorder">Recorder for the actions performed asynchronously
-        /// (reading /proc/mounts).</param>
         /// <param name="gamelet">Gamelet to connect to.</param>
         /// <returns>True if no issues found or the user decided to proceed.</returns>
         bool ValidateMountConfiguration(string targetPath,
                                         DeployOnLaunchSetting deployOnLaunchSetting,
-                                        ActionRecorder actionRecorder, Gamelet gamelet)
+                                        Gamelet gamelet)
         {
             MountConfiguration configuration =
-                _mountChecker.GetConfiguration(gamelet, actionRecorder);
+                _mountChecker.GetConfiguration(gamelet, _actionRecorder);
 
             string targetPathNormalized = GetNormalizedFullPath(targetPath);
             Trace.WriteLine($"TargetPath is set to {targetPathNormalized}");
@@ -348,7 +346,7 @@ namespace YetiVSI.GameLaunch
         /// <summary>
         /// Clear stdout/stderr so that we don't start to tail before guest_orc clears.
         /// </summary>
-        bool ClearLogs(ActionRecorder actionRecorder, Gamelet gamelet)
+        bool ClearLogs(Gamelet gamelet)
         {
             ICancelableTask clearLogsTask =
                 _cancelableTaskFactory.Create(TaskMessages.ClearingInstanceLogs,
@@ -356,7 +354,7 @@ namespace YetiVSI.GameLaunch
                                                  new SshTarget(gamelet), ClearLogsCmd));
             try
             {
-                return clearLogsTask.RunAndRecord(actionRecorder, ActionType.GameletClearLogs);
+                return clearLogsTask.RunAndRecord(_actionRecorder, ActionType.GameletClearLogs);
             }
             catch (ProcessException e)
             {
@@ -371,7 +369,7 @@ namespace YetiVSI.GameLaunch
         /// Ensure that the gamelet is either in use or reserved. All other states will throw
         /// an InvalidStateException.
         /// </summary>
-        Gamelet EnsureValidState(ActionRecorder actionRecorder, Gamelet gamelet)
+        Gamelet EnsureValidState(Gamelet gamelet)
         {
             if (gamelet.State == GameletState.InUse || gamelet.State == GameletState.Reserved)
             {
@@ -381,7 +379,7 @@ namespace YetiVSI.GameLaunch
             var error = new InvalidStateException(ErrorStrings.GameletInUnexpectedState(gamelet));
             try
             {
-                actionRecorder.RecordFailure(
+                _actionRecorder.RecordFailure(
                     ActionType.GameletPrepare, error,
                     new DeveloperLogEvent { GameletData = GameletData.FromGamelet(gamelet) });
             }

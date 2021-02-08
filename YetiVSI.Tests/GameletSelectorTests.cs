@@ -93,7 +93,7 @@ namespace YetiVSI.Test
             var cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager,
                                               new CloudConnection(), new GgpSDKUtil());
 
-            var cancelableTaskFactory =
+            CancelableTask.Factory cancelableTaskFactory =
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
 
             _gameletClient = Substitute.For<IGameletClient>();
@@ -102,9 +102,9 @@ namespace YetiVSI.Test
 
             _sshManager = Substitute.For<ISshManager>();
 
-            _sshManager.EnableSshAsync(_gamelet1, Arg.Any<YetiVSI.Metrics.IAction>())
+            _sshManager.EnableSshAsync(_gamelet1, Arg.Any<IAction>())
                 .Returns(Task.FromResult(true));
-            _sshManager.EnableSshAsync(_gamelet2, Arg.Any<YetiVSI.Metrics.IAction>())
+            _sshManager.EnableSshAsync(_gamelet2, Arg.Any<IAction>())
                 .Returns(Task.FromResult(true));
 
             _remoteCommand = Substitute.For<IRemoteCommand>();
@@ -113,9 +113,11 @@ namespace YetiVSI.Test
             debugSessionMetrics.UseNewDebugSessionId();
             _actionRecorder = new ActionRecorder(debugSessionMetrics);
 
-            _gameletSelector = new GameletSelectorLegacyFlow(
-                _dialogUtil, cloudRunner, gameletSelectionWindowFactory, cancelableTaskFactory,
-                gameletClientFactory, _sshManager, _remoteCommand);
+            _gameletSelector = new GameletSelectorLegacyFlow(_dialogUtil, cloudRunner,
+                                                            gameletSelectionWindowFactory,
+                                                            cancelableTaskFactory,
+                                                            gameletClientFactory, _sshManager,
+                                                            _remoteCommand, _actionRecorder);
         }
 
         [Test]
@@ -127,9 +129,7 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                                                                     _actionRecorder, gamelets,
-                                                                     null, _devAccount,
-                                                                     out gamelet);
+                gamelets, null, _devAccount, out gamelet);
 
             Assert.That(result, Is.True);
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
@@ -146,9 +146,7 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                                                                     _actionRecorder, gamelets,
-                                                                     null, _devAccount,
-                                                                     out gamelet);
+                gamelets, null, _devAccount, out gamelet);
 
             Assert.That(result, Is.True);
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet1.Id));
@@ -171,10 +169,7 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                                                                     _actionRecorder,
-                                                                     new List<Gamelet>
-                                                                         { _gamelet1 }, null,
-                                                                     _devAccount, out gamelet);
+                new List<Gamelet> { _gamelet1 }, null, _devAccount, out gamelet);
 
             Assert.That(result, Is.True);
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet1.Id));
@@ -192,9 +187,7 @@ namespace YetiVSI.Test
             Gamelet gamelet;
             var result = Assert.Throws<ConfigurationException>(
                 () => _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                                                                  _actionRecorder,
-                                                                  new List<Gamelet>(), null,
-                                                                  _devAccount, out gamelet));
+                    new List<Gamelet>(), null, _devAccount, out gamelet));
 
             Assert.That(result.Message, Does.Contain(ErrorStrings.NoGameletsFound));
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsSelect,
@@ -210,10 +203,7 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                                                                     _actionRecorder,
-                                                                     new List<Gamelet>
-                                                                         { _gamelet1 }, null,
-                                                                     _devAccount, out gamelet);
+                new List<Gamelet> { _gamelet1 }, null, _devAccount, out gamelet);
             Assert.That(result, Is.False);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsPrepare,
                                  DeveloperEventStatus.Types.Code.Cancelled);
@@ -228,8 +218,8 @@ namespace YetiVSI.Test
             Gamelet gamelet;
             var result = Assert.Throws<InvalidStateException>(
                 () => _gameletSelector.TrySelectAndPrepareGamelet(
-                    _targetPath, _deploy, _actionRecorder, new List<Gamelet> { _gamelet1 }, null,
-                    _devAccount, out gamelet));
+                    _targetPath, _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount,
+                    out gamelet));
 
             Assert.That(result.Message,
                         Is.EqualTo(ErrorStrings.GameletInUnexpectedState(_gamelet1)));
@@ -245,10 +235,7 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                                                                     _actionRecorder,
-                                                                     new List<Gamelet>
-                                                                         { _gamelet1 }, null,
-                                                                     _devAccount, out gamelet);
+                new List<Gamelet> { _gamelet1 }, null, _devAccount, out gamelet);
 
             Assert.That(result, Is.False);
             _dialogUtil.Received(1).ShowError(Arg.Any<string>(), Arg.Any<string>());
@@ -261,15 +248,12 @@ namespace YetiVSI.Test
         {
             _remoteCommand
                 .When(m => m.RunWithSuccessAsync(new SshTarget(_gamelet1),
-                                                 GameletSelectorLegacyFlow.CLEAR_LOGS_CMD))
+                    GameletSelectorLegacyFlow.ClearLogsCmd))
                 .Do(c => { throw new ProcessException("Oops!"); });
 
             Gamelet gamelet;
             var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                                                                     _actionRecorder,
-                                                                     new List<Gamelet>
-                                                                         { _gamelet1 }, null,
-                                                                     _devAccount, out gamelet);
+                new List<Gamelet> { _gamelet1 }, null, _devAccount, out gamelet);
 
             Assert.That(result, Is.False);
             _dialogUtil.ShowError(Arg.Any<string>(), Arg.Any<string>());
@@ -280,11 +264,11 @@ namespace YetiVSI.Test
         void AssertMetricRecorded(DeveloperEventType.Types.Type type,
                                   DeveloperEventStatus.Types.Code status)
         {
-            _metrics.Received()
-                .RecordEvent(
-                    type,
-                    Arg.Is<DeveloperLogEvent>(p => p.StatusCode == status &&
-                                                  p.DebugSessionIdStr == _testDebugSessionId));
+            _metrics.Received().RecordEvent(type, Arg.Is<DeveloperLogEvent>(
+                p =>
+                    p.StatusCode == status &&
+                    p.DebugSessionIdStr == _testDebugSessionId
+                ));
         }
     }
 }

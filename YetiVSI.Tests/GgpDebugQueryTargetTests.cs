@@ -27,6 +27,7 @@ using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.VSProject;
+using YetiVSI.DebugEngine;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
@@ -56,14 +57,15 @@ namespace YetiVSI.Test
         IDialogUtil _dialogUtil;
         IRemoteDeploy _remoteDeploy;
         ServiceManager _serviceManager;
-        YetiVSIService _yetiVsiService;
+        IYetiVSIService _yetiVsiService;
         IMetrics _metrics;
         IApplicationClient _applicationClient;
         TestAccountClient.Factory _testAccountClientFactory;
         IGameletSelector _gameletSelector;
+        IGameletSelectorFactory _gameletSelectorFactory;
         ChromeClientLaunchCommandFormatter _launchCommandFormatter;
         YetiVSI.DebugEngine.DebugEngine.Params.Factory _paramsFactory;
-        readonly int _outVariableIndex = 6;
+        readonly int _outVariableIndex = 5;
         IAsyncProject _project;
         string _targetPath;
         string _outputDirectory;
@@ -132,13 +134,21 @@ namespace YetiVSI.Test
             Substitute.For<IExtensionOptions>();
 
             _serviceManager = Substitute.For<ServiceManager>();
-            _yetiVsiService = new YetiVSIService(null);
+            _yetiVsiService = Substitute.For<IYetiVSIService>();
+            var options = Substitute.For<IExtensionOptions>();
+            var debuggerOptions = new YetiVSI.DebuggerOptions.DebuggerOptions();
+            _yetiVsiService.DebuggerOptions.Returns(debuggerOptions);
+            options.LaunchGameApiFlow.Returns(LaunchGameApiFlow.DISABLED);
+            _yetiVsiService.Options.Returns(options);
             _serviceManager.GetGlobalService(typeof(YetiVSIService)).Returns(_yetiVsiService);
             _metrics = Substitute.For<IMetrics>();
             _metrics.NewDebugSessionId().Returns(_testDebugSessionId);
             var cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager,
                                               new CloudConnection(), new GgpSDKUtil());
             _gameletSelector = Substitute.For<IGameletSelector>();
+            _gameletSelectorFactory = Substitute.For<IGameletSelectorFactory>();
+            _gameletSelectorFactory.Create(Arg.Any<bool>(), Arg.Any<ActionRecorder>())
+                .Returns(_gameletSelector);
             var serializer = new JsonUtil();
             _launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             _paramsFactory = new YetiVSI.DebugEngine.DebugEngine.Params.Factory(serializer);
@@ -154,9 +164,10 @@ namespace YetiVSI.Test
                                                            _remoteDeploy, _metrics, _serviceManager,
                                                            credentialManager,
                                                            _testAccountClientFactory,
-                                                           _gameletSelector, cloudRunner,
+                                                           _gameletSelectorFactory, cloudRunner,
                                                            _sdkVersion, _launchCommandFormatter,
-                                                           _paramsFactory, _gameLaunchManager);
+                                                           _paramsFactory, _gameLaunchManager,
+                                                           _yetiVsiService);
         }
 
         [Test]
@@ -182,8 +193,7 @@ namespace YetiVSI.Test
             _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
 
             _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(),
-                                                        Arg.Any<ActionRecorder>(), gamelets,
+                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
                                                         Arg.Any<TestAccount>(), Arg.Any<string>(),
                                                         out Gamelet _).Returns(x =>
             {
@@ -244,8 +254,7 @@ namespace YetiVSI.Test
             _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
 
             _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(),
-                                                        Arg.Any<ActionRecorder>(), gamelets,
+                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
                                                         Arg.Any<TestAccount>(), Arg.Any<string>(),
                                                         out Gamelet _).Returns(x =>
             {
@@ -303,8 +312,7 @@ namespace YetiVSI.Test
             _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
 
             _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(),
-                                                        Arg.Any<ActionRecorder>(), gamelets,
+                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
                                                         Arg.Any<TestAccount>(), Arg.Any<string>(),
                                                         out Gamelet _).Returns(x =>
             {
@@ -337,8 +345,7 @@ namespace YetiVSI.Test
             _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
 
             _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(),
-                                                        Arg.Any<ActionRecorder>(), gamelets,
+                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
                                                         Arg.Any<TestAccount>(), Arg.Any<string>(),
                                                         out Gamelet _).Returns(x =>
             {
@@ -408,8 +415,7 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(),
-                                                        Arg.Any<ActionRecorder>(), gamelets,
+                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
                                                         Arg.Any<TestAccount>(), Arg.Any<string>(),
                                                         out gamelet).Returns(x =>
             {
@@ -467,8 +473,7 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(),
-                                                        Arg.Any<ActionRecorder>(), gamelets,
+                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
                                                         Arg.Any<TestAccount>(), Arg.Any<string>(),
                                                         out gamelet).Returns(x =>
             {
@@ -546,8 +551,7 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(),
-                                                        Arg.Any<ActionRecorder>(), gamelets,
+                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
                                                         Arg.Any<TestAccount>(), Arg.Any<string>(),
                                                         out gamelet).Returns(x =>
             {
@@ -628,8 +632,7 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(),
-                                                        Arg.Any<ActionRecorder>(), gamelets,
+                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
                                                         Arg.Any<TestAccount>(), Arg.Any<string>(),
                                                         out gamelet).Returns(false);
 
@@ -657,9 +660,8 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             _gameletSelector.When(g => g.TrySelectAndPrepareGamelet(
-                                      Arg.Any<string>(), Arg.Any<DeployOnLaunchSetting>(),
-                                      Arg.Any<ActionRecorder>(), gamelets, Arg.Any<TestAccount>(),
-                                      Arg.Any<string>(), out gamelet))
+                                      Arg.Any<string>(), Arg.Any<DeployOnLaunchSetting>(), gamelets,
+                                      Arg.Any<TestAccount>(), Arg.Any<string>(), out gamelet))
                 .Throw(c => new Exception("Oops!"));
 
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);

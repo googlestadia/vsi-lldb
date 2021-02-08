@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiCommon.VSProject;
+using YetiVSI.DebugEngine;
 using YetiVSI.DebuggerOptions;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
@@ -46,8 +47,8 @@ namespace YetiVSI
         readonly ICredentialManager _credentialManager;
         readonly TestAccountClient.Factory _testAccountClientFactory;
         readonly ICloudRunner _cloudRunner;
-        readonly YetiVSIService _yetiVsiService;
-        readonly IGameletSelector _gameletSelector;
+        readonly IYetiVSIService _yetiVsiService;
+        readonly IGameletSelectorFactory _gameletSelectorFactory;
         readonly Versions.SdkVersion _sdkVersion;
         readonly ChromeClientLaunchCommandFormatter _launchCommandFormatter;
         readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
@@ -62,11 +63,12 @@ namespace YetiVSI
                                    IMetrics metrics, ServiceManager serviceManager,
                                    ICredentialManager credentialManager,
                                    TestAccountClient.Factory testAccountClientFactory,
-                                   IGameletSelector gameletSelector, ICloudRunner cloudRunner,
-                                   Versions.SdkVersion sdkVersion,
+                                   IGameletSelectorFactory gameletSelectorFactory,
+                                   ICloudRunner cloudRunner, Versions.SdkVersion sdkVersion,
                                    ChromeClientLaunchCommandFormatter launchCommandFormatter,
                                    DebugEngine.DebugEngine.Params.Factory paramsFactory,
-                                   IGameLaunchManager gameLaunchManager)
+                                   IGameLaunchManager gameLaunchManager,
+                                   IYetiVSIService yetiVsiService)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -79,9 +81,8 @@ namespace YetiVSI
             _credentialManager = credentialManager;
             _testAccountClientFactory = testAccountClientFactory;
             _cloudRunner = cloudRunner;
-            _yetiVsiService =
-                (YetiVSIService) serviceManager.GetGlobalService(typeof(YetiVSIService));
-            _gameletSelector = gameletSelector;
+            _yetiVsiService = yetiVsiService;
+            _gameletSelectorFactory = gameletSelectorFactory;
             _sdkVersion = sdkVersion;
             _launchCommandFormatter = launchCommandFormatter;
             _paramsFactory = paramsFactory;
@@ -139,9 +140,12 @@ namespace YetiVSI
 
                 DeployOnLaunchSetting deployOnLaunchAsync = await project.GetDeployOnLaunchAsync();
                 launchParams.Account = _credentialManager.LoadAccount();
-
-                if (!_gameletSelector.TrySelectAndPrepareGamelet(
-                    targetPath, deployOnLaunchAsync, actionRecorder, setupQueriesResult.Gamelets,
+                bool launchGameApiEnabled =
+                    _yetiVsiService.Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
+                IGameletSelector gameletSelector =
+                    _gameletSelectorFactory.Create(launchGameApiEnabled, actionRecorder);
+                if (!gameletSelector.TrySelectAndPrepareGamelet(
+                    targetPath, deployOnLaunchAsync, setupQueriesResult.Gamelets,
                     setupQueriesResult.TestAccount, launchParams.Account, out Gamelet gamelet))
                 {
                     return new IDebugLaunchSettings[] { };
