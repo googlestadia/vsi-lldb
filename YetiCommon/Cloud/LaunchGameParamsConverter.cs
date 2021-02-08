@@ -86,15 +86,13 @@ namespace YetiCommon.Cloud
 
             return string.IsNullOrWhiteSpace(testAccount)
                 ? $"{_developerLaunchGameParent}/gameLaunches/{actualLaunchName}"
-                : $"organizations/{sdkConfig.OrganizationId}/projects/{sdkConfig.ProjectId}/" +
-                $"testAccounts/{testAccount}/gameLaunches/{actualLaunchName}";
+                : $"{testAccount}/gameLaunches/{actualLaunchName}";
         }
 
         string Parent(ISdkConfig sdkConfig, ChromeClientLauncher.Params parameters) =>
             string.IsNullOrWhiteSpace(parameters.TestAccount)
                 ? _developerLaunchGameParent
-                : $"organizations/{sdkConfig.OrganizationId}/projects/{sdkConfig.ProjectId}" +
-                $"/testAccounts/{parameters.TestAccount}";
+                : parameters.TestAccount;
 
         string ExecutablePath(ChromeClientLauncher.Params parameters)
         {

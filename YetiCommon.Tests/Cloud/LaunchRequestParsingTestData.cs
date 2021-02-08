@@ -69,7 +69,10 @@ namespace YetiCommon.Tests.Cloud
         public static Dictionary<string, string> ValidParamsQueryParams =>
             new Dictionary<string, string>
             {
-                { "test_account", "params_test_account" },
+                {
+                    "test_account",
+                    "organizations/organization_id/projects/project_id/testAccounts/gamer#1234"
+                },
                 { "cmd", "  some_bin arg2" },
                 { "vars", "ParamsVar=val" },
                 { "renderdoc", "false" },

@@ -50,7 +50,9 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(parameters.VulkanDriverVariant, Is.EqualTo("test_variant"));
             Assert.That(parameters.SurfaceEnforcementMode,
                         Is.EqualTo(SurfaceEnforcementSetting.Warn));
-            Assert.That(parameters.TestAccount, Is.EqualTo("params_test_account"));
+            Assert.That(parameters.TestAccount,
+                        Is.EqualTo("organizations/organization_id/" +
+                                   "projects/project_id/testAccounts/gamer#1234"));
             Assert.That(parameters.QueryParams, Is.EqualTo(""));
         }
 

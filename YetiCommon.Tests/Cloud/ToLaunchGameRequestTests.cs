@@ -68,8 +68,7 @@ namespace YetiCommon.Tests.Cloud
 
             Assert.That(status.IsOk, Is.EqualTo(true));
             Assert.IsNotNull(request);
-            Assert.That(request.Parent, Is.EqualTo(
-                        $"{_sdkConfig.OrganizationProject}testAccounts/{parameters.TestAccount}"));
+            Assert.That(request.Parent, Is.EqualTo(parameters.TestAccount));
             Assert.That(request.GameletName, Is.EqualTo(parameters.GameletName));
             Assert.That(request.ApplicationName, Is.EqualTo(parameters.ApplicationName));
             Assert.That(request.ExecutablePath, Is.EqualTo("some_bin"));
@@ -171,8 +170,9 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(
                 status.WarningMessage.Contains("The following query parameters will be ignored"));
             Assert.IsNotNull(request);
-            Assert.That(request.Parent, Is.EqualTo(
-                 $"{_sdkConfig.OrganizationProject}testAccounts/params_test_account"));
+            Assert.That(request.Parent,
+                        Is.EqualTo("organizations/organization_id/projects/project_id/" +
+                                   "testAccounts/gamer#1234"));
             Assert.That(request.GameletName, Is.EqualTo(parameters.GameletName));
             Assert.That(request.ApplicationName, Is.EqualTo("params_app_name"));
             Assert.That(request.ExecutablePath, Is.EqualTo("some_bin"));

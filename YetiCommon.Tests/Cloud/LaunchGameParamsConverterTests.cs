@@ -73,12 +73,9 @@ namespace YetiCommon.Tests.Cloud
         public void FullGameLaunchNameWithGameLaunchNameWithTestAccount()
         {
             string gameLaunchName = "test_game_launch_name";
-            string testAccount = "test_account";
+            string testAccount = $"{_sdkConfig.OrganizationProject}testAccounts/gamer#1234";
             string result = _target.FullGameLaunchName(gameLaunchName, testAccount);
-            Assert.That(
-                result,
-                Is.EqualTo($"{_sdkConfig.OrganizationProject}testAccounts/{testAccount}" +
-                           $"/gameLaunches/{gameLaunchName}"));
+            Assert.That(result, Is.EqualTo($"{testAccount}/gameLaunches/{gameLaunchName}"));
         }
 
         [Test]
@@ -94,12 +91,9 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void FullGameLaunchNameNoGameLaunchNameWithTestAccount()
         {
-            string testAccount = "test_account";
+            string testAccount = $"{_sdkConfig.OrganizationProject}testAccounts/gamer#1234";
             string result = _target.FullGameLaunchName(" ", testAccount);
-            Assert.That(
-                result,
-                Is.EqualTo($"{_sdkConfig.OrganizationProject}testAccounts/{testAccount}" +
-                           "/gameLaunches/current"));
+            Assert.That(result, Is.EqualTo($"{testAccount}/gameLaunches/current"));
         }
 
         [Test]
@@ -126,8 +120,7 @@ namespace YetiCommon.Tests.Cloud
 
             Assert.That(status.IsOk, Is.EqualTo(true));
             Assert.IsNotNull(request);
-            Assert.That(request.Parent, Is.EqualTo(
-                        $"{_sdkConfig.OrganizationProject}testAccounts/{parameters.TestAccount}"));
+            Assert.That(request.Parent, Is.EqualTo(parameters.TestAccount));
             Assert.That(request.GameletName, Is.EqualTo(parameters.GameletName));
             Assert.That(request.ApplicationName, Is.EqualTo(parameters.ApplicationName));
             Assert.That(request.ExecutablePath, Is.EqualTo("some_bin"));
