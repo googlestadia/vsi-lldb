@@ -96,7 +96,7 @@ namespace YetiVSI.GameLaunch
                                         DeployOnLaunchSetting deployOnLaunchSetting,
                                         List<Gamelet> gamelets,
                                         TestAccount testAccount, string devAccount,
-                                        out Gamelet result);
+                                        out Gamelet gamelet);
     }
 
     //TODO: remove the legacy launch flow.
@@ -106,10 +106,6 @@ namespace YetiVSI.GameLaunch
     public class GameletSelectorLegacyFlow : IGameletSelector
     {
         public const string ClearLogsCmd = "rm -f /var/game/stdout /var/game/stderr";
-
-        public const string GameletBusyDialogText =
-            "Game cannot be launched as one is already running on the instance.\n" +
-            "Do you want to stop it?";
 
         readonly GameletSelectionWindow.Factory _gameletSelectionWindowFactory;
         readonly IDialogUtil _dialogUtil;
@@ -161,8 +157,6 @@ namespace YetiVSI.GameLaunch
 
             if (gamelet.State == GameletState.InUse)
             {
-                // TODO: Do not stop the running game on the gamelet
-                // in the new launch flow, it is taken care of in the game launcher.
                 if (!PromptStopGamelet(ref gamelet))
                 {
                     return false;
@@ -224,7 +218,8 @@ namespace YetiVSI.GameLaunch
         {
             bool okToStop = _actionRecorder.RecordUserAction(
                 ActionType.GameletPrepare,
-                () => _dialogUtil.ShowYesNo(GameletBusyDialogText, "Stop running game?"));
+                () => _dialogUtil.ShowYesNo(ErrorStrings.GameletBusyDialogText,
+                                            "Stop running game?"));
             if (!okToStop)
             {
                 return false;

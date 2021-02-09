@@ -19,6 +19,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
+using Grpc.Core;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Threading;
 using YetiCommon;
@@ -85,34 +87,112 @@ namespace YetiVSI.GameLaunch
         public bool TrySelectAndPrepareGamelet(string targetPath,
                                                DeployOnLaunchSetting deployOnLaunchSetting,
                                                List<Gamelet> gamelets, TestAccount testAccount,
-                                               string devAccount, out Gamelet result)
+                                               string devAccount, out Gamelet gamelet)
         {
-            if (!TrySelectGamelet(gamelets, out result))
+            if (!TrySelectGamelet(gamelets, out gamelet))
             {
                 return false;
             }
 
-            if (!StopGameLaunchIfPresent(testAccount, devAccount, gamelets, result))
+            if (!StopGameLaunchIfPresent(testAccount, devAccount, gamelets, gamelet))
             {
                 return false;
             }
 
-            if (!EnableSsh(result))
+            /// If developer runs a game with a test account first, then switches the account and
+            /// tries to run a game on the same gamelet, the <see cref="StopGameLaunchIfPresent"/>
+            /// won't stop the running game on the gamelet.
+            if (!StopGameIfNeeded(ref gamelet))
             {
                 return false;
             }
 
-            if (!ValidateMountConfiguration(targetPath, deployOnLaunchSetting, result))
+            if (!EnableSsh(gamelet))
             {
                 return false;
             }
 
-            if (!ClearLogs(result))
+            if (!ValidateMountConfiguration(targetPath, deployOnLaunchSetting, gamelet))
+            {
+                return false;
+            }
+
+            if (!ClearLogs(gamelet))
             {
                 return false;
             }
 
             return true;
+        }
+
+        bool StopGameIfNeeded(ref Gamelet gamelet)
+        {
+            IGameletClient gameletClient = _gameletClientFactory.Create(_runner);
+            string gameletName = gamelet.Name;
+            gamelet = _taskContext.Factory.Run(async () =>
+                                                   await gameletClient.GetGameletByNameAsync(
+                                                       gameletName));
+
+            return gamelet.State != GameletState.InUse || PromptStopGame(ref gamelet);
+        }
+
+        /// <summary>
+        /// Confirms that the user wants to stop the gamelet and, if so, stops the gamelet.
+        /// </summary>
+        /// <returns>True if the user chooses to stop the gamelet and the gamelet stops
+        /// successfully, false otherwise.</returns>
+        bool PromptStopGame(ref Gamelet gamelet)
+        {
+            string gameletName = gamelet.DisplayName;
+            bool okToStop = _actionRecorder.RecordUserAction(
+                ActionType.GameletPrepare,
+                () => _dialogUtil.ShowYesNo(ErrorStrings.GameletBusyWithAnotherAccount(gameletName),
+                                            ErrorStrings.StopRunningGame));
+            if (!okToStop)
+            {
+                return false;
+            }
+            gamelet = StopGameOnGamelet(gamelet);
+            return gamelet != null;
+        }
+
+        /// <summary>
+        /// Stop game on the gamelet and wait for it to return to the reserved state.
+        /// </summary>
+        Gamelet StopGameOnGamelet(Gamelet gamelet)
+        {
+            IAction action = _actionRecorder.CreateToolAction(ActionType.GameletStop);
+            ICancelableTask stopTask =
+                _cancelableTaskFactory.Create(TaskMessages.WaitingForGameStop, async (task) => {
+                    IGameletClient gameletClient =
+                        _gameletClientFactory.Create(_runner.Intercept(action));
+                    try
+                    {
+                        await gameletClient.StopGameAsync(gamelet.Id);
+                    }
+                    catch (CloudException e) when ((e.InnerException as RpcException)
+                        ?.StatusCode == StatusCode.FailedPrecondition)
+                    {
+                        // FailedPreconditions likely means there is no game session to stop.
+                        // For details see (internal).
+                        Trace.WriteLine("Potential race condition while stopping game; " +
+                                        $"ignoring RPC error: {e.InnerException.Message}");
+                    }
+                    while (!task.IsCanceled)
+                    {
+                        gamelet = await gameletClient.GetGameletByNameAsync(gamelet.Name);
+                        if (gamelet.State == GameletState.Reserved)
+                        {
+                            break;
+                        }
+                        await Task.Delay(1000);
+                    }
+                });
+            if (stopTask.RunAndRecord(action))
+            {
+                return gamelet;
+            }
+            return null;
         }
 
         bool StopGameLaunchIfPresent(TestAccount testAccount,

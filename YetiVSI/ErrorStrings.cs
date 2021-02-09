@@ -131,7 +131,14 @@ namespace YetiVSI
             "Could not check the SDK compatibility. See logs for further details.";
         public const string SeeLogs = "See logs for further details.";
         public const string ThisInstance = "this instance";
+        public const string GameletBusyDialogText =
+            "Game cannot be launched as one is already running on the instance.\n" +
+            "Do you want to stop it?";
 
+        public static string GameletBusyWithAnotherAccount(string instanceName) =>
+            $"Stop active game and launch new game?{Environment.NewLine}{Environment.NewLine}" +
+            $"Another account is already playing a game on this instance '{instanceName}'." +
+            $"{Environment.NewLine}Would you like to stop the active game and launch this one?";
         public static string LaunchExistsDialogText(bool thisInstance, string instance,
                                                     string testAccount, string devAccount) =>
             $"Stop active game and launch new game?{Environment.NewLine}{Environment.NewLine}" +
@@ -140,7 +147,6 @@ namespace YetiVSI
             $"playing a game on {(thisInstance ? ThisInstance : $"the instance '{instance}'")}." +
             $" An account can only play one game at a time.{Environment.NewLine}" +
             "Would you like to stop your active game and launch this one?";
-
         public static string BuildIdCheckDetails(IEnumerable<string> matchedFiles,
                                                  IEnumerable<string> searchedPaths) =>
             $"Executables matched by name: " + Environment.NewLine
