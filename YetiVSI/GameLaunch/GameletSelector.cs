@@ -82,15 +82,15 @@ namespace YetiVSI.GameLaunch
         public bool TrySelectAndPrepareGamelet(string targetPath,
                                                DeployOnLaunchSetting deployOnLaunchSetting,
                                                ActionRecorder actionRecorder,
-                                               List<Gamelet> gamelets, string testAccount,
-                                               out Gamelet result)
+                                               List<Gamelet> gamelets, TestAccount testAccount,
+                                               string devAccount, out Gamelet result)
         {
             if (!TrySelectGamelet(actionRecorder, gamelets, out result))
             {
                 return false;
             }
 
-            if (!StopGameLaunchIfPresent(actionRecorder, testAccount, gamelets, result))
+            if (!StopGameLaunchIfPresent(actionRecorder, testAccount, devAccount, gamelets, result))
             {
                 return false;
             }
@@ -114,8 +114,9 @@ namespace YetiVSI.GameLaunch
             return true;
         }
 
-        bool StopGameLaunchIfPresent(ActionRecorder actionRecorder, string testAccount,
-                                     List<Gamelet> gamelets, Gamelet selectedGamelet)
+        bool StopGameLaunchIfPresent(ActionRecorder actionRecorder, TestAccount testAccount,
+                                     string devAccount, List<Gamelet> gamelets,
+                                     Gamelet selectedGamelet)
         {
             // TODO: record actions.
             IGameletClient gameletClient = _gameletClientFactory.Create(_runner);
@@ -124,7 +125,9 @@ namespace YetiVSI.GameLaunch
                                                      _taskContext);
             ICancelableTask<GgpGrpc.Models.GameLaunch> currentGameLaunchTask =
                 _cancelableTaskFactory.Create(TaskMessages.LookingForTheCurrentLaunch,
-                        async task => await gameLauncher.GetCurrentGameLaunchAsync(testAccount));
+                                              async task =>
+                                                  await gameLauncher.GetCurrentGameLaunchAsync(
+                                                      testAccount?.Name));
             if (!currentGameLaunchTask.Run())
             {
                 return false;
@@ -136,7 +139,8 @@ namespace YetiVSI.GameLaunch
                 return true;
             }
 
-            if (!PromptToDeleteLaunch(currentGameLaunch, gamelets, selectedGamelet))
+            if (!PromptToDeleteLaunch(currentGameLaunch, gamelets, selectedGamelet,
+                                      testAccount?.GamerStadiaName, devAccount))
             {
                 return false;
             }
@@ -154,19 +158,21 @@ namespace YetiVSI.GameLaunch
         }
 
         bool PromptToDeleteLaunch(GgpGrpc.Models.GameLaunch currentGameLaunch,
-                                  List<Gamelet> gamelets, Gamelet selectedGamelet)
+                                  List<Gamelet> gamelets, Gamelet selectedGamelet,
+                                  string testAccount, string devAccount)
         {
             if (currentGameLaunch.GameLaunchState == GameLaunchState.IncompleteLaunch)
             {
                 return true;
             }
 
-            string instanceName = selectedGamelet.Name == currentGameLaunch.GameletName
-                ? ErrorStrings.ThisInstance
-                : gamelets.Single(g => g.Name == currentGameLaunch.GameletName).DisplayName;
+            bool thisInstance = selectedGamelet.Name == currentGameLaunch.GameletName;
+            string instanceName = gamelets.Single(g => g.Name == currentGameLaunch.GameletName)
+                .DisplayName;
             MessageDialogCommand dialogRes = MessageDialog.Show(
-                ErrorStrings.StopRunningGame, ErrorStrings.LaunchExistsDialogText(instanceName),
-                MessageDialogCommandSet.YesNo);
+                ErrorStrings.StopRunningGame,
+                ErrorStrings.LaunchExistsDialogText(thisInstance, instanceName, testAccount,
+                                                    devAccount), MessageDialogCommandSet.YesNo);
             if (dialogRes != MessageDialogCommand.Yes)
             {
                 // Developer opted to not stop the existing launch.

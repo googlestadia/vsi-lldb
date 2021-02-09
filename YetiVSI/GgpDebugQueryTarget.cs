@@ -138,10 +138,11 @@ namespace YetiVSI
                 }
 
                 DeployOnLaunchSetting deployOnLaunchAsync = await project.GetDeployOnLaunchAsync();
+                launchParams.Account = _credentialManager.LoadAccount();
 
                 if (!_gameletSelector.TrySelectAndPrepareGamelet(
                     targetPath, deployOnLaunchAsync, actionRecorder, setupQueriesResult.Gamelets,
-                    launchParams.TestAccount, out Gamelet gamelet))
+                    setupQueriesResult.TestAccount, launchParams.Account, out Gamelet gamelet))
                 {
                     return new IDebugLaunchSettings[] { };
                 }
@@ -150,7 +151,6 @@ namespace YetiVSI
                 launchParams.PoolId = gamelet.PoolId;
                 launchParams.GameletEnvironmentVars =
                     await project.GetGameletEnvironmentVariablesAsync();
-                launchParams.Account = _credentialManager.LoadAccount();
 
                 // Prepare for debug launch using these settings.
                 var debugLaunchSettings = new DebugLaunchSettings(launchOptions);

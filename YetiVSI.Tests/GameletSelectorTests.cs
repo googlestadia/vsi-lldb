@@ -34,21 +34,22 @@ namespace YetiVSI.Test
     [TestFixture]
     class GameletSelectorTests
     {
-        const string TEST_DEBUG_SESSION_ID = "sessiondebugid";
-        const string TEST_ACCOUNT = "test account";
+        const string _testDebugSessionId = "sessiondebugid";
+        const string _testAccount = "test account";
+        const string _devAccount = "dev_account";
 
-        GameletSelectorLegacyFlow gameletSelector;
+        GameletSelectorLegacyFlow _gameletSelector;
 
-        IMetrics metrics;
-        IDialogUtil dialogUtil;
-        IGameletSelectionWindow gameletSelectionWindow;
-        IGameletClient gameletClient;
-        ISshManager sshManager;
+        IMetrics _metrics;
+        IDialogUtil _dialogUtil;
+        IGameletSelectionWindow _gameletSelectionWindow;
+        IGameletClient _gameletClient;
+        ISshManager _sshManager;
 
-        Gamelet gamelet1;
-        Gamelet gamelet2;
-        ActionRecorder actionRecorder;
-        IRemoteCommand remoteCommand;
+        Gamelet _gamelet1;
+        Gamelet _gamelet2;
+        ActionRecorder _actionRecorder;
+        IRemoteCommand _remoteCommand;
 
         readonly string _targetPath = "";
         readonly DeployOnLaunchSetting _deploy = DeployOnLaunchSetting.ALWAYS;
@@ -56,7 +57,7 @@ namespace YetiVSI.Test
         [SetUp]
         public void SetUp()
         {
-            gamelet1 = new Gamelet
+            _gamelet1 = new Gamelet
             {
                 Id = "test_gamelet1",
                 Name = "test_gamelet_name1",
@@ -64,7 +65,7 @@ namespace YetiVSI.Test
                 State = GameletState.Reserved,
             };
 
-            gamelet2 = new Gamelet
+            _gamelet2 = new Gamelet
             {
                 Id = "test_gamelet2",
                 Name = "test_gamelet_name2",
@@ -72,22 +73,22 @@ namespace YetiVSI.Test
                 State = GameletState.Reserved,
             };
 
-            metrics = Substitute.For<IMetrics>();
-            metrics.NewDebugSessionId().Returns(TEST_DEBUG_SESSION_ID);
+            _metrics = Substitute.For<IMetrics>();
+            _metrics.NewDebugSessionId().Returns(_testDebugSessionId);
 
-            dialogUtil = Substitute.For<IDialogUtil>();
+            _dialogUtil = Substitute.For<IDialogUtil>();
 
             var sdkConfigFactory = Substitute.For<SdkConfig.Factory>();
             var sdkConfig = new SdkConfig();
             sdkConfigFactory.LoadOrDefault().Returns(sdkConfig);
 
             var credentialManager = Substitute.For<YetiCommon.ICredentialManager>();
-            credentialManager.LoadAccount().Returns(TEST_ACCOUNT);
+            credentialManager.LoadAccount().Returns(_testAccount);
 
-            gameletSelectionWindow = Substitute.For<IGameletSelectionWindow>();
+            _gameletSelectionWindow = Substitute.For<IGameletSelectionWindow>();
             var gameletSelectionWindowFactory = Substitute.For<GameletSelectionWindow.Factory>();
             gameletSelectionWindowFactory.Create(Arg.Any<List<Gamelet>>())
-                .Returns(gameletSelectionWindow);
+                .Returns(_gameletSelectionWindow);
 
             var cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager,
                                               new CloudConnection(), new GgpSDKUtil());
@@ -95,90 +96,94 @@ namespace YetiVSI.Test
             var cancelableTaskFactory =
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
 
-            gameletClient = Substitute.For<IGameletClient>();
+            _gameletClient = Substitute.For<IGameletClient>();
             var gameletClientFactory = Substitute.For<GameletClient.Factory>();
-            gameletClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(gameletClient);
+            gameletClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(_gameletClient);
 
-            sshManager = Substitute.For<ISshManager>();
+            _sshManager = Substitute.For<ISshManager>();
 
-            sshManager.EnableSshAsync(gamelet1, Arg.Any<YetiVSI.Metrics.IAction>())
+            _sshManager.EnableSshAsync(_gamelet1, Arg.Any<YetiVSI.Metrics.IAction>())
                 .Returns(Task.FromResult(true));
-            sshManager.EnableSshAsync(gamelet2, Arg.Any<YetiVSI.Metrics.IAction>())
+            _sshManager.EnableSshAsync(_gamelet2, Arg.Any<YetiVSI.Metrics.IAction>())
                 .Returns(Task.FromResult(true));
 
-            remoteCommand = Substitute.For<IRemoteCommand>();
+            _remoteCommand = Substitute.For<IRemoteCommand>();
 
-            var debugSessionMetrics = new DebugSessionMetrics(metrics);
+            var debugSessionMetrics = new DebugSessionMetrics(_metrics);
             debugSessionMetrics.UseNewDebugSessionId();
-            actionRecorder = new ActionRecorder(debugSessionMetrics);
+            _actionRecorder = new ActionRecorder(debugSessionMetrics);
 
-            gameletSelector = new GameletSelectorLegacyFlow(
-                dialogUtil, cloudRunner, gameletSelectionWindowFactory,
-                cancelableTaskFactory, gameletClientFactory, sshManager, remoteCommand);
+            _gameletSelector = new GameletSelectorLegacyFlow(
+                _dialogUtil, cloudRunner, gameletSelectionWindowFactory, cancelableTaskFactory,
+                gameletClientFactory, _sshManager, _remoteCommand);
         }
 
         [Test]
         public void TestCanSelectFromMultipleGamelets()
         {
-            var gamelets = new List<Gamelet> { gamelet1, gamelet2 };
+            var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
 
-            gameletSelectionWindow.Run().Returns(gamelet2);
+            _gameletSelectionWindow.Run().Returns(_gamelet2);
 
             Gamelet gamelet;
-            var result = gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                actionRecorder,
-                gamelets, null, out gamelet);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                                                                     _actionRecorder, gamelets,
+                                                                     null, _devAccount,
+                                                                     out gamelet);
 
             Assert.That(result, Is.True);
-            Assert.That(gamelet.Id, Is.EqualTo(gamelet2.Id));
+            Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsSelect,
-                DeveloperEventStatus.Types.Code.Success);
+                                 DeveloperEventStatus.Types.Code.Success);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsClearLogs,
-                DeveloperEventStatus.Types.Code.Success);
+                                 DeveloperEventStatus.Types.Code.Success);
         }
 
         [Test]
         public void TestCanSelectOnlyGamelet()
         {
-            var gamelets = new List<Gamelet> { gamelet1 };
+            var gamelets = new List<Gamelet> { _gamelet1 };
 
             Gamelet gamelet;
-            var result = gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                actionRecorder,
-                gamelets, null, out gamelet);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                                                                     _actionRecorder, gamelets,
+                                                                     null, _devAccount,
+                                                                     out gamelet);
 
             Assert.That(result, Is.True);
-            Assert.That(gamelet.Id, Is.EqualTo(gamelet1.Id));
+            Assert.That(gamelet.Id, Is.EqualTo(_gamelet1.Id));
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsSelect,
-                DeveloperEventStatus.Types.Code.Success);
+                                 DeveloperEventStatus.Types.Code.Success);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsClearLogs,
-                DeveloperEventStatus.Types.Code.Success);
+                                 DeveloperEventStatus.Types.Code.Success);
         }
 
         [Test]
         public async Task TestGameletRunningStopReturnsTrueAsync()
         {
-            gamelet1.State = GameletState.InUse;
+            _gamelet1.State = GameletState.InUse;
 
-            var stoppedGamelet = gamelet1.Clone();
+            var stoppedGamelet = _gamelet1.Clone();
             stoppedGamelet.State = GameletState.Reserved;
-            gameletClient.GetGameletByNameAsync(gamelet1.Name)
+            _gameletClient.GetGameletByNameAsync(_gamelet1.Name)
                 .Returns(Task.FromResult(stoppedGamelet));
-            dialogUtil.ShowYesNo(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+            _dialogUtil.ShowYesNo(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
 
             Gamelet gamelet;
-            var result = gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                actionRecorder,
-                new List<Gamelet> { gamelet1 }, null, out gamelet);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                                                                     _actionRecorder,
+                                                                     new List<Gamelet>
+                                                                         { _gamelet1 }, null,
+                                                                     _devAccount, out gamelet);
 
             Assert.That(result, Is.True);
-            Assert.That(gamelet.Id, Is.EqualTo(gamelet1.Id));
+            Assert.That(gamelet.Id, Is.EqualTo(_gamelet1.Id));
             Assert.That(gamelet.State, Is.EqualTo(GameletState.Reserved));
-            await gameletClient.Received(1).StopGameAsync(gamelet1.Id);
+            await _gameletClient.Received(1).StopGameAsync(_gamelet1.Id);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsSelect,
-                DeveloperEventStatus.Types.Code.Success);
+                                 DeveloperEventStatus.Types.Code.Success);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsClearLogs,
-                DeveloperEventStatus.Types.Code.Success);
+                                 DeveloperEventStatus.Types.Code.Success);
         }
 
         [Test]
@@ -186,94 +191,100 @@ namespace YetiVSI.Test
         {
             Gamelet gamelet;
             var result = Assert.Throws<ConfigurationException>(
-                () => gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                    actionRecorder,
-                new List<Gamelet>(), null, out gamelet));
+                () => _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                                                                  _actionRecorder,
+                                                                  new List<Gamelet>(), null,
+                                                                  _devAccount, out gamelet));
 
             Assert.That(result.Message, Does.Contain(ErrorStrings.NoGameletsFound));
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsSelect,
-                DeveloperEventStatus.Types.Code.InvalidConfiguration);
+                                 DeveloperEventStatus.Types.Code.InvalidConfiguration);
         }
 
         [Test]
         public void TestGameletRunningNoStopReturnsFalse()
         {
-            gamelet1.State = GameletState.InUse;
+            _gamelet1.State = GameletState.InUse;
 
-            dialogUtil.ShowYesNo(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+            _dialogUtil.ShowYesNo(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
 
             Gamelet gamelet;
-            var result = gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                actionRecorder,
-                new List<Gamelet> { gamelet1 }, null, out gamelet);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                                                                     _actionRecorder,
+                                                                     new List<Gamelet>
+                                                                         { _gamelet1 }, null,
+                                                                     _devAccount, out gamelet);
             Assert.That(result, Is.False);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsPrepare,
-                DeveloperEventStatus.Types.Code.Cancelled);
+                                 DeveloperEventStatus.Types.Code.Cancelled);
         }
 
 
         [Test]
         public void TestGameletIsInvalidStateThrowsException()
         {
-            gamelet1.State = GameletState.Unhealthy;
+            _gamelet1.State = GameletState.Unhealthy;
 
             Gamelet gamelet;
-            var result = Assert.Throws<InvalidStateException>(() =>
-                gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                    actionRecorder,
-                new List<Gamelet> { gamelet1 }, null, out gamelet));
+            var result = Assert.Throws<InvalidStateException>(
+                () => _gameletSelector.TrySelectAndPrepareGamelet(
+                    _targetPath, _deploy, _actionRecorder, new List<Gamelet> { _gamelet1 }, null,
+                    _devAccount, out gamelet));
 
             Assert.That(result.Message,
-                Is.EqualTo(ErrorStrings.GameletInUnexpectedState(gamelet1)));
+                        Is.EqualTo(ErrorStrings.GameletInUnexpectedState(_gamelet1)));
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsPrepare,
-                DeveloperEventStatus.Types.Code.InvalidObjectState);
+                                 DeveloperEventStatus.Types.Code.InvalidObjectState);
         }
 
         [Test]
         public void TestEnableSshFailsReturnsFalse()
         {
-            sshManager
-                .When(m => m.EnableSshAsync(gamelet1, Arg.Any<YetiVSI.Metrics.IAction>()))
-                .Do(c => { throw new CloudException("Oops!"); });
+            _sshManager.When(m => m.EnableSshAsync(_gamelet1, Arg.Any<YetiVSI.Metrics.IAction>()))
+                .Do(c => throw new CloudException("Oops!"));
 
             Gamelet gamelet;
-            var result = gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                actionRecorder,
-                new List<Gamelet> { gamelet1 }, null, out gamelet);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                                                                     _actionRecorder,
+                                                                     new List<Gamelet>
+                                                                         { _gamelet1 }, null,
+                                                                     _devAccount, out gamelet);
 
             Assert.That(result, Is.False);
-            dialogUtil.Received(1).ShowError(Arg.Any<string>(), Arg.Any<string>());
+            _dialogUtil.Received(1).ShowError(Arg.Any<string>(), Arg.Any<string>());
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
-                DeveloperEventStatus.Types.Code.InternalError);
+                                 DeveloperEventStatus.Types.Code.InternalError);
         }
 
         [Test]
         public void TestClearLogsFailsReturnsFalse()
         {
-            remoteCommand
-                .When(m => m.RunWithSuccessAsync(new SshTarget(gamelet1),
-                    GameletSelectorLegacyFlow.CLEAR_LOGS_CMD))
+            _remoteCommand
+                .When(m => m.RunWithSuccessAsync(new SshTarget(_gamelet1),
+                                                 GameletSelectorLegacyFlow.CLEAR_LOGS_CMD))
                 .Do(c => { throw new ProcessException("Oops!"); });
 
             Gamelet gamelet;
-            var result = gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                actionRecorder,
-                new List<Gamelet> { gamelet1 }, null, out gamelet);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                                                                     _actionRecorder,
+                                                                     new List<Gamelet>
+                                                                         { _gamelet1 }, null,
+                                                                     _devAccount, out gamelet);
 
             Assert.That(result, Is.False);
-            dialogUtil.ShowError(Arg.Any<string>(), Arg.Any<string>());
+            _dialogUtil.ShowError(Arg.Any<string>(), Arg.Any<string>());
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsClearLogs,
-                DeveloperEventStatus.Types.Code.ExternalToolUnavailable);
+                                 DeveloperEventStatus.Types.Code.ExternalToolUnavailable);
         }
 
-        void AssertMetricRecorded(
-            DeveloperEventType.Types.Type type, DeveloperEventStatus.Types.Code status)
+        void AssertMetricRecorded(DeveloperEventType.Types.Type type,
+                                  DeveloperEventStatus.Types.Code status)
         {
-            metrics.Received().RecordEvent(type, Arg.Is<DeveloperLogEvent>(
-                p =>
-                    p.StatusCode == status &&
-                    p.DebugSessionIdStr == TEST_DEBUG_SESSION_ID
-                ));
+            _metrics.Received()
+                .RecordEvent(
+                    type,
+                    Arg.Is<DeveloperLogEvent>(p => p.StatusCode == status &&
+                                                  p.DebugSessionIdStr == _testDebugSessionId));
         }
     }
 }

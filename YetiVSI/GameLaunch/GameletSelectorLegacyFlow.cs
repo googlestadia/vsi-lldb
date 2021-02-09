@@ -40,10 +40,11 @@ namespace YetiVSI.GameLaunch
         /// Thrown if there is no gamelet reserved</exception>
         /// <exception cref="CloudException">Thrown if there are any RPC errors.</exception>
         /// <returns>True if the gamelet was prepared successfully, false otherwise.</returns>
-        bool TrySelectAndPrepareGamelet(
-            string targetPath, DeployOnLaunchSetting deployOnLaunchSetting,
-            ActionRecorder actionRecorder, List<Gamelet> gamelets, string testAccount,
-            out Gamelet result);
+        bool TrySelectAndPrepareGamelet(string targetPath,
+                                        DeployOnLaunchSetting deployOnLaunchSetting,
+                                        ActionRecorder actionRecorder, List<Gamelet> gamelets,
+                                        TestAccount testAccount, string devAccount,
+                                        out Gamelet result);
     }
 
     //TODO: remove the legacy launch flow.
@@ -96,8 +97,8 @@ namespace YetiVSI.GameLaunch
         public bool TrySelectAndPrepareGamelet(string targetPath,
                                                DeployOnLaunchSetting deployOnLaunchSetting,
                                                ActionRecorder actionRecorder,
-                                               List<Gamelet> gamelets, string testAccount,
-                                               out Gamelet result)
+                                               List<Gamelet> gamelets, TestAccount testAccount,
+                                               string devAccount, out Gamelet result)
         {
             Gamelet gamelet = result = null;
             if (!TrySelectGamelet(actionRecorder, gamelets, out gamelet))
