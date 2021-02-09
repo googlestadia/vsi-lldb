@@ -21,7 +21,6 @@ using System.Linq;
 using YetiVSI.DebugEngine.AsyncOperations;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.Interfaces;
-using YetiVSI.GameLaunch;
 using YetiVSI.LLDBShell;
 using YetiVSI.Util;
 
@@ -112,7 +111,7 @@ namespace YetiVSI.DebugEngine
             LldbListenerSubscriber listenerSubscriber, SbProcess process,
             SbCommandInterpreter commandInterpreter, bool isCoreAttach,
             IExceptionManager exceptionManager, IModuleSearchLogHolder moduleSearchLogHolder,
-            uint remotePid, IVsiGameLaunch gameLaunch);
+            uint remotePid);
     }
 
     public class LldbAttachedProgram : ILldbAttachedProgram
@@ -170,7 +169,7 @@ namespace YetiVSI.DebugEngine
                 LldbListenerSubscriber listenerSubscriber, SbProcess process,
                 SbCommandInterpreter commandInterpreter, bool isCoreAttach,
                 IExceptionManager exceptionManager, IModuleSearchLogHolder moduleSearchLogHolder,
-                uint remotePid, IVsiGameLaunch gameLaunch)
+                uint remotePid)
             {
                 // Required due to an issue triggered by the proxy used to wrap debugProgramFactory.
                 // TODO: Remove assertion once the issue with Castle.DynamicProxy is
@@ -198,7 +197,7 @@ namespace YetiVSI.DebugEngine
                         ad7FrameInfoCreator, stackFrameCreator, thread, program));
                 var debugProgram = _debugProgramFactory.Create(
                     debugEngineHandler, threadCreator, debugProcess, programId, process, target,
-                    debugModuleCache, isCoreAttach, gameLaunch);
+                    debugModuleCache, isCoreAttach);
 
                 _taskExecutor.StartAsyncTasks(
                     ex => debugEngineHandler.Abort(debugProgram, ExitInfo.Error(ex)));

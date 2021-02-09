@@ -48,10 +48,6 @@ namespace YetiVSI.GameLaunch
         /// </summary>
         /// <returns></returns>
         bool WaitUntilGameLaunched();
-        /// <summary>
-        /// Stops the game, which is launched by the current debug session.
-        /// </summary>
-        Task StopGameAsync();
     }
 
     public class VsiGameLaunch : IVsiGameLaunch
@@ -123,32 +119,6 @@ namespace YetiVSI.GameLaunch
             }
 
             return status.GameLaunched;
-        }
-
-        public async Task StopGameAsync()
-        {
-            GgpGrpc.Models.GameLaunch gameLaunch =
-                    await _gameLaunchManager.DeleteLaunchAsync(LaunchName, new NothingToCancel());
-
-            if (gameLaunch == null ||
-                gameLaunch.GameLaunchState == GameLaunchState.GameLaunchEnded &&
-                gameLaunch.GameLaunchEnded?.EndReason == EndReason.GameExitedWithSuccessfulCode)
-            {
-                return;
-            }
-
-            if (gameLaunch.GameLaunchState != GameLaunchState.GameLaunchEnded)
-            {
-                Trace.WriteLine($"Couldn't delete the launch '{LaunchName}'. " +
-                                $"Current launch state is: '{gameLaunch.GameLaunchState}'");
-            }
-            else
-            {
-                Trace.WriteLine($"Something went wrong while deleting the launch '{LaunchName}'. " +
-                            "Current end reason is: " +
-                            $"{gameLaunch.GameLaunchEnded?.EndReason.ToString() ?? "empty"}', " +
-                            $"Expected end reason is: '{EndReason.GameExitedWithSuccessfulCode}'");
-            }
         }
 
         // Polling statuses until we see RunningGame or GameLaunchEnded. IncompleteLaunch,

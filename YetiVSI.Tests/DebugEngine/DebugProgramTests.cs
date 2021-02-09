@@ -51,8 +51,6 @@ namespace YetiVSI.Test.DebugEngine
         IDebugEngineHandler mockDebugEngineHandler;
         DebugProgram.ThreadCreator mockDebugThreadCreator;
         DebugDisassemblyStream.Factory mockDebugDisassemblyStreamFactory;
-        IGameLaunchManager _mockGameLaunchManager;
-        IVsiGameLaunch mockGameLaunch;
 
         [SetUp]
         public void SetUp()
@@ -73,16 +71,13 @@ namespace YetiVSI.Test.DebugEngine
             threadEnumFactory = new ThreadEnumFactory();
             moduleEnumFactory = new ModuleEnumFactory();
             codeContextEnumFactory = new CodeContextEnumFactory();
-            _mockGameLaunchManager = Substitute.For<IGameLaunchManager>();
-            _mockGameLaunchManager.LaunchGameApiEnabled.Returns(false);
-            mockGameLaunch = Substitute.For<IVsiGameLaunch>();
 
             mockDebugModuleCache = Substitute.For<IDebugModuleCache>();
             program = new DebugProgram.Factory(taskContext, mockDebugDisassemblyStreamFactory,
                     mockDocumentContextFactory, mockCodeContextFactory, threadEnumFactory,
-                    moduleEnumFactory, codeContextEnumFactory, _mockGameLaunchManager)
+                    moduleEnumFactory, codeContextEnumFactory)
                 .Create(mockDebugEngineHandler, mockDebugThreadCreator, mockProcess, guid,
-                    mockSbProcess, mockRemoteTarget, mockDebugModuleCache, false, mockGameLaunch);
+                    mockSbProcess, mockRemoteTarget, mockDebugModuleCache, false);
         }
 
         [Test]

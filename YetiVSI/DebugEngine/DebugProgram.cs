@@ -23,7 +23,6 @@ using System.Linq;
 using YetiCommon;
 using YetiCommon.CastleAspects;
 using YetiVSI.DebugEngine.Exit;
-using YetiVSI.GameLaunch;
 using YetiVSI.Util;
 
 namespace YetiVSI.DebugEngine
@@ -54,7 +53,7 @@ namespace YetiVSI.DebugEngine
             DebugProgram.ThreadCreator threadCreator,
             IDebugProcess2 process, Guid programId, SbProcess lldbProcess,
             RemoteTarget lldbTarget,
-            IDebugModuleCache debugModuleCache, bool isCoreAttach, IVsiGameLaunch gameLaunch);
+            IDebugModuleCache debugModuleCache, bool isCoreAttach);
     }
 
     // DebugProgram contains execution information about a process.
@@ -73,7 +72,6 @@ namespace YetiVSI.DebugEngine
             readonly ThreadEnumFactory _threadsEnumFactory;
             readonly ModuleEnumFactory _moduleEnumFactory;
             readonly CodeContextEnumFactory _codeContextEnumFactory;
-            readonly IGameLaunchManager _gameLaunchManager;
 
             public Factory(JoinableTaskContext taskContext,
                 DebugDisassemblyStream.Factory debugDisassemblyStreamFactory,
@@ -81,8 +79,7 @@ namespace YetiVSI.DebugEngine
                 DebugCodeContext.Factory codeContextFactory,
                 ThreadEnumFactory threadsEnumFactory,
                 ModuleEnumFactory moduleEnumFactory,
-                CodeContextEnumFactory codeContextEnumFactory,
-                IGameLaunchManager gameLaunchManager)
+                CodeContextEnumFactory codeContextEnumFactory)
             {
                 _taskContext = taskContext;
                 _debugDisassemblyStreamFactory = debugDisassemblyStreamFactory;
@@ -91,21 +88,19 @@ namespace YetiVSI.DebugEngine
                 _threadsEnumFactory = threadsEnumFactory;
                 _moduleEnumFactory = moduleEnumFactory;
                 _codeContextEnumFactory = codeContextEnumFactory;
-                _gameLaunchManager = gameLaunchManager;
             }
 
             public IGgpDebugProgram Create(IDebugEngineHandler debugEngineHandler,
                 ThreadCreator threadCreator,
                 IDebugProcess2 process, Guid programId, SbProcess lldbProcess,
                 RemoteTarget lldbTarget,
-                IDebugModuleCache debugModuleCache, bool isCoreAttach, IVsiGameLaunch gameLaunch)
+                IDebugModuleCache debugModuleCache, bool isCoreAttach)
             {
                 return new DebugProgram(_taskContext, threadCreator,
                     _debugDisassemblyStreamFactory,
                     _documentContextFactory, _codeContextFactory, _threadsEnumFactory,
                     _moduleEnumFactory, _codeContextEnumFactory, debugEngineHandler, process,
-                    programId, lldbProcess, lldbTarget, debugModuleCache, isCoreAttach,
-                    _gameLaunchManager, gameLaunch);
+                    programId, lldbProcess, lldbTarget, debugModuleCache, isCoreAttach);
             }
         }
 
@@ -127,8 +122,6 @@ namespace YetiVSI.DebugEngine
         readonly ThreadEnumFactory _threadEnumFactory;
         readonly ModuleEnumFactory _moduleEnumFactory;
         readonly CodeContextEnumFactory _codeContextEnumFactory;
-        readonly IGameLaunchManager _gameLaunchManager;
-        readonly IVsiGameLaunch _gameLaunch;
 
         DebugProgram(
             JoinableTaskContext taskContext,
@@ -145,9 +138,7 @@ namespace YetiVSI.DebugEngine
             SbProcess lldbProcess,
             RemoteTarget lldbTarget,
             IDebugModuleCache debugModuleCache,
-            bool isCoreAttach,
-            IGameLaunchManager gameLaunchManager,
-            IVsiGameLaunch gameLaunch)
+            bool isCoreAttach)
         {
             _id = programId;
             _process = process;
@@ -165,8 +156,6 @@ namespace YetiVSI.DebugEngine
             _moduleEnumFactory = moduleEnumFactory;
             _codeContextEnumFactory = codeContextEnumFactory;
             _debugModuleCache = debugModuleCache;
-            _gameLaunchManager = gameLaunchManager;
-            _gameLaunch = gameLaunch;
         }
 
         #region IGgpDebugProgram functions
@@ -466,24 +455,15 @@ namespace YetiVSI.DebugEngine
         public int Terminate()
         {
             TerminationRequested = true;
-            if (_gameLaunchManager.LaunchGameApiEnabled)
+            //TODO: remove the legacy launch flow.
+            if (!_lldbProcess.Kill())
             {
-                SafeErrorUtil.SafelyLogErrorAndForget(() => _gameLaunch.StopGameAsync(),
-                                        $"Couldn't delete the launch '{_gameLaunch.LaunchName}'");
-            }
-            else
-            {
-                //TODO: remove the legacy launch flow.
-                if (!_lldbProcess.Kill())
-                {
-                    // Visual Studio waits for the ProgramDestroyEvent regardless of whether
-                    // Terminate() succeeds, so we send the event on failure as well as on success.
-                    _debugEngineHandler.Abort(
-                        this,
-                        ExitInfo.Error(
-                            new TerminateProcessException(ErrorStrings.FailedToStopGame)));
-                    return VSConstants.E_FAIL;
-                }
+                // Visual Studio waits for the ProgramDestroyEvent regardless of whether
+                // Terminate() succeeds, so we send the event on failure as well as on success.
+                _debugEngineHandler.Abort(
+                    this,
+                    ExitInfo.Error(new TerminateProcessException(ErrorStrings.FailedToStopGame)));
+                return VSConstants.E_FAIL;
             }
 
             // Send the ProgramDestroyEvent immediately, so that Visual Studio can't cause a

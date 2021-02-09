@@ -473,8 +473,6 @@ namespace YetiVSI.Test.DebugEngine
             var lldbShell = Substitute.For<ILLDBShell>();
             var actionRecorder = new ActionRecorder(Substitute.For<IMetrics>());
             var symbolSettingsProvider = Substitute.For<ISymbolSettingsProvider>();
-            var mockGameLauncher = Substitute.For<IGameLaunchManager>();
-            mockGameLauncher.LaunchGameApiEnabled.Returns(false);
             var attachedProgramFactory = new LldbAttachedProgram.Factory(
                 taskContext, new DebugEngineHandler.Factory(taskContext), taskExecutor,
                 new LldbEventManager.Factory(new BoundBreakpointEnumFactory(), taskContext),
@@ -483,7 +481,7 @@ namespace YetiVSI.Test.DebugEngine
                                              debugCodeContextFactory, debugDocumentContextFactory),
                                          debugDocumentContextFactory, debugCodeContextFactory,
                                          threadsEnumFactory, moduleEnumFactory,
-                                         codeContextEnumFactory, mockGameLauncher),
+                                         codeContextEnumFactory),
                 new DebugModuleCache.Factory(new SynchronousDispatcher()),
                 new DebugModule.Factory(
                     FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false),

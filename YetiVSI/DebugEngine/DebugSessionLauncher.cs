@@ -382,7 +382,7 @@ namespace YetiVSI.DebugEngine
                         process, programId, _debugEngine, callback, lldbDebugger, lldbTarget,
                         listenerSubscriber, lldbDebuggerProcess,
                         lldbDebugger.GetCommandInterpreter(), true, new NullExceptionManager(),
-                        _moduleSearchLogHolder, remotePid: 0, gameLaunch: _gameLaunch);
+                        _moduleSearchLogHolder, remotePid: 0);
                 }
 
                 // Get process ID.
@@ -457,7 +457,7 @@ namespace YetiVSI.DebugEngine
                 return _attachedProgramFactory.Create(
                     process, programId, _debugEngine, callback, lldbDebugger, lldbTarget,
                     listenerSubscriber, debuggerProcess, lldbDebugger.GetCommandInterpreter(),
-                    false, exceptionManager, _moduleSearchLogHolder, processId, _gameLaunch);
+                    false, exceptionManager, _moduleSearchLogHolder, processId);
             }
             finally
             {

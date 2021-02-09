@@ -321,7 +321,7 @@ namespace YetiVSI.DebugEngine
                     debugDocumentContextFactory, debugCodeContextFactory,
                     GetFactoryDecorator().Decorate(new ThreadEnumFactory()),
                     GetFactoryDecorator().Decorate(new ModuleEnumFactory()),
-                    GetFactoryDecorator().Decorate(new CodeContextEnumFactory()), gameLauncher));
+                    GetFactoryDecorator().Decorate(new CodeContextEnumFactory())));
             var breakpointErrorEnumFactory =
                 GetFactoryDecorator().Decorate(new BreakpointErrorEnumFactory());
             var boundBreakpointEnumFactory =
