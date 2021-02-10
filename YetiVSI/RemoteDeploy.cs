@@ -744,8 +744,7 @@ namespace YetiVSI
             return localLldbServerPath;
         }
 
-
-        public class ParallelProgressSumAggregator : IIncementalProgess
+        public class ParallelProgressSumAggregator : IIncrementalProgress
         {
             IProgress<string> _progress;
             long _totalValue = 0;

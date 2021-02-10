@@ -245,7 +245,7 @@
     <Compile Include="GameLaunch\VsiGameLaunch.cs" />
     <Compile Include="GameletMountChecker.cs" />
     <Compile Include="GgpDebugQueryTargetCompRoot.cs" />
-    <Compile Include="IIncementalProgress.cs" />
+    <Compile Include="IIncrementalProgress.cs" />
     <Compile Include="LoadSymbols\ISessionNotifier.cs" />
     <Compile Include="LoadSymbols\LoadSymbolsCommand.cs" />
     <Compile Include="LoadSymbols\SessionNotifierService.cs" />

@@ -54,7 +54,7 @@ namespace YetiVSI
         // Transfers the provided local file to the provided gamelet, under remotePath.  Throws a
         // ProcessException if the copy operation fails.
         Task<long> PutAsync(SshTarget target, string file, string remotePath,
-                            DeployCompression compression, IIncementalProgess progress,
+                            DeployCompression compression, IIncrementalProgress progress,
                             ICancelable task);
 
         // Gets the specified file from the provided gamelet. Throws a ProcessException if the
@@ -80,8 +80,8 @@ namespace YetiVSI
         }
 
         public async Task<long> PutAsync(SshTarget target, string file, string remotePath,
-                                         DeployCompression compression, IIncementalProgess progress,
-                                         ICancelable task)
+                                         DeployCompression compression,
+                                         IIncrementalProgress progress, ICancelable task)
         {
             ProcessManager processManager = ProcessManager.CreateForCancelableTask(task);
             long transferredBytes = 0;
@@ -145,7 +145,7 @@ namespace YetiVSI
         }
 
         async Task<long> PutCompressedAsync(SshTarget target, string localPath, string remotePath,
-                                            IIncementalProgess progress,
+                                            IIncrementalProgress progress,
                                             ProcessManager processManager, ICancelable task)
         {
             // The compressed transfer uses a socket that is tunneled through ssh.
@@ -187,7 +187,7 @@ namespace YetiVSI
         /// </returns>
         async Task<long> RunTransferProcessesAsync(string localPath, int localPort,
                                                    IProcess uncompressProcess,
-                                                   IIncementalProgess progress,
+                                                   IIncrementalProgress progress,
                                                    ProcessManager manager, ICancelable task)
         {
             // Start the remote processes and Wait for the first line of netcat's standard
@@ -308,7 +308,7 @@ namespace YetiVSI
         /// Size of sent data in bytes.
         /// </returns>
         async Task<long> RunCompressProcessAsync(string localPath, int port,
-                                                 IIncementalProgess progress,
+                                                 IIncrementalProgress progress,
                                                  ProcessManager manager, ICancelable task)
         {
             long sentDataSize = 0;
@@ -368,12 +368,13 @@ namespace YetiVSI
         /// <exception cref="IOException">
         /// Thrown if the stream copy fails.
         /// </exception>
-        Task<long> SendAsync(Stream data, int port, IIncementalProgess progress, ICancelable task);
+        Task<long> SendAsync(Stream data, int port, IIncrementalProgress progress,
+                             ICancelable task);
     }
 
     public class LocalSocketSender : ILocalSocketSender
     {
-        public async Task<long> SendAsync(Stream data, int port, IIncementalProgess progress,
+        public async Task<long> SendAsync(Stream data, int port, IIncrementalProgress progress,
                                           ICancelable task)
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, port);
@@ -401,7 +402,7 @@ namespace YetiVSI
             }
         }
 
-        async Task<long> CopyToAsync(Stream from, Stream to, IIncementalProgess progress,
+        async Task<long> CopyToAsync(Stream from, Stream to, IIncrementalProgress progress,
                                      ICancelable task)
         {
             // This is default buffer size for Stream.CopyToAsync.

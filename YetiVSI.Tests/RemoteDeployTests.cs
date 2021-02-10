@@ -156,11 +156,10 @@ namespace YetiVSI.Test
             await remoteDeploy.DeployLldbServerAsync(target, action);
             await remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
 
-            await remoteFile.DidNotReceive().PutAsync(Arg.Any<SshTarget>(), Arg.Any<string>(),
-                                                      Arg.Any<string>(),
-                                                      Arg.Any<DeployCompression>(),
-                                                      Arg.Any<IIncementalProgess>(),
-                                                      Arg.Any<ICancelableTask>());
+            await remoteFile.DidNotReceive().PutAsync(
+                Arg.Any<SshTarget>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<DeployCompression>(), Arg.Any<IIncrementalProgress>(),
+                Arg.Any<ICancelableTask>());
             await remoteCommand.Received().RunWithSuccessAsync(
                 target, $"chmod a+x {YetiConstants.LldbServerLinuxPath}" +
                             $"{YetiConstants.LldbServerLinuxExecutable}");
@@ -185,14 +184,15 @@ namespace YetiVSI.Test
             project.GetDeployOnLaunchAsync().Returns(DeployOnLaunchSetting.ALWAYS);
             project.GetDeployCompressionAsync().Returns(compressionSetting);
 
-            remoteFile.PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, compression,
-                                Arg.Any<IIncementalProgess>(), Arg.Any<ICancelableTask>())
+            remoteFile
+                .PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, compression,
+                          Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>())
                 .Returns(MockExeFileLength);
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
 
             await remoteFile.Received().PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                                 compression, Arg.Any<IIncementalProgess>(),
+                                                 compression, Arg.Any<IIncrementalProgress>(),
                                                  Arg.Any<ICancelableTask>());
             await remoteCommand.Received().RunWithSuccessAsync(
                 target, $"chmod a+x {YetiConstants.RemoteDeployPath}{TEST_TARGET_FILE_NAME}");
@@ -218,7 +218,7 @@ namespace YetiVSI.Test
             string exceptionString = "test exception";
             remoteFile
                 .PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                          DeployCompression.Compressed, Arg.Any<IIncementalProgess>(),
+                          DeployCompression.Compressed, Arg.Any<IIncrementalProgress>(),
                           Arg.Any<ICancelableTask>())
                 .Returns<Task<long>>(x => { throw new CompressedCopyException(exceptionString); });
 
@@ -242,7 +242,7 @@ namespace YetiVSI.Test
 
             remoteFile
                 .PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                          Arg.Any<DeployCompression>(), Arg.Any<IIncementalProgess>(),
+                          Arg.Any<DeployCompression>(), Arg.Any<IIncrementalProgress>(),
                           Arg.Any<ICancelableTask>())
                 .Returns<Task<long>>(x => { throw new CompressedCopyException("test exception"); });
 
@@ -263,7 +263,7 @@ namespace YetiVSI.Test
             string exceptionString = "test exception";
             remoteFile
                 .PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                          DeployCompression.Uncompressed, Arg.Any<IIncementalProgess>(),
+                          DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
                           Arg.Any<ICancelableTask>())
                 .Returns<Task<long>>(
                     x => { throw new ProcessExecutionException(exceptionString, 1); });
@@ -288,11 +288,10 @@ namespace YetiVSI.Test
 
             await remoteDeploy.DeployLldbServerAsync(target, action);
 
-            await remoteFile.Received().PutAsync(target, TEST_LLDB_SERVER_PATH,
-                                                 TEST_LLDB_SERVER_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelable>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_LLDB_SERVER_PATH, TEST_LLDB_SERVER_PATH_REMOTE,
+                DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                Arg.Any<ICancelable>());
             await remoteCommand.Received().RunWithSuccessAsync(
                 target, $"chmod a+x {YetiConstants.LldbServerLinuxPath}" +
                             $"{YetiConstants.LldbServerLinuxExecutable}");
@@ -317,14 +316,10 @@ namespace YetiVSI.Test
             // copying lldb-file to gamelet throws exception
             remoteFile
                 .PutAsync(target, TEST_LLDB_SERVER_PATH, TEST_LLDB_SERVER_PATH_REMOTE,
-                          DeployCompression.Uncompressed, Arg.Any<IIncementalProgess>(),
-                          Arg.Any<ICancelable>()).Returns<Task<long>>(x =>
-                {
-                    throw new
-                        ProcessExecutionException(
-                            "test exception",
-                            1);
-                });
+                          DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                          Arg.Any<ICancelable>())
+                .Returns<Task<long>>(
+                    x => { throw new ProcessExecutionException("test exception", 1); });
 
             Assert.ThrowsAsync<DeployException>(
                 () => remoteDeploy.DeployLldbServerAsync(target, action));
@@ -389,11 +384,10 @@ namespace YetiVSI.Test
             var process = MockCustomDeployProcess();
             await remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
 
-            await remoteFile.DidNotReceive().PutAsync(Arg.Any<SshTarget>(), Arg.Any<string>(),
-                                                      Arg.Any<string>(),
-                                                      Arg.Any<DeployCompression>(),
-                                                      Arg.Any<IIncementalProgess>(),
-                                                      Arg.Any<ICancelableTask>());
+            await remoteFile.DidNotReceive().PutAsync(
+                Arg.Any<SshTarget>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<DeployCompression>(), Arg.Any<IIncrementalProgress>(),
+                Arg.Any<ICancelableTask>());
             await remoteCommand.DidNotReceive().RunWithSuccessAsync(
                 Arg.Any<SshTarget>(), Arg.Any<string>());
 
@@ -430,9 +424,10 @@ namespace YetiVSI.Test
                 .Returns(previousBuildId);
             project.GetDeployOnLaunchAsync().Returns(DeployOnLaunchSetting.DELTA);
 
-            remoteFile.PutAsync(target, TEST_XDELTA_FOR_GAMELET_PATH,
-                                TEST_XDELTA_FOR_GAMELET_PATH_REMOTE, DeployCompression.Uncompressed,
-                                Arg.Any<IIncementalProgess>(), Arg.Any<ICancelableTask>())
+            remoteFile
+                .PutAsync(target, TEST_XDELTA_FOR_GAMELET_PATH, TEST_XDELTA_FOR_GAMELET_PATH_REMOTE,
+                          DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                          Arg.Any<ICancelableTask>())
                 .Returns(MockXDeltaForGameletFileLength);
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
@@ -442,16 +437,14 @@ namespace YetiVSI.Test
                 $"chmod a+x {YetiConstants.RemoteToolsBinDir}" +
                 $"{YetiConstants.XDeltaLinuxExecutable}");
 
-            await remoteFile.Received().PutAsync(target, TEST_TARGET_DELTA_PATH,
-                                                 TEST_TARGET_DIR_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
-            await remoteFile.Received().PutAsync(target, TEST_XDELTA_FOR_GAMELET_PATH,
-                                                 TEST_XDELTA_FOR_GAMELET_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_TARGET_DELTA_PATH, TEST_TARGET_DIR_REMOTE,
+                DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_XDELTA_FOR_GAMELET_PATH, TEST_XDELTA_FOR_GAMELET_PATH_REMOTE,
+                DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                Arg.Any<ICancelableTask>());
 
             await remoteCommand.Received().RunWithSuccessAsync(
                 target, $"chmod a+x {YetiConstants.RemoteDeployPath}{TEST_TARGET_FILE_NAME}");
@@ -473,24 +466,23 @@ namespace YetiVSI.Test
                 .Returns(previousBuildId);
             project.GetDeployOnLaunchAsync().Returns(DeployOnLaunchSetting.DELTA);
 
-            remoteFile.PutAsync(target, TEST_XDELTA_FOR_GAMELET_PATH,
-                                TEST_XDELTA_FOR_GAMELET_PATH_REMOTE, DeployCompression.Uncompressed,
-                                Arg.Any<IIncementalProgess>(), Arg.Any<ICancelableTask>())
+            remoteFile
+                .PutAsync(target, TEST_XDELTA_FOR_GAMELET_PATH, TEST_XDELTA_FOR_GAMELET_PATH_REMOTE,
+                          DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                          Arg.Any<ICancelableTask>())
                 .Returns<Task<long>>(_ => throw new OperationCanceledException());
 
             Assert.ThrowsAsync<OperationCanceledException>(
                 () => remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action));
 
-            await remoteFile.Received().PutAsync(target, TEST_TARGET_DELTA_PATH,
-                                                 TEST_TARGET_DIR_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
-            await remoteFile.Received().PutAsync(target, TEST_XDELTA_FOR_GAMELET_PATH,
-                                                 TEST_XDELTA_FOR_GAMELET_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_TARGET_DELTA_PATH, TEST_TARGET_DIR_REMOTE,
+                DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_XDELTA_FOR_GAMELET_PATH, TEST_XDELTA_FOR_GAMELET_PATH_REMOTE,
+                DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                Arg.Any<ICancelableTask>());
 
             await remoteCommand.DidNotReceive().RunWithSuccessAsync(
                 target, Arg.Is<string>(cmd => cmd.Contains("chmod")));
@@ -507,9 +499,10 @@ namespace YetiVSI.Test
         {
             project.GetDeployCompressionAsync().Returns(compressionSetting);
 
-            remoteFile.PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                deployCompression, Arg.Any<IIncementalProgess>(),
-                                Arg.Any<ICancelableTask>()).Returns(MockExeFileLength);
+            remoteFile
+                .PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, deployCompression,
+                          Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>())
+                .Returns(MockExeFileLength);
 
             fileSystem.AddFile(TEST_TARGET_PREVIOUS_PATH, MockPreviousExeFileData);
 
@@ -560,10 +553,9 @@ namespace YetiVSI.Test
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
 
-            await remoteFile.Received().PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, DeployCompression.Uncompressed,
+                Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>());
 
             await remoteCommand.Received().RunWithSuccessAsync(
                 target, $"chmod a+x {YetiConstants.RemoteDeployPath}{TEST_TARGET_FILE_NAME}");
@@ -602,10 +594,9 @@ namespace YetiVSI.Test
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
 
-            await remoteFile.Received().PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, DeployCompression.Uncompressed,
+                Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>());
 
             await remoteCommand.Received().RunWithSuccessAsync(
                 target, $"chmod a+x {YetiConstants.RemoteDeployPath}{TEST_TARGET_FILE_NAME}");
@@ -632,11 +623,12 @@ namespace YetiVSI.Test
             await remoteDeploy.DeployLldbServerAsync(target, action);
             await remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
 
-            Received.InOrder(() =>
-            {
-                remoteFile.PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                    DeployCompression.Uncompressed, Arg.Any<IIncementalProgess>(),
-                                    Arg.Any<ICancelableTask>()).Wait();
+            Received.InOrder(() => {
+                remoteFile
+                    .PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
+                              DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                              Arg.Any<ICancelableTask>())
+                    .Wait();
                 remoteCommand.RunWithSuccessAsync(
                         target,
                         $"chmod a+x {YetiConstants.RemoteDeployPath}{TEST_TARGET_FILE_NAME}")
@@ -674,10 +666,9 @@ namespace YetiVSI.Test
             project.GetDeployCompressionAsync().Returns(DeployCompressionSetting.Uncompressed);
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
-            await remoteFile.Received().PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, DeployCompression.Uncompressed,
+                Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>());
 
             // If the local signature could not be read, we don't write the file after.
             VerifyNoLocalSignatureFile();
@@ -697,10 +688,9 @@ namespace YetiVSI.Test
             project.GetDeployCompressionAsync().Returns(DeployCompressionSetting.Uncompressed);
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
-            await remoteFile.Received().PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, DeployCompression.Uncompressed,
+                Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>());
             VerifyLocalSignatureFile();
 
             Assert.AreEqual(BinarySignatureCheck.Types.Result.YesCopy,
@@ -720,10 +710,9 @@ namespace YetiVSI.Test
             project.GetDeployCompressionAsync().Returns(DeployCompressionSetting.Uncompressed);
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
-            await remoteFile.DidNotReceiveWithAnyArgs().PutAsync(null, null, null,
-                                                                 DeployCompression.Uncompressed,
-                                                                 Arg.Any<IIncementalProgess>(),
-                                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.DidNotReceiveWithAnyArgs().PutAsync(
+                null, null, null, DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                Arg.Any<ICancelableTask>());
             VerifyLocalSignatureFile();
 
             Assert.AreEqual(BinarySignatureCheck.Types.Result.NoCopy,
@@ -741,10 +730,9 @@ namespace YetiVSI.Test
             project.GetDeployCompressionAsync().Returns(DeployCompressionSetting.Uncompressed);
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
-            await remoteFile.Received().PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, DeployCompression.Uncompressed,
+                Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>());
             VerifyLocalSignatureFile();
 
             Assert.AreEqual(BinarySignatureCheck.Types.Result.YesCopy,
@@ -771,10 +759,9 @@ namespace YetiVSI.Test
             project.GetDeployCompressionAsync().Returns(DeployCompressionSetting.Uncompressed);
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
-            await remoteFile.Received().PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, DeployCompression.Uncompressed,
+                Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>());
             VerifyLocalSignatureFile();
 
             Assert.AreEqual(BinarySignatureCheck.Types.Result.YesCopy,
@@ -795,10 +782,9 @@ namespace YetiVSI.Test
             project.GetDeployCompressionAsync().Returns(DeployCompressionSetting.Uncompressed);
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
-            await remoteFile.Received().PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, DeployCompression.Uncompressed,
+                Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>());
             VerifyLocalSignatureFile();
 
             Assert.AreEqual(BinarySignatureCheck.Types.Result.YesCopy,
@@ -810,9 +796,10 @@ namespace YetiVSI.Test
         [Test]
         public void DeployExeCanceled()
         {
-            remoteFile.PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                DeployCompression.Compressed, Arg.Any<IIncementalProgess>(),
-                                Arg.Any<ICancelableTask>())
+            remoteFile
+                .PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
+                          DeployCompression.Compressed, Arg.Any<IIncrementalProgress>(),
+                          Arg.Any<ICancelableTask>())
                 .Returns<Task<long>>(_ => throw new OperationCanceledException());
 
             fileSystem.AddFile(TEST_TARGET_PATH_SIGNATURE,
@@ -832,9 +819,10 @@ namespace YetiVSI.Test
         [Test]
         public async Task DeployExeFailedAsync()
         {
-            remoteFile.PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                DeployCompression.Compressed, Arg.Any<IIncementalProgess>(),
-                                Arg.Any<ICancelableTask>())
+            remoteFile
+                .PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
+                          DeployCompression.Compressed, Arg.Any<IIncrementalProgress>(),
+                          Arg.Any<ICancelableTask>())
                 .Returns<Task<long>>(_ => throw new CompressedCopyException("error"));
 
             fileSystem.AddFile(TEST_TARGET_PATH_SIGNATURE,
@@ -848,10 +836,9 @@ namespace YetiVSI.Test
             Assert.ThrowsAsync<DeployException>(
                 () => remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action));
 
-            await remoteFile.Received(1).PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                                 DeployCompression.Compressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received(1).PutAsync(
+                target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, DeployCompression.Compressed,
+                Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>());
         }
 
         [TestCase(DeployOnLaunchSetting.TRUE)]
@@ -871,20 +858,18 @@ namespace YetiVSI.Test
 
             if (setting == DeployOnLaunchSetting.ALWAYS)
             {
-                await remoteFile.Received().PutAsync(target, TEST_TARGET_PATH,
-                                                     TEST_TARGET_PATH_REMOTE,
-                                                     DeployCompression.Uncompressed,
-                                                     Arg.Any<IIncementalProgess>(),
-                                                     Arg.Any<ICancelableTask>());
+                await remoteFile.Received().PutAsync(
+                    target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
+                    DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),
+                    Arg.Any<ICancelableTask>());
                 Assert.AreEqual(BinarySignatureCheck.Types.Result.AlwaysCopy,
                                 action.GetEvent().CopyExecutable.SignatureCheckResult);
             }
             else
             {
-                await remoteFile.DidNotReceiveWithAnyArgs().PutAsync(null, null, null,
-                                                                     DeployCompression.Uncompressed,
-                                                                     Arg.Any<IIncementalProgess>(),
-                                                                     Arg.Any<ICancelableTask>());
+                await remoteFile.DidNotReceiveWithAnyArgs().PutAsync(
+                    null, null, null, DeployCompression.Uncompressed,
+                    Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>());
                 Assert.AreEqual(BinarySignatureCheck.Types.Result.NoCopy,
                                 action.GetEvent().CopyExecutable.SignatureCheckResult);
             }
@@ -906,10 +891,9 @@ namespace YetiVSI.Test
             project.GetDeployCompressionAsync().Returns(DeployCompressionSetting.Uncompressed);
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
-            await remoteFile.Received().PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
-                                                 DeployCompression.Uncompressed,
-                                                 Arg.Any<IIncementalProgess>(),
-                                                 Arg.Any<ICancelableTask>());
+            await remoteFile.Received().PutAsync(
+                target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE, DeployCompression.Uncompressed,
+                Arg.Any<IIncrementalProgress>(), Arg.Any<ICancelableTask>());
 
             VerifyNoLocalSignatureFile();
         }

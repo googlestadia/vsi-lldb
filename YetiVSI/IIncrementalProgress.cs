@@ -14,7 +14,7 @@
 
 namespace YetiVSI
 {
-    public interface IIncementalProgess
+    public interface IIncrementalProgress
     {
         void ReportProgressDelta(long value);
     }

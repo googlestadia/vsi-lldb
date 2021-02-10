@@ -71,7 +71,7 @@ namespace YetiVSI.Test
         ILocalSocketSender _socketSender;
         MemoryMappedFileFactory _memoryMappedFileFactory;
         MemoryStream _compressedStream;
-        IIncementalProgess _progress;
+        IIncrementalProgress _progress;
         ICancelable _deployTask;
         readonly string _fileContent = "123";
 
@@ -114,7 +114,7 @@ namespace YetiVSI.Test
                         x => x.FileName.Contains(YetiConstants.PigzExecutable)), int.MaxValue)
                 .Returns(_compressProcess);
 
-            _progress = Substitute.For<IIncementalProgess>();
+            _progress = Substitute.For<IIncrementalProgress>();
             _deployTask = Substitute.For<ICancelable>();
         }
 
