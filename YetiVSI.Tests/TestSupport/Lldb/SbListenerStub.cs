@@ -14,20 +14,28 @@
 
 ﻿using DebuggerApi;
 using DebuggerGrpcClient;
+using System.Collections.Generic;
 using TestsCommon.TestSupport;
 
 namespace YetiVSI.Test.TestSupport.Lldb
 {
     public class GrpcListenerFactoryFake : GrpcListenerFactory
     {
+        public List<SbListenerStub> Instances = new List<SbListenerStub>();
+
         public override SbListener Create(GrpcConnection connection, string name)
         {
-            return new SbListenerStub(name);
+            var instance = new SbListenerStub(name);
+            Instances.Add(instance);
+            return instance;
         }
     }
 
     public class SbListenerStub : SbListener
     {
+        object _locker = new object();
+        long _waitForEventCallCount = 0;
+
         public SbListenerStub(string name)
         {
             Name = name;
@@ -42,7 +50,20 @@ namespace YetiVSI.Test.TestSupport.Lldb
 
         public bool WaitForEvent(uint numSeconds, out SbEvent evnt)
         {
-            throw new NotImplementedTestDoubleException();
+            lock (_locker)
+            {
+                _waitForEventCallCount++;
+            }
+            evnt = null;
+            return false;
+        }
+
+        public long GetWaitForEventCallCount()
+        {
+            lock (_locker)
+            {
+                return _waitForEventCallCount;
+            }
         }
     }
 }

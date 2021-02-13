@@ -100,7 +100,8 @@ namespace YetiVSI.DebugEngine
                 catch (Exception exception)
                 {
                     Trace.WriteLine(
-                        $"Failed to receive event from listener due to {exception.Message}");
+                        "Internal error: Failed to receive event from listener due to " +
+                        exception.Message);
                     ExceptionOccured?.Invoke(null, new ExceptionOccuredEventArgs(exception));
                 }
             }, _tokenSource.Token);

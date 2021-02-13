@@ -459,6 +459,11 @@ namespace YetiVSI.DebugEngine
                     listenerSubscriber, debuggerProcess, lldbDebugger.GetCommandInterpreter(),
                     false, exceptionManager, _moduleSearchLogHolder, processId);
             }
+            catch (Exception)
+            {
+                listenerSubscriber.Stop();
+                throw;
+            }
             finally
             {
                 // clean up the SBListener subscriber

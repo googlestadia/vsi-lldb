@@ -69,6 +69,8 @@ namespace YetiVSI.Test.DebugEngine
         IDebugEventCallback2 _callback;
         GrpcDebuggerFactoryFake _debuggerFactory;
         GrpcPlatformFactoryFake _platformFactory;
+        GrpcListenerFactoryFake _listenerFactory;
+
         MockFileSystem _fileSystem;
 
         [SetUp]
@@ -89,6 +91,18 @@ namespace YetiVSI.Test.DebugEngine
             _debugEngine = Substitute.For<IDebugEngine3>();
             _gameLaunchManager = Substitute.For<IGameLaunchManager>();
             _gameLaunch = Substitute.For<IVsiGameLaunch>();
+        }
+
+        void CheckLldbListenerStops()
+        {
+            // Check that the listener's WaitForEvent method is called at most once.
+            // (We only check 100ms after the launch.)
+            Assert.That(_listenerFactory.Instances.Count, Is.EqualTo(1));
+            SbListenerStub listener = _listenerFactory.Instances[0];
+            long initialCallCount = listener.GetWaitForEventCallCount();
+            System.Threading.Thread.Sleep(100);
+            Assert.That(listener.GetWaitForEventCallCount(),
+                        Is.LessThanOrEqualTo(initialCallCount + 1));
         }
 
         [Test]
@@ -145,6 +159,7 @@ namespace YetiVSI.Test.DebugEngine
                         Is.EqualTo(
                             ErrorStrings
                                 .FailedToAttachToProcessOtherTracer(tracerName, tracerPid)));
+            CheckLldbListenerStops();
         }
 
         [Test]
@@ -166,6 +181,7 @@ namespace YetiVSI.Test.DebugEngine
             AttachException e =
                 Assert.ThrowsAsync<AttachException>(async () => await LaunchAsync(launcher));
             Assert.That(e.Message, Is.EqualTo(ErrorStrings.FailedToAttachToProcessSelfTrace));
+            CheckLldbListenerStops();
         }
 
         [Test]
@@ -189,6 +205,7 @@ namespace YetiVSI.Test.DebugEngine
             Assert.That(e.Message,
                         Is.EqualTo(
                             ErrorStrings.FailedToAttachToProcess("Operation not permitted")));
+            CheckLldbListenerStops();
         }
 
         [Test]
@@ -206,6 +223,7 @@ namespace YetiVSI.Test.DebugEngine
             Assert.That(e.Message,
                         Is.EqualTo(
                             ErrorStrings.FailedToAttachToProcess("Operation not permitted")));
+            CheckLldbListenerStops();
         }
 
         [Test]
@@ -278,6 +296,7 @@ namespace YetiVSI.Test.DebugEngine
 
             Assert.ThrowsAsync<AttachException>(async () => await LaunchAsync(launcher),
                                                 _binaryNotFound);
+            CheckLldbListenerStops();
         }
 
         [Test]
@@ -438,7 +457,7 @@ namespace YetiVSI.Test.DebugEngine
                 new GrpcDebuggerFactoryFake(new TimeSpan(0), stadiaPlatformAvailable);
             _platformFactory = new GrpcPlatformFactoryFake(connectRecorder);
             var taskContext = new JoinableTaskContext();
-            var listenerFactory = new GrpcListenerFactoryFake();
+            _listenerFactory = new GrpcListenerFactoryFake();
 
             // If stadiaPlatformAvailable is True the DebugSessionLauncher will connect
             // to the platform 'remote-stadia', otherwise it will use 'remote-linux'
@@ -516,17 +535,12 @@ namespace YetiVSI.Test.DebugEngine
             var coreAttachWarningDialog = new CoreAttachWarningDialogUtil(
                 taskContext, Substitute.For<IDialogUtil>());
 
-            return new DebugSessionLauncher.Factory(taskContext, _debuggerFactory, listenerFactory,
-                                                    _platformFactory, connectOptionsFactory,
-                                                    platformShellCommandFactory,
-                                                    attachedProgramFactory, actionRecorder,
-                                                    moduleFileLoadRecorderFactory,
-                                                    exceptionManagerFactory, _fileSystem, false,
-                                                    moduleFileFinder,
-                                                    new DumpModulesProvider(_fileSystem),
-                                                    new ModuleSearchLogHolder(),
-                                                    symbolSettingsProvider,
-                                                    coreAttachWarningDialog);
+            return new DebugSessionLauncher.Factory(
+                taskContext, _debuggerFactory, _listenerFactory, _platformFactory,
+                connectOptionsFactory, platformShellCommandFactory, attachedProgramFactory,
+                actionRecorder, moduleFileLoadRecorderFactory, exceptionManagerFactory, _fileSystem,
+                false, moduleFileFinder, new DumpModulesProvider(_fileSystem),
+                new ModuleSearchLogHolder(), symbolSettingsProvider, coreAttachWarningDialog);
         }
 
         Task<ILldbAttachedProgram> LaunchAsync(IDebugSessionLauncher launcher)
