@@ -12,38 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 
 namespace YetiCommon
 {
     public class ChromeLauncher
     {
-        protected readonly BackgroundProcess.Factory backgroundProcessFactory;
-        protected readonly Lazy<SdkConfig> sdkConfig;
+        protected readonly BackgroundProcess.Factory _backgroundProcessFactory;
+        protected readonly Lazy<SdkConfig> _sdkConfig;
 
         public ChromeLauncher(BackgroundProcess.Factory backgroundProcessFactory,
-            SdkConfig.Factory sdkConfigFactory)
+                              SdkConfig.Factory sdkConfigFactory)
         {
-            this.backgroundProcessFactory = backgroundProcessFactory;
-            this.sdkConfig = new Lazy<SdkConfig>(sdkConfigFactory.LoadOrDefault);
+            _backgroundProcessFactory = backgroundProcessFactory;
+            _sdkConfig = new Lazy<SdkConfig>(sdkConfigFactory.LoadOrDefault);
         }
 
         public void StartChrome(string url, string workingDirectory)
         {
-            string profileDirectory = string.IsNullOrEmpty(SdkConfig.ChromeProfileDir) ?
-                "Default" :
-                SdkConfig.ChromeProfileDir;
+            string profileDirectory = string.IsNullOrEmpty(SdkConfig.ChromeProfileDir)
+                ? "Default"
+                : SdkConfig.ChromeProfileDir;
 
-            StartProcess(workingDirectory,
-                $"start chrome \"{url}\"",
-                "--new-window", $"--profile-directory=\"{profileDirectory}\"");
+            StartProcess(workingDirectory, $"start chrome \"{url}\"", "--new-window",
+                         $"--profile-directory=\"{profileDirectory}\"");
         }
 
-        protected void StartProcess(string workingDirectory, string command, params string[] args)
-            => backgroundProcessFactory.Create(YetiConstants.Command,
-                $"/c \"{command} {string.Join(" ", args)}\"",
-                workingDirectory).Start();
+        protected void
+            StartProcess(string workingDirectory, string command, params string[] args) =>
+            _backgroundProcessFactory.Create(YetiConstants.Command,
+                                             $"/c \"{command} {string.Join(" ", args)}\"",
+                                             workingDirectory).Start();
 
-        protected SdkConfig SdkConfig => sdkConfig.Value;
+        protected SdkConfig SdkConfig => _sdkConfig.Value;
     }
 }

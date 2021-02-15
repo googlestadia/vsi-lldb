@@ -28,22 +28,21 @@ namespace YetiCommon
     {
         public class Factory
         {
-            readonly BackgroundProcess.Factory backgroundProcessFactory;
-            readonly ChromeClientLaunchCommandFormatter launchCommandFormatter;
-            readonly SdkConfig.Factory sdkConfigFactory;
+            readonly BackgroundProcess.Factory _backgroundProcessFactory;
+            readonly ChromeClientLaunchCommandFormatter _launchCommandFormatter;
+            readonly SdkConfig.Factory _sdkConfigFactory;
 
             public Factory(BackgroundProcess.Factory backgroundProcessFactory,
-                ChromeClientLaunchCommandFormatter launchCommandFormatter,
-                SdkConfig.Factory sdkConfigFactory)
+                           ChromeClientLaunchCommandFormatter launchCommandFormatter,
+                           SdkConfig.Factory sdkConfigFactory)
             {
-                this.backgroundProcessFactory = backgroundProcessFactory;
-                this.launchCommandFormatter = launchCommandFormatter;
-                this.sdkConfigFactory = sdkConfigFactory;
+                _backgroundProcessFactory = backgroundProcessFactory;
+                _launchCommandFormatter = launchCommandFormatter;
+                _sdkConfigFactory = sdkConfigFactory;
             }
 
             public ChromeClientLauncher Create() => new ChromeClientLauncher(
-                backgroundProcessFactory, sdkConfigFactory,
-                new Params());
+                _backgroundProcessFactory, _sdkConfigFactory, new Params());
 
             /// <summary>
             /// Create a chrome client launcher given base64 encoded arguments.
@@ -51,8 +50,8 @@ namespace YetiCommon
             /// <exception cref="SerializationException">Thrown if the arguments can't
             /// be deserialized.</exception>
             public ChromeClientLauncher Create(string args) =>
-                new ChromeClientLauncher(backgroundProcessFactory, sdkConfigFactory,
-                    launchCommandFormatter.DecodeLaunchParams(args));
+                new ChromeClientLauncher(_backgroundProcessFactory, _sdkConfigFactory,
+                                         _launchCommandFormatter.DecodeLaunchParams(args));
         }
 
         public class Params
@@ -87,41 +86,37 @@ namespace YetiCommon
             public string QueryParams { get; set; }
         }
 
-        const int Port = 44741;
-        const string DebugModeValue = "2";
-
-        readonly string LocalChromeClientUrl = $"http://localhost:{Port}/chromeclient/index.html";
-
-        readonly Params launchParams;
+        const string _debugModeValue = "2";
 
         public ChromeClientLauncher(BackgroundProcess.Factory backgroundProcessFactory,
-            SdkConfig.Factory sdkConfigFactory,
-            Params launchParams) : base(backgroundProcessFactory, sdkConfigFactory)
+                                    SdkConfig.Factory sdkConfigFactory, Params launchParams) : base(
+            backgroundProcessFactory, sdkConfigFactory)
         {
-            this.launchParams = launchParams;
+            LaunchParams = launchParams;
         }
 
-        public Params LaunchParams => launchParams;
+        public Params LaunchParams { get; }
 
         public string BuildLaunchUrlWithLaunchName(string launchName)
         {
             string portalUrl = SdkConfig.PortalUrlOrDefault;
             string chromeClientUrl = $"{portalUrl}/organizations/{SdkConfig.OrganizationId}/stream";
-            string fragmentString = string.IsNullOrEmpty(launchParams.Account)
+            string fragmentString = string.IsNullOrEmpty(LaunchParams.Account)
                 ? ""
-                : $"#Email={launchParams.Account}";
+                : $"#Email={LaunchParams.Account}";
 
             var additionalUrlParams = new List<QueryParam>
             {
-                QueryParam.Create("sdk_version", Uri.EscapeDataString(launchParams.SdkVersion)),
+                QueryParam.Create("sdk_version", Uri.EscapeDataString(LaunchParams.SdkVersion)),
                 QueryParam.Create("game_launch_name",
                                   Uri.EscapeDataString(launchName ?? string.Empty))
             };
             string queryString =
                 additionalUrlParams.Where(p => p != null).Select(p => p.ToString())
                     .Aggregate((a, b) => $"{a}&{b}") +
-                (string.IsNullOrWhiteSpace(LaunchParams.QueryParams) ? "" : "&") +
-                LaunchParams.QueryParams;
+                (string.IsNullOrWhiteSpace(LaunchParams.QueryParams)
+                    ? ""
+                    : "&") + LaunchParams.QueryParams;
             return $"{chromeClientUrl}?{queryString}{fragmentString}";
         }
 
@@ -129,41 +124,42 @@ namespace YetiCommon
         public ConfigStatus BuildLaunchUrl(out string url)
         {
             var portalUrl = SdkConfig.PortalUrlOrDefault;
-            var chromeClientUrl =
-                $"{portalUrl}/organizations/{SdkConfig.OrganizationId}/stream";
+            string chromeUrl = $"{portalUrl}/organizations/{SdkConfig.OrganizationId}/stream";
 
             var queryParams = new List<QueryParam>
             {
-                QueryParam.Create("cmd", WebUtility.UrlEncode(launchParams.Cmd)),
+                QueryParam.Create("cmd", WebUtility.UrlEncode(LaunchParams.Cmd)),
                 QueryParam.Create("application_name",
                                   Uri.EscapeDataString(
-                                      launchParams.ApplicationName ?? string.Empty)),
+                                      LaunchParams.ApplicationName ?? string.Empty)),
                 QueryParam.Create("gamelet_name",
-                                  Uri.EscapeDataString(launchParams.GameletName ?? string.Empty)),
-                QueryParam.Create("test_account", launchParams.TestAccount),
+                                  Uri.EscapeDataString(LaunchParams.GameletName ?? string.Empty)),
+                QueryParam.Create("test_account", LaunchParams.TestAccount),
                 QueryParam.Create("vars",
-                                  WebUtility.UrlEncode(launchParams.GameletEnvironmentVars)),
-                QueryParam.Create("renderdoc", launchParams.RenderDoc.ToString().ToLower()),
-                QueryParam.Create("rgp", launchParams.Rgp.ToString().ToLower()),
-                QueryParam.Create("sdk_version", WebUtility.UrlEncode(launchParams.SdkVersion)),
-                QueryParam.Create("vulkan_driver_variant", launchParams.VulkanDriverVariant),
+                                  WebUtility.UrlEncode(LaunchParams.GameletEnvironmentVars)),
+                QueryParam.Create("renderdoc", LaunchParams.RenderDoc.ToString().ToLower()),
+                QueryParam.Create("rgp", LaunchParams.Rgp.ToString().ToLower()),
+                QueryParam.Create("sdk_version", WebUtility.UrlEncode(LaunchParams.SdkVersion)),
+                QueryParam.Create("vulkan_driver_variant", LaunchParams.VulkanDriverVariant),
                 QueryParam.Create("surface_enforcement_mode",
-                                  launchParams.SurfaceEnforcementMode.ToString().ToLower()),
+                                  LaunchParams.SurfaceEnforcementMode.ToString().ToLower()),
                 QueryParam.Create("debug_mode", GetDebugMode())
             };
 
-            var fragment = string.IsNullOrEmpty(launchParams.Account) ? "" :
-                $"Email={launchParams.Account}";
+            string fragment = string.IsNullOrEmpty(LaunchParams.Account)
+                ? ""
+                : $"Email={LaunchParams.Account}";
 
-            var status =
+            ConfigStatus status =
                 TryMergeCustomQueryString(queryParams,
                                           out IEnumerable<QueryParam> mergedQueryParams);
-            var queryString = mergedQueryParams
-                .Select(p => p.ToString())
+            string queryString = mergedQueryParams.Select(p => p.ToString())
                 .Aggregate((a, b) => $"{a}&{b}");
-            var fragmentString = string.IsNullOrEmpty(fragment) ? "" : "#" + fragment;
+            string fragmentString = string.IsNullOrEmpty(fragment)
+                ? ""
+                : "#" + fragment;
 
-            url = $"{chromeClientUrl}?{queryString}{fragmentString}";
+            url = $"{chromeUrl}?{queryString}{fragmentString}";
             return status;
         }
 
@@ -175,11 +171,12 @@ namespace YetiCommon
                                                out IEnumerable<QueryParam> outParams)
         {
             var paramsByName = queryParams.Where(p => p != null).ToDictionary(p => p.Name);
-            var status = TryParseQueryString(launchParams.QueryParams,
-                                             out IEnumerable<QueryParam> customQueryParams);
+            ConfigStatus status = TryParseQueryString(LaunchParams.QueryParams,
+                                                      out IEnumerable<QueryParam>
+                                                          customQueryParams);
             if (status.IsOk)
             {
-                foreach (var customParam in customQueryParams)
+                foreach (QueryParam customParam in customQueryParams)
                 {
                     if (paramsByName.ContainsKey(customParam.Name))
                     {
@@ -220,8 +217,9 @@ namespace YetiCommon
                 {
                     throw new ApplicationException(e.Message);
                 }
+
                 var queryParams = new List<QueryParam>();
-                foreach (var key in nameValueCollection.AllKeys)
+                foreach (string key in nameValueCollection.AllKeys)
                 {
                     if (string.IsNullOrWhiteSpace(key))
                     {
@@ -247,15 +245,16 @@ namespace YetiCommon
             }
         }
 
-        string GetDebugMode() => launchParams.Debug ? DebugModeValue : "";
+        string GetDebugMode() => LaunchParams.Debug
+            ? _debugModeValue
+            : "";
 
         void LogQueryString(string queryString, List<QueryParam> queryParams)
         {
-            var parsedQueryParams = queryParams
-                .Select(p => $"({p.Name},{p.Value})")
+            string parsedQueryParams = queryParams.Select(p => $"({p.Name},{p.Value})")
                 .Aggregate((a, b) => $"{a},{b}");
             Trace.WriteLine($"Parsed ChromeClient query string: {queryString} resulted in" +
-                $"parameter collection: '{parsedQueryParams}'");
+                            $"parameter collection: '{parsedQueryParams}'");
         }
 
         class QueryParam
@@ -269,10 +268,10 @@ namespace YetiCommon
             /// Create a QueryParam. If the value is null or an empty string, return null,
             /// indicating that the query param isn't required.
             /// </summary>
-            public static QueryParam Create(string name, string value)
-                => string.IsNullOrEmpty(value) ? null :
-                    new QueryParam() { Name = name, Value = value };
+            public static QueryParam Create(string name, string value) =>
+                string.IsNullOrEmpty(value)
+                    ? null
+                    : new QueryParam() { Name = name, Value = value };
         }
-
     }
 }
