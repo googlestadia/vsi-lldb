@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Castle.DynamicProxy;
+using Castle.DynamicProxy;
 using Google.VisualStudioFake.API.UI;
 using Google.VisualStudioFake.Internal;
 using Google.VisualStudioFake.Internal.ExecutionSyncPoint;
@@ -90,9 +90,8 @@ namespace Google.VisualStudioFake.API
             GetJobOrchestrator().DebugEvent += breakpointViewInternal.HandleBindResultEvent;
 
             return GetAPIDecorator().Decorate<IVSFake>(
-                new VSFake(GetLaunchAndAttachFlow(), GetTargetAdapter(), GetProjectAdapter(),
-                           GetSessionDebugManager(), solutionExplorer, GetDebugSession(),
-                           config.Timeouts));
+                new VSFake(GetTargetAdapter(), GetProjectAdapter(), GetSessionDebugManager(),
+                           solutionExplorer, GetDebugSession(), config.Timeouts));
         }
 
         public virtual IJobQueue GetJobQueue()

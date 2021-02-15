@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API;
+using Google.VisualStudioFake.API;
 using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 
@@ -28,39 +28,41 @@ namespace Google.VisualStudioFake.Internal
         public IDebugEngine2 DebugEngine { get; set; }
         public IDebugProgram3 DebugProgram { get; set; }
         public IDebugThread2 SelectedThread { get; set; }
+        public IDebugProcess2 Process { get; set; }
 
         public IDebugStackFrame2 SelectedStackFrame
         {
-            get
-            {
-                return _selectedStackFrame;
-            }
+            get => _selectedStackFrame;
             set
             {
                 if (_selectedStackFrame == value)
                 {
                     return;
                 }
+
                 _selectedStackFrame = value;
                 SelectedStackFrameChanged?.Invoke();
             }
         }
+
         IDebugStackFrame2 _selectedStackFrame;
         public event Action SelectedStackFrameChanged;
 
         public bool HexadecimalDisplay
         {
-            get { return _hexadecimalDisplay; }
+            get => _hexadecimalDisplay;
             set
             {
                 if (_hexadecimalDisplay == value)
                 {
                     return;
                 }
+
                 _hexadecimalDisplay = value;
                 HexadecimalDisplayChanged?.Invoke();
             }
         }
+
         bool _hexadecimalDisplay;
         public event Action HexadecimalDisplayChanged;
     }

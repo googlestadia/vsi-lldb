@@ -23,6 +23,7 @@ namespace Google.VisualStudioFake.API
     public enum ProgramState
     {
         NotStarted,
+        LaunchSuspended,
         AtBreak,
         Running,
         Terminated,
@@ -36,6 +37,7 @@ namespace Google.VisualStudioFake.API
         IDebugProgram3 DebugProgram { get; set; }
         IDebugThread2 SelectedThread { get; set; }
         IDebugStackFrame2 SelectedStackFrame { get; set; }
+        IDebugProcess2 Process { get; set; }
 
         /// <summary>
         /// If true, integers are displayed as hexadecimals by default instead of decimals.

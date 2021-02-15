@@ -83,5 +83,8 @@ namespace Google.VisualStudioFake.API
         /// </summary>
         [SyncPoint(ExecutionSyncPoint.PROGRAM_SELECTED, Timeout = VSFakeTimeout.LaunchAndAttach)]
         void LaunchAndAttach();
+
+        [SyncPoint(ExecutionSyncPoint.PROCESS_CREATED, Timeout = VSFakeTimeout.LaunchAndAttach)]
+        void LaunchSuspended();
     }
 }

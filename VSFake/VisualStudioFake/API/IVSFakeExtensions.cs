@@ -76,7 +76,7 @@ namespace Google.VisualStudioFake.API
                 Predicates.AllVarsReady(vsFake.DebugSession.WatchWindow.GetWatchEntries()),
                 vsFake.Timeouts[VSFakeTimeout.RunUntil]);
 
-        /// <summary
+        /// <summary>
         /// Start a launch and attach flow.
         ///
         /// Returns when IDebugSessionContext.DebugProgram has been updated.
@@ -86,6 +86,14 @@ namespace Google.VisualStudioFake.API
         /// </remarks>
         public static void LaunchAndAttach(this IVSFake vsFake) =>
             vsFake.SessionDebugManager.LaunchAndAttach();
+
+        /// <summary>
+        /// Start a launch suspended flow.
+        ///
+        /// Returns when IDebugSessionContext.Process has been updated.
+        /// </summary>
+        public static void LaunchSuspended(this IVSFake vsFake) =>
+            vsFake.SessionDebugManager.LaunchSuspended();
 
         #endregion
 

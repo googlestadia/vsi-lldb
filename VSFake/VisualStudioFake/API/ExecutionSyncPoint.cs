@@ -19,13 +19,14 @@ namespace Google.VisualStudioFake.API
     [Flags]
     public enum ExecutionSyncPoint
     {
-        ENGINE_CREATED      = (1 << 0),
-        PROGRAM_SELECTED    = (1 << 1),
-        THREAD_SELECTED     = (1 << 2),
-        FRAME_SELECTED      = (1 << 3),
-        BREAK               = (1 << 4),
-        IDLE                = (1 << 5),
-        PROGRAM_RUNNING     = (1 << 6),
-        PROGRAM_TERMINATED  = (1 << 7),
+        ENGINE_CREATED = (1 << 0),
+        PROCESS_CREATED = (1 << 1),
+        PROGRAM_SELECTED = (1 << 2),
+        THREAD_SELECTED = (1 << 3),
+        FRAME_SELECTED = (1 << 4),
+        BREAK = (1 << 5),
+        IDLE = (1 << 6),
+        PROGRAM_RUNNING = (1 << 7),
+        PROGRAM_TERMINATED = (1 << 8),
     }
 }

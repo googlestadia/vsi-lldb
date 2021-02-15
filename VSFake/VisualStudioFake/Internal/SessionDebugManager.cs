@@ -113,6 +113,17 @@ namespace Google.VisualStudioFake.Internal
             _launchAndAttachFlow.Start();
         }
 
+        public void LaunchSuspended()
+        {
+            if (ProgramState != ProgramState.NotStarted)
+            {
+                throw new InvalidOperationException(
+                    $"Program has already started. (Current state: {ProgramState})");
+            }
+
+            _launchAndAttachFlow.StartSuspended();
+        }
+
         TimeoutException CreateTimeoutException(TimeSpan timeout)
         {
             return new TimeoutException(
@@ -126,24 +137,23 @@ namespace Google.VisualStudioFake.Internal
         {
             var context = Session.Context;
             return () =>
-            {
-                return
-                    (syncPoint.HasFlag(API.ExecutionSyncPoint.ENGINE_CREATED) &&
-                        context.DebugEngine != null) ||
-                    (syncPoint.HasFlag(API.ExecutionSyncPoint.PROGRAM_SELECTED) &&
-                        context.DebugProgram != null) ||
-                    (syncPoint.HasFlag(API.ExecutionSyncPoint.THREAD_SELECTED) &&
-                        context.SelectedThread != null) ||
-                    (syncPoint.HasFlag(API.ExecutionSyncPoint.FRAME_SELECTED) &&
-                        context.SelectedStackFrame != null) ||
-                    (syncPoint.HasFlag(API.ExecutionSyncPoint.BREAK) &&
-                        context.ProgramState == ProgramState.AtBreak) ||
-                    (syncPoint.HasFlag(API.ExecutionSyncPoint.IDLE) && _jobQueue.Empty) ||
-                    (syncPoint.HasFlag(API.ExecutionSyncPoint.PROGRAM_RUNNING) &&
-                        context.ProgramState == ProgramState.Running) ||
-                    (syncPoint.HasFlag(API.ExecutionSyncPoint.PROGRAM_TERMINATED) &&
-                        context.ProgramState == ProgramState.Terminated);
-            };
+                (syncPoint.HasFlag(API.ExecutionSyncPoint.ENGINE_CREATED) &&
+                    context.DebugEngine != null) ||
+                (syncPoint.HasFlag(API.ExecutionSyncPoint.PROCESS_CREATED) &&
+                    context.Process != null) ||
+                (syncPoint.HasFlag(API.ExecutionSyncPoint.PROGRAM_SELECTED) &&
+                    context.DebugProgram != null) ||
+                (syncPoint.HasFlag(API.ExecutionSyncPoint.THREAD_SELECTED) &&
+                    context.SelectedThread != null) ||
+                (syncPoint.HasFlag(API.ExecutionSyncPoint.FRAME_SELECTED) &&
+                    context.SelectedStackFrame != null) ||
+                (syncPoint.HasFlag(API.ExecutionSyncPoint.BREAK) &&
+                    context.ProgramState == ProgramState.AtBreak) ||
+                (syncPoint.HasFlag(API.ExecutionSyncPoint.IDLE) && _jobQueue.Empty) ||
+                (syncPoint.HasFlag(API.ExecutionSyncPoint.PROGRAM_RUNNING) &&
+                    context.ProgramState == ProgramState.Running) ||
+                (syncPoint.HasFlag(API.ExecutionSyncPoint.PROGRAM_TERMINATED) &&
+                    context.ProgramState == ProgramState.Terminated);
         }
 
         ProgramState ProgramState => Session.Context.ProgramState;

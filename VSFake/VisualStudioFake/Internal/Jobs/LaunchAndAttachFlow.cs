@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API;
+using Google.VisualStudioFake.API;
 using Google.VisualStudioFake.API.UI;
 using Google.VisualStudioFake.Util;
 using Microsoft.VisualStudio.Debugger.Interop;
@@ -42,11 +42,13 @@ namespace Google.VisualStudioFake.Internal.Jobs
         readonly LaunchAndAttachJob.Factory _launchAndAttachJobFactory;
 
         public LaunchAndAttachFlow(BindPendingBreakpointsHandler bindPendingBreakpoints,
-            Func<IDebugEngine2> createDebugEngine,
-            IDebugEventCallback2 debugEventCallback, IDebugSessionContext debugSessionContext,
-            IProjectAdapter projectAdapter, ITargetAdapter targetAdapter, IJobQueue jobQueue,
-            JoinableTaskContext taskContext, ObserveAndNotifyJob.Factory observeAndNotifyJobFactory,
-            LaunchAndAttachJob.Factory launchAndAttachJobFactory)
+                                   Func<IDebugEngine2> createDebugEngine,
+                                   IDebugEventCallback2 debugEventCallback,
+                                   IDebugSessionContext debugSessionContext,
+                                   IProjectAdapter projectAdapter, ITargetAdapter targetAdapter,
+                                   IJobQueue jobQueue, JoinableTaskContext taskContext,
+                                   ObserveAndNotifyJob.Factory observeAndNotifyJobFactory,
+                                   LaunchAndAttachJob.Factory launchAndAttachJobFactory)
         {
             _bindPendingBreakpoints = bindPendingBreakpoints;
             _createDebugEngine = createDebugEngine;
@@ -62,6 +64,9 @@ namespace Google.VisualStudioFake.Internal.Jobs
 
         public void Start() => _jobQueue.Push(_launchAndAttachJobFactory.Create(LaunchAndAttach));
 
+        public void StartSuspended() =>
+            _jobQueue.Push(_launchAndAttachJobFactory.Create(LaunchSuspended));
+
         public void HandleDebugProgramCreated(DebugEventArgs args)
         {
             if (!(args.Event is IDebugProgramCreateEvent2))
@@ -72,53 +77,52 @@ namespace Google.VisualStudioFake.Internal.Jobs
             HandleDebugProgramCreated(args.Event, args.Program);
         }
 
-        void LaunchAndAttach()
+        void LaunchSuspended() => Launch(false);
+
+        void LaunchAndAttach() => Launch(true);
+
+        void Launch(bool resume)
         {
             IDebugEngine2 debugEngine = null;
             _taskContext.RunOnMainThread(() => debugEngine = _createDebugEngine());
             _debugSessionContext.DebugEngine = debugEngine;
             _debugSessionContext.ProgramState = ProgramState.NotStarted;
 
-            IDebugEngineLaunch2 debugEngineLauncher = debugEngine as IDebugEngineLaunch2;
-            if (debugEngineLauncher == null)
-            {
-                throw new InvalidOperationException($"Expected {nameof(debugEngine)} to be " +
-                    $"castable to {nameof(IDebugEngineLaunch2)}.");
-            }
+            IDebugEngineLaunch2 debugEngineLauncher = (IDebugEngineLaunch2) debugEngine;
 
             // TODO: Use the correct DebugLaunchOptions value.
-            var launchSettings = _targetAdapter.QueryDebugTargets(
-                _projectAdapter.Project, 0).First();
+            var launchSettings =
+                _targetAdapter.QueryDebugTargets(_projectAdapter.Project, 0).First();
 
             var port = _targetAdapter.InitializePort(_debugEventCallback, debugEngine);
-            IDebugProcess2 process;
-            HResultChecker.Check(debugEngineLauncher.LaunchSuspended(
-                "", // server
-                port,
-                launchSettings.Executable,
-                launchSettings.Arguments,
-                "", // dir,
-                "", // env
-                launchSettings.Options,
-                default(enum_LAUNCH_FLAGS),
-                0, // stdinput,
-                0, // stdoutput,
-                0, // stderr,
-                _debugEventCallback,
-                out process));
-
-            HResultChecker.Check(debugEngineLauncher.ResumeProcess(process));
+            HResultChecker.Check(debugEngineLauncher.LaunchSuspended("", // server
+                                                                     port,
+                                                                     launchSettings.Executable,
+                                                                     launchSettings.Arguments,
+                                                                     "", // dir,
+                                                                     "", // env
+                                                                     launchSettings.Options,
+                                                                     default(enum_LAUNCH_FLAGS),
+                                                                     0, // stdinput,
+                                                                     0, // stdoutput,
+                                                                     0, // stderr,
+                                                                     _debugEventCallback,
+                                                                     out IDebugProcess2 process));
+            _debugSessionContext.Process = process;
+            _debugSessionContext.ProgramState = ProgramState.LaunchSuspended;
+            if (resume)
+            {
+                HResultChecker.Check(debugEngineLauncher.ResumeProcess(process));
+            }
         }
 
         void HandleDebugProgramCreated(IDebugEvent2 programCreatedEvent, IDebugProgram3 program)
         {
             var breakpoints = _bindPendingBreakpoints();
-            // True if all breakpoints are ready.
-            Func<bool> predicate = () => !breakpoints.Where(b => !b.Ready).Any();
-            _jobQueue.Push(
-                _observeAndNotifyJobFactory.Create(
-                    predicate, () => SetProgramAndContinue(programCreatedEvent, program),
-                    "Waiting for breakpoints to be bound."));
+            Func<bool> predicate = () => breakpoints.All(b => b.Ready);
+            _jobQueue.Push(_observeAndNotifyJobFactory.Create(
+                               predicate, () => SetProgramAndContinue(programCreatedEvent, program),
+                               "Waiting for breakpoints to be bound."));
         }
 
         void SetProgramAndContinue(IDebugEvent2 programCreatedEvent, IDebugProgram3 program)

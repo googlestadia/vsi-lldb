@@ -13,20 +13,15 @@
 // limitations under the License.
 
 ﻿using Google.VisualStudioFake.API;
-using Google.VisualStudioFake.Internal.Jobs;
-using YetiCommon.VSProject;
+ using YetiCommon.VSProject;
 
 namespace Google.VisualStudioFake.Internal
 {
     public class VSFake : IVSFake
     {
-        public VSFake(LaunchAndAttachFlow launchAndAttachFlow,
-            ITargetAdapter targetAdapter,
-            IProjectAdapter projectAdapter,
-            ISessionDebugManager sessionDebugManager,
-            ISolutionExplorer solutionExplorer,
-            IDebugSession debugSession,
-            VSFakeTimeoutSource timeouts)
+        public VSFake(ITargetAdapter targetAdapter, IProjectAdapter projectAdapter,
+                      ISessionDebugManager sessionDebugManager, ISolutionExplorer solutionExplorer,
+                      IDebugSession debugSession, VSFakeTimeoutSource timeouts)
         {
             TargetAdapter = targetAdapter;
             ProjectAdapter = projectAdapter;
