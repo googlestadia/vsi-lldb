@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 
@@ -34,23 +34,22 @@ namespace YetiCommon
 
         public ChromeClientLaunchCommandFormatter(ISerializer serializer, string launcherDir)
         {
-            if (serializer == null) { throw new ArgumentNullException(nameof(serializer)); }
             if (launcherDir == null) { throw new ArgumentNullException(nameof(launcherDir)); }
 
-            this.serializer = serializer;
+            this.serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
             this.launcherPath = Path.Combine(launcherDir, "ChromeClientLauncher.exe");
         }
 
         /// <summary>
         /// Create a launch command that can execute using Cmd.exe
         /// </summary>
-        public string CreateFromParams(ChromeClientLauncher.Params launchParams)
+        public string CreateFromParams(ChromeTestClientLauncher.Params launchParams)
             => $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)}\"";
 
         /// <summary>
         /// Create a launch command that can execute using Cmd.exe
         /// </summary>
-        public string CreateWithLaunchName(ChromeClientLauncher.Params launchParams,
+        public string CreateWithLaunchName(ChromeTestClientLauncher.Params launchParams,
                                            string launchName) =>
             $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)} " +
             $"{EncodeLaunchName(launchName)}\"";
@@ -60,7 +59,7 @@ namespace YetiCommon
         /// </summary>
         /// <exception cref="ArgumentException">Thrown if the command is malformed</exception>
         /// <exception cref="ArgumentNullException">Thrown if the command is null</exception>
-        public void Parse(string command, out ChromeClientLauncher.Params launchParams,
+        public void Parse(string command, out ChromeTestClientLauncher.Params launchParams,
                           out string launchName)
         {
             if (command == null)
@@ -94,15 +93,15 @@ namespace YetiCommon
         /// <summary>
         /// Decode a base64 encoded representation of launch parameters.
         /// </summary>
-        public ChromeClientLauncher.Params DecodeLaunchParams(string encodedParams) =>
-            serializer.Deserialize<ChromeClientLauncher.Params>(
+        public ChromeTestClientLauncher.Params DecodeLaunchParams(string encodedParams) =>
+            serializer.Deserialize<ChromeTestClientLauncher.Params>(
                 Encoding.UTF8.GetString(
                     Convert.FromBase64String(encodedParams)));
 
         /// <summary>
         /// base64 encode launch parameters
         /// </summary>
-        public string EncodeLaunchParams(ChromeClientLauncher.Params launchParams) =>
+        public string EncodeLaunchParams(ChromeTestClientLauncher.Params launchParams) =>
             Convert.ToBase64String(
                 Encoding.UTF8.GetBytes(
                     serializer.Serialize(launchParams)));

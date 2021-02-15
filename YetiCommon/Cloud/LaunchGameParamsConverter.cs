@@ -36,7 +36,7 @@ namespace YetiCommon.Cloud
         }
 
         public ConfigStatus ToLaunchGameRequest(
-            ChromeClientLauncher.Params parameters, out LaunchGameRequest request)
+            ChromeTestClientLauncher.Params parameters, out LaunchGameRequest request)
         {
             ConfigStatus status =
                 _queryParametersParser.ParametersToDictionary(
@@ -89,12 +89,12 @@ namespace YetiCommon.Cloud
                 : $"{testAccount}/gameLaunches/{actualLaunchName}";
         }
 
-        string Parent(ISdkConfig sdkConfig, ChromeClientLauncher.Params parameters) =>
+        string Parent(ISdkConfig sdkConfig, ChromeTestClientLauncher.Params parameters) =>
             string.IsNullOrWhiteSpace(parameters.TestAccount)
                 ? _developerLaunchGameParent
                 : parameters.TestAccount;
 
-        string ExecutablePath(ChromeClientLauncher.Params parameters)
+        string ExecutablePath(ChromeTestClientLauncher.Params parameters)
         {
             if (string.IsNullOrWhiteSpace(parameters.Cmd))
             {
@@ -105,8 +105,8 @@ namespace YetiCommon.Cloud
             return executableName;
         }
 
-        ConfigStatus CommandLineArguments(ChromeClientLauncher.Params parameters,
-                                                         out string[] args)
+        ConfigStatus CommandLineArguments(ChromeTestClientLauncher.Params parameters,
+                                          out string[] args)
         {
             args = new string[0];
             if (string.IsNullOrWhiteSpace(parameters.Cmd))
@@ -119,7 +119,7 @@ namespace YetiCommon.Cloud
             return ConfigStatus.OkStatus();
         }
 
-        ConfigStatus EnvironmentVariables(ChromeClientLauncher.Params parameters,
+        ConfigStatus EnvironmentVariables(ChromeTestClientLauncher.Params parameters,
                                           out IDictionary<string, string> envVariables)
         {
             ConfigStatus status = ConfigStatus.OkStatus();
@@ -159,7 +159,7 @@ namespace YetiCommon.Cloud
         }
 
         ConfigStatus AddFlagsEnvironmentVariables(
-            ChromeClientLauncher.Params parameters, IDictionary<string, string> variables)
+            ChromeTestClientLauncher.Params parameters, IDictionary<string, string> variables)
         {
             ConfigStatus status = ConfigStatus.OkStatus();
             var flagEnvironmentVariables = new Dictionary<string, string>();

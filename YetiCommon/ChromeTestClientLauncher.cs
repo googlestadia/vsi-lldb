@@ -24,34 +24,34 @@ using YetiCommon.Cloud;
 
 namespace YetiCommon
 {
-    public class ChromeClientLauncher : ChromeLauncher
+    public class ChromeTestClientLauncher
     {
         public class Factory
         {
-            readonly BackgroundProcess.Factory _backgroundProcessFactory;
             readonly ChromeClientLaunchCommandFormatter _launchCommandFormatter;
             readonly SdkConfig.Factory _sdkConfigFactory;
+            readonly ChromeLauncher _chromeLauncher;
 
-            public Factory(BackgroundProcess.Factory backgroundProcessFactory,
-                           ChromeClientLaunchCommandFormatter launchCommandFormatter,
-                           SdkConfig.Factory sdkConfigFactory)
+            public Factory(ChromeClientLaunchCommandFormatter launchCommandFormatter,
+                           SdkConfig.Factory sdkConfigFactory, ChromeLauncher chromeLauncher)
             {
-                _backgroundProcessFactory = backgroundProcessFactory;
                 _launchCommandFormatter = launchCommandFormatter;
                 _sdkConfigFactory = sdkConfigFactory;
+                _chromeLauncher = chromeLauncher;
             }
 
-            public ChromeClientLauncher Create() => new ChromeClientLauncher(
-                _backgroundProcessFactory, _sdkConfigFactory, new Params());
+            public ChromeTestClientLauncher Create() =>
+                new ChromeTestClientLauncher(_sdkConfigFactory, new Params(), _chromeLauncher);
 
             /// <summary>
             /// Create a chrome client launcher given base64 encoded arguments.
             /// </summary>
             /// <exception cref="SerializationException">Thrown if the arguments can't
             /// be deserialized.</exception>
-            public ChromeClientLauncher Create(string args) =>
-                new ChromeClientLauncher(_backgroundProcessFactory, _sdkConfigFactory,
-                                         _launchCommandFormatter.DecodeLaunchParams(args));
+            public ChromeTestClientLauncher Create(string launchArgs) =>
+                new ChromeTestClientLauncher(_sdkConfigFactory,
+                                             _launchCommandFormatter.DecodeLaunchParams(launchArgs),
+                                             _chromeLauncher);
         }
 
         public class Params
@@ -88,14 +88,25 @@ namespace YetiCommon
 
         const string _debugModeValue = "2";
 
-        public ChromeClientLauncher(BackgroundProcess.Factory backgroundProcessFactory,
-                                    SdkConfig.Factory sdkConfigFactory, Params launchParams) : base(
-            backgroundProcessFactory, sdkConfigFactory)
+        readonly Lazy<SdkConfig> _sdkConfig;
+        SdkConfig SdkConfig => _sdkConfig.Value;
+
+        readonly ChromeLauncher _chromeLauncher;
+
+        public ChromeTestClientLauncher(SdkConfig.Factory sdkConfigFactory, Params launchParams,
+                                        ChromeLauncher chromeLauncher)
         {
             LaunchParams = launchParams;
+            _chromeLauncher = chromeLauncher;
+            _sdkConfig = new Lazy<SdkConfig>(sdkConfigFactory.LoadOrDefault);
         }
 
         public Params LaunchParams { get; }
+
+        public void LaunchGame(string url, string workingDirectory)
+        {
+            _chromeLauncher.StartChrome(url, workingDirectory, SdkConfig.ChromeProfileDir);
+        }
 
         public string BuildLaunchUrlWithLaunchName(string launchName)
         {

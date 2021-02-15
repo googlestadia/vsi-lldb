@@ -35,7 +35,7 @@ namespace YetiVSI.GameLaunch
         /// <param name="launchParams">Launch parameters.</param>
         /// <param name="cancelable">ICancelable token.</param>
         /// <returns>Instance of the VsiGameLaunch if successful, otherwise null.</returns>
-        Task<IVsiGameLaunch> CreateLaunchAsync(YetiCommon.ChromeClientLauncher.Params launchParams,
+        Task<IVsiGameLaunch> CreateLaunchAsync(ChromeTestClientLauncher.Params launchParams,
                                                ICancelable cancelable);
         /// <summary>
         /// Requests the backend to create a game launch synchronously.
@@ -43,7 +43,7 @@ namespace YetiVSI.GameLaunch
         /// </summary>
         /// <param name="launchParams">Launch parameters.</param>
         /// <returns>Instance of the VsiGameLaunch if successful, otherwise null.</returns>
-        IVsiGameLaunch CreateLaunch(YetiCommon.ChromeClientLauncher.Params launchParams);
+        IVsiGameLaunch CreateLaunch(ChromeTestClientLauncher.Params launchParams);
         /// <summary>
         /// Attempts to delete a launch by the gameLaunchName. Returns null when
         /// specified launch doesn't exists. Otherwise returns a GgpGrpc.Models.GameLaunch
@@ -162,7 +162,7 @@ namespace YetiVSI.GameLaunch
         }
 
         public async Task<IVsiGameLaunch> CreateLaunchAsync(
-            YetiCommon.ChromeClientLauncher.Params launchParams, ICancelable cancelable)
+            ChromeTestClientLauncher.Params launchParams, ICancelable cancelable)
         {
             Task<string> sdkCompatibilityTask = CheckSdkCompatibilityAsync(
                 launchParams.GameletName, launchParams.SdkVersion);
@@ -227,7 +227,7 @@ namespace YetiVSI.GameLaunch
             return vsiLaunch;
         }
 
-        public IVsiGameLaunch CreateLaunch(YetiCommon.ChromeClientLauncher.Params launchParams)
+        public IVsiGameLaunch CreateLaunch(ChromeTestClientLauncher.Params launchParams)
         {
             IVsiGameLaunch vsiLaunch = null;
             ICancelableTask launchTask = _cancelableTaskFactory.Create(

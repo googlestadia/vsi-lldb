@@ -147,7 +147,7 @@ namespace YetiVSI.DebugEngine
             readonly HttpClient _symbolServerHttpClient;
             readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
             readonly IModuleFileFinder _moduleFileFinder;
-            readonly YetiCommon.ChromeClientLauncher.Factory _chromeClientLauncherFactory;
+            readonly ChromeTestClientLauncher.Factory _testClientLauncherFactory;
             readonly NatvisExpander _natvisExpander;
             readonly NatvisDiagnosticLogger _natvisLogger;
             readonly ExitDialogUtil _exitDialogUtil;
@@ -171,7 +171,7 @@ namespace YetiVSI.DebugEngine
                            HttpClient symbolServerHttpClient,
                            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
                            IModuleFileFinder moduleFileFinder,
-                           YetiCommon.ChromeClientLauncher.Factory chromeClientLauncherFactory,
+                           ChromeTestClientLauncher.Factory testClientLauncherFactory,
                            NatvisExpander natvisExpander, NatvisDiagnosticLogger natvisLogger,
                            ExitDialogUtil exitDialogUtil,
                            PreflightBinaryChecker preflightBinaryChecker,
@@ -194,7 +194,7 @@ namespace YetiVSI.DebugEngine
                 _symbolServerHttpClient = symbolServerHttpClient;
                 _moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
                 _moduleFileFinder = moduleFileFinder;
-                _chromeClientLauncherFactory = chromeClientLauncherFactory;
+                _testClientLauncherFactory = testClientLauncherFactory;
                 _natvisExpander = natvisExpander;
                 _natvisLogger = natvisLogger;
                 _exitDialogUtil = exitDialogUtil;
@@ -233,7 +233,7 @@ namespace YetiVSI.DebugEngine
                     self, Guid.NewGuid(), extensionOptions, debuggerOptions, _debugSessionMetrics,
                     _taskContext, _natvisLogListener, _solutionExplorer, _cancelableTaskFactory,
                     _dialogUtil, _yetiTransport, _actionRecorder, _symbolServerHttpClient,
-                    _moduleFileLoadRecorderFactory, _moduleFileFinder, _chromeClientLauncherFactory,
+                    _moduleFileLoadRecorderFactory, _moduleFileFinder, _testClientLauncherFactory,
                     _natvisExpander, _natvisLogger, _exitDialogUtil, _preflightBinaryChecker,
                     _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
                     _debugEngineCommands, _debugEventCallbackDecorator, envDteService?.RegistryRoot,
@@ -306,7 +306,7 @@ namespace YetiVSI.DebugEngine
         readonly HttpClient _symbolServerHttpClient;
         readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
         readonly IModuleFileFinder _moduleFileFinder;
-        readonly YetiCommon.ChromeClientLauncher.Factory _chromeClientLauncherFactory;
+        readonly ChromeTestClientLauncher.Factory _testClientLauncherFactory;
         readonly NatvisExpander _natvisExpander;
         readonly NatvisDiagnosticLogger _natvisLogger;
         readonly ExitDialogUtil _exitDialogUtil;
@@ -352,7 +352,7 @@ namespace YetiVSI.DebugEngine
                            HttpClient symbolServerHttpClient,
                            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
                            IModuleFileFinder moduleFileFinder,
-                           YetiCommon.ChromeClientLauncher.Factory chromeClientLauncherFactory,
+                           ChromeTestClientLauncher.Factory testClientLauncherFactory,
                            NatvisExpander natvisExpander, NatvisDiagnosticLogger natvisLogger,
                            ExitDialogUtil exitDialogUtil,
                            PreflightBinaryChecker preflightBinaryChecker,
@@ -386,7 +386,7 @@ namespace YetiVSI.DebugEngine
             _symbolServerHttpClient = symbolServerHttpClient;
             _moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
             _moduleFileFinder = moduleFileFinder;
-            _chromeClientLauncherFactory = chromeClientLauncherFactory;
+            _testClientLauncherFactory = testClientLauncherFactory;
             _natvisExpander = natvisExpander;
             _natvisLogger = natvisLogger;
             _exitDialogUtil = exitDialogUtil;
@@ -897,7 +897,7 @@ namespace YetiVSI.DebugEngine
 
             _executableFullPath = executableFullPath;
             _executableFileName = Path.GetFileName(executableFullPath);
-            YetiCommon.ChromeClientLauncher chromeLauncher;
+            ChromeTestClientLauncher chromeLauncher;
             if (string.IsNullOrEmpty(args))
             {
                 chromeLauncher = null;
@@ -906,11 +906,11 @@ namespace YetiVSI.DebugEngine
             {
                 try
                 {
-                    chromeLauncher = _chromeClientLauncherFactory.Create(args);
+                    chromeLauncher = _testClientLauncherFactory.Create(args);
                 }
                 catch (SerializationException e)
                 {
-                    Trace.WriteLine(string.Format("Failed to parse launch arguments: {0}", e));
+                    Trace.WriteLine($"Failed to parse launch arguments: {e}");
                     process = null;
                     return VSConstants.E_FAIL;
                 }
@@ -980,9 +980,9 @@ namespace YetiVSI.DebugEngine
         }
 
         //TODO: remove the legacy launch flow.
-        void LegacyLaunchFlow(YetiCommon.ChromeClientLauncher chromeLauncher)
+        void LegacyLaunchFlow(ChromeTestClientLauncher chromeTestClient)
         {
-            ConfigStatus urlBuildStatus = chromeLauncher.BuildLaunchUrl(out string launchUrl);
+            ConfigStatus urlBuildStatus = chromeTestClient.BuildLaunchUrl(out string launchUrl);
 
             if (urlBuildStatus.IsWarningLevel)
             {
@@ -996,7 +996,7 @@ namespace YetiVSI.DebugEngine
 
             // Start Chrome Client. We are starting it as early as possible, so we can
             // initialize the debugger and start the game in parallel.
-            chromeLauncher.StartChrome(launchUrl, _workingDirectory);
+            chromeTestClient.LaunchGame(launchUrl, _workingDirectory);
         }
 
         /// <summary>

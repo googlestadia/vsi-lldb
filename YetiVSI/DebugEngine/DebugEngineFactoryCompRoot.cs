@@ -358,9 +358,9 @@ namespace YetiVSI.DebugEngine
                 GetTaskExecutor().CancelAsyncOperationIfRequested, processFactory, GetDialogUtil(),
                 vsOutputWindow, GetVsiService());
 
-            var chromeClientLauncherFactory = new YetiCommon.ChromeClientLauncher.Factory(
-                backgroundProcessFactory, new ChromeClientLaunchCommandFormatter(GetJsonUtil()),
-                GetSdkConfigFactory());
+            var testClientLauncherFactory = new ChromeTestClientLauncher.Factory(
+                new ChromeClientLaunchCommandFormatter(GetJsonUtil()), GetSdkConfigFactory(),
+                new ChromeLauncher(backgroundProcessFactory));
 
             var exitDialogUtil = new ExitDialogUtil(GetDialogUtil(), GetDialogExecutionContext());
             var preflightBinaryChecker =
@@ -402,7 +402,7 @@ namespace YetiVSI.DebugEngine
             IDebugEngineFactory factory = new DebugEngine.Factory(
                 GetJoinableTaskContext(), serviceManager, GetDebugSessionMetrics(), yetiTransport,
                 actionRecorder, symbolServerHttpClient, moduleFileLoadRecorderFactory,
-                moduleFileFinder, chromeClientLauncherFactory, GetNatvis(),
+                moduleFileFinder, testClientLauncherFactory, GetNatvis(),
                 GetNatvisDiagnosticLogger(), exitDialogUtil, preflightBinaryChecker,
                 debugSessionLauncherFactory, paramsFactory, remoteDeploy, cancelableTaskFactory,
                 GetDialogUtil(), GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(),

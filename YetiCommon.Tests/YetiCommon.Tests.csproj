@@ -103,7 +103,7 @@
     <Compile Include="PerformanceTracing\TimeSourceTests.cs" />
     <Compile Include="PerformanceTracing\TracingAspectTests.cs" />
     <Compile Include="ChromeClientLaunchCommandFormatterTests.cs" />
-    <Compile Include="ChromeClientLauncherTests.cs" />
+    <Compile Include="ChromeTestClientLauncherTests.cs" />
     <Compile Include="Cloud\CloudRunnerTests.cs" />
     <Compile Include="Cloud\MetricsInterceptorTests.cs" />
     <Compile Include="CredentialManagerTests.cs" />

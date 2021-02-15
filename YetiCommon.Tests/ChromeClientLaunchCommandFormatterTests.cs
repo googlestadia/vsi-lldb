@@ -27,7 +27,7 @@ namespace YetiCommon.Tests
         {
             var launchCommand = new ChromeClientLaunchCommandFormatter(new JsonUtil(), LauncherDir);
 
-            var launchParams = new ChromeClientLauncher.Params()
+            var launchParams = new ChromeTestClientLauncher.Params()
             {
                 ApplicationName = "theAppName",
                 GameletName= "gameletName",
@@ -43,7 +43,8 @@ namespace YetiCommon.Tests
             };
 
             var command = launchCommand.CreateFromParams(launchParams);
-            launchCommand.Parse(command, out ChromeClientLauncher.Params parsedLaunchParams, out _);
+            launchCommand.Parse(command, out ChromeTestClientLauncher.Params parsedLaunchParams,
+                                out _);
             Assert.Multiple(() =>
             {
                 Assert.That(parsedLaunchParams.ApplicationName,
@@ -68,14 +69,14 @@ namespace YetiCommon.Tests
         {
             var launchCommand = new ChromeClientLaunchCommandFormatter(new JsonUtil(), LauncherDir);
             string launchName = "launchName";
-            var launchParams = new ChromeClientLauncher.Params()
+            var launchParams = new ChromeTestClientLauncher.Params()
             {
                 Account = "test@example.com",
                 SdkVersion = "sdkVersion",
             };
 
             var command = launchCommand.CreateWithLaunchName(launchParams, launchName);
-            launchCommand.Parse(command, out ChromeClientLauncher.Params parsedLaunchParams,
+            launchCommand.Parse(command, out ChromeTestClientLauncher.Params parsedLaunchParams,
                                 out string parsedLaunchName);
             Assert.Multiple(() =>
             {

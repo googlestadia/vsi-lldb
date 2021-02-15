@@ -114,14 +114,14 @@ namespace YetiVSI.Test.DebugEngine
                 new LldbTransportSession.Factory(new MemoryMappedFileFactory());
             var yetiTransport = new YetiDebugTransport(
                 joinableTaskContext, transportSessionFactory, callInvokerFactory,
-                new GrpcConnectionFactory(joinableTaskContext.Factory,
-                                          grpcInterceptors.ToArray()),
+                new GrpcConnectionFactory(joinableTaskContext.Factory, grpcInterceptors.ToArray()),
                 GetTaskExecutor().CancelAsyncOperationIfRequested, processFactory, _dialogUtil,
                 vsOutputWindow, vsiService);
 
-            var chromeClientLauncherFactory = new ChromeClientLauncher.Factory(
-                backgroundProcessFactory, new ChromeClientLaunchCommandFormatter(GetJsonUtil()),
-                GetSdkConfigFactory());
+            var chromeLauncher = new ChromeLauncher(backgroundProcessFactory);
+            var testClientLauncherFactory = new ChromeTestClientLauncher.Factory(
+                new ChromeClientLaunchCommandFormatter(GetJsonUtil()), GetSdkConfigFactory(),
+                chromeLauncher);
 
             var exitDialogUtil = new ExitDialogUtil(_dialogUtil, GetDialogExecutionContext());
             var preflightBinaryChecker =
@@ -134,7 +134,7 @@ namespace YetiVSI.Test.DebugEngine
             IDebugEngineFactory factory = new YetiVSI.DebugEngine.DebugEngine.Factory(
                 joinableTaskContext, serviceManager, GetDebugSessionMetrics(), yetiTransport,
                 actionRecorder, null, moduleFileLoadRecorderFactory, moduleFileFinder,
-                chromeClientLauncherFactory, GetNatvis(), GetNatvisDiagnosticLogger(),
+                testClientLauncherFactory, GetNatvis(), GetNatvisDiagnosticLogger(),
                 exitDialogUtil, preflightBinaryChecker, _debugSessionLauncherFactory, paramsFactory,
                 _remoteDeploy, cancelableTaskFactory, _dialogUtil,
                 GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(), debugEngineCommands,

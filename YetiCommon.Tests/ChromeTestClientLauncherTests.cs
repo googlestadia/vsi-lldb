@@ -23,10 +23,10 @@ using TestsCommon.TestSupport;
 namespace YetiCommon.Tests
 {
     [TestFixture]
-    class ChromeClientLauncherTests
+    class ChromeTestClientLauncherTests
     {
-        ChromeClientLauncher launcher;
-        ChromeClientLauncher.Params launchParams;
+        ChromeTestClientLauncher _chromeTestClient;
+        ChromeTestClientLauncher.Params launchParams;
         BackgroundProcess.Factory backgroundProcessFactory;
         SdkConfig sdkConfig;
         LogSpy logSpy;
@@ -35,12 +35,13 @@ namespace YetiCommon.Tests
         public void SetUp()
         {
             backgroundProcessFactory = Substitute.For<BackgroundProcess.Factory>();
-            launchParams = new ChromeClientLauncher.Params();
+            launchParams = new ChromeTestClientLauncher.Params();
             sdkConfig = new SdkConfig();
             var sdkConfigFactory = Substitute.For<SdkConfig.Factory>();
             sdkConfigFactory.LoadOrDefault().Returns(c => sdkConfig);
-            launcher = new ChromeClientLauncher(backgroundProcessFactory,
-                sdkConfigFactory, launchParams);
+            var chromeLauncher = new ChromeLauncher(backgroundProcessFactory);
+            _chromeTestClient =
+                new ChromeTestClientLauncher(sdkConfigFactory, launchParams, chromeLauncher);
             logSpy = new LogSpy();
             logSpy.Attach();
         }
@@ -80,9 +81,9 @@ namespace YetiCommon.Tests
             backgroundProcessFactory.Create(YetiConstants.Command,
                                             Arg.Do<string>(x => commandRun = x), workingDirectory);
 
-            var urlBuildStatus = launcher.BuildLaunchUrl(out string launchUrl);
+            var urlBuildStatus = _chromeTestClient.BuildLaunchUrl(out string launchUrl);
             Assert.That(urlBuildStatus.IsOk, Is.EqualTo(true));
-            launcher.StartChrome(launchUrl, workingDirectory);
+            _chromeTestClient.LaunchGame(launchUrl, workingDirectory);
 
             var parser = new ChromeCommandParser(commandRun);
             Assert.Multiple(() => {
@@ -120,9 +121,9 @@ namespace YetiCommon.Tests
             backgroundProcessFactory.Create(YetiConstants.Command,
                 Arg.Do<string>(x => commandRun = x), workingDirectory);
 
-            var urlBuildStatus = launcher.BuildLaunchUrl(out string launchUrl);
+            var urlBuildStatus = _chromeTestClient.BuildLaunchUrl(out string launchUrl);
             Assert.That(urlBuildStatus.IsOk, Is.EqualTo(true));
-            launcher.StartChrome(launchUrl, workingDirectory);
+            _chromeTestClient.LaunchGame(launchUrl, workingDirectory);
 
             var parser = new ChromeCommandParser(commandRun);
             Assert.That(parser.Url, Is.EqualTo(
@@ -154,9 +155,9 @@ namespace YetiCommon.Tests
             backgroundProcessFactory.Create(YetiConstants.Command,
                 Arg.Do<string>(x => commandRun = x), workingDirectory);
 
-            var urlBuildStatus = launcher.BuildLaunchUrl(out string launchUrl);
+            var urlBuildStatus = _chromeTestClient.BuildLaunchUrl(out string launchUrl);
             Assert.That(urlBuildStatus.IsOk, Is.EqualTo(true));
-            launcher.StartChrome(launchUrl, workingDirectory);
+            _chromeTestClient.LaunchGame(launchUrl, workingDirectory);
 
             var parser = new ChromeCommandParser(commandRun);
             Assert.That(parser.Url, Is.EqualTo(
@@ -183,11 +184,11 @@ namespace YetiCommon.Tests
         public void ParseInvalidQueryParams(string queryParam)
         {
             launchParams.QueryParams = queryParam;
-            var urlBuildStatus = launcher.BuildLaunchUrl(out string launchUrl);
+            var urlBuildStatus = _chromeTestClient.BuildLaunchUrl(out string launchUrl);
             Assert.That(urlBuildStatus.IsOk, Is.EqualTo(false));
         }
 
-        private class ChromeCommandParser
+        class ChromeCommandParser
         {
             readonly Match match;
 

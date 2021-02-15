@@ -28,7 +28,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ParseToParametersAllQueryParameters()
         {
-            ChromeClientLauncher.Params parameters = ShallowCopy(ValidParams);
+            ChromeTestClientLauncher.Params parameters = ShallowCopy(ValidParams);
             Dictionary<string, string> queryParams = AllValidQueryParams;
             int expectedOutQueryParametersCount = queryParams.Count;
 
@@ -115,7 +115,7 @@ namespace YetiCommon.Tests.Cloud
         [TestCase("  some_bin  \" Arg \"  ", TestName = "ExtraSpaces")]
         public void ParseParamsCmdSuccess(string cmdValue)
         {
-            ChromeClientLauncher.Params parameters = ShallowCopy(ValidParams);
+            ChromeTestClientLauncher.Params parameters = ShallowCopy(ValidParams);
             var queryParams = new Dictionary<string, string>
             {
                 {"cmd", cmdValue}
@@ -133,7 +133,7 @@ namespace YetiCommon.Tests.Cloud
         [TestCase("", TestName = "Empty")]
         public void ParseParamsCmdFail(string cmdValue)
         {
-            ChromeClientLauncher.Params parameters = ShallowCopy(ValidParams);
+            ChromeTestClientLauncher.Params parameters = ShallowCopy(ValidParams);
             var queryParams = new Dictionary<string, string>
             {
                 {"cmd", cmdValue}
@@ -153,7 +153,7 @@ namespace YetiCommon.Tests.Cloud
         [TestCase(" ", TestName = "Empty")]
         public void ParseParamsVars(string varsValue)
         {
-            ChromeClientLauncher.Params parameters = ShallowCopy(ValidParams);
+            ChromeTestClientLauncher.Params parameters = ShallowCopy(ValidParams);
             string previousVars = parameters.GameletEnvironmentVars;
             var queryParams = new Dictionary<string, string>
             {
@@ -308,9 +308,9 @@ namespace YetiCommon.Tests.Cloud
 
         #endregion
 
-        [TestCase("renderdoc", false, nameof(ChromeClientLauncher.Params.RenderDoc),
+        [TestCase("renderdoc", false, nameof(ChromeTestClientLauncher.Params.RenderDoc),
                   TestName = "RenderDoc")]
-        [TestCase("rgp", false, nameof(ChromeClientLauncher.Params.Rgp), TestName = "Rgp")]
+        [TestCase("rgp", false, nameof(ChromeTestClientLauncher.Params.Rgp), TestName = "Rgp")]
         [TestCase("debug_mode", true, nameof(LaunchGameRequest.Debug), TestName = "Debug")]
         [TestCase("start_forward_frame_dump", true, nameof(LaunchGameRequest.StartForwardFrameDump),
                   TestName = "StartForwardFrameDump")]
@@ -357,7 +357,7 @@ namespace YetiCommon.Tests.Cloud
             ParseValueFailure(paramName, launchRequest, invalidBooleanValues);
         }
 
-        [TestCase("test_account", false, nameof(ChromeClientLauncher.Params.TestAccount),
+        [TestCase("test_account", false, nameof(ChromeTestClientLauncher.Params.TestAccount),
                   TestName = "TestAccount")]
         [TestCase("application_name", true, nameof(LaunchGameRequest.ApplicationName),
                   TestName = "ApplicationName")]
@@ -629,7 +629,7 @@ namespace YetiCommon.Tests.Cloud
                     { paramName, valuePair.Key }
                 };
                 LaunchGameRequest request = ShallowCopy(ValidRequest);
-                ChromeClientLauncher.Params parameters = ShallowCopy(ValidParams);
+                ChromeTestClientLauncher.Params parameters = ShallowCopy(ValidParams);
                 ConfigStatus status = launchRequest
                     ? _target.ParseToLaunchRequest(queryParams, request)
                     : _target.ParseToParameters(queryParams, parameters);
@@ -637,7 +637,7 @@ namespace YetiCommon.Tests.Cloud
                 Assert.That(status.IsOk, Is.EqualTo(true));
                 object obj = launchRequest ? (object)request : parameters;
                 Type type = launchRequest ? typeof(LaunchGameRequest)
-                    : typeof(ChromeClientLauncher.Params);
+                    : typeof(ChromeTestClientLauncher.Params);
                 PropertyInfo property = type.GetProperty(propertyName);
                 var value = (T)property.GetValue(obj);
                 // Corresponding property is populated properly.
@@ -672,7 +672,7 @@ namespace YetiCommon.Tests.Cloud
                     { paramName, paramValue }
                 };
                 LaunchGameRequest request = ShallowCopy(ValidRequest);
-                ChromeClientLauncher.Params parameters = ShallowCopy(ValidParams);
+                ChromeTestClientLauncher.Params parameters = ShallowCopy(ValidParams);
                 ConfigStatus status = launchRequest
                     ? _target.ParseToLaunchRequest(queryParams, request)
                     : _target.ParseToParameters(queryParams, parameters);
@@ -685,7 +685,7 @@ namespace YetiCommon.Tests.Cloud
                 object obj = launchRequest ? (object)request : parameters;
                 Type type = launchRequest
                     ? typeof(LaunchGameRequest)
-                    : typeof(ChromeClientLauncher.Params);
+                    : typeof(ChromeTestClientLauncher.Params);
                 object originObject = launchRequest ? (object)ValidRequest : ValidParams;
                 // Assert that all properties are unchanged.
                 AssertObjectPropertiesEqual(type, obj, originObject);

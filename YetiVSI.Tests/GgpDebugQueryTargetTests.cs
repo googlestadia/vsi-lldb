@@ -210,7 +210,7 @@ namespace YetiVSI.Test
                             launchSettings[0].Executable);
 
             _launchCommandFormatter.Parse(launchSettings[0].Arguments,
-                                          out ChromeClientLauncher.Params launchParams, out _);
+                                          out ChromeTestClientLauncher.Params launchParams, out _);
             Assert.AreEqual(await _project.GetTargetFileNameAsync(), launchParams.Cmd);
             Assert.AreEqual(renderdoc, launchParams.RenderDoc);
             Assert.AreEqual(rgp, launchParams.Rgp);
@@ -264,8 +264,8 @@ namespace YetiVSI.Test
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
             _gameLaunchManager
-                .CreateLaunchAsync(Arg.Any<ChromeClientLauncher.Params>(), Arg.Any<ICancelable>())
-                .Returns(Task.FromResult(_gameLaunch));
+                .CreateLaunchAsync(Arg.Any<ChromeTestClientLauncher.Params>(),
+                                   Arg.Any<ICancelable>()).Returns(Task.FromResult(_gameLaunch));
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
             Assert.That(launchSettings.Count, Is.EqualTo(1));
@@ -276,7 +276,7 @@ namespace YetiVSI.Test
                         Is.EqualTo(Environment.SystemDirectory + "\\cmd.exe"));
 
             _launchCommandFormatter.Parse(launchSettings[0].Arguments,
-                                          out ChromeClientLauncher.Params launchParams,
+                                          out ChromeTestClientLauncher.Params launchParams,
                                           out string launchName);
             Assert.That(launchParams.Account, Is.EqualTo(_testAccount));
             Assert.That(launchParams.SdkVersion, Is.EqualTo(_sdkVersionString));
@@ -322,7 +322,8 @@ namespace YetiVSI.Test
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
             _gameLaunchManager
-                .CreateLaunchAsync(Arg.Any<ChromeClientLauncher.Params>(), Arg.Any<ICancelable>())
+                .CreateLaunchAsync(Arg.Any<ChromeTestClientLauncher.Params>(),
+                                   Arg.Any<ICancelable>())
                 .Returns(Task.FromResult<IVsiGameLaunch>(null));
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using GgpGrpc;
@@ -58,7 +58,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestNoQueryParams()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.RenderDoc = false;
             parameters.Rgp = false;
             parameters.VulkanDriverVariant = string.Empty;
@@ -110,7 +110,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestEnvironmentVariablesOverlap()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.RenderDoc = true;
             parameters.Rgp = true;
             parameters.GameletEnvironmentVars =
@@ -156,7 +156,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestParametersOverlap()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.SurfaceEnforcementMode = SurfaceEnforcementSetting.Block;
             parameters.Debug = false;
             parameters.QueryParams = string.Join("&", AllValidQueryParams.Select(

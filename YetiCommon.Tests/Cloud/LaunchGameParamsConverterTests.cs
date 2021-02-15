@@ -64,7 +64,8 @@ namespace YetiCommon.Tests.Cloud
                 });
             _queryParametersParser.ParseToLaunchRequest(dict, Arg.Any<LaunchGameRequest>())
                 .Returns(ConfigStatus.OkStatus());
-            _queryParametersParser.ParseToParameters(dict, Arg.Any<ChromeClientLauncher.Params>())
+            _queryParametersParser
+                .ParseToParameters(dict, Arg.Any<ChromeTestClientLauncher.Params>())
                 .Returns(ConfigStatus.OkStatus());
             _target = new LaunchGameParamsConverter(_sdkConfigFactory, _queryParametersParser);
         }
@@ -108,7 +109,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestValidParams()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.GameletEnvironmentVars =
                 "  Var1=test_V=a==l;  vaR2=47  ;  var3 =  ;  var1  =";
             parameters.RenderDoc = false;
@@ -164,7 +165,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestRgpVariables()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.RenderDoc = false;
             parameters.VulkanDriverVariant = string.Empty;
             parameters.Rgp = true;
@@ -186,7 +187,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestRenderDocVariables()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.GameletEnvironmentVars = string.Empty;
             parameters.Rgp = false;
             parameters.VulkanDriverVariant = string.Empty;
@@ -208,7 +209,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestVulkanDriverVariantVariables()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.GameletEnvironmentVars = string.Empty;
             parameters.RenderDoc = false;
             parameters.Rgp = false;
@@ -228,7 +229,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestEnvironmentVariablesOverride()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.RenderDoc = false;
             parameters.VulkanDriverVariant = "test_variant";
             parameters.Rgp = true;
@@ -257,7 +258,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestEnvironmentVariablesInvalid()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.GameletEnvironmentVars = "  =asd ;=;v=a ;v=;2V==;v= ==bb ; ;  ";
             parameters.Rgp = false;
             parameters.RenderDoc = false;
@@ -286,7 +287,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestEmptyExecutable()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.Cmd = "  ";
 
             ConfigStatus status =
@@ -301,7 +302,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestParentNoTestAccount()
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.TestAccount = "   ";
 
             ConfigStatus status =
@@ -319,7 +320,7 @@ namespace YetiCommon.Tests.Cloud
         [TestCase("    ", new string[] { }, TestName = "NoExecutable")]
         public void ToLaunchGameRequestCommandArgumentsValid(string cmd, string[] expectedOutput)
         {
-            ChromeClientLauncher.Params parameters = ValidParams;
+            ChromeTestClientLauncher.Params parameters = ValidParams;
             parameters.Cmd = cmd;
 
             ConfigStatus status =

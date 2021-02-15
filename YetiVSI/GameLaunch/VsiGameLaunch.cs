@@ -34,7 +34,7 @@ namespace YetiVSI.GameLaunch
         /// </summary>
         /// <param name="chromeLauncher">Chrome launcher.</param>
         /// <param name="workingDirectory">The working directory.</param>
-        void LaunchInChrome(YetiCommon.ChromeClientLauncher chromeLauncher,
+        void LaunchInChrome(ChromeTestClientLauncher chromeLauncher,
                             string workingDirectory);
         /// <summary>
         /// Retrieves the launch status form the backend.
@@ -89,11 +89,11 @@ namespace YetiVSI.GameLaunch
 
         public string LaunchName { get; }
 
-        public void LaunchInChrome(YetiCommon.ChromeClientLauncher chromeLauncher,
+        public void LaunchInChrome(ChromeTestClientLauncher chromeTestClient,
                                    string workingDirectory)
         {
-            string launchUrl = chromeLauncher.BuildLaunchUrlWithLaunchName(LaunchName);
-            chromeLauncher.StartChrome(launchUrl, workingDirectory);
+            string launchUrl = chromeTestClient.BuildLaunchUrlWithLaunchName(LaunchName);
+            chromeTestClient.LaunchGame(launchUrl, workingDirectory);
         }
 
         public async Task<GgpGrpc.Models.GameLaunch> GetLaunchStateAsync() =>

@@ -121,7 +121,7 @@
     <Compile Include="Errors.cs" />
     <Compile Include="ErrorStrings.cs" />
     <Compile Include="FileUtil.cs" />
-    <Compile Include="ChromeClientLauncher.cs" />
+    <Compile Include="ChromeTestClientLauncher.cs" />
     <Compile Include="IBinaryFileUtil.cs" />
     <Compile Include="ISerializer.cs" />
     <Compile Include="JsonUtil.cs" />

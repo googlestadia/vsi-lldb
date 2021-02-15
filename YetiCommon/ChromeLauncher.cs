@@ -12,38 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-
 namespace YetiCommon
 {
     public class ChromeLauncher
     {
         protected readonly BackgroundProcess.Factory _backgroundProcessFactory;
-        protected readonly Lazy<SdkConfig> _sdkConfig;
 
-        public ChromeLauncher(BackgroundProcess.Factory backgroundProcessFactory,
-                              SdkConfig.Factory sdkConfigFactory)
+        public ChromeLauncher(BackgroundProcess.Factory backgroundProcessFactory)
         {
             _backgroundProcessFactory = backgroundProcessFactory;
-            _sdkConfig = new Lazy<SdkConfig>(sdkConfigFactory.LoadOrDefault);
         }
 
-        public void StartChrome(string url, string workingDirectory)
+        public void StartChrome(string url, string workingDirectory, string profileDirectory)
         {
-            string profileDirectory = string.IsNullOrEmpty(SdkConfig.ChromeProfileDir)
+            profileDirectory = string.IsNullOrEmpty(profileDirectory)
                 ? "Default"
-                : SdkConfig.ChromeProfileDir;
+                : profileDirectory;
 
             StartProcess(workingDirectory, $"start chrome \"{url}\"", "--new-window",
                          $"--profile-directory=\"{profileDirectory}\"");
         }
 
-        protected void
-            StartProcess(string workingDirectory, string command, params string[] args) =>
+        protected void StartProcess(string workingDirectory, string command,
+                                    params string[] args) =>
             _backgroundProcessFactory.Create(YetiConstants.Command,
                                              $"/c \"{command} {string.Join(" ", args)}\"",
                                              workingDirectory).Start();
-
-        protected SdkConfig SdkConfig => _sdkConfig.Value;
     }
 }

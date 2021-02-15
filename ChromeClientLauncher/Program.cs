@@ -15,9 +15,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using YetiCommon;
+using YetiCommon.Cloud;
 
 namespace ChromeClientLauncher
 {
@@ -25,29 +25,31 @@ namespace ChromeClientLauncher
     {
         static void Main(string[] args)
         {
-            ConsoleTraceListener consoleTraceListener = new ConsoleTraceListener();
-            consoleTraceListener.Name = "mainConsoleTracer";
+            var consoleTraceListener = new ConsoleTraceListener
+            {
+                Name = "mainConsoleTracer"
+            };
             Trace.Listeners.Add(consoleTraceListener);
 
             try
             {
                 var jsonUtil = new JsonUtil();
 
-                var gameLauncher = new YetiCommon.ChromeClientLauncher.Factory(
-                    new BackgroundProcess.Factory(),
+                var gameLauncher = new ChromeTestClientLauncher.Factory(
                     new ChromeClientLaunchCommandFormatter(jsonUtil),
-                    new SdkConfig.Factory(jsonUtil)).Create(args[0]);
+                    new SdkConfig.Factory(jsonUtil),
+                    new ChromeLauncher(new BackgroundProcess.Factory())).Create(args[0]);
 
                 // new launch api is enabled.
                 if (args.Length == 2)
                 {
                     string launchName = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
-                    var launchUrl = gameLauncher.BuildLaunchUrlWithLaunchName(launchName);
-                    gameLauncher.StartChrome(launchUrl, Directory.GetCurrentDirectory());
+                    string launchUrl = gameLauncher.BuildLaunchUrlWithLaunchName(launchName);
+                    gameLauncher.LaunchGame(launchUrl, Directory.GetCurrentDirectory());
                 }
                 else
                 {
-                    var urlBuildStatus = gameLauncher.BuildLaunchUrl(out string launchUrl);
+                    ConfigStatus urlBuildStatus = gameLauncher.BuildLaunchUrl(out string launchUrl);
                     if (urlBuildStatus.IsWarningLevel)
                     {
                         Console.WriteLine($"Warning: {urlBuildStatus.WarningMessage}");
@@ -57,7 +59,7 @@ namespace ChromeClientLauncher
                         throw new NotImplementedException();
                     }
 
-                    gameLauncher.StartChrome(launchUrl, Directory.GetCurrentDirectory());
+                    gameLauncher.LaunchGame(launchUrl, Directory.GetCurrentDirectory());
                 }
             }
             catch (Exception ex) when (LogException(ex))
