@@ -127,7 +127,7 @@ namespace YetiCommon.Tests.Cloud
 
             Assert.That(status.IsWarningLevel, Is.EqualTo(true));
             Assert.That(status.AllMessages.Count, Is.EqualTo(7));
-            Assert.That(status.WarningMessages.Count(m => m.Contains("is assigned more than once")),
+            Assert.That(status.WarningMessages.Count(m => m.Contains("is set multiple times.")),
                         Is.EqualTo(3));
             Assert.That(
                 status.WarningMessages.Count(m => m.Contains("overrides the setting variable")),

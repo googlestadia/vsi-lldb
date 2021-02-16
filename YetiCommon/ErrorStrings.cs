@@ -83,12 +83,12 @@ namespace YetiCommon
             $"Invalid format of environment variable: '{value}'." +
             " Valid format: '<KEY>=<VALUE>'.";
 
-        public static string
-            MultipleEnvironmentVariableKeys(string key, IList<string> values) =>
-            $"The environment variable '{key}' is assigned more than once, so only the last " +
-            $"assigned value '{values.Last()}' will be used. The following values will " +
-            "be ignored: " +
-            string.Join(", ", values.Take(values.Count() - 1).Select(v => $"'{v}'")) + ".";
+        public static string MultipleEnvironmentVariableKeys(string key) =>
+            $"The custom environment variable '{key}' is set multiple times. " +
+            "The game will use the setting for this variable in " +
+            "Custom Query Parameters (if it exists), " +
+            "followed by any setting in Stadia Environment Variables (if it exists), " +
+            "followed by any other setting that affects the variable.";
 
         public static string EnvironmentVariableOverride(string variableName) =>
             $"The custom environment variable '{variableName}' overrides the setting variable.";

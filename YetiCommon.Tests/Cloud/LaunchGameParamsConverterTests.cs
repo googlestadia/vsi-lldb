@@ -273,7 +273,7 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(
                 status.WarningMessages.Count(
                     m => m.Contains("Invalid format of environment variable")), Is.EqualTo(2));
-            Assert.That(status.WarningMessages.Count(m => m.Contains("is assigned more than once")),
+            Assert.That(status.WarningMessages.Count(m => m.Contains("is set multiple times.")),
                         Is.EqualTo(1));
             Assert.That(status.WarningMessages.Count(m => m.Contains("edit the setting")),
                         Is.EqualTo(1));

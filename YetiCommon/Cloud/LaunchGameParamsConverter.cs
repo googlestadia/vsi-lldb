@@ -143,8 +143,7 @@ namespace YetiCommon.Cloud
                         if (tuple.Count() > 1)
                         {
                             status.AppendWarning(
-                                ErrorStrings.MultipleEnvironmentVariableKeys(
-                                    tuple.Key, tuple.Select(t => t.Item2).ToList()));
+                                ErrorStrings.MultipleEnvironmentVariableKeys(tuple.Key));
                         }
 
                         return tuple;
