@@ -1,0 +1,1 @@
+This stub binary is needed to run tests on machines without Stadia SDK (e.g, in presubmit).

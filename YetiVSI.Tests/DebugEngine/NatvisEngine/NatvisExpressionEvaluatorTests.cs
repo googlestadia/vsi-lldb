@@ -12,16 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
+using DebuggerApi;
 using NSubstitute;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
 using TestsCommon.TestSupport;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.NatvisEngine;
 using YetiVSI.DebugEngine.Variables;
+using YetiVSI.Test.MediumTestsSupport;
 using YetiVSI.Test.TestSupport;
+using YetiVSI.Util;
+using YetiVSITestsCommon;
 
 namespace YetiVSI.Test.DebugEngine.NatvisEngine
 {
@@ -38,7 +42,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [SetUp]
         public void SetUp()
         {
-            _compRoot = new MediumTestDebugEngineFactoryCompRoot();
+            _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
             _varInfoFactory = _compRoot.GetLldbVariableInformationFactory();
 
             _nLogSpy = _compRoot.GetNatvisDiagnosticLogSpy();
@@ -195,7 +199,6 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         LLDBVariableInformationFactory _varInfoFactory;
         NLogSpy _nLogSpy;
         OptionPageGrid _optionPageGrid;
-        VsExpressionCreator _vsExpressionCreator;
 
         [SetUp]
         public void SetUp()
@@ -203,15 +206,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             _optionPageGrid = OptionPageGrid.CreateForTesting();
             _optionPageGrid.NatvisLoggingLevel = NatvisLoggingLevelFeatureFlag.VERBOSE;
 
-            _compRoot =
-                new MediumTestDebugEngineFactoryCompRoot(new YetiVSIService(_optionPageGrid));
+            var taskContext = new JoinableTaskContext();
+            var serviceManager = new FakeServiceManager(taskContext);
+            serviceManager.AddService(typeof(YetiVSIService), new YetiVSIService(_optionPageGrid));
+            _compRoot = new MediumTestDebugEngineFactoryCompRoot(
+                serviceManager, taskContext, new GameletClientStub.Factory(),
+                TestDummyGenerator.Create<IWindowsRegistry>());
 
             _varInfoFactory = _compRoot.GetLldbVariableInformationFactory();
 
             _nLogSpy = _compRoot.GetNatvisDiagnosticLogSpy();
             _nLogSpy.Attach();
-
-            _vsExpressionCreator = new VsExpressionCreator();
 
             _evaluator = _compRoot.GetNatvisExpressionEvaluator();
         }
@@ -432,7 +437,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [SetUp]
         public void SetUp()
         {
-            _compRoot = new MediumTestDebugEngineFactoryCompRoot();
+            _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
             _varInfoFactory = _compRoot.GetLldbVariableInformationFactory();
 
             _nLogSpy = _compRoot.GetNatvisDiagnosticLogSpy();
@@ -504,7 +509,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [SetUp]
         public void SetUp()
         {
-            _compRoot = new MediumTestDebugEngineFactoryCompRoot();
+            _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
             _varInfoFactory = _compRoot.GetLldbVariableInformationFactory();
 
             _nLogSpy = _compRoot.GetNatvisDiagnosticLogSpy();

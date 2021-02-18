@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO.Abstractions.TestingHelpers;
+using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
 using TestsCommon.TestSupport;
 using YetiVSI.DebugEngine.NatvisEngine;
+using YetiVSI.Test.MediumTestsSupport;
 using YetiVSI.Util;
 using Does = YetiVSI.Test.TestSupport.NUnitExtensions.Does;
 
@@ -58,10 +60,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             _traceLogSpy = new LogSpy();
             _traceLogSpy.Attach();
 
-            var compRoot = new MediumTestDebugEngineFactoryCompRoot()
-            {
-                WindowsRegistry = Substitute.For<IWindowsRegistry>()
-            };
+            var compRoot = new MediumTestDebugEngineFactoryCompRoot(
+                null, new JoinableTaskContext(), new GameletClientStub.Factory(),
+                Substitute.For<IWindowsRegistry>());
 
             _natvisScanner = compRoot.GetNatvisVisualizerScanner();
             _natvisLoader = compRoot.GetNatvisLoader();

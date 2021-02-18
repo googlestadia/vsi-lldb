@@ -290,7 +290,7 @@ namespace YetiVSI
         /// ThreadHelper.JoinableTaskContext, but that's not set in tests. This method works
         /// around that.
         /// </summary>
-        static public OptionPageGrid CreateForTesting()
+        public static OptionPageGrid CreateForTesting()
         {
             // Disable "Use the ThreadHelper.JoinableTaskContext singleton rather than instantiating
             // your own to avoid deadlocks".
@@ -370,14 +370,14 @@ namespace YetiVSI
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
-        static string GetPropertyCategory(System.Reflection.PropertyInfo p)
+        static string GetPropertyCategory(PropertyInfo p)
         {
             var categoryAttribute =
                 Attribute.GetCustomAttribute(p, typeof(CategoryAttribute)) as CategoryAttribute;
             return categoryAttribute?.Category;
         }
 
-        static object GetPropertyDefaultValue(System.Reflection.PropertyInfo p)
+        static object GetPropertyDefaultValue(PropertyInfo p)
         {
             var defaultValueAttribute =
                 Attribute.GetCustomAttribute(p, typeof(DefaultValueAttribute))

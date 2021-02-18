@@ -32,6 +32,10 @@ namespace YetiVSI
 
         CancelableTask.Factory _cancelableTaskFactory;
         GameletSelectionWindow.Factory _gameletSelectionWindowFactory;
+        ApplicationClient.Factory _applicationClientFactory;
+        GameletClient.Factory _gameletClientFactory;
+        RemoteCommand _remoteCommand;
+        SshManager _sshManager;
 
         public GgpDebugQueryTargetCompRoot(ServiceManager serviceManager, IDialogUtil dialogUtil)
         {
@@ -58,11 +62,11 @@ namespace YetiVSI
             // NOTE: this CloudRunner is re-used for all subsequent debug sessions.
             var cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager, cloudConnection,
                                               new GgpSDKUtil());
-            var applicationClientFactory = new ApplicationClient.Factory();
-            var gameletClientFactory = new GameletClient.Factory();
+            var applicationClientFactory = GetApplicationClientFactory();
+            var gameletClientFactory = GetGameletClientFactory();
             var testAccountClientFactory = new TestAccountClient.Factory();
             var managedProcessFactory = new ManagedProcess.Factory();
-            var remoteCommand = new RemoteCommand(managedProcessFactory);
+            var remoteCommand = GetRemoteCommand(managedProcessFactory);
             var socketSender = new LocalSocketSender();
             var transportSessionFactory =
                 new LldbTransportSession.Factory(new MemoryMappedFileFactory());
@@ -73,11 +77,8 @@ namespace YetiVSI
                                                 new ElfFileUtil(taskContext.Factory,
                                                                 managedProcessFactory));
             var metrics = _serviceManager.GetGlobalService(typeof(SMetrics)) as IMetrics;
-            var sdkVersion = Versions.GetSdkVersion();
-            var sshKeyLoader = new SshKeyLoader(managedProcessFactory);
-            var sshKnownHostsWriter = new SshKnownHostsWriter();
-            var sshManager = new SshManager(gameletClientFactory, cloudRunner, sshKeyLoader,
-                                            sshKnownHostsWriter, remoteCommand);
+            var sdkVersion = GetSdkVersion();
+            var sshManager = GetSshManager(managedProcessFactory, cloudRunner);
             var gameletSelectorFactory = new GameletSelectorFactory(
                 _dialogUtil, cloudRunner, GetGameletSelectorWindowFactory(),
                 GetCancelableTaskFactory(), gameletClientFactory, sshManager, remoteCommand,
@@ -97,6 +98,23 @@ namespace YetiVSI
                                            testAccountClientFactory, gameletSelectorFactory,
                                            cloudRunner, sdkVersion, launchCommandFormatter,
                                            paramsFactory, gameLauncher, yetiVsiService);
+        }
+
+        public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();
+
+        public virtual ISshManager GetSshManager(ManagedProcess.Factory managedProcessFactory,
+                                                 ICloudRunner cloudRunner)
+        {
+            if (_sshManager == null)
+            {
+                var sshKeyLoader = new SshKeyLoader(managedProcessFactory);
+                var sshKnownHostsWriter = new SshKnownHostsWriter();
+                _sshManager = new SshManager(GetGameletClientFactory(), cloudRunner, sshKeyLoader,
+                                             sshKnownHostsWriter,
+                                             GetRemoteCommand(managedProcessFactory));
+            }
+
+            return _sshManager;
         }
 
         public virtual CancelableTask.Factory GetCancelableTaskFactory()
@@ -120,6 +138,37 @@ namespace YetiVSI
             }
 
             return _gameletSelectionWindowFactory;
+        }
+
+        public virtual IApplicationClientFactory GetApplicationClientFactory()
+        {
+            if (_applicationClientFactory == null)
+            {
+                _applicationClientFactory = new ApplicationClient.Factory();
+            }
+
+            return _applicationClientFactory;
+        }
+
+
+        public virtual IGameletClientFactory GetGameletClientFactory()
+        {
+            if (_gameletClientFactory == null)
+            {
+                _gameletClientFactory = new GameletClient.Factory();
+            }
+
+            return _gameletClientFactory;
+        }
+
+        public virtual IRemoteCommand GetRemoteCommand(ManagedProcess.Factory managedProcessFactory)
+        {
+            if (_remoteCommand == null)
+            {
+                _remoteCommand = new RemoteCommand(managedProcessFactory);
+            }
+
+            return _remoteCommand;
         }
     }
 }

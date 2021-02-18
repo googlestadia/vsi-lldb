@@ -165,14 +165,17 @@ namespace Google.VisualStudioFake.Internal
         {
             var deployOnLaunchString =
                 _project.GetPropertyValue(ProjectPropertyName.GgpDeployOnLaunch);
-            DeployOnLaunchSetting deployOnLaunch;
-            if (!Enum.TryParse(deployOnLaunchString, true, out deployOnLaunch))
+            if (!Enum.TryParse(deployOnLaunchString, true,
+                               out DeployOnLaunchSetting deployOnLaunch))
             {
                 deployOnLaunch = DeployOnLaunchSetting.TRUE;
             }
 
             return Task.FromResult(deployOnLaunch);
         }
+
+        public void SetDeployOnLaunch(DeployOnLaunchSetting deployOnLaunch) =>
+            SetStringProperty(ProjectPropertyName.GgpDeployOnLaunch, deployOnLaunch.ToString());
 
         public Task<DeployCompressionSetting> GetDeployCompressionAsync()
         {
@@ -230,10 +233,16 @@ namespace Google.VisualStudioFake.Internal
         public Task<string> GetQueryParamsAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.GgpQueryParams);
 
+        public void SetQueryParams(string queryParams) =>
+            SetStringProperty(ProjectPropertyName.GgpQueryParams, queryParams);
+
         #endregion
 
         Task<string> GetStringPropertyAsync(string propertyName) =>
             Task.FromResult(_project.GetPropertyValue(propertyName));
+
+        void SetStringProperty(string propertyName, string value) =>
+            _project.SetProperty(propertyName, value);
 
         Task<bool> GetBoolPropertyAsync(string propertyName)
         {
