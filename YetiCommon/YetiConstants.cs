@@ -84,8 +84,7 @@ namespace YetiCommon
         public static readonly string XDeltaWinExecutablePath =
             Path.Combine(XDeltaWinDir, XDeltaWinExecutable);
 
-        public static readonly string PigzWinExecutablePath =
-            Path.Combine(PigzDir, PigzExecutable);
+        public static readonly string PigzWinExecutablePath = Path.Combine(PigzDir, PigzExecutable);
 
 #if INTERNAL_BUILD
         public static readonly string LldbServerLinuxPath = RemoteToolsBinDir;

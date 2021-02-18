@@ -14,15 +14,18 @@
 
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+using GgpGrpc.Cloud;
 using Microsoft.VisualStudio.Threading;
 using TestsCommon.TestSupport;
+using YetiCommon;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.NatvisEngine;
 using YetiVSI.Test.TestSupport.DebugEngine.NatvisEngine;
 using YetiVSI.Util;
+using YetiVSITestsCommon;
 
-namespace YetiVSI.Test.DebugEngine
+namespace YetiVSI.Test.MediumTestsSupport
 {
     /// <summary>
     /// Defines the Medium test scope.
@@ -33,7 +36,11 @@ namespace YetiVSI.Test.DebugEngine
     /// </remarks>
     public class MediumTestDebugEngineFactoryCompRoot : DebugEngineFactoryCompRoot
     {
-        JoinableTaskContext _taskContext;
+        readonly JoinableTaskContext _taskContext;
+
+        readonly ServiceManager _serviceManager;
+
+        IGameletClientFactory _gameletClientFactory;
 
         NLogSpy _nLogSpy;
 
@@ -45,21 +52,29 @@ namespace YetiVSI.Test.DebugEngine
 
         YetiVSIService _vsiService;
 
-        public IWindowsRegistry WindowsRegistry { get; set; }
+        IChromeLauncher _chromeLauncher;
 
-        public ServiceManager ServiceManager { get; set; }
+        CancelableTask.Factory _cancelableTaskFactory;
 
-        // Constructor with option to inject a custom-configured |vsiService|. This can be useful
-        // for changing option flags during unit test execution.
-        public MediumTestDebugEngineFactoryCompRoot(YetiVSIService vsiService = null)
+        IWindowsRegistry _windowsRegistry;
+
+        public MediumTestDebugEngineFactoryCompRoot(JoinableTaskContext taskContext)
         {
-            _vsiService = vsiService;
+            _taskContext = taskContext;
         }
 
-        public override ServiceManager CreateServiceManager()
+        public MediumTestDebugEngineFactoryCompRoot(ServiceManager serviceManager,
+                                                    JoinableTaskContext taskContext,
+                                                    IGameletClientFactory gameletClientFactory,
+                                                    IWindowsRegistry windowsRegistry)
         {
-            return ServiceManager;
+            _serviceManager = serviceManager;
+            _taskContext = taskContext;
+            _gameletClientFactory = gameletClientFactory;
+            _windowsRegistry = windowsRegistry;
         }
+
+        public override ServiceManager CreateServiceManager() => _serviceManager;
 
         public override IFileSystem GetFileSystem()
         {
@@ -67,16 +82,18 @@ namespace YetiVSI.Test.DebugEngine
             {
                 _fileSystem = new MockFileSystem();
             }
+
             return _fileSystem;
         }
 
         public override IWindowsRegistry GetWindowsRegistry()
         {
-            if (WindowsRegistry == null)
+            if (_windowsRegistry == null)
             {
-                WindowsRegistry = TestDummyGenerator.Create<IWindowsRegistry>();
+                _windowsRegistry = TestDummyGenerator.Create<IWindowsRegistry>();
             }
-            return WindowsRegistry;
+
+            return _windowsRegistry;
         }
 
         // TODO: Remove GetNatvisDiagnosticLogger
@@ -88,11 +105,22 @@ namespace YetiVSI.Test.DebugEngine
                     GetNatvisDiagnosticLogSpy().GetLogger(),
                     GetVsiService().Options.NatvisLoggingLevel);
             }
+
             return _natvisDiagnosticLogger;
         }
 
         public override YetiVSIService GetVsiService()
         {
+            if (_vsiService != null)
+            {
+                return _vsiService;
+            }
+
+            if (_serviceManager != null)
+            {
+                _vsiService = base.GetVsiService();
+            }
+
             if (_vsiService == null)
             {
                 OptionPageGrid vsiServiceOptions = OptionPageGrid.CreateForTesting();
@@ -104,14 +132,7 @@ namespace YetiVSI.Test.DebugEngine
             return _vsiService;
         }
 
-        public override JoinableTaskContext GetJoinableTaskContext()
-        {
-            if (_taskContext == null)
-            {
-                _taskContext = new JoinableTaskContext();
-            }
-            return _taskContext;
-        }
+        public override JoinableTaskContext GetJoinableTaskContext() => _taskContext;
 
         public override DialogExecutionContext GetDialogExecutionContext()
         {
@@ -129,6 +150,7 @@ namespace YetiVSI.Test.DebugEngine
             {
                 _variableNameTransformer = new TestNatvisVariableNameTransformer();
             }
+
             return _variableNameTransformer;
         }
 
@@ -138,7 +160,39 @@ namespace YetiVSI.Test.DebugEngine
             {
                 _nLogSpy = NLogSpy.CreateUnique("NatvisDiagnostic");
             }
+
             return _nLogSpy;
+        }
+
+        public override IChromeLauncher GetChromeLauncher(BackgroundProcess.Factory factory)
+        {
+            if (_chromeLauncher == null)
+            {
+                _chromeLauncher = new ChromeLauncherStub();
+            }
+
+            return _chromeLauncher;
+        }
+
+        public override CancelableTask.Factory GetCancelableTaskFactory()
+        {
+            if (_cancelableTaskFactory == null)
+            {
+                _cancelableTaskFactory =
+                    FakeCancelableTask.CreateFactory(GetJoinableTaskContext(), false);
+            }
+
+            return _cancelableTaskFactory;
+        }
+
+        public override IGameletClientFactory GetGameletClientFactory()
+        {
+            if (_gameletClientFactory == null)
+            {
+                _gameletClientFactory = new GameletClientStub.Factory();
+            }
+
+            return _gameletClientFactory;
         }
     }
 }

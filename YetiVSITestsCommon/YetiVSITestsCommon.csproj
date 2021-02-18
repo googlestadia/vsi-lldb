@@ -63,10 +63,15 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChromeLauncherStub.cs" />
+    <Compile Include="DialogUtilFake.cs" />
+    <Compile Include="DispatcherFake.cs" />
     <Compile Include="FakeCancelableTask.cs" />
     <Compile Include="FakeGameletSelectionWindow.cs" />
     <Compile Include="FakeMainThreadContext.cs" />
     <Compile Include="FakeMainThreadContextTests.cs" />
+    <Compile Include="FakeServiceManager.cs" />
+    <Compile Include="GgpDebugQueryTargetFactory.cs" />
     <Compile Include="NatvisFileSourceFake.cs" />
     <Compile Include="NatvisFileSourceFakeTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -98,6 +103,14 @@
       <Project>{d216ea10-527a-491a-a694-74f2a58ac940}</Project>
       <Name>TestsCommon</Name>
     </ProjectReference>
+    <ProjectReference Include="..\VSFake\VSFake.csproj">
+      <Project>{06FF5FB1-1E94-48BE-B49F-39016B480BD2}</Project>
+      <Name>VSFake</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\YetiCommon\YetiCommon.csproj">
+      <Project>{A2C9F9D7-A499-4E17-BDAB-4EF18F1D9A18}</Project>
+      <Name>YetiCommon</Name>
+    </ProjectReference>
     <ProjectReference Include="..\YetiVSI.Shared\YetiVSI.Shared.csproj">
       <Project>{5705c75b-5c0e-42e4-8414-fb9cf483dff7}</Project>
       <Name>YetiVSI.Shared</Name>
@@ -126,6 +139,7 @@
       <Version>14.3.25407</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup />
   <Choose>
     <!-- References when building for Visual Studio 2017 -->
     <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">

@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using YetiCommon.Logging;
 using System;
 using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using YetiVSI.Shared.Metrics;
 using TestsCommon.TestSupport;
 using YetiVSI.LLDBShell;
+using YetiVSI.Test.MediumTestsSupport;
+using YetiVSI.Util;
 using YetiVSITestsCommon.Services;
 
 namespace YetiVSI.Test.DebugEngine
@@ -49,19 +52,19 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void TestDebugEngineConstructor()
         {
-            var compRoot = new MediumTestDebugEngineFactoryCompRoot();
-
-            SLLDBShell lldbShell = TestDummyGenerator.Create<SLLDBShell>();
+            var lldbShell = TestDummyGenerator.Create<SLLDBShell>();
             var vsiService = new YetiVSIService(OptionPageGrid.CreateForTesting());
-            IMetrics metrics = TestDummyGenerator.Create<IMetrics>();
+            var metrics = TestDummyGenerator.Create<IMetrics>();
             var vsOutputWindow = new OutputWindowStub();
             var symbolSettingsManager = Substitute.For<IVsDebuggerSymbolSettingsManager120A>();
-
-            compRoot.ServiceManager = new ServiceManagerStub(metrics, lldbShell, vsiService,
-                                                             vsOutputWindow, symbolSettingsManager);
+            var serviceManager = new ServiceManagerStub(metrics, lldbShell, vsiService,
+                                                        vsOutputWindow, symbolSettingsManager);
+            var compRoot = new MediumTestDebugEngineFactoryCompRoot(
+                serviceManager, new JoinableTaskContext(), new GameletClientStub.Factory(),
+                TestDummyGenerator.Create<IWindowsRegistry>());
 
             var factory = compRoot.CreateDebugEngineFactory();
-            var debugEngine = factory.Create(null);
+            factory.Create(null);
         }
     }
 }

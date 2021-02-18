@@ -16,8 +16,10 @@
 using NUnit.Framework;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
 using YetiVSI.DebugEngine.Variables;
-using YetiVSI.Test.TestSupport;
+ using YetiVSI.Test.MediumTestsSupport;
+ using YetiVSI.Test.TestSupport;
 
 namespace YetiVSI.Test.DebugEngine.Variables
 {
@@ -33,7 +35,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         [SetUp]
         public void SetUp()
         {
-            _compRoot = new MediumTestDebugEngineFactoryCompRoot();
+            _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
 
             _childValues = new int[] { 20, 21, 22, 23, 24 };
             _remoteValue = RemoteValueFakeUtil.CreateSimpleIntArray("myArray", _childValues);

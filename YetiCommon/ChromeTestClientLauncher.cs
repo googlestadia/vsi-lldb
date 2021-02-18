@@ -30,10 +30,10 @@ namespace YetiCommon
         {
             readonly ChromeClientLaunchCommandFormatter _launchCommandFormatter;
             readonly SdkConfig.Factory _sdkConfigFactory;
-            readonly ChromeLauncher _chromeLauncher;
+            readonly IChromeLauncher _chromeLauncher;
 
             public Factory(ChromeClientLaunchCommandFormatter launchCommandFormatter,
-                           SdkConfig.Factory sdkConfigFactory, ChromeLauncher chromeLauncher)
+                           SdkConfig.Factory sdkConfigFactory, IChromeLauncher chromeLauncher)
             {
                 _launchCommandFormatter = launchCommandFormatter;
                 _sdkConfigFactory = sdkConfigFactory;
@@ -91,10 +91,10 @@ namespace YetiCommon
         readonly Lazy<SdkConfig> _sdkConfig;
         SdkConfig SdkConfig => _sdkConfig.Value;
 
-        readonly ChromeLauncher _chromeLauncher;
+        readonly IChromeLauncher _chromeLauncher;
 
         public ChromeTestClientLauncher(SdkConfig.Factory sdkConfigFactory, Params launchParams,
-                                        ChromeLauncher chromeLauncher)
+                                        IChromeLauncher chromeLauncher)
         {
             LaunchParams = launchParams;
             _chromeLauncher = chromeLauncher;
