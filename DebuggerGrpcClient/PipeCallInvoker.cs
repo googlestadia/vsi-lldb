@@ -203,8 +203,8 @@ namespace DebuggerGrpcClient
                 // Read the response.
                 int size = await reader.ReadInt32Async();
                 byte[] responseBytes = await reader.ReadBytesAsync(size);
-                var context = new SimpleDeserializationContext(responseBytes);
-                return method.ResponseMarshaller.ContextualDeserializer(context);
+                var deserializationContext = new SimpleDeserializationContext(responseBytes);
+                return method.ResponseMarshaller.ContextualDeserializer(deserializationContext);
             }
             // Unfortunately, RpcExceptions can't be nested with InnerException.
             catch (EndOfStreamException e)

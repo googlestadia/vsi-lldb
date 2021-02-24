@@ -1,149 +1,22 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(SolutionDir)Common.props" />
   <Import Project="$(SolutionDir)BuildRoot.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{06FF5FB1-1E94-48BE-B49F-39016B480BD2}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFramework>net472</TargetFramework>
     <RootNamespace>Google</RootNamespace>
-    <AssemblyName>VSFake</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE;VS_2017</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2017|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE;VS_2017</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2019|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE;VS_2019</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2019|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE;VS_2019</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWPF>true</UseWPF>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <Configurations>Debug2017;Debug2019;Release2017;Release2019</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="VisualStudioFake\API\ExecutionSyncPoint.cs" />
-    <Compile Include="VisualStudioFake\API\IDebugQueryTarget.cs" />
-    <Compile Include="VisualStudioFake\API\IDebugQueryTargetFactory.cs" />
-    <Compile Include="VisualStudioFake\API\IDebugSessionContext.cs" />
-    <Compile Include="VisualStudioFake\API\IJobOrchestrator.cs" />
-    <Compile Include="VisualStudioFake\API\IVSFakeExtensions.cs" />
-    <Compile Include="VisualStudioFake\API\Predicates.cs" />
-    <Compile Include="VisualStudioFake\API\TimeoutSource.cs" />
-    <Compile Include="VisualStudioFake\API\UI\IBreakpoint.cs" />
-    <Compile Include="VisualStudioFake\Internal\DebugEventArgs.cs" />
-    <Compile Include="VisualStudioFake\Internal\IBreakpointRequest.cs" />
-    <Compile Include="VisualStudioFake\API\UI\IBreakpointView.cs" />
-    <Compile Include="VisualStudioFake\API\UI\IControlFlowView.cs" />
-    <Compile Include="VisualStudioFake\API\UI\IStackFrameView.cs" />
-    <Compile Include="VisualStudioFake\API\UI\IThreadView.cs" />
-    <Compile Include="VisualStudioFake\API\UI\IVariableEntry.cs" />
-    <Compile Include="VisualStudioFake\API\UI\IWatchWindow.cs" />
-    <Compile Include="VisualStudioFake\API\VSFakeTimeoutSource.cs" />
-    <Compile Include="VisualStudioFake\Internal\Adapters\ProjectAdapter.cs" />
-    <Compile Include="VisualStudioFake\Internal\Adapters\TargetAdapter.cs" />
-    <Compile Include="VisualStudioFake\Internal\DebugSession.cs" />
-    <Compile Include="VisualStudioFake\API\IDebugSession.cs" />
-    <Compile Include="VisualStudioFake\Internal\DebugSessionContext.cs" />
-    <Compile Include="VisualStudioFake\Internal\ExecutionSyncPoint\SyncPointInterceptor.cs" />
-    <Compile Include="VisualStudioFake\Internal\HResultChecker.cs" />
-    <Compile Include="VisualStudioFake\Internal\Interop\DebugPortNotify.cs" />
-    <Compile Include="VisualStudioFake\Internal\Interop\DebugProgram.cs" />
-    <Compile Include="VisualStudioFake\Internal\Interop\DefaultPort.cs" />
-    <Compile Include="VisualStudioFake\Internal\Interop\FileLineBreakpointRequest.cs" />
-    <Compile Include="VisualStudioFake\Internal\Interop\EventCallbackFake.cs" />
-    <Compile Include="VisualStudioFake\Internal\Interop\Port.cs" />
-    <Compile Include="VisualStudioFake\Internal\Interop\Process.cs" />
-    <Compile Include="VisualStudioFake\Internal\IVariableDataSource.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\ProgramStoppedJob.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\LaunchAndAttachFlow.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\ObserveAndNotifyJob.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\GenericJobs.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\IJob.cs" />
-    <Compile Include="VisualStudioFake\API\IProjectAdapter.cs" />
-    <Compile Include="VisualStudioFake\API\ISessionDebugManager.cs" />
-    <Compile Include="VisualStudioFake\API\ITargetAdapter.cs" />
-    <Compile Include="VisualStudioFake\API\IVSFake.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\IJobQueue.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\JobExecutor.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\JobOrchestrator.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\JobQueue.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\ProgramTerminatedJob.cs" />
-    <Compile Include="VisualStudioFake\Internal\Jobs\SynchronousJob.cs" />
-    <Compile Include="VisualStudioFake\Internal\UI\ControlFlowView.cs" />
-    <Compile Include="VisualStudioFake\Internal\UI\VariableExpander.cs" />
-    <Compile Include="VisualStudioFake\Internal\VSFakeException.cs" />
-    <Compile Include="VisualStudioFake\Util\JoinableTaskContextExtensions.cs" />
-    <Compile Include="VisualStudioFake\Internal\SessionDebugManager.cs" />
-    <Compile Include="VisualStudioFake\Internal\SolutionExplorerFake.cs" />
-    <Compile Include="VisualStudioFake\Internal\UI\BreakpointView.cs" />
-    <Compile Include="VisualStudioFake\Internal\UI\VariableEntry.cs" />
-    <Compile Include="VisualStudioFake\Internal\UI\SyncWatchWindow.cs" />
-    <Compile Include="VisualStudioFake\Internal\VSFake.cs" />
-    <Compile Include="VisualStudioFake\API\VSFakeCompRoot.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="README.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(ThirdPartyRootDir)TestsCommon\TestsCommon.csproj">
-      <Project>{d216ea10-527a-491a-a694-74f2a58ac940}</Project>
-      <Name>TestsCommon</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon\YetiCommon.csproj">
-      <Project>{a2c9f9d7-a499-4e17-bdab-4ef18f1d9a18}</Project>
-      <Name>YetiCommon</Name>
-    </ProjectReference>
+    <ProjectReference Include="$(ThirdPartyRootDir)TestsCommon\TestsCommon.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon\YetiCommon.csproj" />
   </ItemGroup>
   <Choose>
     <When Condition="$(IsInternalBuild)">
       <ItemGroup>
-        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj">
-          <Project>{2c7ec26a-f6cb-44a4-ac66-718fbdd0e632}</Project>
-          <Name>GgpGrpc</Name>
-        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj" />
       </ItemGroup>
     </When>
     <Otherwise>
@@ -154,7 +27,6 @@
       </ItemGroup>
     </Otherwise>
   </Choose>
-  <!-- Shared references -->
   <ItemGroup>
     <PackageReference Include="Castle.Core">
       <Version>4.2.0</Version>
@@ -170,7 +42,6 @@
     </PackageReference>
   </ItemGroup>
   <Choose>
-    <!-- References when building for Visual Studio 2017 -->
     <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
       <ItemGroup>
         <PackageReference Include="Microsoft.Build">
@@ -187,7 +58,6 @@
         </PackageReference>
       </ItemGroup>
     </When>
-    <!-- References when building for Visual Studio 2019 -->
     <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
       <ItemGroup>
         <PackageReference Include="Microsoft.Build">
@@ -205,5 +75,4 @@
       </ItemGroup>
     </When>
   </Choose>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

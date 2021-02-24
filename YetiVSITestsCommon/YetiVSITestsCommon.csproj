@@ -1,92 +1,23 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(SolutionDir)BuildRoot.props" />
   <Import Project="$(SolutionDir)Common.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9BAC7359-4A9F-41D4-918C-2A75066CC0D4}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>YetiVSITestsCommon</RootNamespace>
-    <AssemblyName>YetiVSITestsCommon</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
+    <TargetFramework>net472</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Configurations>Debug2017;Debug2019;Release2017;Release2019</Configurations>
+    <!--
+      Supress warning MSB3270:
+      There was a mismatch between the processor architecture of the project being built "MSIL"
+      and the processor architecture of the reference "...\DebuggerGrpcServer.exe", "AMD64".
+
+      DebuggerGrpcServer.exe is a separate binary and is built for AMD64 by design.
+     -->
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2017|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2019|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2019|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System" />
-    <Reference Include="WindowsBase" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="DialogUtilFake.cs" />
-    <Compile Include="DispatcherFake.cs" />
-    <Compile Include="FakeCancelableTask.cs" />
-    <Compile Include="FakeGameletSelectionWindow.cs" />
-    <Compile Include="FakeMainThreadContext.cs" />
-    <Compile Include="FakeMainThreadContextTests.cs" />
-    <Compile Include="FakeServiceManager.cs" />
-    <Compile Include="GgpDebugQueryTargetFactory.cs" />
-    <Compile Include="NatvisFileSourceFake.cs" />
-    <Compile Include="NatvisFileSourceFakeTests.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="FakeTaskExecutor.cs" />
-    <Compile Include="Services\CommandWindowStub.cs" />
-    <Compile Include="Services\OutputWindowStub.cs" />
-    <Compile Include="Services\ServiceManagerStub.cs" />
-    <Compile Include="Services\VsDebuggerSymbolSettingsManagerStub.cs" />
-  </ItemGroup>
   <Choose>
     <When Condition="$(IsInternalBuild)">
       <ItemGroup>
-        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj">
-          <Project>{2c7ec26a-f6cb-44a4-ac66-718fbdd0e632}</Project>
-          <Name>GgpGrpc</Name>
-        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj" />
       </ItemGroup>
     </When>
     <Otherwise>
@@ -98,28 +29,12 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <ProjectReference Include="..\TestsCommon\TestsCommon.csproj">
-      <Project>{d216ea10-527a-491a-a694-74f2a58ac940}</Project>
-      <Name>TestsCommon</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\VSFake\VSFake.csproj">
-      <Project>{06FF5FB1-1E94-48BE-B49F-39016B480BD2}</Project>
-      <Name>VSFake</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\YetiCommon\YetiCommon.csproj">
-      <Project>{A2C9F9D7-A499-4E17-BDAB-4EF18F1D9A18}</Project>
-      <Name>YetiCommon</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\YetiVSI.Shared\YetiVSI.Shared.csproj">
-      <Project>{5705c75b-5c0e-42e4-8414-fb9cf483dff7}</Project>
-      <Name>YetiVSI.Shared</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\YetiVSI\YetiVSI.csproj">
-      <Project>{799d0160-8c0d-43f5-ab4c-249be64aaa4e}</Project>
-      <Name>YetiVSI</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\TestsCommon\TestsCommon.csproj" />
+    <ProjectReference Include="..\VSFake\VSFake.csproj" />
+    <ProjectReference Include="..\YetiCommon\YetiCommon.csproj" />
+    <ProjectReference Include="..\YetiVSI.Shared\YetiVSI.Shared.csproj" />
+    <ProjectReference Include="..\YetiVSI\YetiVSI.csproj" />
   </ItemGroup>
-  <!-- Shared references -->
   <ItemGroup>
     <PackageReference Include="NUnit">
       <Version>3.12.0</Version>
@@ -138,9 +53,7 @@
       <Version>14.3.25407</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup />
   <Choose>
-    <!-- References when building for Visual Studio 2017 -->
     <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
       <ItemGroup>
         <PackageReference Include="Microsoft.VisualStudio.Shell.15.0">
@@ -151,7 +64,6 @@
         </PackageReference>
       </ItemGroup>
     </When>
-    <!-- References when building for Visual Studio 2019 -->
     <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
       <ItemGroup>
         <PackageReference Include="Microsoft.VisualStudio.Shell.15.0">
@@ -163,5 +75,4 @@
       </ItemGroup>
     </When>
   </Choose>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

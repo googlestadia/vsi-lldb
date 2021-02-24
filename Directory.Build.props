@@ -3,4 +3,31 @@
   <PropertyGroup>
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
+
+  <!--
+    We build only for one target framework (net472), so don't append it for
+    compatibility reasons (scripts rely on certain file paths).
+  -->
+  <PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Allow using deprecated proto fields, see (internal) -->
+    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <!-- TODO: Temporary allow conflicting types generated from protos. -->
+    <WarningsNotAsErrors>CS0436</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <!--
+    In Visual Studio 2017 reference to `netstandard` might not be added
+    automatically. Technically only some projects need it, but just add it
+    everywhere for convenience.
+  -->
+  <ItemGroup Condition="'$(VisualStudioVersion)' &lt; '16.0'">
+    <Reference Include="netstandard" />
+  </ItemGroup>
 </Project>

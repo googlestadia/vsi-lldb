@@ -2,10 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <MinimumVisualStudioVersion>$(VisualStudioVersion)</MinimumVisualStudioVersion>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
     <UseCodebase>true</UseCodebase>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <Import Project="$(SolutionDir)Common.props" />
@@ -386,7 +383,6 @@
     <Reference Include="EnvDTE90, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.VisualStudio.CommandBars, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
@@ -422,15 +418,15 @@
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <Choose>
-    <When Condition="'$(DownloadPython)' == 'true'">
-      <ItemGroup>
-        <PackageReference Include="python">
-          <Version>3.6.8</Version>
-          <GeneratePathProperty>true</GeneratePathProperty>
-        </PackageReference>
-      </ItemGroup>
-    </When>
-  </Choose>
+    <When Condition="'$(DownloadPython)' == 'true'">
+      <ItemGroup>
+        <PackageReference Include="python">
+          <Version>3.6.8</Version>
+          <GeneratePathProperty>true</GeneratePathProperty>
+        </PackageReference>
+      </ItemGroup>
+    </When>
+  </Choose>
   <Choose>
     <When Condition="$(IsInternalBuild)">
       <PropertyGroup>

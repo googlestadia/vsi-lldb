@@ -1,59 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(SolutionDir)Common.props" />
   <Import Project="$(SolutionDir)BuildRoot.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{A2C9F9D7-A499-4E17-BDAB-4EF18F1D9A18}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>YetiCommon</RootNamespace>
+    <TargetFramework>net472</TargetFramework>
     <AssemblyName>GgpCommon</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2017|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2019|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2019|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Configurations>Debug2017;Debug2019;Release2017;Release2019</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -62,87 +14,7 @@
     <DefineConstants Condition="!$(DeployPythonAndToolchainDependencies)">$(DefineConstants);USE_LOCAL_PYTHON_AND_TOOLCHAIN</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="CastleAspects\CallSequenceLoggingAspect.cs" />
-    <Compile Include="CastleAspects\ThrowExceptionAspect.cs" />
-    <Compile Include="Cloud\GgpSDKUtil.cs" />
-    <Compile Include="Cloud\LaunchGameParamsConverter.cs" />
-    <Compile Include="Cloud\QueryParametersParser.cs" />
-    <Compile Include="Cloud\ConfigStatus.cs" />
-    <Compile Include="EnumValueAliasAttribute.cs" />
-    <Compile Include="CastleAspects\MethodInfoProxyHook.cs" />
-    <Compile Include="ChromeLauncher.cs" />
-    <Compile Include="Cloud\GrpcLogger.cs" />
-    <Compile Include="ExceptionRecorder\ExceptionRecorderAspect.cs" />
-    <Compile Include="ExceptionRecorder\ExceptionRecorderExtensions.cs" />
-    <Compile Include="ExceptionRecorder\IExceptionRecorder.cs" />
-    <Compile Include="GrpcExtensions.cs" />
-    <Compile Include="TaskMessages.cs" />
-    <Compile Include="VSProject\IAsyncProject.cs" />
-    <Compile Include="MethodRecorder\IMethodInvocationRecorder.cs" />
-    <Compile Include="MethodRecorder\MetricsCollectionAspect.cs" />
-    <Compile Include="VSProject\ISolutionExplorer.cs" />
-    <Compile Include="VSProject\ProjectPropertyName.cs" />
-    <Compile Include="SafeErrorUtil.cs" />
-    <Compile Include="BackgroundProcess.cs" />
-    <Compile Include="BuildId.cs" />
-    <Compile Include="CastleAspects\DecoratorExtensions.cs" />
-    <Compile Include="CastleAspects\DecoratorSelfUtil.cs" />
-    <Compile Include="CastleAspects\InvocationLoggerAspect.cs" />
-    <Compile Include="Logging\InvocationLogUtil.cs" />
-    <Compile Include="CastleAspects\InvocationLogUtilExtensions.cs" />
-    <Compile Include="CastleAspects\LogExceptionAspect.cs" />
-    <Compile Include="CastleAspects\ProxyHookBase.cs" />
-    <Compile Include="CastleAspects\CreateFunctionProxyHook.cs" />
-    <Compile Include="CastleAspects\Decorator.cs" />
-    <Compile Include="CastleAspects\DecoratorUtil.cs" />
-    <Compile Include="CastleAspects\IDecorator.cs" />
-    <Compile Include="CastleAspects\IDecoratorSelf.cs" />
-    <Compile Include="CastleAspects\NoopAspect.cs" />
-    <Compile Include="CastleAspects\ReturnProxyAspect.cs" />
-    <Compile Include="CastleAspects\SimpleDecoratorSelf.cs" />
-    <Compile Include="CastleAspects\ValidateDecorator.cs" />
-    <Compile Include="Logging\YetiLog.cs" />
-    <Compile Include="ProcessExtensions.cs" />
-    <Compile Include="PerformanceTracing\ChromeTracingLogger.cs" />
-    <Compile Include="PerformanceTracing\TimeSource.cs" />
-    <Compile Include="PerformanceTracing\TracingAspect.cs" />
-    <Compile Include="ChromeClientLaunchCommandFormatter.cs" />
-    <Compile Include="CredentialManager.cs" />
-    <Compile Include="CredentialConfig.cs" />
-    <Compile Include="ElfFileUtil.cs" />
-    <Compile Include="EnumUtil.cs" />
-    <Compile Include="Errors.cs" />
-    <Compile Include="ErrorStrings.cs" />
-    <Compile Include="FileUtil.cs" />
-    <Compile Include="ChromeTestClientLauncher.cs" />
-    <Compile Include="IBinaryFileUtil.cs" />
-    <Compile Include="ISerializer.cs" />
-    <Compile Include="JsonUtil.cs" />
-    <Compile Include="PerformanceTracing\TracingGrpcInterceptor.cs" />
-    <Compile Include="ProcessStartInfoBuilder.cs" />
-    <Compile Include="ProcessUtil.cs" />
-    <Compile Include="SDKConfig.cs" />
-    <Compile Include="SDKUtil.cs" />
-    <Compile Include="ManagedProcess.cs" />
-    <Compile Include="SSH\SSHKey.cs" />
-    <Compile Include="SSH\SshKnownHosts.cs" />
-    <Compile Include="SSH\SshTarget.cs" />
-    <Compile Include="TestableMemoryMappedFile.cs" />
-    <Compile Include="PerformanceTracing\ITracingLogger.cs" />
-    <Compile Include="Util\IEnumerableExtensions.cs" />
-    <Compile Include="Util\MemoizedEnumerable.cs" />
-    <Compile Include="Util\ObjectGraphVisualizer.cs" />
-    <Compile Include="Versions.cs" />
-    <Compile Include="YetiConstants.cs" />
-    <Compile Include="YetiWorkStationPorts.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Choose>
     <When Condition="$(IsInternalBuild)">
@@ -150,10 +22,7 @@
         <DefineConstants>$(DefineConstants);INTERNAL_BUILD</DefineConstants>
       </PropertyGroup>
       <ItemGroup>
-        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj">
-          <Project>{2c7ec26a-f6cb-44a4-ac66-718fbdd0e632}</Project>
-          <Name>GgpGrpc</Name>
-        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj" />
       </ItemGroup>
     </When>
     <Otherwise>
@@ -194,7 +63,6 @@
     </PackageReference>
   </ItemGroup>
   <Choose>
-    <!-- References when building for Visual Studio 2017 -->
     <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
       <ItemGroup>
         <PackageReference Include="Microsoft.VisualStudio.Threading">
@@ -202,7 +70,6 @@
         </PackageReference>
       </ItemGroup>
     </When>
-    <!-- References when building for Visual Studio 2019 -->
     <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
       <ItemGroup>
         <PackageReference Include="Microsoft.VisualStudio.Threading">
@@ -211,8 +78,10 @@
       </ItemGroup>
     </When>
   </Choose>
-  <!-- If DeployPythonAndToolchainDependencies is off, the code references local paths.
-       This code stores the local paths in files, so that C# can get them. -->
+  <!--
+    If DeployPythonAndToolchainDependencies is off, the code references local paths.
+    This code stores the local paths in files, so that C# can get them.
+  -->
   <Target Name="CreateLocalToolchainDirFile" Condition="!$(DeployPythonAndToolchainDependencies)" BeforeTargets="PrepareForBuild">
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile File="$(IntermediateOutputPath)local_toolchain_dir.txt" Lines="$(InternalToolchainDir)" Overwrite="true" />
@@ -225,5 +94,4 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

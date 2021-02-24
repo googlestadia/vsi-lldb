@@ -1,61 +1,35 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(SolutionDir)BuildRoot.props" />
   <Import Project="$(SolutionDir)Common.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C63619F0-95D1-4720-9BCA-23DDDDB5DADA}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFramework>net472</TargetFramework>
     <RootNamespace>YetiVSI.Test</RootNamespace>
     <AssemblyName>YetiVSI.Test</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-    <TargetFrameworkProfile />
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <Configurations>Debug2017;Debug2019;Release2017;Release2019</Configurations>
+    <!--
+      Supress warning MSB3270:
+      There was a mismatch between the processor architecture of the project being built "MSIL"
+      and the processor architecture of the reference "...\DebuggerGrpcServer.exe", "AMD64".
+
+      DebuggerGrpcServer.exe is a separate binary and is built for AMD64 by design.
+     -->
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG;VS_2017</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU'">
+    <DefineConstants>$(DefineConstants);VS_2017</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2017|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE;VS_2017</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <DefineConstants>$(DefineConstants);VS_2017</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2019|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG;VS_2019</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <DefineConstants>$(DefineConstants);VS_2019</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2019|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE;VS_2019</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
+    <DefineConstants>$(DefineConstants);VS_2019</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <StartAction>Program</StartAction>
@@ -63,197 +37,6 @@
     <StartArguments>/C "$(SolutionDir)run_coverage.bat $(SolutionDir) $(OutputBaseDir) $(Configuration)"</StartArguments>
     <StartWorkingDirectory>$(OutputPath)</StartWorkingDirectory>
   </PropertyGroup>
-  <!-- Shared references -->
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Design" />
-    <Reference Include="System.Net.Http.WebRequest" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="WindowsBase" />
-    <!--
-      This is a workaround for a known issue with older MSBuild:
-      https://github.com/Microsoft/dotnet/blob/master/releases/net472/KnownIssues/613745%20-%20Single-name%20references%20are%20removed%20by%20the%20SDK%20when%20targeting%204.7.2.md
-     -->
-    <PackageReference Include="System.Net.Http" Version="4.3.3">
-      <ExcludeAssets>All</ExcludeAssets>
-    </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="CancelableTaskTests.cs" />
-    <Compile Include="CoreAttach\CoreListRequestTests.cs" />
-    <Compile Include="DebugEngine\DebugEngineTests.LaunchSuspended.cs" />
-    <Compile Include="DebugEngine\AsyncOperations\AsyncEvaluateExpressionOperationTest.cs" />
-    <Compile Include="DebugEngine\AsyncOperations\AsyncGetPropertiesOperationTest.cs" />
-    <Compile Include="DebugEngine\AsyncOperations\AsyncGetRootPropertiesOperationTest.cs" />
-    <Compile Include="DebugEngine\AsyncOperations\AsyncGetStackFramesOperationTest.cs" />
-    <Compile Include="DebugEngine\AsyncOperations\FrameVariablesProviderTest.cs" />
-    <Compile Include="DebugEngine\AsyncOperations\StackFramesProviderTest.cs" />
-    <Compile Include="DebugEngine\Attributes\ProvideStadiaExceptionAttributeTest.cs" />
-    <Compile Include="DebugEngine\BinaryLoaderTests.cs" />
-    <Compile Include="DebugEngine\CastleAspects\DebugEngineProxyHookTests.cs" />
-    <Compile Include="DebugEngine\ChildrenProviderTest.cs" />
-    <Compile Include="DebugEngine\DebugEngineTests.Attach.cs" />
-    <Compile Include="DebugEngine\LldbListenerSubscriberTests.cs" />
-    <Compile Include="DebugEngine\LldbEventDescriptionParserTests.cs" />
-    <Compile Include="DebugEngine\CommandDebugPropertyTests.cs" />
-    <Compile Include="DebugEngine\CoreDumps\ModuleReaderTests.cs" />
-    <Compile Include="DebugEngine\CoreDumps\DumpModulesProviderTest.cs" />
-    <Compile Include="DebugEngine\CoreDumps\ElfHeaderTest.cs" />
-    <Compile Include="DebugEngine\CoreDumps\NoteSectionTest.cs" />
-    <Compile Include="DebugEngine\CoreDumps\ProgramHeaderTest.cs" />
-    <Compile Include="DebugEngine\CoreDumps\TestData.cs" />
-    <Compile Include="DebugEngine\DebugCodeContextTests.cs" />
-    <Compile Include="DebugEngine\DebugBreakpointErrorTest.cs" />
-    <Compile Include="DebugEngine\DebugBreakpointManagerTests.cs" />
-    <Compile Include="DebugEngine\DebugBreakpointResolutionTest.cs" />
-    <Compile Include="DebugEngine\DebugDocumentContextTests.cs" />
-    <Compile Include="DebugEngine\DebugEngineManagerTests.cs" />
-    <Compile Include="DebugEngine\DebugEngineTests.cs" />
-    <Compile Include="DebugEngine\DebugSessionLauncherTests.cs" />
-    <Compile Include="DebugEngine\DebugEngineHandlerTests.cs" />
-    <Compile Include="DebugEngine\DebugEngineUtilTests.cs" />
-    <Compile Include="DebugEngine\DebugDisassemblyStreamTests.cs" />
-    <Compile Include="DebugEngine\DebugMemoryContextTests.cs" />
-    <Compile Include="DebugEngine\DebugModuleCacheTests.cs" />
-    <Compile Include="DebugEngine\DebugModuleTests.cs" />
-    <Compile Include="DebugEngine\DebugPropertyTests.cs" />
-    <Compile Include="DebugEngine\DebugExpressionTests.cs" />
-    <Compile Include="DebugEngine\DebugStackFrameTests.cs" />
-    <Compile Include="DebugEngine\DebugBoundBreakpointTests.cs" />
-    <Compile Include="DebugEngine\DebugPendingBreakpointTests.cs" />
-    <Compile Include="DebugEngine\DebugProgramTests.cs" />
-    <Compile Include="DebugEngine\DebugThreadTests.cs" />
-    <Compile Include="DebugEngine\DebugWatchpointResolutionTests.cs" />
-    <Compile Include="DebugEngine\Exit\ExitDialogUtilTests.cs" />
-    <Compile Include="DebugEngine\Exit\ExitInfoTests.cs" />
-    <Compile Include="DebugEngine\FrameInfoEnumTest.cs" />
-    <Compile Include="DebugEngine\ListDebugEntityInfoTest.cs" />
-    <Compile Include="DebugEngine\LldbAttachedProgramTests.cs" />
-    <Compile Include="DebugEngine\LldbEventManagerTests.cs" />
-    <Compile Include="DebugEngine\LldbExceptionManagerTests.cs" />
-    <Compile Include="DebugEngine\LldbTransportSessionTests.cs" />
-    <Compile Include="DebugEngine\DebugWatchpointTests.cs" />
-    <Compile Include="GameLaunch\GameLauncherTests.cs" />
-    <Compile Include="GameLaunch\GameLaunchBeHelperTests.cs" />
-    <Compile Include="GameLaunch\GameletSelectorTests.cs" />
-    <Compile Include="MediumTestsSupport\GgpClientStubs.cs" />
-    <Compile Include="MediumTestsSupport\GameletClientStub.cs" />
-    <Compile Include="MediumTestsSupport\MediumTestDebugEngineFactoryCompRoot.cs" />
-    <Compile Include="DebugEngine\ModuleFileFinderTests.cs" />
-    <Compile Include="DebugEngine\LldbModuleUtilTests.cs" />
-    <Compile Include="DebugEngine\ModuleFileLoadMetricsRecorderTests.cs" />
-    <Compile Include="DebugEngine\NatvisEngine\NatvisCollectionEntityTests.cs" />
-    <Compile Include="DebugEngine\NatvisEngine\NatvisExpressionEvaluatorTests.cs" />
-    <Compile Include="DebugEngine\NatvisEngine\NatvisDiagnosticLoggerTests.cs" />
-    <Compile Include="DebugEngine\NatvisEngine\NatvisLoadingTests.cs" />
-    <Compile Include="DebugEngine\NatvisEngine\NatvisNamesTests.cs" />
-    <Compile Include="DebugEngine\NatvisEngine\NatvisTests.cs" />
-    <Compile Include="DebugEngine\NatvisEngine\RangedNatvisEntityDecoratorTests.cs" />
-    <Compile Include="DebugEngine\NatvisEngine\TestNatvisEntity.cs" />
-    <Compile Include="DebugEngine\PreflightBinaryCheckerTests.cs" />
-    <Compile Include="DebugEngine\RegisterSetsBuilderTests.cs" />
-    <Compile Include="DebugEngine\SymbolLoaderTests.cs" />
-    <Compile Include="DebugEngine\SymbolSettingsProviderTests.cs" />
-    <Compile Include="DebugEngine\TaskExecutorTest.cs" />
-    <Compile Include="DebugEngine\TaskExecutorTracingHelperTests.cs" />
-    <Compile Include="DebugEngine\DebugEngineFactoryCompRootStub.cs" />
-    <Compile Include="DebugEngine\VariableInformationEnumTests.cs" />
-    <Compile Include="DebugEngine\ModuleFileLoaderTests.cs" />
-    <Compile Include="DebugEngine\Variables\CachingVariableInformationTests.cs" />
-    <Compile Include="DebugEngine\Variables\CStringEscapeHelperTests.cs" />
-    <Compile Include="DebugEngine\Variables\ListChildAdapterTests.cs" />
-    <Compile Include="DebugEngine\Variables\ExpandFormatSpecifierUtilTests.cs" />
-    <Compile Include="DebugEngine\Variables\ExpandVariableInformationDecoratorTests.cs" />
-    <Compile Include="DebugEngine\Variables\FloatRadixConversionHelperTests.cs" />
-    <Compile Include="DebugEngine\Variables\RemoteValueArraySizeFormatTests.cs" />
-    <Compile Include="DebugEngine\Variables\RemoteValueChildAdapterTests.cs" />
-    <Compile Include="DebugEngine\Variables\RemoteValueDefaultFormatTests.cs" />
-    <Compile Include="DebugEngine\Variables\RemoteValueLLDBFormatTests.cs" />
-    <Compile Include="DebugEngine\Variables\RemoteValueLLDBVectorOfFloatFormatTests.cs" />
-    <Compile Include="DebugEngine\Variables\RemoteValueNoPrefixIntegerFormatTests.cs" />
-    <Compile Include="DebugEngine\Variables\RemoteValueFormatProviderTests.cs" />
-    <Compile Include="DebugEngine\Variables\FormatSpecifierUtilTests.cs" />
-    <Compile Include="DebugEngine\Variables\ValueStringBuilderTests.cs" />
-    <Compile Include="DebugEngine\Variables\VsExpressionCreatorTests.cs" />
-    <Compile Include="DebugEngine\Variables\RemoteValueExtensionsTests.cs" />
-    <Compile Include="DebugEngine\Variables\RemoteValueStringFormatTests.cs" />
-    <Compile Include="DebugEngine\Variables\VariablesTests.cs" />
-    <Compile Include="DebuggerOptions\DebuggerOptionsCommandTests.cs" />
-    <Compile Include="EnvDTEUtilTests.cs" />
-    <Compile Include="GameLaunch\VsiGameLaunchTests.cs" />
-    <Compile Include="GameletMountCheckerTests.cs" />
-    <Compile Include="GameLaunch\GameletSelectorLegacyFlowTests.cs" />
-    <Compile Include="DebuggerGrpc\CommonTests.cs" />
-    <Compile Include="GameLaunch\LaunchApiMediumTests.cs" />
-    <Compile Include="MediumTestsSupport\MediumTestGgpDebugQueryTargetCompRoot.cs" />
-    <Compile Include="LoadSymbols\SessionNotifierServiceTests.cs" />
-    <Compile Include="MediumTestsSupport\MediumTestServiceManager.cs" />
-    <Compile Include="Metrics\ActionRecorderTests.cs" />
-    <Compile Include="Metrics\DebugEventAggregatorTests.cs" />
-    <Compile Include="Metrics\DebugEventBatchTests.cs" />
-    <Compile Include="Metrics\DebugEventRecorderTests.cs" />
-    <Compile Include="Metrics\DebugSessionMetricsTests.cs" />
-    <Compile Include="Metrics\ExceptionRecorderTests.cs" />
-    <Compile Include="Metrics\TestSupport\EventSchedulerFake.cs" />
-    <Compile Include="Metrics\MethodInfoExtensionsTests.cs" />
-    <Compile Include="Metrics\TestSupport\TestClass.cs" />
-    <Compile Include="Metrics\TestSupport\TimerFake.cs" />
-    <Compile Include="Metrics\TypeExtensionsTests.cs" />
-    <Compile Include="PortSupplier\DebugPortTests.cs" />
-    <Compile Include="ConfiguredProjectAdapterTests.cs" />
-    <Compile Include="RemoteFileTests.cs" />
-    <Compile Include="SolutionExplorerTests.cs" />
-    <Compile Include="RemoteDeployTests.cs" />
-    <Compile Include="SshManagerTests.cs" />
-    <Compile Include="SshTunnelsTests.cs" />
-    <Compile Include="TestSupport\DebugEngine\DebugProcessStub.cs" />
-    <Compile Include="TestSupport\DebugEngine\DebugProgramStub.cs" />
-    <Compile Include="TestSupport\DebugEngine\DebugPropertyExtensions.cs" />
-    <Compile Include="TestSupport\KeyStubTests.cs" />
-    <Compile Include="TestSupport\Lldb\SbCommandInterpreterDummy.cs" />
-    <Compile Include="TestSupport\KeyStub.cs" />
-    <Compile Include="TestSupport\DebugEngine\NatvisEngine\TestNatvisVariableNameTransformer.cs" />
-    <Compile Include="TestSupport\Lldb\SbCommandReturnObjectStub.cs" />
-    <Compile Include="TestSupport\Lldb\SbPlatformFake.cs" />
-    <Compile Include="TestSupport\Lldb\SbDebuggerFake.cs" />
-    <Compile Include="TestSupport\Lldb\SbListenerStub.cs" />
-    <Compile Include="TestSupport\Lldb\SbPlatformFakeTests.cs" />
-    <Compile Include="TestSupport\Lldb\SbProcessStub.cs" />
-    <Compile Include="TestSupport\Lldb\SbTargetStub.cs" />
-    <Compile Include="TestSupport\VariableInformationExtensions.cs" />
-    <Compile Include="TestSupport\Lldb\SbUnixSignalsStubTests.cs" />
-    <Compile Include="TestSupport\RegistrationContextStubTests.cs" />
-    <Compile Include="TestSupport\Lldb\SbUnixSignalsStub.cs" />
-    <Compile Include="TestSupport\RegistrationContextStub.cs" />
-    <Compile Include="TestSupport\SbTypeMemberStub.cs" />
-    <Compile Include="TestSupport\RemoteValueFakeTests.cs" />
-    <Compile Include="TestSupport\RemoteValueFakeUtil.cs" />
-    <Compile Include="TestSupport\NUnitExtensions\IVariableInformationNUnitExtensions.cs" />
-    <Compile Include="Util\FeatureFlagConverterTests.cs" />
-    <Compile Include="Util\IDictionaryExtensionsTests.cs" />
-    <Compile Include="Util\LldbCommandUtilTests.cs" />
-    <Compile Include="Util\SynchronousDispatcher.cs" />
-    <Compile Include="VCProjectAdapterTests.cs" />
-    <Compile Include="YetiDebugTransportTest.cs" />
-    <Compile Include="GgpDebugQueryTargetTests.cs" />
-    <Compile Include="LLDBShell\LLDBShellCommandTargetTests.cs" />
-    <Compile Include="LLDBShell\LLDBShellTests.cs" />
-    <Compile Include="PortSupplier\DebugProcessTests.cs" />
-    <Compile Include="PortSupplier\DebugPropertyTests.cs" />
-    <Compile Include="PortSupplier\DebugPortSupplierTests.cs" />
-    <Compile Include="PortSupplier\ProcessListRequestTests.cs" />
-    <Compile Include="TestSupport\SbErrorStub.cs" />
-    <Compile Include="TestSupport\SbTypeStub.cs" />
-    <Compile Include="TestSupport\RemoteValueDecorator.cs" />
-    <Compile Include="TestSupport\RemoteValueFake.cs" />
-    <Compile Include="TestSupport\RemoteValueNameDecorator.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="OptionPageGridTests.cs" />
-    <Compile Include="YetiVSIPackage\YetiVSIPackageCommandTests.cs" />
-    <Compile Include="YetiVSIPackage\YetiVSIPackageTestBase.cs" />
-  </ItemGroup>
   <Target Name="CopyTestAssets" AfterTargets="Build">
     <ItemGroup>
       <StubTestSample Include="$(ThirdPartyRootDir)YetiVSI.Tests\GameLaunch\StubTestSample\StubTestSample.vcxproj" />
@@ -267,14 +50,8 @@
   <Choose>
     <When Condition="$(IsInternalBuild)">
       <ItemGroup>
-        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj">
-          <Project>{2c7ec26a-f6cb-44a4-ac66-718fbdd0e632}</Project>
-          <Name>GgpGrpc</Name>
-        </ProjectReference>
-        <ProjectReference Include="$(SolutionDir)MetricsUploader\MetricsUploader.csproj">
-          <Project>{534205a2-b924-4618-b3c8-bdd91abe7043}</Project>
-          <Name>MetricsUploader</Name>
-        </ProjectReference>
+        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj" />
+        <ProjectReference Include="$(SolutionDir)MetricsUploader\MetricsUploader.csproj" />
       </ItemGroup>
     </When>
     <Otherwise>
@@ -286,58 +63,17 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerCommonApi\DebuggerCommonApi.csproj">
-      <Project>{6E6A1F1D-FF94-40C6-8DB5-6466EEFFBA85}</Project>
-      <Name>DebuggerCommonApi</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpcClient\DebuggerGrpcClient.csproj">
-      <Project>{90f6a34d-3d0c-4451-a40f-82101538fa73}</Project>
-      <Name>DebuggerGrpcClient</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)LldbApi\LldbApi.csproj">
-      <Project>{26aaf846-325f-4af8-8f06-da5fb523d9d8}</Project>
-      <Name>LldbApi</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpc\DebuggerGrpc.csproj">
-      <Project>{15e392e6-4715-4066-aa47-099a1dd0dbcf}</Project>
-      <Name>DebuggerGrpc</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SymbolStores\SymbolStores.csproj">
-      <Project>{AC9DA952-3ED1-4CC6-9200-3847204B92FD}</Project>
-      <Name>SymbolStores</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)TestsCommon\TestsCommon.csproj">
-      <Project>{d216ea10-527a-491a-a694-74f2a58ac940}</Project>
-      <Name>TestsCommon</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon.Tests\YetiCommon.Tests.csproj">
-      <Project>{d985ded6-1afd-4a62-b383-d2af3daa04d7}</Project>
-      <Name>YetiCommon.Tests</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon\YetiCommon.csproj">
-      <Project>{A2C9F9D7-A499-4E17-BDAB-4EF18F1D9A18}</Project>
-      <Name>YetiCommon</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.Shared\YetiVSI.Shared.csproj">
-      <Project>{5705C75B-5C0E-42E4-8414-FB9CF483DFF7}</Project>
-      <Name>YetiVSI.Shared</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSITestsCommon\YetiVSITestsCommon.csproj">
-      <Project>{9bac7359-4a9f-41d4-918c-2a75066cc0d4}</Project>
-      <Name>YetiVSITestsCommon</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI\YetiVSI.csproj">
-      <Project>{799d0160-8c0d-43f5-ab4c-249be64aaa4e}</Project>
-      <Name>YetiVSI</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)VSFake\VSFake.csproj">
-      <Project>{06FF5FB1-1E94-48BE-B49F-39016B480BD2}</Project>
-      <Name>VSFake</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.External\YetiVSI.External.csproj">
-      <Project>{8B6B1019-F3C1-41DD-B8EE-E397A92A9A7D}</Project>
-      <Name>YetiVSI.External</Name>
-    </ProjectReference>
+    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerCommonApi\DebuggerCommonApi.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpcClient\DebuggerGrpcClient.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)LldbApi\LldbApi.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpc\DebuggerGrpc.csproj" />
+    <ProjectReference Include="..\SymbolStores\SymbolStores.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)TestsCommon\TestsCommon.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon.Tests\YetiCommon.Tests.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon\YetiCommon.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.Shared\YetiVSI.Shared.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSITestsCommon\YetiVSITestsCommon.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI\YetiVSI.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
@@ -345,7 +81,6 @@
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
-  <!-- Shared references -->
   <ItemGroup>
     <PackageReference Include="NUnit">
       <Version>3.12.0</Version>
@@ -367,26 +102,28 @@
       <Version>4.6.7</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup />
   <Choose>
-    <!-- References when building for Visual Studio 2017 -->
     <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
       <ItemGroup>
         <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
           <HintPath>$(SolutionDir)lib\Microsoft.VisualStudio.ProjectEngine.15.0.27729.1\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
           <Private>True</Private>
         </Reference>
+        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem">
+          <Version>15.8.243</Version>
+        </PackageReference>
       </ItemGroup>
     </When>
-    <!-- References when building for Visual Studio 2019 -->
     <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
       <ItemGroup>
         <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=16.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
           <HintPath>$(SolutionDir)lib\Microsoft.VisualStudio.ProjectEngine.16.0.29428.189\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
           <Private>True</Private>
         </Reference>
+        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem">
+          <Version>16.2.133-pre</Version>
+        </PackageReference>
       </ItemGroup>
     </When>
   </Choose>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

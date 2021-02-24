@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using CommandLine;
 using Debugger.SbAddressRpc;
 using Debugger.SbBreakpointLocationRpc;
 using Debugger.RemoteBreakpointRpc;

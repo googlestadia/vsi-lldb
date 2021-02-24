@@ -1,101 +1,23 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(SolutionDir)Common.props" />
   <Import Project="$(SolutionDir)BuildRoot.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{25F90C90-14BF-4FD3-A799-79CA31E8872C}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DebuggerGrpcClientServer.Tests</RootNamespace>
-    <AssemblyName>DebuggerGrpcClientServer.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFramework>net472</TargetFramework>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-    <TargetFrameworkProfile />
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Configurations>Debug2017;Debug2019;Release2017;Release2019</Configurations>
+    <Platforms>x64</Platforms>
     <RunSettingsFilePath>$(MSBuildProjectDirectory)\.runsettings</RunSettingsFilePath>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2017|x64'">
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2019|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2019|x64'">
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="BaseIntegrationTests.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="BasicClientServerTests.cs" />
-    <Compile Include="RemoteThreadIntegrationTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".runsettings" />
-  </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DebuggerCommonApi\DebuggerCommonApi.csproj">
-      <Project>{6E6A1F1D-FF94-40C6-8DB5-6466EEFFBA85}</Project>
-      <Name>DebuggerCommonApi</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DebuggerGrpcClient\DebuggerGrpcClient.csproj">
-      <Project>{90F6A34D-3D0C-4451-A40F-82101538FA73}</Project>
-      <Name>DebuggerGrpcClient</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DebuggerGrpcServer\DebuggerGrpcServer.csproj">
-      <Project>{115f721a-d99e-457b-932c-869a646b083d}</Project>
-      <Name>DebuggerGrpcServer</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DebuggerGrpc\DebuggerGrpc.csproj">
-      <Project>{15e392e6-4715-4066-aa47-099a1dd0dbcf}</Project>
-      <Name>DebuggerGrpc</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)LldbApi\LldbApi.csproj">
-      <Project>{26AAF846-325F-4AF8-8F06-DA5FB523D9D8}</Project>
-      <Name>LldbApi</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\DebuggerCommonApi\DebuggerCommonApi.csproj" />
+    <ProjectReference Include="..\DebuggerGrpcClient\DebuggerGrpcClient.csproj" />
+    <ProjectReference Include="..\DebuggerGrpcServer\DebuggerGrpcServer.csproj" />
+    <ProjectReference Include="..\DebuggerGrpc\DebuggerGrpc.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)LldbApi\LldbApi.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Grpc">
@@ -116,7 +38,6 @@
     </PackageReference>
   </ItemGroup>
   <Choose>
-    <!-- References when building for Visual Studio 2017 -->
     <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
       <ItemGroup>
         <PackageReference Include="Microsoft.VisualStudio.Threading">
@@ -124,7 +45,6 @@
         </PackageReference>
       </ItemGroup>
     </When>
-    <!-- References when building for Visual Studio 2019 -->
     <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
       <ItemGroup>
         <PackageReference Include="Microsoft.VisualStudio.Threading">
@@ -133,5 +53,4 @@
       </ItemGroup>
     </When>
   </Choose>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

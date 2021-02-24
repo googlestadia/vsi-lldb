@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(SolutionDir)BuildRoot.props" />
   <Import Project="$(SolutionDir)Common.props" />
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
@@ -7,8 +6,8 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Configurations>Debug2017;Debug2019;Release2017;Release2019</Configurations>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.Web" />
+   <ItemGroup>
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
   <Choose>
     <When Condition="$(IsInternalBuild)">
@@ -25,27 +24,16 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <ProjectReference Include="..\TestsCommon\TestsCommon.csproj" />
-    <ProjectReference Include="..\YetiCommon\YetiCommon.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)TestsCommon\TestsCommon.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon\YetiCommon.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)SymbolStores\SymbolStores.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Apis.Auth">
-      <Version>1.46.0</Version>
-    </PackageReference>
-    <PackageReference Include="Google.Protobuf">
-      <Version>3.14.0</Version>
-    </PackageReference>
     <PackageReference Include="Grpc.Core">
       <Version>2.34.0</Version>
-    </PackageReference>
-    <PackageReference Include="Newtonsoft.Json">
-      <Version>12.0.3</Version>
-    </PackageReference>
-    <PackageReference Include="NLog">
-      <Version>4.5.6</Version>
     </PackageReference>
     <PackageReference Include="NSubstitute">
       <Version>3.1.0</Version>
@@ -60,13 +48,6 @@
     <PackageReference Include="System.IO.Abstractions.TestingHelpers">
       <Version>2.1.0.247</Version>
     </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Use a "real" vsixmanifest for the VersionsTests tests, so that it's guaranteed to be up-to-date. -->
-    <None Include="$(SolutionDir)\manifest\2019\source.extension.vsixmanifest">
-      <Link>TestData\source.extension.vsixmanifest</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <Choose>
     <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
