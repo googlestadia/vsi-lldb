@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Grpc.Core;
+using DebuggerGrpc;
+using Grpc.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -50,7 +51,19 @@ namespace DebuggerGrpcServer
                                                                 handler)
         {
             IProcessMessage processor = new MethodAndHandler<TRequest, TResponse>(
-                method.RequestMarshaller.Deserializer, method.ResponseMarshaller.Serializer,
+                requestBytes =>
+                {
+                    var context = new SimpleDeserializationContext(requestBytes);
+                    return method.RequestMarshaller.ContextualDeserializer(context);
+                },
+                request =>
+                {
+                    using (var context = new SimpleSerializationContext())
+                    {
+                        method.ResponseMarshaller.ContextualSerializer(request, context);
+                        return context.GetPayload();
+                    }
+                },
                 handler);
             messageProcessors.Add(method.FullName, processor);
         }

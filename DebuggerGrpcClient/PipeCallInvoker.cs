@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Grpc.Core;
+using DebuggerGrpc;
+using Grpc.Core;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -22,7 +23,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32.SafeHandles;
 
 namespace DebuggerGrpcClient
 {
@@ -143,14 +143,19 @@ namespace DebuggerGrpcClient
                 writer.Write(Encoding.ASCII.GetBytes(method.FullName));
 
                 // Send the request.
-                byte[] requestBytes = method.RequestMarshaller.Serializer(request);
-                writer.Write(requestBytes.Length);
-                writer.Write(requestBytes);
+                using (var serializationContext = new SimpleSerializationContext())
+                {
+                    method.RequestMarshaller.ContextualSerializer(request, serializationContext);
+                    byte[] requestBytes = serializationContext.GetPayload();
+                    writer.Write(requestBytes.Length);
+                    writer.Write(requestBytes);
+                }
 
                 // Read the response.
                 int size = reader.ReadInt32();
                 byte[] responseBytes = reader.ReadBytes(size);
-                return method.ResponseMarshaller.Deserializer(responseBytes);
+                var deserializationContext = new SimpleDeserializationContext(responseBytes);
+                return method.ResponseMarshaller.ContextualDeserializer(deserializationContext);
             }
             // Unfortunately, RpcExceptions can't be nested with InnerException.
             catch (EndOfStreamException e)
@@ -187,14 +192,19 @@ namespace DebuggerGrpcClient
                 await writer.WriteAsync(Encoding.ASCII.GetBytes(method.FullName));
 
                 // Send the request.
-                byte[] requestBytes = method.RequestMarshaller.Serializer(request);
-                await writer.WriteAsync(requestBytes.Length);
-                await writer.WriteAsync(requestBytes);
+                using (var serializationContext = new SimpleSerializationContext())
+                {
+                    method.RequestMarshaller.ContextualSerializer(request, serializationContext);
+                    byte[] requestBytes = serializationContext.GetPayload();
+                    await writer.WriteAsync(requestBytes.Length);
+                    await writer.WriteAsync(requestBytes);
+                }
 
                 // Read the response.
                 int size = await reader.ReadInt32Async();
                 byte[] responseBytes = await reader.ReadBytesAsync(size);
-                return method.ResponseMarshaller.Deserializer(responseBytes);
+                var context = new SimpleDeserializationContext(responseBytes);
+                return method.ResponseMarshaller.ContextualDeserializer(context);
             }
             // Unfortunately, RpcExceptions can't be nested with InnerException.
             catch (EndOfStreamException e)
