@@ -233,8 +233,9 @@ namespace YetiVSI.DebugEngine
             GrpcConnection grpcConnection, int localDebuggerPort, string targetIpAddress,
             int targetPort, IDebugEventCallback2 callback)
         {
-            var launchTimer = new Stopwatch();
-            launchTimer.Start();
+            var launchSucceeded = false;
+            Stopwatch launchTimer = Stopwatch.StartNew();
+
 
             // This should be the first request to the DebuggerGrpcServer.  Providing a retry wait
             // time allows us to connect to a DebuggerGrpcServer that is slow to start. Note that
@@ -458,20 +459,22 @@ namespace YetiVSI.DebugEngine
                 var exceptionManager = _exceptionManagerFactory.Create(debuggerProcess);
 
                 await _taskContext.Factory.SwitchToMainThreadAsync();
-                return _attachedProgramFactory.Create(
+                ILldbAttachedProgram attachedProgram = _attachedProgramFactory.Create(
                     process, programId, _debugEngine, callback, lldbDebugger, lldbTarget,
                     listenerSubscriber, debuggerProcess, lldbDebugger.GetCommandInterpreter(),
                     false, exceptionManager, _moduleSearchLogHolder, processId);
-            }
-            catch (Exception)
-            {
-                listenerSubscriber.Stop();
-                throw;
+                launchSucceeded = true;
+                return attachedProgram;
             }
             finally
             {
                 // clean up the SBListener subscriber
                 listenerSubscriber.FileUpdateReceived -= eventHandler;
+                // stop the SBListener subscriber completely if the game failed to launch
+                if (!launchSucceeded)
+                {
+                    listenerSubscriber.Stop();
+                }
             }
         }
 

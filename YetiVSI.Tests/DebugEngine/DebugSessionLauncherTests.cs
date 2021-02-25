@@ -118,6 +118,7 @@ namespace YetiVSI.Test.DebugEngine
                 _debuggerFactory.Debugger.CommandInterpreter.HandledCommands.Contains(
                     SbDebuggerExtensions.FastExpressionEvaluationCommand),
                 _fastExpressionDisabledErrorMessage);
+            attachedProgram.Stop();
         }
 
         [Test]
@@ -133,6 +134,7 @@ namespace YetiVSI.Test.DebugEngine
                 _debuggerFactory.Debugger.CommandInterpreter.HandledCommands.Contains(
                     SbDebuggerExtensions.FastExpressionEvaluationCommand),
                 _fastExpressionDisabledErrorMessage);
+            attachedProgram.Stop();
         }
 
         [Test]
@@ -239,6 +241,7 @@ namespace YetiVSI.Test.DebugEngine
                 _debuggerFactory.Debugger.CommandInterpreter.HandledCommands.Contains(
                     SbDebuggerExtensions.FastExpressionEvaluationCommand),
                 _fastExpressionDisabledErrorMessage);
+            attachedProgram.Stop();
         }
 
         [Test]
@@ -319,6 +322,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var program = await LaunchAsync(launcher);
             Assert.That(program, Is.Not.Null);
+            program.Stop();
         }
 
         [Test]
@@ -341,6 +345,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var program = await LaunchAsync(launcher);
             Assert.That(program, Is.Not.Null);
+            program.Stop();
         }
 
         [Test]
@@ -364,6 +369,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var program = await LaunchAsync(launcher);
             Assert.That(program, Is.Not.Null);
+            program.Stop();
         }
 
         [Test]
@@ -406,8 +412,10 @@ namespace YetiVSI.Test.DebugEngine
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
                                                   "some/core/path", "", "", _gameLaunchManager,
                                                   _gameLaunch);
-            await LaunchAsync(launcher);
+            ILldbAttachedProgram program = await LaunchAsync(launcher);
             Assert.That(connectRemoteRecorder.InvocationCount, Is.EqualTo(0));
+            Assert.That(program, Is.Not.Null);
+            program.Stop();
         }
 
         [TestCase(LaunchOption.AttachToGame)]
@@ -419,10 +427,12 @@ namespace YetiVSI.Test.DebugEngine
             var launcherFactory = CreateLauncherFactory(false, connectRemoteRecorder);
             var launcher = launcherFactory.Create(_debugEngine, launchOption, "", _gameBinary,
                                                   _gameBinary, _gameLaunchManager, _gameLaunch);
-            await LaunchAsync(launcher);
+            ILldbAttachedProgram program = await LaunchAsync(launcher);
             Assert.That(connectRemoteRecorder.InvocationCount, Is.EqualTo(1));
             Assert.That(connectRemoteRecorder.InvocationOptions[0].GetUrl(),
                         Is.EqualTo("connect://localhost:10200"));
+            Assert.That(program, Is.Not.Null);
+            program.Stop();
         }
 
         [TestCase(LaunchOption.AttachToGame)]
@@ -434,7 +444,7 @@ namespace YetiVSI.Test.DebugEngine
             var launcherFactory = CreateLauncherFactory(true, connectRemoteRecorder);
             var launcher = launcherFactory.Create(_debugEngine, launchOption, "", _gameBinary,
                                                   _gameBinary, _gameLaunchManager, _gameLaunch);
-            await LaunchAsync(launcher);
+            ILldbAttachedProgram program = await LaunchAsync(launcher);
             Assert.That(connectRemoteRecorder.InvocationCount, Is.EqualTo(1));
             Assert.That(connectRemoteRecorder.InvocationOptions.Count, Is.EqualTo(1));
 
@@ -447,6 +457,8 @@ namespace YetiVSI.Test.DebugEngine
             Assert.That(connectRemoteUrl, Does.Contain("scp.exe\""));
             Assert.That(connectRemoteUrl,
                         Does.Contain("-oStrictHostKeyChecking=yes -oUserKnownHostsFile"));
+            Assert.That(program, Is.Not.Null);
+            program.Stop();
         }
 
         DebugSessionLauncher.Factory CreateLauncherFactory(bool stadiaPlatformAvailable,

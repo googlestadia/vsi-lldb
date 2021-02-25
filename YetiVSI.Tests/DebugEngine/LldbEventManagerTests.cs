@@ -27,6 +27,49 @@ using YetiVSI.DebugEngine.Interfaces;
 namespace YetiVSI.Test.DebugEngine
 {
     [TestFixture]
+    [Timeout(3000)]
+    class LldbEventManagerStartTests
+    {
+        SbListener _listener;
+        LldbListenerSubscriber _listenerSubscriber;
+        IEventManager _eventManager;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _listener = Substitute.For<SbListener>();
+            _listenerSubscriber = Substitute.For<LldbListenerSubscriber>(_listener);
+            _eventManager =
+                new LldbEventManager
+                    .Factory(new BoundBreakpointEnumFactory(), null)
+                    .Create(null, null, null,
+                            null, _listenerSubscriber);
+        }
+
+        [Test]
+        public void StartListenerToCompletion()
+        {
+            var events = new CountdownEvent(5);
+            _listener
+                .When(i => i.WaitForEvent(Arg.Any<uint>(), out SbEvent _))
+                .Do(_ => {
+                    Assert.IsTrue(_eventManager.IsRunning);
+                    events.Signal();
+                    if (events.IsSet)
+                    {
+                        _eventManager.StopListener();
+                        Assert.IsFalse(_eventManager.IsRunning);
+                    }
+                });
+
+            Assert.IsFalse(_eventManager.IsRunning);
+            _eventManager.StartListener();
+            events.Wait();
+        }
+    }
+
+    [TestFixture]
+    [Timeout(3000)]
     class LldbEventManagerTests
     {
         readonly List<ulong> _breakpointStopData = new List<ulong> { 1, 2, 1, 3, 2, 1 };
@@ -628,29 +671,6 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void StartListenerToCompletion()
-        {
-            var events = new CountdownEvent(5);
-            _mockSbListener.WaitForEvent(Arg.Any<uint>(), out SbEvent _)
-                .Returns(x => {
-                    x[1] = null;
-                    return false;
-                })
-                .AndDoes(_ => {
-                    Assert.IsTrue(_eventManager.IsRunning);
-                    events.Signal();
-                    if (events.IsSet)
-                    {
-                        _eventManager.StopListener();
-                    }
-                });
-
-            Assert.IsFalse(_eventManager.IsRunning);
-            _eventManager.StartListener();
-            events.Wait();
-        }
-
-        [Test]
         public void StartListenerAborted()
         {
             _mockListenerSubscriber.ExceptionOccured +=
@@ -659,6 +679,11 @@ namespace YetiVSI.Test.DebugEngine
             _mockDebugEngineHandler.Received(1).SendEvent(Arg.Any<ProgramDestroyEvent>(),
                                                           _mockProgram);
         }
+
+        class TestException : Exception
+        {
+        }
+
 
         void MockEvent(EventType eventType, StateType stateType, bool processResumed)
         {
@@ -796,8 +821,5 @@ namespace YetiVSI.Test.DebugEngine
             Assert.AreEqual(name + ": " + description, exceptionDescription);
         }
 
-        class TestException : Exception
-        {
-        }
     }
 }

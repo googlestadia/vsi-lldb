@@ -15,6 +15,7 @@
 ﻿using DebuggerApi;
 using DebuggerGrpcClient;
 using System.Collections.Generic;
+using System.Threading;
 using TestsCommon.TestSupport;
 
 namespace YetiVSI.Test.TestSupport.Lldb
@@ -33,7 +34,6 @@ namespace YetiVSI.Test.TestSupport.Lldb
 
     public class SbListenerStub : SbListener
     {
-        object _locker = new object();
         long _waitForEventCallCount = 0;
 
         public SbListenerStub(string name)
@@ -50,20 +50,11 @@ namespace YetiVSI.Test.TestSupport.Lldb
 
         public bool WaitForEvent(uint numSeconds, out SbEvent evnt)
         {
-            lock (_locker)
-            {
-                _waitForEventCallCount++;
-            }
+            Interlocked.Increment(ref _waitForEventCallCount);
             evnt = null;
             return false;
         }
 
-        public long GetWaitForEventCallCount()
-        {
-            lock (_locker)
-            {
-                return _waitForEventCallCount;
-            }
-        }
+        public long GetWaitForEventCallCount() => Interlocked.Read(ref _waitForEventCallCount);
     }
 }
