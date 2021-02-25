@@ -27,6 +27,7 @@ ref class LLDBExpressionOptionsFactory sealed : ILldbExpressionOptionsFactory {
 public:
   virtual ~LLDBExpressionOptionsFactory() {};
   virtual SbExpressionOptions ^ Create();
+  virtual SbExpressionOptions ^ CreateDefault();
 };
 
 }  // namespace DebugEngine

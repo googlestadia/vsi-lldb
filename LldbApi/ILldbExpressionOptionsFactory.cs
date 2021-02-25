@@ -20,5 +20,10 @@
         /// Creates a new SbExpressionOptions.
         /// </summary>
         SbExpressionOptions Create();
+
+        /// <summary>
+        /// Creates SbExpressionOptions with default values.
+        /// </summary>
+        SbExpressionOptions CreateDefault();
     }
 }

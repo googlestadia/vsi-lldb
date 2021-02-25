@@ -31,7 +31,7 @@ ref class LLDBExpressionOptions sealed : SbExpressionOptions {
   LLDBExpressionOptions();
   virtual ~LLDBExpressionOptions(){};
   virtual void SetAutoApplyFixIts(bool b);
-  virtual bool GetAutoApplyFixIts();
+  virtual void SetIgnoreBreakpoints(bool b);
 
   lldb::SBExpressionOptions GetNativeObject();
 

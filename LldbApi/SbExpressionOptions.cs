@@ -19,8 +19,8 @@
     /// </summary>
     public interface SbExpressionOptions
     {
-        bool GetAutoApplyFixIts();
-
         void SetAutoApplyFixIts(bool b);
+
+        void SetIgnoreBreakpoints(bool b);
     }
 }

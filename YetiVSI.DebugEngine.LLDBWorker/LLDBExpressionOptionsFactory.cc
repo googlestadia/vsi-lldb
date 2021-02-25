@@ -26,5 +26,13 @@ namespace DebugEngine {
 SbExpressionOptions ^ LLDBExpressionOptionsFactory::Create() {
   return gcnew LLDBExpressionOptions();
 }
+
+SbExpressionOptions ^ LLDBExpressionOptionsFactory::CreateDefault() {
+  SbExpressionOptions ^ result = Create();
+  result->SetAutoApplyFixIts(false);
+  result->SetIgnoreBreakpoints(true);
+  return result;
+}
+
 }  // namespace DebugEngine
 }  // namespace YetiVSI

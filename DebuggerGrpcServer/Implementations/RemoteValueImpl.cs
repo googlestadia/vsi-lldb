@@ -70,8 +70,7 @@ namespace DebuggerGrpcServer
 
         public RemoteValue CreateValueFromExpression(string name, string expression)
         {
-            SbExpressionOptions options = _expressionOptionsFactory.Create();
-            options.SetAutoApplyFixIts(false);
+            SbExpressionOptions options = _expressionOptionsFactory.CreateDefault();
             return _valueFactory.Create(
                 _sbValue.CreateValueFromExpression(name, expression, options));
         }
@@ -83,8 +82,7 @@ namespace DebuggerGrpcServer
 
         public RemoteValue EvaluateExpression(string expression)
         {
-            SbExpressionOptions options = _expressionOptionsFactory.Create();
-            options.SetAutoApplyFixIts(false);
+            SbExpressionOptions options = _expressionOptionsFactory.CreateDefault();
             return _valueFactory.Create(_sbValue.EvaluateExpression(expression, options));
         }
 

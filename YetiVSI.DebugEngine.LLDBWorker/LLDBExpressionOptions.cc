@@ -23,12 +23,12 @@ LLDBExpressionOptions::LLDBExpressionOptions() {
   expression_options_ = MakeUniquePtr<lldb::SBExpressionOptions>();
 }
 
-bool LLDBExpressionOptions::GetAutoApplyFixIts() {
-  return expression_options_->GetAutoApplyFixIts();
+void LLDBExpressionOptions::SetAutoApplyFixIts(bool b) {
+  expression_options_->SetAutoApplyFixIts(b);
 }
 
-void LLDBExpressionOptions::SetAutoApplyFixIts(bool b) {
-  return expression_options_->SetAutoApplyFixIts(b);
+void LLDBExpressionOptions::SetIgnoreBreakpoints(bool b) {
+  expression_options_->SetIgnoreBreakpoints(b);
 }
 
 lldb::SBExpressionOptions LLDBExpressionOptions::GetNativeObject() {
