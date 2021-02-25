@@ -24,7 +24,7 @@ namespace YetiVSI.Test.MediumTestsSupport
     {
         readonly List<Application> _applications;
 
-        public class ApplicationClientFakeFactory : IApplicationClientFactory
+        public class Factory : IApplicationClientFactory
         {
             public IApplicationClient Create(ICloudRunner runner) => new ApplicationClientStub(
                 new List<Application>()
@@ -43,5 +43,39 @@ namespace YetiVSI.Test.MediumTestsSupport
 
         public Task<Application> GetApplicationAsync(string applicationId) =>
             throw new NotImplementedException();
+    }
+
+    public class TestAccountClientStub : ITestAccountClient
+    {
+        public class Factory : ITestAccountClientFactory
+        {
+            public ITestAccountClient Create(ICloudRunner runner) =>
+                new TestAccountClientStub(new HashSet<string>() { "gamer#1234" });
+        }
+
+        readonly HashSet<string> _gamerTags;
+
+        TestAccountClientStub(HashSet<string> gamerTags)
+        {
+            _gamerTags = gamerTags;
+        }
+
+        public Task<List<TestAccount>> LoadByIdOrGamerTagAsync(
+            string organizationId, string projectId, string idOrGamerTag)
+        {
+            var accounts = new List<TestAccount>();
+            if (_gamerTags.Contains(idOrGamerTag))
+            {
+                var account = new TestAccount
+                {
+                    Name = $"testAccounts/{idOrGamerTag}",
+                    GamerTagName = idOrGamerTag.Split('#')[0],
+                    GamerTagSuffix = int.Parse(idOrGamerTag.Split('#')[1])
+                };
+                accounts.Add(account);
+            }
+
+            return Task.FromResult(accounts);
+        }
     }
 }

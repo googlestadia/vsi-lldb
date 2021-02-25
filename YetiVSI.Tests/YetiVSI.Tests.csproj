@@ -135,7 +135,7 @@
     <Compile Include="DebugEngine\LldbExceptionManagerTests.cs" />
     <Compile Include="DebugEngine\LldbTransportSessionTests.cs" />
     <Compile Include="DebugEngine\DebugWatchpointTests.cs" />
-    <Compile Include="MediumTestsSupport\ApplicationClientStub.cs" />
+    <Compile Include="MediumTestsSupport\GgpClientStubs.cs" />
     <Compile Include="MediumTestsSupport\GameletClientStub.cs" />
     <Compile Include="MediumTestsSupport\MediumTestDebugEngineFactoryCompRoot.cs" />
     <Compile Include="DebugEngine\ModuleFileFinderTests.cs" />

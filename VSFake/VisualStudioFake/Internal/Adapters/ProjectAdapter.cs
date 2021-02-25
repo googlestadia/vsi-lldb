@@ -203,11 +203,20 @@ namespace Google.VisualStudioFake.Internal
             return Task.FromResult(surfaceEnforcement);
         }
 
+        public void SetSurfaceEnforcement(SurfaceEnforcementSetting setting) =>
+            SetStringProperty(ProjectPropertyName.GgpSurfaceEnforcementMode, setting.ToString());
+
         public Task<bool> GetLaunchRenderDocAsync() =>
             GetBoolPropertyAsync(ProjectPropertyName.GgpLaunchRenderDoc);
 
+        public void SetLaunchRenderDoc(bool launchRenderDoc) =>
+            SetBoolProperty(ProjectPropertyName.GgpLaunchRenderDoc, launchRenderDoc);
+
         public Task<bool> GetLaunchRgpAsync() =>
             GetBoolPropertyAsync(ProjectPropertyName.GgpLaunchRgp);
+
+        public void SetLaunchRgp(bool launchRgp) =>
+            SetBoolProperty(ProjectPropertyName.GgpLaunchRgp, launchRgp);
 
         public Task<string> GetExecutablePathAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.ExecutablePath);
@@ -221,14 +230,23 @@ namespace Google.VisualStudioFake.Internal
         public Task<string> GetGameletEnvironmentVariablesAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.GgpGameletEnvironmentVariables);
 
+        public void SetGameletEnvironmentVariables(string envVars) =>
+            SetStringProperty(ProjectPropertyName.GgpGameletEnvironmentVariables, envVars);
+
         public Task<string> GetGameletLaunchArgumentsAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.GgpGameletLaunchArguments);
 
         public Task<string> GetVulkanDriverVariantAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.GgpVulkanDriverVariant);
 
+        public void SetVulkanDriverVariant(string vulkanDriverVariant) =>
+            SetStringProperty(ProjectPropertyName.GgpVulkanDriverVariant, vulkanDriverVariant);
+
         public Task<string> GetTestAccountAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.GgpTestAccount);
+
+        public void SetTestAccount(string testAccount) =>
+            SetStringProperty(ProjectPropertyName.GgpTestAccount, testAccount);
 
         public Task<string> GetQueryParamsAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.GgpQueryParams);
@@ -247,10 +265,12 @@ namespace Google.VisualStudioFake.Internal
         Task<bool> GetBoolPropertyAsync(string propertyName)
         {
             var propertyString = _project.GetPropertyValue(propertyName);
-            return Task.FromResult(string.IsNullOrEmpty(propertyString)
-                                       ? false
-                                       : bool.Parse(propertyString));
+            return Task.FromResult(!string.IsNullOrEmpty(propertyString) &&
+                                   bool.Parse(propertyString));
         }
+
+        void SetBoolProperty(string propertyName, bool value) =>
+            _project.SetProperty(propertyName, value.ToString());
 
         void CheckProjectLoaded()
         {

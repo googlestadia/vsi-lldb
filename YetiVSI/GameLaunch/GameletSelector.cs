@@ -203,7 +203,7 @@ namespace YetiVSI.GameLaunch
             IGameletClient gameletClient = _gameletClientFactory.Create(_runner);
             var gameLauncher = new GameLaunchManager(gameletClient, _sdkConfigFactory,
                                                      _cancelableTaskFactory, _yetiVsiService,
-                                                     _taskContext, _actionRecorder);
+                                                     _taskContext, _actionRecorder, _dialogUtil);
             ICancelableTask<GgpGrpc.Models.GameLaunch> currentGameLaunchTask =
                 _cancelableTaskFactory.Create(TaskMessages.LookingForTheCurrentLaunch,
                                               async task =>

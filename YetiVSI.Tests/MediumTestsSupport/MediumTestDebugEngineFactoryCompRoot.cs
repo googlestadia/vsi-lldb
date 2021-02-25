@@ -16,6 +16,7 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using GgpGrpc.Cloud;
 using Microsoft.VisualStudio.Threading;
+using NSubstitute;
 using TestsCommon.TestSupport;
 using YetiCommon;
 using YetiVSI.DebugEngine;
@@ -57,6 +58,8 @@ namespace YetiVSI.Test.MediumTestsSupport
         CancelableTask.Factory _cancelableTaskFactory;
 
         IWindowsRegistry _windowsRegistry;
+
+        IDialogUtil _dialogUtil;
 
         public MediumTestDebugEngineFactoryCompRoot(JoinableTaskContext taskContext)
         {
@@ -154,6 +157,16 @@ namespace YetiVSI.Test.MediumTestsSupport
             return _variableNameTransformer;
         }
 
+        public override IDialogUtil GetDialogUtil()
+        {
+            if (_dialogUtil == null)
+            {
+                _dialogUtil = new DialogUtilFake();
+            }
+
+            return _dialogUtil;
+        }
+
         public NLogSpy GetNatvisDiagnosticLogSpy()
         {
             if (_nLogSpy == null)
@@ -168,7 +181,7 @@ namespace YetiVSI.Test.MediumTestsSupport
         {
             if (_chromeLauncher == null)
             {
-                _chromeLauncher = new ChromeLauncherStub();
+                _chromeLauncher = Substitute.For<IChromeLauncher>();
             }
 
             return _chromeLauncher;

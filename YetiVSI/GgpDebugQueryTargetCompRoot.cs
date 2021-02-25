@@ -36,6 +36,7 @@ namespace YetiVSI
         GameletClient.Factory _gameletClientFactory;
         RemoteCommand _remoteCommand;
         SshManager _sshManager;
+        TestAccountClient.Factory _testAccountClientFactory;
 
         public GgpDebugQueryTargetCompRoot(ServiceManager serviceManager, IDialogUtil dialogUtil)
         {
@@ -64,7 +65,7 @@ namespace YetiVSI
                                               new GgpSDKUtil());
             var applicationClientFactory = GetApplicationClientFactory();
             var gameletClientFactory = GetGameletClientFactory();
-            var testAccountClientFactory = new TestAccountClient.Factory();
+            var testAccountClientFactory = GetTestAccountClientFactory();
             var managedProcessFactory = new ManagedProcess.Factory();
             var remoteCommand = GetRemoteCommand(managedProcessFactory);
             var socketSender = new LocalSocketSender();
@@ -90,7 +91,7 @@ namespace YetiVSI
             var actionRecorder = new ActionRecorder(debugSessionMetrics);
             var gameLauncher = new GameLaunchManager(
                 new GameletClient.Factory().Create(cloudRunner), sdkConfigFactory,
-                _cancelableTaskFactory, yetiVsiService, taskContext, actionRecorder);
+                _cancelableTaskFactory, yetiVsiService, taskContext, actionRecorder, _dialogUtil);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,
@@ -150,6 +151,15 @@ namespace YetiVSI
             return _applicationClientFactory;
         }
 
+        public virtual ITestAccountClientFactory GetTestAccountClientFactory()
+        {
+            if (_testAccountClientFactory == null)
+            {
+                _testAccountClientFactory = new TestAccountClient.Factory();
+            }
+
+            return _testAccountClientFactory;
+        }
 
         public virtual IGameletClientFactory GetGameletClientFactory()
         {

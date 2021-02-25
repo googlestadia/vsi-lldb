@@ -44,7 +44,10 @@ namespace YetiVSI.Test.MediumTestsSupport
         }
 
         public override IApplicationClientFactory GetApplicationClientFactory() =>
-            new ApplicationClientStub.ApplicationClientFakeFactory();
+            new ApplicationClientStub.Factory();
+
+        public override ITestAccountClientFactory GetTestAccountClientFactory() =>
+            new TestAccountClientStub.Factory();
 
         public override IGameletClientFactory GetGameletClientFactory()
         {

@@ -81,12 +81,13 @@ namespace YetiVSI.GameLaunch
         readonly JoinableTaskContext _taskContext;
         readonly YetiVSIService _vsiService;
         readonly LaunchGameParamsConverter _launchGameParamsConverter;
-        readonly DialogUtil _dialogUtil;
+        readonly IDialogUtil _dialogUtil;
         readonly ActionRecorder _actionRecorder;
 
         public GameLaunchManager(IGameletClient gameletClient, SdkConfig.Factory sdkConfigFactory,
-                                 CancelableTask.Factory cancelableTaskFactory, YetiVSIService vsiService,
-                                 JoinableTaskContext taskContext, ActionRecorder actionRecorder)
+                                 CancelableTask.Factory cancelableTaskFactory,
+                                 YetiVSIService vsiService, JoinableTaskContext taskContext,
+                                 ActionRecorder actionRecorder, IDialogUtil dialogUtil)
         {
             _gameletClient = gameletClient;
             _cancelableTaskFactory = cancelableTaskFactory;
@@ -95,7 +96,7 @@ namespace YetiVSI.GameLaunch
             _actionRecorder = actionRecorder;
             _launchGameParamsConverter =
                 new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
-            _dialogUtil = new DialogUtil();
+            _dialogUtil = dialogUtil;
         }
 
         public bool LaunchGameApiEnabled =>

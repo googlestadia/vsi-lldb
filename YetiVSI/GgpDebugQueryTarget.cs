@@ -45,7 +45,7 @@ namespace YetiVSI
         readonly IRemoteDeploy _remoteDeploy;
         readonly DebugSessionMetrics _metrics;
         readonly ICredentialManager _credentialManager;
-        readonly TestAccountClient.Factory _testAccountClientFactory;
+        readonly ITestAccountClientFactory _testAccountClientFactory;
         readonly ICloudRunner _cloudRunner;
         readonly IYetiVSIService _yetiVsiService;
         readonly IGameletSelectorFactory _gameletSelectorFactory;
@@ -62,7 +62,7 @@ namespace YetiVSI
                                    IDialogUtil dialogUtil, IRemoteDeploy remoteDeploy,
                                    DebugSessionMetrics metrics, ServiceManager serviceManager,
                                    ICredentialManager credentialManager,
-                                   TestAccountClient.Factory testAccountClientFactory,
+                                   ITestAccountClientFactory testAccountClientFactory,
                                    IGameletSelectorFactory gameletSelectorFactory,
                                    ICloudRunner cloudRunner, Versions.SdkVersion sdkVersion,
                                    ChromeClientLaunchCommandFormatter launchCommandFormatter,
