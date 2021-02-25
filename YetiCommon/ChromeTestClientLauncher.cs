@@ -24,7 +24,18 @@ using YetiCommon.Cloud;
 
 namespace YetiCommon
 {
-    public class ChromeTestClientLauncher
+    public interface IChromeTestClientLauncher
+    {
+        ChromeLaunchParams LaunchParams { get; }
+
+        void LaunchGame(string url, string workingDirectory);
+
+        string BuildLaunchUrlWithLaunchName(string launchName);
+
+        ConfigStatus BuildLaunchUrl(out string url);
+    }
+
+    public class ChromeTestClientLauncher : IChromeTestClientLauncher
     {
         public class Factory
         {
@@ -41,7 +52,7 @@ namespace YetiCommon
             }
 
             public ChromeTestClientLauncher Create() =>
-                new ChromeTestClientLauncher(_sdkConfigFactory, new Params(), _chromeLauncher);
+                new ChromeTestClientLauncher(_sdkConfigFactory, new ChromeLaunchParams(), _chromeLauncher);
 
             /// <summary>
             /// Create a chrome client launcher given base64 encoded arguments.
@@ -54,38 +65,6 @@ namespace YetiCommon
                                              _chromeLauncher);
         }
 
-        public class Params
-        {
-            public string ApplicationName { get; set; }
-
-            public string GameletName { get; set; }
-
-            public string PoolId { get; set; }
-
-            public string Account { get; set; }
-
-            public string TestAccount { get; set; }
-
-            public string GameletEnvironmentVars { get; set; }
-
-            public string Cmd { get; set; }
-
-            public bool Debug { get; set; }
-
-            public string SdkVersion { get; set; }
-
-            public bool RenderDoc { get; set; }
-
-            public bool Rgp { get; set; }
-
-            public string VulkanDriverVariant { get; set; }
-
-            public SurfaceEnforcementSetting SurfaceEnforcementMode { get; set; } =
-                SurfaceEnforcementSetting.Off;
-
-            public string QueryParams { get; set; }
-        }
-
         const string _debugModeValue = "2";
 
         readonly Lazy<SdkConfig> _sdkConfig;
@@ -93,7 +72,8 @@ namespace YetiCommon
 
         readonly IChromeLauncher _chromeLauncher;
 
-        public ChromeTestClientLauncher(SdkConfig.Factory sdkConfigFactory, Params launchParams,
+        public ChromeTestClientLauncher(SdkConfig.Factory sdkConfigFactory,
+                                        ChromeLaunchParams launchParams,
                                         IChromeLauncher chromeLauncher)
         {
             LaunchParams = launchParams;
@@ -101,7 +81,7 @@ namespace YetiCommon
             _sdkConfig = new Lazy<SdkConfig>(sdkConfigFactory.LoadOrDefault);
         }
 
-        public Params LaunchParams { get; }
+        public ChromeLaunchParams LaunchParams { get; }
 
         public void LaunchGame(string url, string workingDirectory)
         {
@@ -284,5 +264,37 @@ namespace YetiCommon
                     ? null
                     : new QueryParam() { Name = name, Value = value };
         }
+    }
+
+    public class ChromeLaunchParams
+    {
+        public string ApplicationName { get; set; }
+
+        public string GameletName { get; set; }
+
+        public string PoolId { get; set; }
+
+        public string Account { get; set; }
+
+        public string TestAccount { get; set; }
+
+        public string GameletEnvironmentVars { get; set; }
+
+        public string Cmd { get; set; }
+
+        public bool Debug { get; set; }
+
+        public string SdkVersion { get; set; }
+
+        public bool RenderDoc { get; set; }
+
+        public bool Rgp { get; set; }
+
+        public string VulkanDriverVariant { get; set; }
+
+        public SurfaceEnforcementSetting SurfaceEnforcementMode { get; set; } =
+            SurfaceEnforcementSetting.Off;
+
+        public string QueryParams { get; set; }
     }
 }

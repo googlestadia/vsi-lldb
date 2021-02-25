@@ -211,7 +211,7 @@ namespace YetiVSI.Test
                             launchSettings[0].Executable);
 
             _launchCommandFormatter.Parse(launchSettings[0].Arguments,
-                                          out ChromeTestClientLauncher.Params launchParams, out _);
+                                          out ChromeLaunchParams launchParams, out _);
             Assert.AreEqual(await _project.GetTargetFileNameAsync(), launchParams.Cmd);
             Assert.AreEqual(renderdoc, launchParams.RenderDoc);
             Assert.AreEqual(rgp, launchParams.Rgp);
@@ -264,7 +264,7 @@ namespace YetiVSI.Test
             });
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
-            _gameLaunchManager.CreateLaunch(Arg.Any<ChromeTestClientLauncher.Params>())
+            _gameLaunchManager.CreateLaunch(Arg.Any<ChromeLaunchParams>())
                 .Returns(_gameLaunch);
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
@@ -276,7 +276,7 @@ namespace YetiVSI.Test
                         Is.EqualTo(Environment.SystemDirectory + "\\cmd.exe"));
 
             _launchCommandFormatter.Parse(launchSettings[0].Arguments,
-                                          out ChromeTestClientLauncher.Params launchParams,
+                                          out ChromeLaunchParams launchParams,
                                           out string launchName);
             Assert.That(launchParams.Account, Is.EqualTo(_testAccount));
             Assert.That(launchParams.SdkVersion, Is.EqualTo(_sdkVersionString));
@@ -321,7 +321,7 @@ namespace YetiVSI.Test
             });
 
             _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
-            _gameLaunchManager.CreateLaunch(Arg.Any<ChromeTestClientLauncher.Params>())
+            _gameLaunchManager.CreateLaunch(Arg.Any<ChromeLaunchParams>())
                 .Returns((IVsiGameLaunch) null);
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);

@@ -110,7 +110,7 @@ namespace YetiVSI
                 var gameletCommand = (targetFileName + " " +
                     await project.GetGameletLaunchArgumentsAsync()).Trim();
 
-                var launchParams = new ChromeTestClientLauncher.Params()
+                var launchParams = new ChromeLaunchParams()
                 {
                     Cmd = gameletCommand,
                     RenderDoc = await project.GetLaunchRenderDocAsync(),

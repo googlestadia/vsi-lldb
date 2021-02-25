@@ -26,7 +26,7 @@ namespace YetiCommon.Tests
     class ChromeTestClientLauncherTests
     {
         ChromeTestClientLauncher _chromeTestClient;
-        ChromeTestClientLauncher.Params launchParams;
+        ChromeLaunchParams launchParams;
         BackgroundProcess.Factory backgroundProcessFactory;
         SdkConfig sdkConfig;
         LogSpy logSpy;
@@ -35,7 +35,7 @@ namespace YetiCommon.Tests
         public void SetUp()
         {
             backgroundProcessFactory = Substitute.For<BackgroundProcess.Factory>();
-            launchParams = new ChromeTestClientLauncher.Params();
+            launchParams = new ChromeLaunchParams();
             sdkConfig = new SdkConfig();
             var sdkConfigFactory = Substitute.For<SdkConfig.Factory>();
             sdkConfigFactory.LoadOrDefault().Returns(c => sdkConfig);

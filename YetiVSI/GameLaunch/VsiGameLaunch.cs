@@ -47,7 +47,7 @@ namespace YetiVSI.GameLaunch
         /// </summary>
         /// <param name="chromeTestClient">Chrome test client launcher.</param>
         /// <param name="workingDirectory">The working directory.</param>
-        void LaunchInChrome(ChromeTestClientLauncher chromeTestClient,
+        void LaunchInChrome(IChromeTestClientLauncher chromeTestClient,
                             string workingDirectory);
         /// <summary>
         /// Retrieves the launch status form the backend.
@@ -73,15 +73,14 @@ namespace YetiVSI.GameLaunch
     { 
         readonly IGameletClient _gameletClient;
         readonly CancelableTask.Factory _cancelableTaskFactory;
-        readonly DialogUtil _dialogUtil;
+        readonly IDialogUtil _dialogUtil;
         readonly IGameLaunchManager _gameLaunchManager;
         readonly ActionRecorder _actionRecorder;
-        readonly JoinableTaskContext _taskContext;
 
         public VsiGameLaunch(string launchName, string requestId, IGameletClient gameletClient,
                              CancelableTask.Factory cancelableTaskFactory,
                              IGameLaunchManager gameLaunchManager, ActionRecorder actionRecorder,
-                             JoinableTaskContext taskContext)
+                             IDialogUtil dialogUtil)
         {
             LaunchName = launchName;
             RequestId = requestId;
@@ -89,8 +88,7 @@ namespace YetiVSI.GameLaunch
             _cancelableTaskFactory = cancelableTaskFactory;
             _gameLaunchManager = gameLaunchManager;
             _actionRecorder = actionRecorder;
-            _dialogUtil = new DialogUtil();
-            _taskContext = taskContext;
+            _dialogUtil = dialogUtil;
         }
 
         public string LaunchName { get; }
@@ -99,7 +97,7 @@ namespace YetiVSI.GameLaunch
 
         public string RequestId { get; }
 
-        public void LaunchInChrome(ChromeTestClientLauncher chromeTestClient,
+        public void LaunchInChrome(IChromeTestClientLauncher chromeTestClient,
                                    string workingDirectory)
         {
             string launchUrl = chromeTestClient.BuildLaunchUrlWithLaunchName(LaunchName);

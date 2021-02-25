@@ -20,8 +20,8 @@ namespace YetiCommon.Tests.Cloud
 {
     public static class LaunchRequestParsingTestData
     {
-        public static ChromeTestClientLauncher.Params ValidParams =>
-            new ChromeTestClientLauncher.Params
+        public static ChromeLaunchParams ValidParams =>
+            new ChromeLaunchParams
             {
                 Account = "some_account",
                 ApplicationName = "test/app",

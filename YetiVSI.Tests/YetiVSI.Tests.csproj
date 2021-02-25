@@ -179,6 +179,7 @@
     <Compile Include="DebugEngine\Variables\VariablesTests.cs" />
     <Compile Include="DebuggerOptions\DebuggerOptionsCommandTests.cs" />
     <Compile Include="EnvDTEUtilTests.cs" />
+    <Compile Include="GameLaunch\VsiGameLaunchTests.cs" />
     <Compile Include="GameletMountCheckerTests.cs" />
     <Compile Include="GameletSelectorTests.cs" />
     <Compile Include="DebuggerGrpc\CommonTests.cs" />

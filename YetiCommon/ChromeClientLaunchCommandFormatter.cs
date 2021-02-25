@@ -43,13 +43,13 @@ namespace YetiCommon
         /// <summary>
         /// Create a launch command that can execute using Cmd.exe
         /// </summary>
-        public string CreateFromParams(ChromeTestClientLauncher.Params launchParams)
+        public string CreateFromParams(ChromeLaunchParams launchParams)
             => $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)}\"";
 
         /// <summary>
         /// Create a launch command that can execute using Cmd.exe
         /// </summary>
-        public string CreateWithLaunchName(ChromeTestClientLauncher.Params launchParams,
+        public string CreateWithLaunchName(ChromeLaunchParams launchParams,
                                            string launchName) =>
             $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)} " +
             $"{EncodeLaunchName(launchName)}\"";
@@ -59,7 +59,7 @@ namespace YetiCommon
         /// </summary>
         /// <exception cref="ArgumentException">Thrown if the command is malformed</exception>
         /// <exception cref="ArgumentNullException">Thrown if the command is null</exception>
-        public void Parse(string command, out ChromeTestClientLauncher.Params launchParams,
+        public void Parse(string command, out ChromeLaunchParams launchParams,
                           out string launchName)
         {
             if (command == null)
@@ -93,15 +93,15 @@ namespace YetiCommon
         /// <summary>
         /// Decode a base64 encoded representation of launch parameters.
         /// </summary>
-        public ChromeTestClientLauncher.Params DecodeLaunchParams(string encodedParams) =>
-            serializer.Deserialize<ChromeTestClientLauncher.Params>(
+        public ChromeLaunchParams DecodeLaunchParams(string encodedParams) =>
+            serializer.Deserialize<ChromeLaunchParams>(
                 Encoding.UTF8.GetString(
                     Convert.FromBase64String(encodedParams)));
 
         /// <summary>
         /// base64 encode launch parameters
         /// </summary>
-        public string EncodeLaunchParams(ChromeTestClientLauncher.Params launchParams) =>
+        public string EncodeLaunchParams(ChromeLaunchParams launchParams) =>
             Convert.ToBase64String(
                 Encoding.UTF8.GetBytes(
                     serializer.Serialize(launchParams)));

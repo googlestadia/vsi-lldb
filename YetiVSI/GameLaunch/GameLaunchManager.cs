@@ -36,7 +36,7 @@ namespace YetiVSI.GameLaunch
         /// </summary>
         /// <param name="launchParams">Launch parameters.</param>
         /// <returns>Instance of the VsiGameLaunch if successful, otherwise null.</returns>
-        IVsiGameLaunch CreateLaunch(ChromeTestClientLauncher.Params launchParams);
+        IVsiGameLaunch CreateLaunch(ChromeLaunchParams launchParams);
         /// <summary>
         /// Attempts to delete a launch by the gameLaunchName. Returns null when
         /// specified launch doesn't exists. Otherwise returns a GgpGrpc.Models.GameLaunch
@@ -181,7 +181,7 @@ namespace YetiVSI.GameLaunch
         }
 
         public async Task<CreateLaunchResult> CreateLaunchAsync(
-            ChromeTestClientLauncher.Params launchParams, ICancelable cancelable,
+            ChromeLaunchParams launchParams, ICancelable cancelable,
             IAction action)
         {
             Task<string> sdkCompatibilityTask = CheckSdkCompatibilityAsync(
@@ -224,13 +224,13 @@ namespace YetiVSI.GameLaunch
 
             var vsiLaunch = new VsiGameLaunch(response.GameLaunchName, response.RequestId,
                                               _gameletClient, _cancelableTaskFactory, this,
-                                              _actionRecorder, _taskContext);
+                                              _actionRecorder, _dialogUtil);
             devEvent.GameLaunchData.LaunchId = vsiLaunch.LaunchId;
             action.UpdateEvent(devEvent);
             return new CreateLaunchResult(vsiLaunch, parsingState);
         }
 
-        public IVsiGameLaunch CreateLaunch(ChromeTestClientLauncher.Params launchParams)
+        public IVsiGameLaunch CreateLaunch(ChromeLaunchParams launchParams)
         {
             IAction action = _actionRecorder.CreateToolAction(ActionType.GameLaunchCreate);
             CreateLaunchResult launchRes = null;
