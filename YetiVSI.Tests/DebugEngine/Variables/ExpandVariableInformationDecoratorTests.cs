@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using DebuggerApi;
-using Microsoft.VisualStudio.Threading;
 using NUnit.Framework;
 using TestsCommon.TestSupport;
 using YetiVSI.DebugEngine.Variables;
-using YetiVSI.Test.MediumTestsSupport;
 using YetiVSI.Test.TestSupport;
 
 namespace YetiVSI.Test.DebugEngine.Variables
@@ -32,7 +30,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
         [SetUp]
         public void SetUp()
         {
-            _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+            _compRoot = new MediumTestDebugEngineFactoryCompRoot();
             _logSpy = new LogSpy();
             _logSpy.Attach();
         }

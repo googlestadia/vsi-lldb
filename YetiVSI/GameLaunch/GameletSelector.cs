@@ -41,7 +41,7 @@ namespace YetiVSI.GameLaunch
         readonly GameletSelectionWindow.Factory _gameletSelectionWindowFactory;
         readonly IDialogUtil _dialogUtil;
         readonly CancelableTask.Factory _cancelableTaskFactory;
-        readonly IGameletClientFactory _gameletClientFactory;
+        readonly GameletClient.Factory _gameletClientFactory;
         readonly ISshManager _sshManager;
         readonly IRemoteCommand _remoteCommand;
         readonly ICloudRunner _runner;
@@ -54,7 +54,7 @@ namespace YetiVSI.GameLaunch
         public GameletSelector(IDialogUtil dialogUtil, ICloudRunner runner,
                                GameletSelectionWindow.Factory gameletSelectionWindowFactory,
                                CancelableTask.Factory cancelableTaskFactory,
-                               IGameletClientFactory gameletClientFactory, ISshManager sshManager,
+                               GameletClient.Factory gameletClientFactory, ISshManager sshManager,
                                IRemoteCommand remoteCommand, SdkConfig.Factory sdkConfigFactory,
                                YetiVSIService yetiVsiService, JoinableTaskContext taskContext,
                                ActionRecorder actionRecorder)

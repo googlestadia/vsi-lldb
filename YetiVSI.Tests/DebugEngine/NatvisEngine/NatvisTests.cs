@@ -26,8 +26,6 @@ using YetiVSI.Test.TestSupport;
 using YetiVSI.Test.TestSupport.NUnitExtensions;
 using Does = YetiVSI.Test.TestSupport.NUnitExtensions.Does;
 using YetiVSI.DebuggerOptions;
-using Microsoft.VisualStudio.Threading;
-using YetiVSI.Test.MediumTestsSupport;
 
 namespace YetiVSI.Test.DebugEngine.NatvisEngine
 {
@@ -97,7 +95,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             testDoubleHelper = new TestDoubleProxyHelper(new ProxyGenerator());
 
-            compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+            compRoot = new MediumTestDebugEngineFactoryCompRoot();
 
             _natvisExpander = compRoot.GetNatvis();
             compRoot.GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] =

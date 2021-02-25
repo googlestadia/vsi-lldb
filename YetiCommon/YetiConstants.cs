@@ -84,15 +84,13 @@ namespace YetiCommon
         public static readonly string XDeltaWinExecutablePath =
             Path.Combine(XDeltaWinDir, XDeltaWinExecutable);
 
-        public static readonly string PigzWinExecutablePath = Path.Combine(PigzDir, PigzExecutable);
+        public static readonly string PigzWinExecutablePath =
+            Path.Combine(PigzDir, PigzExecutable);
 
 #if INTERNAL_BUILD
         public static readonly string LldbServerLinuxPath = RemoteToolsBinDir;
-        public static readonly string ThirdPartyTestAssemblyRelativeRoot =
-            @"..\..\..\..\third_party\vsi-lldb\";
 #else
         public static readonly string LldbServerLinuxPath = "/usr/local/cloudcast/bin/";
-        public static readonly string ThirdPartyTestAssemblyRelativeRoot = @"..\..\";
 #endif
     }
 }

@@ -38,8 +38,8 @@ namespace YetiVSI
     {
         readonly IFileSystem _fileSystem;
         readonly SdkConfig.Factory _sdkConfigFactory;
-        readonly IGameletClientFactory _gameletClientFactory;
-        readonly IApplicationClientFactory _applicationClientFactory;
+        readonly GameletClient.Factory _gameletClientFactory;
+        readonly ApplicationClient.Factory _applicationClientFactory;
         readonly CancelableTask.Factory _cancelableTaskFactory;
         readonly IDialogUtil _dialogUtil;
         readonly IRemoteDeploy _remoteDeploy;
@@ -56,8 +56,8 @@ namespace YetiVSI
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
-                                   IGameletClientFactory gameletClientFactory,
-                                   IApplicationClientFactory applicationClientFactory,
+                                   GameletClient.Factory gameletClientFactory,
+                                   ApplicationClient.Factory applicationClientFactory,
                                    CancelableTask.Factory cancelableTaskFactory,
                                    IDialogUtil dialogUtil, IRemoteDeploy remoteDeploy,
                                    DebugSessionMetrics metrics, ServiceManager serviceManager,

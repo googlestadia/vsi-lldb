@@ -135,9 +135,7 @@
     <Compile Include="DebugEngine\LldbExceptionManagerTests.cs" />
     <Compile Include="DebugEngine\LldbTransportSessionTests.cs" />
     <Compile Include="DebugEngine\DebugWatchpointTests.cs" />
-    <Compile Include="MediumTestsSupport\ApplicationClientStub.cs" />
-    <Compile Include="MediumTestsSupport\GameletClientStub.cs" />
-    <Compile Include="MediumTestsSupport\MediumTestDebugEngineFactoryCompRoot.cs" />
+    <Compile Include="DebugEngine\MediumTestDebugEngineFactoryCompRoot.cs" />
     <Compile Include="DebugEngine\ModuleFileFinderTests.cs" />
     <Compile Include="DebugEngine\LldbModuleUtilTests.cs" />
     <Compile Include="DebugEngine\ModuleFileLoadMetricsRecorderTests.cs" />
@@ -182,10 +180,7 @@
     <Compile Include="GameletMountCheckerTests.cs" />
     <Compile Include="GameletSelectorTests.cs" />
     <Compile Include="DebuggerGrpc\CommonTests.cs" />
-    <Compile Include="LaunchApi\LaunchApiMediumTests.cs" />
-    <Compile Include="MediumTestsSupport\MediumTestGgpDebugQueryTargetCompRoot.cs" />
     <Compile Include="LoadSymbols\SessionNotifierServiceTests.cs" />
-    <Compile Include="MediumTestsSupport\MediumTestServiceManager.cs" />
     <Compile Include="Metrics\ActionRecorderTests.cs" />
     <Compile Include="Metrics\DebugEventAggregatorTests.cs" />
     <Compile Include="Metrics\DebugEventBatchTests.cs" />
@@ -315,14 +310,6 @@
     <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI\YetiVSI.csproj">
       <Project>{799d0160-8c0d-43f5-ab4c-249be64aaa4e}</Project>
       <Name>YetiVSI</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)VSFake\VSFake.csproj">
-      <Project>{06FF5FB1-1E94-48BE-B49F-39016B480BD2}</Project>
-      <Name>VSFake</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.External\YetiVSI.External.csproj">
-      <Project>{8B6B1019-F3C1-41DD-B8EE-E397A92A9A7D}</Project>
-      <Name>YetiVSI.External</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -118,8 +118,6 @@ namespace YetiVSI.DebugEngine
 
         IDispatcher _dispatcher;
 
-        IChromeLauncher _chromeLauncher;
-
         public class DebugEngineCommands : IDebugEngineCommands
         {
             readonly JoinableTaskContext _taskContext;
@@ -310,7 +308,7 @@ namespace YetiVSI.DebugEngine
                     GetFactoryDecorator().Decorate(new FrameEnumFactory()), _taskExecutor));
             var debugThreadCreator = asyncInterfacesEnabled ?(CreateDebugThreadDelegate)
                                          debugThreadAsyncFactory.Create : debugThreadFactory.Create;
-            var gameletFactory = GetGameletClientFactory();
+            var gameletFactory = new GameletClient.Factory();
             IGameletClient gameletClient = gameletFactory.Create(GetCloudRunner());
             var gameLauncher = new GameLaunchManager(gameletClient, GetSdkConfigFactory(),
                                                 cancelableTaskFactory, GetVsiService(),
@@ -362,7 +360,7 @@ namespace YetiVSI.DebugEngine
 
             var testClientLauncherFactory = new ChromeTestClientLauncher.Factory(
                 new ChromeClientLaunchCommandFormatter(GetJsonUtil()), GetSdkConfigFactory(),
-                GetChromeLauncher(backgroundProcessFactory));
+                new ChromeLauncher(backgroundProcessFactory));
 
             var exitDialogUtil = new ExitDialogUtil(GetDialogUtil(), GetDialogExecutionContext());
             var preflightBinaryChecker =
@@ -479,16 +477,6 @@ namespace YetiVSI.DebugEngine
             }
 
             return _fileSystem;
-        }
-
-        public virtual IChromeLauncher GetChromeLauncher(BackgroundProcess.Factory factory)
-        {
-            if (_chromeLauncher == null)
-            {
-                _chromeLauncher = new ChromeLauncher(factory);
-            }
-
-            return _chromeLauncher;
         }
 
         public virtual IWindowsRegistry GetWindowsRegistry()
@@ -854,9 +842,6 @@ namespace YetiVSI.DebugEngine
                 new MetricsCollectionAspect(debugEventRecorder, timeSource);
             apiAspects.Add(metricsCollectionAspect);
         }
-
-        public virtual IGameletClientFactory GetGameletClientFactory() =>
-            new GameletClient.Factory();
 
         public virtual NatvisLoggerOutputWindowListener GetNatvisLoggerOutputWindowListener()
         {

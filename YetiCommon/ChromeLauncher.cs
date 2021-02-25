@@ -14,14 +14,9 @@
 
 namespace YetiCommon
 {
-    public interface IChromeLauncher
+    public class ChromeLauncher
     {
-        void StartChrome(string url, string workingDirectory, string profileDirectory);
-    }
-
-    public class ChromeLauncher : IChromeLauncher
-    {
-        readonly BackgroundProcess.Factory _backgroundProcessFactory;
+        protected readonly BackgroundProcess.Factory _backgroundProcessFactory;
 
         public ChromeLauncher(BackgroundProcess.Factory backgroundProcessFactory)
         {
@@ -38,7 +33,8 @@ namespace YetiCommon
                          $"--profile-directory=\"{profileDirectory}\"");
         }
 
-        void StartProcess(string workingDirectory, string command, params string[] args) =>
+        protected void StartProcess(string workingDirectory, string command,
+                                    params string[] args) =>
             _backgroundProcessFactory.Create(YetiConstants.Command,
                                              $"/c \"{command} {string.Join(" ", args)}\"",
                                              workingDirectory).Start();

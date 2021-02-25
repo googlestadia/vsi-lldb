@@ -34,13 +34,13 @@ namespace YetiVSI
 
     public class SshManager : ISshManager
     {
-        readonly IGameletClientFactory gameletClientFactory;
+        readonly GameletClient.Factory gameletClientFactory;
         readonly ICloudRunner cloudRunner;
         readonly ISshKeyLoader sshKeyLoader;
         readonly ISshKnownHostsWriter sshKnownHostsWriter;
         readonly IRemoteCommand remoteCommand;
 
-        public SshManager(IGameletClientFactory gameletClientFactory, ICloudRunner cloudRunner,
+        public SshManager(GameletClient.Factory gameletClientFactory, ICloudRunner cloudRunner,
             ISshKeyLoader sshKeyLoader, ISshKnownHostsWriter sshKnownHostsWriter,
             IRemoteCommand remoteCommand)
         {

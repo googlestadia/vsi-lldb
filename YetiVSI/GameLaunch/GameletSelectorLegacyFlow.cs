@@ -41,7 +41,7 @@ namespace YetiVSI.GameLaunch
         readonly ICloudRunner _runner;
         readonly GameletSelectionWindow.Factory _gameletSelectionWindowFactory;
         readonly CancelableTask.Factory _cancelableTaskFactory;
-        readonly IGameletClientFactory _gameletClientFactory;
+        readonly GameletClient.Factory _gameletClientFactory;
         readonly ISshManager _sshManager;
         readonly IRemoteCommand _remoteCommand;
         readonly SdkConfig.Factory _sdkConfigFactory;
@@ -51,7 +51,7 @@ namespace YetiVSI.GameLaunch
         public GameletSelectorFactory(IDialogUtil dialogUtil, ICloudRunner runner,
                                       GameletSelectionWindow.Factory gameletSelectionWindowFactory,
                                       CancelableTask.Factory cancelableTaskFactory,
-                                      IGameletClientFactory gameletClientFactory,
+                                      GameletClient.Factory gameletClientFactory,
                                       ISshManager sshManager, IRemoteCommand remoteCommand,
                                       SdkConfig.Factory sdkConfigFactory,
                                       YetiVSIService yetiVsiService,
@@ -110,7 +110,7 @@ namespace YetiVSI.GameLaunch
         readonly GameletSelectionWindow.Factory _gameletSelectionWindowFactory;
         readonly IDialogUtil _dialogUtil;
         readonly CancelableTask.Factory _cancelableTaskFactory;
-        readonly IGameletClientFactory _gameletClientFactory;
+        readonly GameletClient.Factory _gameletClientFactory;
         readonly ISshManager _sshManager;
         readonly IRemoteCommand _remoteCommand;
         readonly ICloudRunner _runner;
@@ -120,7 +120,7 @@ namespace YetiVSI.GameLaunch
         public GameletSelectorLegacyFlow(IDialogUtil dialogUtil, ICloudRunner runner,
                                GameletSelectionWindow.Factory gameletSelectionWindowFactory,
                                CancelableTask.Factory cancelableTaskFactory,
-                               IGameletClientFactory gameletClientFactory, ISshManager sshManager,
+                               GameletClient.Factory gameletClientFactory, ISshManager sshManager,
                                IRemoteCommand remoteCommand, ActionRecorder actionRecorder)
         {
             _dialogUtil = dialogUtil;
