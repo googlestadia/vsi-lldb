@@ -27,3 +27,13 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 [assembly: AssemblyVersion("1.60.0.0")]
 [assembly: AssemblyFileVersion("1.60.0.0")]
+
+[assembly: ProvideBindingRedirection(AssemblyName = "System.Buffers", NewVersion = "4.0.3.0", OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "4.0.3.0")]
+[assembly: ProvideBindingRedirection(AssemblyName = "System.Numerics.Vectors", NewVersion = "4.1.4.0", OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "4.1.4.0")]
+[assembly: ProvideBindingRedirection(AssemblyName = "System.Runtime.CompilerServices.Unsafe", NewVersion = "4.0.6.0", OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "4.0.6.0")]
+
+// Visual Studio has it's own Newtonsoft.Json and it can have a lower version than we need.
+// We bundle our specific version, because there are dependencies that need it. This is not
+// recommended, but technically possible:
+// https://devblogs.microsoft.com/visualstudio/using-newtonsoft-json-in-a-visual-studio-extension/
+[assembly: ProvideCodeBase(AssemblyName = "Newtonsoft.Json")]

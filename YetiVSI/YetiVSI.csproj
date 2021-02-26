@@ -829,11 +829,14 @@
   </Target>
   <Target Name="AddNewtonsoftJsonVSIXContentFiles">
     <ItemGroup>
-      <!-- Add Newtonsoft.Json.dll back. It is suppressed, but ChromeClientLauncher.exe, which is
-           not run within the context of devenv.exe, needs it. -->
-      <VSIXSourceItem Include="$(PkgNewtonsoft_Json)\lib\net45\Newtonsoft.Json.dll">
-        <VSIXSubPath>PrivateDeps</VSIXSubPath>
-      </VSIXSourceItem>
+      <!--
+        Visual Studio has it's own Newtonsoft.Json and it can have a lower
+        version than we need. We bundle our specific version, because there are
+        dependencies that need it. This is not recommended, but technically
+        possible:
+        https://devblogs.microsoft.com/visualstudio/using-newtonsoft-json-in-a-visual-studio-extension/
+      -->
+      <VSIXSourceItem Include="$(PkgNewtonsoft_Json)\lib\net45\Newtonsoft.Json.dll" />
     </ItemGroup>
   </Target>
   <!-- If DeployPythonAndToolchainDependencies is off, the code references local paths.
