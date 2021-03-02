@@ -189,7 +189,7 @@ namespace YetiVSI
         public SymbolServerFeatureFlag SymbolServerSupport { get; set; }
 
         [Category("LLDB Debugger")]
-        [DisplayName("Enable launch anywhere")]
+        [DisplayName("Enable new launch flow")]
         [Description("If enabled, the game is launched via the new Launch Game API.")]
         [TypeConverter(typeof(FeatureFlagConverter))]
         [DefaultValue(LunchGameApiFlowFlag.DEFAULT)]
