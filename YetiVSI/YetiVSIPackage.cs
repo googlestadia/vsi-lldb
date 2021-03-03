@@ -42,6 +42,8 @@ namespace YetiVSI
                      "SA1650:ElementDocumentationMustBeSpelledCorrectly",
                      Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideOptionPage(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 0, true)]
+    [ProvideProfile(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 110, true,
+                    DescriptionResourceID = 113)]
     [ProvideService(typeof(YetiVSIService))]
     [ProvideService(typeof(SLLDBShell))]
     [ProvideService(typeof(SMetrics))]

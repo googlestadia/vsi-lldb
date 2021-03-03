@@ -129,4 +129,7 @@
   <data name="1112" xml:space="preserve">
     <value>CoreDumpViewerPackage Visual Stuido Extension Detailed Info</value>
   </data>
+  <data name="113" xml:space="preserve">
+    <value>Stadia Extension settings.</value>
+  </data>
 </root>
