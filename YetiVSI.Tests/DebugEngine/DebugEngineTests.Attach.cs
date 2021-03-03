@@ -228,7 +228,6 @@ namespace YetiVSI.Test.DebugEngine
                                                Arg.Any<YetiVSI.DebugEngine.DebugEngine.
                                                    LaunchOption>(), Arg.Any<string>(),
                                                Arg.Any<string>(), Arg.Any<string>(),
-                                               Arg.Any<IGameLaunchManager>(),
                                                Arg.Any<IVsiGameLaunch>())
                 .Returns((x) => sessionLauncher);
             return debugSessionLauncherFactory;

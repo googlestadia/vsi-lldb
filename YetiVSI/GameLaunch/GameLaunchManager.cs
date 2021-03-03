@@ -30,6 +30,7 @@ namespace YetiVSI.GameLaunch
     public interface IGameLaunchManager
     {
         bool LaunchGameApiEnabled { get; }
+
         /// <summary>
         /// Requests the backend to create a game launch synchronously.
         /// Shows warning and error messages if something goes wrong.
@@ -37,6 +38,7 @@ namespace YetiVSI.GameLaunch
         /// <param name="launchParams">Launch parameters.</param>
         /// <returns>Instance of the VsiGameLaunch if successful, otherwise null.</returns>
         IVsiGameLaunch CreateLaunch(ChromeLaunchParams launchParams);
+
         /// <summary>
         /// Attempts to delete a launch by the gameLaunchName. Returns null when
         /// specified launch doesn't exists. Otherwise returns a GgpGrpc.Models.GameLaunch
@@ -78,7 +80,6 @@ namespace YetiVSI.GameLaunch
 
         readonly IGameletClient _gameletClient;
         readonly CancelableTask.Factory _cancelableTaskFactory;
-        readonly JoinableTaskContext _taskContext;
         readonly YetiVSIService _vsiService;
         readonly LaunchGameParamsConverter _launchGameParamsConverter;
         readonly IDialogUtil _dialogUtil;
@@ -92,7 +93,6 @@ namespace YetiVSI.GameLaunch
             _gameletClient = gameletClient;
             _cancelableTaskFactory = cancelableTaskFactory;
             _vsiService = vsiService;
-            _taskContext = taskContext;
             _actionRecorder = actionRecorder;
             _launchGameParamsConverter =
                 new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
@@ -124,7 +124,7 @@ namespace YetiVSI.GameLaunch
         {
             GgpGrpc.Models.GameLaunch launch =
                 await _gameletClient.GetGameLaunchStateAsync(gameLaunchName, action);
-            int maxPollCount = (timeoutMs??PollingTimeoutMs) / PollDelayMs;
+            int maxPollCount = (timeoutMs ?? PollingTimeoutMs) / PollDelayMs;
             int currentPollCount = 0;
             while (launch.GameLaunchState != GameLaunchState.GameLaunchEnded &&
                 ++currentPollCount <= maxPollCount)
@@ -139,7 +139,7 @@ namespace YetiVSI.GameLaunch
         }
 
         public async Task<GgpGrpc.Models.GameLaunch> GetCurrentGameLaunchAsync(string testAccount,
-            IAction action)
+                                                                               IAction action)
         {
             GgpGrpc.Models.GameLaunch currentGameLaunch;
             try
@@ -181,8 +181,7 @@ namespace YetiVSI.GameLaunch
         }
 
         public async Task<CreateLaunchResult> CreateLaunchAsync(
-            ChromeLaunchParams launchParams, ICancelable cancelable,
-            IAction action)
+            ChromeLaunchParams launchParams, ICancelable cancelable, IAction action)
         {
             Task<string> sdkCompatibilityTask = CheckSdkCompatibilityAsync(
                 launchParams.GameletName, launchParams.SdkVersion, action);
@@ -201,6 +200,7 @@ namespace YetiVSI.GameLaunch
                 // Launch can not proceed.
                 throw new ConfigurationException(parsingState.ErrorMessage);
             }
+
             parsingState.CompressMessages();
             cancelable.ThrowIfCancellationRequested();
             string sdkCompatibilityErrorMessage = await sdkCompatibilityTask;
@@ -214,17 +214,16 @@ namespace YetiVSI.GameLaunch
 
             var devEvent = new DeveloperLogEvent
             {
-                GameLaunchData = new GameLaunchData
-                    { RequestId = launchRequest.RequestId }
+                GameLaunchData = new GameLaunchData { RequestId = launchRequest.RequestId }
             };
             // Updating the event to record the RequestId in case LaunchGameAsync throws exception.
             action.UpdateEvent(devEvent);
             LaunchGameResponse response =
                 await _gameletClient.LaunchGameAsync(launchRequest, action);
 
-            var vsiLaunch = new VsiGameLaunch(response.GameLaunchName, response.RequestId,
-                                              _gameletClient, _cancelableTaskFactory, this,
-                                              _actionRecorder, _dialogUtil);
+            var vsiLaunch = new VsiGameLaunch(response.GameLaunchName, _gameletClient,
+                                              _cancelableTaskFactory, this, _actionRecorder,
+                                              _dialogUtil);
             devEvent.GameLaunchData.LaunchId = vsiLaunch.LaunchId;
             action.UpdateEvent(devEvent);
             return new CreateLaunchResult(vsiLaunch, parsingState);

@@ -26,7 +26,6 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using GgpGrpc.Models;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
@@ -420,22 +419,13 @@ namespace YetiVSI.DebugEngine
 
         public override Guid Id { get; }
 
-        public override IDebugEngineCommands DebugEngineCommands
-        {
-            get
-            {
-                return _debugEngineCommands;
-            }
-        }
+        public override IDebugEngineCommands DebugEngineCommands => _debugEngineCommands;
 
         void OptionsGrid_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(OptionPageGrid.NatvisLoggingLevel))
             {
-                if (_natvisLogger != null)
-                {
-                    _natvisLogger.SetLogLevel(_extensionOptions.NatvisLoggingLevel);
-                }
+                _natvisLogger?.SetLogLevel(_extensionOptions.NatvisLoggingLevel);
             }
         }
 
@@ -622,7 +612,7 @@ namespace YetiVSI.DebugEngine
                         "Recording debugger parameters");
                     var launcher = _debugSessionLauncherFactory.Create(
                         Self, _launchOption, _coreFilePath, _executableFileName,
-                        _executableFullPath, _gameLaunchManager, _vsiGameLaunch);
+                        _executableFullPath, _vsiGameLaunch);
 
                     ILldbAttachedProgram program = await launcher.LaunchAsync(
                         task, process, programId, attachPid, _debuggerOptions, libPaths,
@@ -961,12 +951,8 @@ namespace YetiVSI.DebugEngine
 
                 if (_gameLaunchManager.LaunchGameApiEnabled)
                 {
-                    _vsiGameLaunch = _gameLaunchManager.CreateLaunch(chromeLauncher.LaunchParams);
-                    if (_vsiGameLaunch != null)
-                    {
-                        _vsiGameLaunch.LaunchInChrome(chromeLauncher, _workingDirectory);
-                    }
-                    else
+                    LaunchGame(chromeLauncher);
+                    if (_vsiGameLaunch == null)
                     {
                         return VSConstants.E_FAIL;
                     }
@@ -991,8 +977,17 @@ namespace YetiVSI.DebugEngine
             return VSConstants.S_OK;
         }
 
+        // _vsiGameLaunch will only be non-null when VS manages the launch. This only
+        // applies to the flow with the Launch API and it must be "Debug" flow
+        // (not Attach to Process / Attach to Stadia Crash Dump).
+        void LaunchGame(IChromeTestClientLauncher chromeTestClient)
+        {
+            _vsiGameLaunch = _gameLaunchManager.CreateLaunch(chromeTestClient.LaunchParams);
+            _vsiGameLaunch?.LaunchInChrome(chromeTestClient, _workingDirectory);
+        }
+
         //TODO: remove the legacy launch flow.
-        void LegacyLaunchFlow(ChromeTestClientLauncher chromeTestClient)
+        void LegacyLaunchFlow(IChromeTestClientLauncher chromeTestClient)
         {
             ConfigStatus urlBuildStatus = chromeTestClient.BuildLaunchUrl(out string launchUrl);
 
@@ -1022,7 +1017,7 @@ namespace YetiVSI.DebugEngine
         {
             _taskContext.ThrowIfNotOnMainThread();
 
-            if (_gameLaunchManager.LaunchGameApiEnabled)
+            if (_vsiGameLaunch != null)
             {
                 bool status = _vsiGameLaunch.WaitUntilGameLaunched();
 
@@ -1193,7 +1188,7 @@ namespace YetiVSI.DebugEngine
                     DeveloperLogEvent endData = CreateDebugSessionEndData(exitReason);
                     _actionRecorder.RecordSuccess(ActionType.DebugEnd, endData);
 
-                    if (_gameLaunchManager.LaunchGameApiEnabled)
+                    if (_vsiGameLaunch != null)
                     {
                         SafeErrorUtil.SafelyLogErrorAndForget(
                             _vsiGameLaunch.WaitForGameLaunchEndedAndRecordAsync,

@@ -36,8 +36,6 @@ namespace YetiVSI.Test.GameLaunch
         static readonly string _launchName = "organizations/org-id/projects/proj-id/testAccounts/" +
             $"test-account-id/gameLaunches/{_launchId}";
 
-        const string _requestId = "request_id";
-
         VsiGameLaunch _target;
 
         IGameletClient _gameletClient;
@@ -56,9 +54,8 @@ namespace YetiVSI.Test.GameLaunch
             _metrics = Substitute.For<IMetrics>();
             _actionRecorder = Substitute.For<ActionRecorder>(_metrics);
             _dialogUtil = Substitute.For<IDialogUtil>();
-            _target = new VsiGameLaunch(_launchName, _requestId, _gameletClient,
-                                        _cancelableTaskFactory, _gameLaunchManager, _actionRecorder,
-                                        _dialogUtil);
+            _target = new VsiGameLaunch(_launchName, _gameletClient, _cancelableTaskFactory,
+                                        _gameLaunchManager, _actionRecorder, _dialogUtil);
         }
 
         [Test]
@@ -66,7 +63,6 @@ namespace YetiVSI.Test.GameLaunch
         {
             Assert.That(_target.LaunchName, Is.EqualTo(_launchName));
             Assert.That(_target.LaunchId, Is.EqualTo(_launchId));
-            Assert.That(_target.RequestId, Is.EqualTo(_requestId));
         }
 
         [Test]

@@ -110,8 +110,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
-                                                  "some/core/path", "", "", _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  "some/core/path", "", "", _gameLaunch);
             var attachedProgram = await LaunchAsync(launcher);
             Assert.That(attachedProgram, Is.Not.Null);
             Assert.IsFalse(
@@ -126,8 +125,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  _gameBinary, _gameBinary, _gameLaunch);
             var attachedProgram = await LaunchAsync(launcher);
             Assert.That(attachedProgram, Is.Not.Null);
             Assert.IsFalse(
@@ -146,8 +144,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(false);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  _gameBinary, _gameBinary, _gameLaunch);
             _debuggerFactory.SetTargetAttachError("Operation not permitted");
             _platformFactory.AddCommandOutput($"cat /proc/{_pid}/status",
                                               "Name:\tgame\n" + $"Pid:\t{_pid}\n" +
@@ -171,8 +168,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(false);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  _gameBinary, _gameBinary, _gameLaunch);
             _debuggerFactory.SetTargetAttachError("Operation not permitted");
             _platformFactory.AddCommandOutput($"cat /proc/{_pid}/status",
                                               "Name:\tgame\n" + $"Pid:\t{_pid}\n" +
@@ -194,8 +190,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(false);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  _gameBinary, _gameBinary, _gameLaunch);
             _debuggerFactory.SetTargetAttachError("Operation not permitted");
             _platformFactory.AddCommandOutput($"cat /proc/{_pid}/status",
                                               "Name:\tgame\n" + $"Pid:\t{_pid}\n" +
@@ -215,8 +210,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             var launcherFactory = CreateLauncherFactory(false);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  _gameBinary, _gameBinary, _gameLaunch);
             _debuggerFactory.SetTargetAttachError("Operation not permitted");
             _platformFactory.AddCommandOutput($"cat /proc/{_pid}/status", null);
 
@@ -233,8 +227,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  _gameBinary, _gameBinary, _gameLaunch);
             var attachedProgram = await LaunchAsync(launcher);
             Assert.That(attachedProgram, Is.Not.Null);
             Assert.IsFalse(
@@ -263,8 +256,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(true);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  _gameBinary, _gameBinary, _gameLaunch);
 
             _platformFactory.AddConnectRemoteStatuses(false, false);
 
@@ -292,8 +284,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(true);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  _gameBinary, _gameBinary, _gameLaunch);
 
             _platformFactory.AddRunStatuses(false, false);
 
@@ -315,8 +306,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(true);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  _gameBinary, _gameBinary, _gameLaunch);
 
             _platformFactory.AddConnectRemoteStatuses(false, false, true);
 
@@ -338,8 +328,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(true);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  _gameBinary, _gameBinary, _gameLaunch);
 
             _platformFactory.AddRunStatuses(false, false, true);
 
@@ -349,21 +338,11 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public async Task LaunchStatusIsIgnoredInLegacyFlowAsync()
+        public async Task LaunchStatusIsIgnoredInLegacyOrAttachFlowAsync()
         {
-            var launch = new GgpGrpc.Models.GameLaunch
-            {
-                GameLaunchState = GameLaunchState.GameLaunchEnded,
-                GameLaunchEnded = new GameLaunchEnded(EndReason.GameBinaryNotFound)
-            };
-
-            _gameLaunchManager.LaunchGameApiEnabled.Returns(false);
-            _gameLaunch.GetLaunchStateAsync(Arg.Any<IAction>()).Returns(Task.FromResult(launch));
-
             var launcherFactory = CreateLauncherFactory(true);
-            var launcher = launcherFactory.Create(_debugEngine, LaunchOption.LaunchGame, "",
-                                                  _gameBinary, _gameBinary, _gameLaunchManager,
-                                                  _gameLaunch);
+            var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToGame, "",
+                                                  _gameBinary, _gameBinary, null);
 
             _platformFactory.AddConnectRemoteStatuses(false, true);
 
@@ -381,8 +360,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
-                                                  "some/core/path", "", "", _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  "some/core/path", "", "", _gameLaunch);
             var attachedProgram = await LaunchAsync(launcher);
             Assert.IsTrue(_debuggerFactory.Debugger.IsInitFileSourced);
         }
@@ -396,8 +374,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
-                                                  "some/core/path", "", "", _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  "some/core/path", "", "", _gameLaunch);
             var attachedProgram = await LaunchAsync(launcher);
             Assert.IsFalse(_debuggerFactory.Debugger.IsInitFileSourced);
         }
@@ -410,8 +387,7 @@ namespace YetiVSI.Test.DebugEngine
             var launcherFactory =
                 CreateLauncherFactory(stadiaPlatformAvailable, connectRemoteRecorder);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
-                                                  "some/core/path", "", "", _gameLaunchManager,
-                                                  _gameLaunch);
+                                                  "some/core/path", "", "", _gameLaunch);
             ILldbAttachedProgram program = await LaunchAsync(launcher);
             Assert.That(connectRemoteRecorder.InvocationCount, Is.EqualTo(0));
             Assert.That(program, Is.Not.Null);
@@ -426,7 +402,7 @@ namespace YetiVSI.Test.DebugEngine
             var connectRemoteRecorder = new PlatformFactoryFakeConnectRecorder();
             var launcherFactory = CreateLauncherFactory(false, connectRemoteRecorder);
             var launcher = launcherFactory.Create(_debugEngine, launchOption, "", _gameBinary,
-                                                  _gameBinary, _gameLaunchManager, _gameLaunch);
+                                                  _gameBinary, _gameLaunch);
             ILldbAttachedProgram program = await LaunchAsync(launcher);
             Assert.That(connectRemoteRecorder.InvocationCount, Is.EqualTo(1));
             Assert.That(connectRemoteRecorder.InvocationOptions[0].GetUrl(),
@@ -443,7 +419,7 @@ namespace YetiVSI.Test.DebugEngine
             var connectRemoteRecorder = new PlatformFactoryFakeConnectRecorder();
             var launcherFactory = CreateLauncherFactory(true, connectRemoteRecorder);
             var launcher = launcherFactory.Create(_debugEngine, launchOption, "", _gameBinary,
-                                                  _gameBinary, _gameLaunchManager, _gameLaunch);
+                                                  _gameBinary, _gameLaunch);
             ILldbAttachedProgram program = await LaunchAsync(launcher);
             Assert.That(connectRemoteRecorder.InvocationCount, Is.EqualTo(1));
             Assert.That(connectRemoteRecorder.InvocationOptions.Count, Is.EqualTo(1));

@@ -41,9 +41,8 @@ namespace YetiVSI.DebugEngine
     public interface IDebugSessionLauncherFactory
     {
         IDebugSessionLauncher Create(IDebugEngine3 debugEngine, LaunchOption launchOption,
-                                 string coreFilePath, string executableFileName,
-                                 string executableFullPath, IGameLaunchManager gameLaunchManager,
-                                 IVsiGameLaunch gameLaunch);
+                                     string coreFilePath, string executableFileName,
+                                     string executableFullPath, IVsiGameLaunch gameLaunch);
     }
 
 
@@ -132,7 +131,6 @@ namespace YetiVSI.DebugEngine
                                                 LaunchOption launchOption, string coreFilePath,
                                                 string executableFileName,
                                                 string executableFullPath,
-                                                IGameLaunchManager gameLaunchManager,
                                                 IVsiGameLaunch gameLaunch) =>
                 new DebugSessionLauncher(_taskContext, _lldbDebuggerFactory, _lldbListenerFactory,
                                          _lldbPlatformFactory, _lldbPlatformConnectOptionsFactory,
@@ -143,8 +141,7 @@ namespace YetiVSI.DebugEngine
                                          _exceptionManagerFactory, _fileSystem,
                                          _fastExpressionEvaluation, _moduleFileFinder,
                                          _dumpModulesProvider, _moduleSearchLogHolder,
-                                         _symbolSettingsProvider, _warningDialog, gameLaunchManager,
-                                         gameLaunch);
+                                         _symbolSettingsProvider, _warningDialog, gameLaunch);
         }
 
         const string _remoteLldbPlatformName = "remote-stadia";
@@ -182,7 +179,6 @@ namespace YetiVSI.DebugEngine
         readonly IModuleSearchLogHolder _moduleSearchLogHolder;
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
         readonly CoreAttachWarningDialogUtil _warningDialog;
-        readonly IGameLaunchManager _gameLaunchManager;
         readonly IVsiGameLaunch _gameLaunch;
 
         public DebugSessionLauncher(
@@ -198,8 +194,7 @@ namespace YetiVSI.DebugEngine
             bool fastExpressionEvaluation, IModuleFileFinder moduleFileFinder,
             IDumpModulesProvider dumpModulesProvider, IModuleSearchLogHolder moduleSearchLogHolder,
             ISymbolSettingsProvider symbolSettingsProvider,
-            CoreAttachWarningDialogUtil warningDialog, IGameLaunchManager gameLaunchManager,
-            IVsiGameLaunch gameLaunch)
+            CoreAttachWarningDialogUtil warningDialog, IVsiGameLaunch gameLaunch)
         {
             _taskContext = taskContext;
             _lldbDebuggerFactory = lldbDebuggerFactory;
@@ -223,7 +218,6 @@ namespace YetiVSI.DebugEngine
             _moduleSearchLogHolder = moduleSearchLogHolder;
             _symbolSettingsProvider = symbolSettingsProvider;
             _warningDialog = warningDialog;
-            _gameLaunchManager = gameLaunchManager;
             _gameLaunch = gameLaunch;
         }
 
@@ -485,7 +479,9 @@ namespace YetiVSI.DebugEngine
         /// </summary>
         void VerifyGameIsReady(IAction action)
         {
-            if (_gameLaunchManager.LaunchGameApiEnabled)
+            // Either new launch api is disabled, or we didn't run the game and only have process
+            // id to attach to. We don't match the game launch to the remote process id.
+            if (_gameLaunch != null)
             {
                 GgpGrpc.Models.GameLaunch state =
                     _taskContext.Factory.Run(async () =>
