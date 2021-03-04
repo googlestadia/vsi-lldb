@@ -21,9 +21,9 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Grpc.Core;
-using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Threading;
 using YetiCommon;
+using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiCommon.VSProject;
 using YetiVSI.Metrics;
@@ -201,9 +201,11 @@ namespace YetiVSI.GameLaunch
             IAction getExistingAction =
                 _actionRecorder.CreateToolAction(ActionType.GameLaunchGetExisting);
             IGameletClient gameletClient = _gameletClientFactory.Create(_runner);
-            var gameLauncher = new GameLaunchManager(gameletClient, _sdkConfigFactory,
+            var launchParamsConverter =
+                new LaunchGameParamsConverter(_sdkConfigFactory, new QueryParametersParser());
+            var gameLauncher = new GameLaunchManager(gameletClient, launchParamsConverter,
                                                      _cancelableTaskFactory, _yetiVsiService,
-                                                     _taskContext, _actionRecorder, _dialogUtil);
+                                                     _actionRecorder, _dialogUtil);
             ICancelableTask<GgpGrpc.Models.GameLaunch> currentGameLaunchTask =
                 _cancelableTaskFactory.Create(TaskMessages.LookingForTheCurrentLaunch,
                                               async task =>

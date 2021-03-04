@@ -51,6 +51,8 @@ namespace YetiVSI.Test.GameLaunch
             _gameletClient = Substitute.For<IGameletClient>();
             _cancelableTaskFactory = Substitute.For<CancelableTask.Factory>();
             _gameLaunchManager = Substitute.For<IGameLaunchManager>();
+            _gameLaunchManager.PollingTimeoutMs.Returns(1000);
+            _gameLaunchManager.PollDelayMs.Returns(100);
             _metrics = Substitute.For<IMetrics>();
             _actionRecorder = Substitute.For<ActionRecorder>(_metrics);
             _dialogUtil = Substitute.For<IDialogUtil>();
@@ -133,7 +135,7 @@ namespace YetiVSI.Test.GameLaunch
                   new[] { 7, 1 }, false, EndReason.GameShutdownBySystem,
                   TestName = "EndAfterIncomplete")]
         [TestCase(new[] { GameLaunchState.IncompleteLaunch, GameLaunchState.RunningGame },
-                  new[] { 1000, 1 }, false, TestName = "RunningTimeout")]
+                  new[] { 100, 1 }, false, TestName = "RunningTimeout")]
         public void WaitUntilGameLaunchedTest(GameLaunchState[] launchStates, int[] stateRepeat,
                                               bool launchResult, EndReason? endReason = null)
         {

@@ -157,7 +157,7 @@ namespace YetiVSI.GameLaunch
         // ReadyToPlay and DelayedLaunch are transitioning states.
         async Task PollForLaunchStatusAsync(ICancelable task, IAction action)
         {
-            int maxPollCount = GameLaunchManager.PollingTimeoutMs / GameLaunchManager.PollDelayMs;
+            int maxPollCount = _gameLaunchManager.PollingTimeoutMs / _gameLaunchManager.PollDelayMs;
             int currentPollCount = 0;
             var devEvent = new DeveloperLogEvent
             {
@@ -182,7 +182,7 @@ namespace YetiVSI.GameLaunch
                     throw new GameLaunchFailError(error);
                 }
 
-                await Task.Delay(GameLaunchManager.PollDelayMs);
+                await Task.Delay(_gameLaunchManager.PollDelayMs);
             }
 
             if (currentPollCount > maxPollCount)

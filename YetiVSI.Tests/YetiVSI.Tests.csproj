@@ -135,6 +135,7 @@
     <Compile Include="DebugEngine\LldbExceptionManagerTests.cs" />
     <Compile Include="DebugEngine\LldbTransportSessionTests.cs" />
     <Compile Include="DebugEngine\DebugWatchpointTests.cs" />
+    <Compile Include="GameLaunch\GameLaunchManagerTests.cs" />
     <Compile Include="MediumTestsSupport\GgpClientStubs.cs" />
     <Compile Include="MediumTestsSupport\GameletClientStub.cs" />
     <Compile Include="MediumTestsSupport\MediumTestDebugEngineFactoryCompRoot.cs" />
@@ -258,7 +259,7 @@
       <StubTestExe Include="$(ThirdPartyRootDir)YetiVSI.Tests\LaunchApi\StubTestSample\GGP\Debug\StubTestSample.exe" />
     </ItemGroup>
     <Copy SourceFiles="@(StubTestSample)" DestinationFolder="$(OutDir)TestData\StubTestSample" />
-    <Copy SourceFiles="@(StubTestBinary)" DestinationFolder="$(OutDir)TestData\StubTestSample\GGP\Debug"/>
+    <Copy SourceFiles="@(StubTestBinary)" DestinationFolder="$(OutDir)TestData\StubTestSample\GGP\Debug" />
     <Copy SourceFiles="@(StubTestExe)" DestinationFolder="$(OutDir)TestData\StubTestSample\GGP\Debug" />
   </Target>
   <Choose>

@@ -15,10 +15,10 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using GgpGrpc;
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using Grpc.Core;
-using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiVSI.DebugEngine;
@@ -31,6 +31,9 @@ namespace YetiVSI.GameLaunch
     {
         bool LaunchGameApiEnabled { get; }
 
+        int PollingTimeoutMs { get; }
+
+        int PollDelayMs { get; }
         /// <summary>
         /// Requests the backend to create a game launch synchronously.
         /// Shows warning and error messages if something goes wrong.
@@ -67,37 +70,40 @@ namespace YetiVSI.GameLaunch
         /// <param name="gameLaunchName">Game launch name.</param>
         /// <param name="task">Cancelable token.</param>
         /// <param name="action">Ongoing action.</param>
-        /// <param name="timeoutMs">Number of milliseconds to wait.</param>
         /// <returns><see cref="DeleteLaunchResult"/></returns>
         Task<DeleteLaunchResult> WaitUntilGameLaunchEndedAsync(
-            string gameLaunchName, ICancelable task, IAction action, int? timeoutMs = null);
+            string gameLaunchName, ICancelable task, IAction action);
     }
 
     public class GameLaunchManager : IGameLaunchManager
     {
-        public const int PollingTimeoutMs = 120000;
-        public const int PollDelayMs = 500;
-
         readonly IGameletClient _gameletClient;
         readonly CancelableTask.Factory _cancelableTaskFactory;
-        readonly YetiVSIService _vsiService;
-        readonly LaunchGameParamsConverter _launchGameParamsConverter;
+        readonly IYetiVSIService _vsiService;
+        readonly ILaunchGameParamsConverter _launchGameParamsConverter;
         readonly IDialogUtil _dialogUtil;
         readonly ActionRecorder _actionRecorder;
 
-        public GameLaunchManager(IGameletClient gameletClient, SdkConfig.Factory sdkConfigFactory,
+        public GameLaunchManager(IGameletClient gameletClient,
+                                 ILaunchGameParamsConverter launchGameParamsConverter,
                                  CancelableTask.Factory cancelableTaskFactory,
-                                 YetiVSIService vsiService, JoinableTaskContext taskContext,
-                                 ActionRecorder actionRecorder, IDialogUtil dialogUtil)
+                                 IYetiVSIService vsiService, ActionRecorder actionRecorder,
+                                 IDialogUtil dialogUtil, int pollingTimeoutMs = 120000,
+                                 int pollDelayMs = 500)
         {
             _gameletClient = gameletClient;
             _cancelableTaskFactory = cancelableTaskFactory;
             _vsiService = vsiService;
             _actionRecorder = actionRecorder;
-            _launchGameParamsConverter =
-                new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
+            _launchGameParamsConverter = launchGameParamsConverter;
             _dialogUtil = dialogUtil;
+            PollingTimeoutMs = pollingTimeoutMs;
+            PollDelayMs = pollDelayMs;
         }
+
+        public int PollingTimeoutMs { get; }
+
+        public int PollDelayMs { get; }
 
         public bool LaunchGameApiEnabled =>
             _vsiService.Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
@@ -120,11 +126,11 @@ namespace YetiVSI.GameLaunch
         }
 
         public async Task<DeleteLaunchResult> WaitUntilGameLaunchEndedAsync(
-            string gameLaunchName, ICancelable task, IAction action, int? timeoutMs = null)
+            string gameLaunchName, ICancelable task, IAction action)
         {
             GgpGrpc.Models.GameLaunch launch =
                 await _gameletClient.GetGameLaunchStateAsync(gameLaunchName, action);
-            int maxPollCount = (timeoutMs ?? PollingTimeoutMs) / PollDelayMs;
+            int maxPollCount = PollingTimeoutMs / PollDelayMs;
             int currentPollCount = 0;
             while (launch.GameLaunchState != GameLaunchState.GameLaunchEnded &&
                 ++currentPollCount <= maxPollCount)
@@ -180,7 +186,7 @@ namespace YetiVSI.GameLaunch
                 : sdkCompatibility.Message;
         }
 
-        public async Task<CreateLaunchResult> CreateLaunchAsync(
+        async Task<CreateLaunchResult> CreateLaunchAsync(
             ChromeLaunchParams launchParams, ICancelable cancelable, IAction action)
         {
             Task<string> sdkCompatibilityTask = CheckSdkCompatibilityAsync(

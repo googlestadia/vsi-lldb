@@ -89,9 +89,11 @@ namespace YetiVSI
             var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(serializer);
             var debugSessionMetrics = new DebugSessionMetrics(metrics);
             var actionRecorder = new ActionRecorder(debugSessionMetrics);
+            var launchParamsConverter =
+                new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
             var gameLauncher = new GameLaunchManager(
-                new GameletClient.Factory().Create(cloudRunner), sdkConfigFactory,
-                _cancelableTaskFactory, yetiVsiService, taskContext, actionRecorder, _dialogUtil);
+                new GameletClient.Factory().Create(cloudRunner), launchParamsConverter,
+                _cancelableTaskFactory, yetiVsiService, actionRecorder, _dialogUtil);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,

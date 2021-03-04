@@ -20,7 +20,22 @@ using System.Linq;
 
 namespace YetiCommon.Cloud
 {
-    public class LaunchGameParamsConverter
+    public interface ILaunchGameParamsConverter
+    {
+        ConfigStatus ToLaunchGameRequest(
+            ChromeLaunchParams parameters, out LaunchGameRequest request);
+
+        /// <summary>
+        /// Returns the full game launch name, which can be used in the GetGameLaunchState
+        /// GGP api request.
+        /// </summary>
+        /// <param name="gameLaunchName">If empty, the current game launch will be used.</param>
+        /// <param name="testAccount"></param>
+        /// <returns>Full game launch name.</returns>
+        string FullGameLaunchName(string gameLaunchName, string testAccount = null);
+    }
+
+    public class LaunchGameParamsConverter : ILaunchGameParamsConverter
     {
         const string _developerLaunchGameParent = "organizations/-/players/me";
 
@@ -70,16 +85,8 @@ namespace YetiCommon.Cloud
             return status;
         }
 
-        /// <summary>
-        /// Returns the full game launch name, which can be used in the GetGameLaunchState
-        /// GGP api request.
-        /// </summary>
-        /// <param name="gameLaunchName">If empty, the current game launch will be used.</param>
-        /// <param name="testAccount"></param>
-        /// <returns>Full game launch name.</returns>
         public string FullGameLaunchName(string gameLaunchName, string testAccount = null)
         {
-            ISdkConfig sdkConfig = _sdkConfigFactory.LoadGgpSdkConfigOrDefault();
             string actualLaunchName = string.IsNullOrWhiteSpace(gameLaunchName)
                 ? "current"
                 : gameLaunchName;
