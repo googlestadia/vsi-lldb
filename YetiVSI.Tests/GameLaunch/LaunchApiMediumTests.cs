@@ -30,12 +30,11 @@ using YetiVSI.Test.MediumTestsSupport;
 using YetiVSI.Util;
 using YetiVSITestsCommon;
 
-namespace YetiVSI.Test.LaunchApi
+namespace YetiVSI.Test.GameLaunch
 {
     public class LaunchApiMediumTests
     {
-        static readonly string _sampleDir = Path.Combine(YetiConstants.RootDir,
-                                                         @"TestData\");
+        static readonly string _sampleDir = Path.Combine(YetiConstants.RootDir, @"TestData\");
         const string _sampleName = "StubTestSample";
 
         NLogSpy _nLogSpy;
@@ -86,8 +85,8 @@ namespace YetiVSI.Test.LaunchApi
 
             Assert.That(launches.Count, Is.EqualTo(1));
             Assert.That(launches[0].EnvironmentVariablePairs,
-                        Is.EqualTo(new Dictionary<string, string>()
-                                            { { "v1", "1" }, { "v2", "stringValue" } }));
+                        Is.EqualTo(new Dictionary<string, string>
+                                       { { "v1", "1" }, { "v2", "stringValue" } }));
         }
 
         [Test]
@@ -121,13 +120,13 @@ namespace YetiVSI.Test.LaunchApi
 
             _taskContext.RunOnMainThread(() => vsFake.LaunchSuspended());
             Assert.That(launches.Count, Is.EqualTo(1));
-            Assert.That(launches[0].EnvironmentVariablePairs,
-                        Is.EqualTo(new Dictionary<string, string>()
-                        {
-                            { "ENABLE_VULKAN_RENDERDOC_CAPTURE", "1" },
-                            { "RENDERDOC_TEMP", "/mnt/developer/ggp" },
-                            { "RENDERDOC_DEBUG_LOG_FILE", "/var/game/RDDebug.log" }
-                        }));
+            Assert.That(launches[0].EnvironmentVariablePairs, Is.EqualTo(
+                            new Dictionary<string, string>
+                            {
+                                { "ENABLE_VULKAN_RENDERDOC_CAPTURE", "1" },
+                                { "RENDERDOC_TEMP", "/mnt/developer/ggp" },
+                                { "RENDERDOC_DEBUG_LOG_FILE", "/var/game/RDDebug.log" }
+                            }));
         }
 
         [Test]
@@ -160,7 +159,7 @@ namespace YetiVSI.Test.LaunchApi
 
             _taskContext.RunOnMainThread(() => vsFake.LaunchSuspended());
             Assert.That(launches[0].EnvironmentVariablePairs, Is.EqualTo(
-                            new Dictionary<string, string>()
+                            new Dictionary<string, string>
                             {
                                 { "GGP_DEV_VK_DRIVER_VARIANT", "vulkan-driver-variant" }
                             }));
@@ -180,7 +179,7 @@ namespace YetiVSI.Test.LaunchApi
 
             Assert.That(launches.Count, Is.EqualTo(1));
             Assert.That(launches[0].EnvironmentVariablePairs, Is.EqualTo(
-                            new Dictionary<string, string>()
+                            new Dictionary<string, string>
                             {
                                 { "GGP_INTERNAL_LOAD_RGP", "1" },
                                 { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },

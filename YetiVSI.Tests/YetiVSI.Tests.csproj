@@ -136,6 +136,7 @@
     <Compile Include="DebugEngine\LldbTransportSessionTests.cs" />
     <Compile Include="DebugEngine\DebugWatchpointTests.cs" />
     <Compile Include="GameLaunch\GameLaunchManagerTests.cs" />
+    <Compile Include="GameLaunch\GameletSelectorTests.cs" />
     <Compile Include="MediumTestsSupport\GgpClientStubs.cs" />
     <Compile Include="MediumTestsSupport\GameletClientStub.cs" />
     <Compile Include="MediumTestsSupport\MediumTestDebugEngineFactoryCompRoot.cs" />
@@ -182,9 +183,9 @@
     <Compile Include="EnvDTEUtilTests.cs" />
     <Compile Include="GameLaunch\VsiGameLaunchTests.cs" />
     <Compile Include="GameletMountCheckerTests.cs" />
-    <Compile Include="GameletSelectorTests.cs" />
+    <Compile Include="GameLaunch\GameletSelectorLegacyFlowTests.cs" />
     <Compile Include="DebuggerGrpc\CommonTests.cs" />
-    <Compile Include="LaunchApi\LaunchApiMediumTests.cs" />
+    <Compile Include="GameLaunch\LaunchApiMediumTests.cs" />
     <Compile Include="MediumTestsSupport\MediumTestGgpDebugQueryTargetCompRoot.cs" />
     <Compile Include="LoadSymbols\SessionNotifierServiceTests.cs" />
     <Compile Include="MediumTestsSupport\MediumTestServiceManager.cs" />
@@ -254,9 +255,9 @@
   </ItemGroup>
   <Target Name="CopyTestAssets" AfterTargets="Build">
     <ItemGroup>
-      <StubTestSample Include="$(ThirdPartyRootDir)YetiVSI.Tests\LaunchApi\StubTestSample\StubTestSample.vcxproj" />
-      <StubTestBinary Include="$(ThirdPartyRootDir)YetiVSI.Tests\LaunchApi\StubTestSample\GGP\Debug\StubTestSample" />
-      <StubTestExe Include="$(ThirdPartyRootDir)YetiVSI.Tests\LaunchApi\StubTestSample\GGP\Debug\StubTestSample.exe" />
+      <StubTestSample Include="$(ThirdPartyRootDir)YetiVSI.Tests\GameLaunch\StubTestSample\StubTestSample.vcxproj" />
+      <StubTestBinary Include="$(ThirdPartyRootDir)YetiVSI.Tests\GameLaunch\StubTestSample\GGP\Debug\StubTestSample" />
+      <StubTestExe Include="$(ThirdPartyRootDir)YetiVSI.Tests\GameLaunch\StubTestSample\GGP\Debug\StubTestSample.exe" />
     </ItemGroup>
     <Copy SourceFiles="@(StubTestSample)" DestinationFolder="$(OutDir)TestData\StubTestSample" />
     <Copy SourceFiles="@(StubTestBinary)" DestinationFolder="$(OutDir)TestData\StubTestSample\GGP\Debug" />

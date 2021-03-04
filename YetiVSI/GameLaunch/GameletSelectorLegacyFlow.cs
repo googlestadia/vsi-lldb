@@ -44,8 +44,7 @@ namespace YetiVSI.GameLaunch
         readonly IGameletClientFactory _gameletClientFactory;
         readonly ISshManager _sshManager;
         readonly IRemoteCommand _remoteCommand;
-        readonly SdkConfig.Factory _sdkConfigFactory;
-        readonly YetiVSIService _yetiVsiService;
+        readonly IGameLaunchManager _gameLaunchManager;
         readonly JoinableTaskContext _taskContext;
 
         public GameletSelectorFactory(IDialogUtil dialogUtil, ICloudRunner runner,
@@ -53,8 +52,7 @@ namespace YetiVSI.GameLaunch
                                       CancelableTask.Factory cancelableTaskFactory,
                                       IGameletClientFactory gameletClientFactory,
                                       ISshManager sshManager, IRemoteCommand remoteCommand,
-                                      SdkConfig.Factory sdkConfigFactory,
-                                      YetiVSIService yetiVsiService,
+                                      IGameLaunchManager gameLaunchManager,
                                       JoinableTaskContext taskContext)
         {
             _dialogUtil = dialogUtil;
@@ -64,8 +62,7 @@ namespace YetiVSI.GameLaunch
             _gameletClientFactory = gameletClientFactory;
             _sshManager = sshManager;
             _remoteCommand = remoteCommand;
-            _sdkConfigFactory = sdkConfigFactory;
-            _yetiVsiService = yetiVsiService;
+            _gameLaunchManager = gameLaunchManager;
             _taskContext = taskContext;
         }
 
@@ -74,8 +71,8 @@ namespace YetiVSI.GameLaunch
             launchGameApiEnabled
                 ? new GameletSelector(_dialogUtil, _runner, _gameletSelectionWindowFactory,
                                       _cancelableTaskFactory, _gameletClientFactory, _sshManager,
-                                      _remoteCommand, _sdkConfigFactory, _yetiVsiService,
-                                      _taskContext, actionRecorder)
+                                      _remoteCommand, _gameLaunchManager, _taskContext,
+                                      actionRecorder)
                 : (IGameletSelector) new GameletSelectorLegacyFlow(_dialogUtil, _runner,
                     _gameletSelectionWindowFactory, _cancelableTaskFactory, _gameletClientFactory,
                     _sshManager, _remoteCommand, actionRecorder);

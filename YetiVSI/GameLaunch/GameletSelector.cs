@@ -46,8 +46,7 @@ namespace YetiVSI.GameLaunch
         readonly IRemoteCommand _remoteCommand;
         readonly ICloudRunner _runner;
         readonly GameletMountChecker _mountChecker;
-        readonly SdkConfig.Factory _sdkConfigFactory;
-        readonly YetiVSIService _yetiVsiService;
+        readonly IGameLaunchManager _gameLaunchManager;
         readonly JoinableTaskContext _taskContext;
         readonly ActionRecorder _actionRecorder;
 
@@ -55,9 +54,8 @@ namespace YetiVSI.GameLaunch
                                GameletSelectionWindow.Factory gameletSelectionWindowFactory,
                                CancelableTask.Factory cancelableTaskFactory,
                                IGameletClientFactory gameletClientFactory, ISshManager sshManager,
-                               IRemoteCommand remoteCommand, SdkConfig.Factory sdkConfigFactory,
-                               YetiVSIService yetiVsiService, JoinableTaskContext taskContext,
-                               ActionRecorder actionRecorder)
+                               IRemoteCommand remoteCommand, IGameLaunchManager gameLaunchManager,
+                               JoinableTaskContext taskContext, ActionRecorder actionRecorder)
         {
             _dialogUtil = dialogUtil;
             _runner = runner;
@@ -68,8 +66,7 @@ namespace YetiVSI.GameLaunch
             _remoteCommand = remoteCommand;
             _mountChecker =
                 new GameletMountChecker(remoteCommand, dialogUtil, cancelableTaskFactory);
-            _sdkConfigFactory = sdkConfigFactory;
-            _yetiVsiService = yetiVsiService;
+            _gameLaunchManager = gameLaunchManager;
             _taskContext = taskContext;
             _actionRecorder = actionRecorder;
         }
@@ -200,17 +197,12 @@ namespace YetiVSI.GameLaunch
         {
             IAction getExistingAction =
                 _actionRecorder.CreateToolAction(ActionType.GameLaunchGetExisting);
-            IGameletClient gameletClient = _gameletClientFactory.Create(_runner);
-            var launchParamsConverter =
-                new LaunchGameParamsConverter(_sdkConfigFactory, new QueryParametersParser());
-            var gameLauncher = new GameLaunchManager(gameletClient, launchParamsConverter,
-                                                     _cancelableTaskFactory, _yetiVsiService,
-                                                     _actionRecorder, _dialogUtil);
             ICancelableTask<GgpGrpc.Models.GameLaunch> currentGameLaunchTask =
                 _cancelableTaskFactory.Create(TaskMessages.LookingForTheCurrentLaunch,
                                               async task =>
-                                                  await gameLauncher.GetCurrentGameLaunchAsync(
-                                                      testAccount?.Name, getExistingAction));
+                                                  await _gameLaunchManager
+                                                      .GetCurrentGameLaunchAsync(
+                                                          testAccount?.Name, getExistingAction));
             if (!currentGameLaunchTask.RunAndRecord(getExistingAction))
             {
                 return false;
@@ -232,8 +224,9 @@ namespace YetiVSI.GameLaunch
                 _actionRecorder.CreateToolAction(ActionType.GameLaunchDeleteExisting);
             ICancelableTask<DeleteLaunchResult> stopTask = _cancelableTaskFactory.Create(
                 TaskMessages.WaitingForGameStop,
-                async task => await gameLauncher.DeleteLaunchAsync(currentGameLaunch.Name, task,
-                    deleteAction));
+                async task =>
+                    await _gameLaunchManager.DeleteLaunchAsync(
+                        currentGameLaunch.Name, task, deleteAction));
             return stopTask.RunAndRecord(deleteAction) && stopTask.Result.IsSuccessful;
         }
 

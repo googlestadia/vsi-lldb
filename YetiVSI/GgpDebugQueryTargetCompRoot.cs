@@ -80,20 +80,20 @@ namespace YetiVSI
             var metrics = _serviceManager.GetGlobalService(typeof(SMetrics)) as IMetrics;
             var sdkVersion = GetSdkVersion();
             var sshManager = GetSshManager(managedProcessFactory, cloudRunner);
+            var launchParamsConverter =
+                new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
+            var debugSessionMetrics = new DebugSessionMetrics(metrics);
+            var actionRecorder = new ActionRecorder(debugSessionMetrics);
+            var gameLauncher = new GameLaunchManager(
+                gameletClientFactory.Create(cloudRunner), launchParamsConverter,
+                _cancelableTaskFactory, yetiVsiService, actionRecorder, _dialogUtil);
             var gameletSelectorFactory = new GameletSelectorFactory(
                 _dialogUtil, cloudRunner, GetGameletSelectorWindowFactory(),
                 GetCancelableTaskFactory(), gameletClientFactory, sshManager, remoteCommand,
-                sdkConfigFactory, yetiVsiService, taskContext);
+                gameLauncher, taskContext);
             var serializer = new JsonUtil();
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(serializer);
-            var debugSessionMetrics = new DebugSessionMetrics(metrics);
-            var actionRecorder = new ActionRecorder(debugSessionMetrics);
-            var launchParamsConverter =
-                new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
-            var gameLauncher = new GameLaunchManager(
-                new GameletClient.Factory().Create(cloudRunner), launchParamsConverter,
-                _cancelableTaskFactory, yetiVsiService, actionRecorder, _dialogUtil);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,
