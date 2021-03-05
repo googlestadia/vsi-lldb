@@ -311,12 +311,10 @@ namespace YetiVSI.DebugEngine
             var debugThreadCreator = asyncInterfacesEnabled ?(CreateDebugThreadDelegate)
                                          debugThreadAsyncFactory.Create : debugThreadFactory.Create;
             var gameletFactory = GetGameletClientFactory();
-            IGameletClient gameletClient = gameletFactory.Create(GetCloudRunner());
             var launchParamsConverter =
                 new LaunchGameParamsConverter(GetSdkConfigFactory(), new QueryParametersParser());
-            var gameLauncher = new GameLaunchManager(gameletClient, launchParamsConverter,
-                                                     cancelableTaskFactory, GetVsiService(),
-                                                     actionRecorder, GetDialogUtil());
+            var gameLaunchManager = new GameLaunchBeHelper(gameletFactory.Create(GetCloudRunner()),
+                                                          launchParamsConverter);
             var debugProgramFactory =
                 GetFactoryDecorator().Decorate<IDebugProgramFactory>(new DebugProgram.Factory(
                     GetJoinableTaskContext(),
@@ -395,6 +393,14 @@ namespace YetiVSI.DebugEngine
                 fastExpressionEvaluation, moduleFileFinder, dumpModulesProvider,
                 moduleSearchLogHolder, GetSymbolSettingsProvider(), coreAttachWarningDialog);
             var paramsFactory = new Params.Factory(GetJsonUtil());
+            var vsiLaunchFactory = new VsiGameLaunchFactory(gameletFactory.Create(GetCloudRunner()),
+                                                            GetCancelableTaskFactory(),
+                                                            gameLaunchManager, actionRecorder,
+                                                            GetDialogUtil());
+            var gameLauncher = new GameLauncher(gameletFactory.Create(GetCloudRunner()),
+                                                GetVsiService(), launchParamsConverter,
+                                                GetCancelableTaskFactory(), actionRecorder,
+                                                GetDialogUtil(), vsiLaunchFactory);
 
             var remoteCommand = new RemoteCommand(processFactory);
             var socketSender = new LocalSocketSender();

@@ -25,26 +25,20 @@ using NUnit.Framework;
 using YetiCommon.Cloud;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Test.GameLaunch
 {
     [TestFixture]
-    public class GameLaunchManagerTests
+    public class GameLaunchBeHelperTests
     {
         const string _gameLaunchName = "some/game/launch";
         const string _fullLaunchName = "full/game/launch/name";
         const string _testAccount = "test/account";
 
-        GameLaunchManager _target;
+        GameLaunchBeHelper _target;
 
         IGameletClient _gameletClient;
         ILaunchGameParamsConverter _paramsConverter;
-        CancelableTask.Factory _cancelableTaskFactory;
-        IYetiVSIService _yetiVsiService;
-        IMetrics _metrics;
-        ActionRecorder _actionRecorder;
-        IDialogUtil _dialogUtil;
         ICancelable _cancelable;
         IAction _action;
 
@@ -56,15 +50,8 @@ namespace YetiVSI.Test.GameLaunch
 
             _gameletClient = Substitute.For<IGameletClient>();
             _paramsConverter = Substitute.For<ILaunchGameParamsConverter>();
-            _cancelableTaskFactory = Substitute.For<CancelableTask.Factory>();
-            _yetiVsiService = Substitute.For<IYetiVSIService>();
-            _metrics = Substitute.For<IMetrics>();
-            _actionRecorder = Substitute.For<ActionRecorder>(_metrics);
-            _dialogUtil = Substitute.For<IDialogUtil>();
 
-            _target = new GameLaunchManager(_gameletClient, _paramsConverter,
-                                            _cancelableTaskFactory, _yetiVsiService,
-                                            _actionRecorder, _dialogUtil, 1000, 100);
+            _target = new GameLaunchBeHelper(_gameletClient, _paramsConverter, 1000, 100);
         }
 
         [Test]

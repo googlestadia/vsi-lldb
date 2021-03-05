@@ -58,7 +58,7 @@ namespace YetiVSI.Test.DebugEngine
 
         readonly IDebugSessionLauncherFactory _debugSessionLauncherFactory;
         readonly IRemoteDeploy _remoteDeploy;
-        readonly IGameLaunchManager _gameLaunchManager;
+        readonly IGameLauncher _gameLauncher;
 
         ISymbolSettingsProvider _symbolSettingsProvider;
 
@@ -71,16 +71,14 @@ namespace YetiVSI.Test.DebugEngine
         /// </param>
         /// <param name="remoteDeploy"><see cref="IRemoteDeploy"/> instance to use during the
         /// deployment process.</param>
-        /// <param name="gameLaunchManager">
-        /// <see cref="IGameLaunchManager"/> instance to use during game launch.
-        /// </param>
+        /// <param name="gameLauncher">Game launcher.</param>
         public DebugEngineFactoryCompRootStub(IDebugSessionLauncherFactory factory,
                                               IRemoteDeploy remoteDeploy,
-                                              IGameLaunchManager gameLaunchManager)
+                                              IGameLauncher gameLauncher)
         {
             _debugSessionLauncherFactory = factory;
             _remoteDeploy = remoteDeploy;
-            _gameLaunchManager = gameLaunchManager;
+            _gameLauncher = gameLauncher;
         }
 
         readonly IDialogUtil _dialogUtil = Substitute.For<IDialogUtil>();
@@ -139,7 +137,7 @@ namespace YetiVSI.Test.DebugEngine
                 _remoteDeploy, cancelableTaskFactory, _dialogUtil,
                 GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(), debugEngineCommands,
                 GetDebugEventCallbackDecorator(vsiService.DebuggerOptions),
-                GetSymbolSettingsProvider(), deployLldbServer, _gameLaunchManager);
+                GetSymbolSettingsProvider(), deployLldbServer, _gameLauncher);
             return GetFactoryDecorator().Decorate(factory);
         }
 

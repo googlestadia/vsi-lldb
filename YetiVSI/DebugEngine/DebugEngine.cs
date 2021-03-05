@@ -163,7 +163,7 @@ namespace YetiVSI.DebugEngine
             readonly DebugEventCallbackTransform _debugEventCallbackDecorator;
             readonly ISymbolSettingsProvider _symbolSettingsProvider;
             readonly bool _deployLldbServer;
-            readonly IGameLaunchManager _gameLaunchManager;
+            readonly IGameLauncher _gameLauncher;
 
             public Factory(JoinableTaskContext taskContext, ServiceManager serviceManager,
                            DebugSessionMetrics debugSessionMetrics,
@@ -183,7 +183,7 @@ namespace YetiVSI.DebugEngine
                            IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
-                           IGameLaunchManager gameLaunchManager)
+                           IGameLauncher gameLauncher)
             {
                 _taskContext = taskContext;
                 _serviceManager = serviceManager;
@@ -210,7 +210,7 @@ namespace YetiVSI.DebugEngine
                 _debugEventCallbackDecorator = debugEventCallbackDecorator;
                 _symbolSettingsProvider = symbolSettingsProvider;
                 _deployLldbServer = deployLldbServer;
-                _gameLaunchManager = gameLaunchManager;
+                _gameLauncher = gameLauncher;
             }
 
             /// <summary>
@@ -238,7 +238,7 @@ namespace YetiVSI.DebugEngine
                     _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
                     _debugEngineCommands, _debugEventCallbackDecorator, envDteService?.RegistryRoot,
                     sessionNotifier, _symbolSettingsProvider, _deployLldbServer,
-                    _gameLaunchManager);
+                    _gameLauncher);
             }
         }
 
@@ -318,7 +318,7 @@ namespace YetiVSI.DebugEngine
         readonly DebugEventCallbackTransform _debugEventCallbackDecorator;
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
         readonly bool _deployLldbServer;
-        readonly IGameLaunchManager _gameLaunchManager;
+        readonly IGameLauncher _gameLauncher;
 
         // Keep track of the attach operation, so that it can be aborted by transport errors.
         ICancelableTask _attachOperation;
@@ -362,7 +362,7 @@ namespace YetiVSI.DebugEngine
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            string vsRegistryRoot, ISessionNotifier sessionNotifier,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
-                           IGameLaunchManager gameLaunchManager)
+                           IGameLauncher gameLauncher)
             : base(self)
         {
             taskContext.ThrowIfNotOnMainThread();
@@ -399,7 +399,7 @@ namespace YetiVSI.DebugEngine
             _sessionNotifier = sessionNotifier;
             _symbolSettingsProvider = symbolSettingsProvider;
             _deployLldbServer = deployLldbServer;
-            _gameLaunchManager = gameLaunchManager;
+            _gameLauncher = gameLauncher;
 
             // Register observers on long lived objects last so that they don't hold a reference
             // to this if an exception is thrown during construction.
@@ -949,7 +949,7 @@ namespace YetiVSI.DebugEngine
                 _rgpEnabled = chromeLauncher.LaunchParams.Rgp;
                 _renderDocEnabled = chromeLauncher.LaunchParams.RenderDoc;
 
-                if (_gameLaunchManager.LaunchGameApiEnabled)
+                if (_gameLauncher.LaunchGameApiEnabled)
                 {
                     LaunchGame(chromeLauncher);
                     if (_vsiGameLaunch == null)
@@ -982,7 +982,7 @@ namespace YetiVSI.DebugEngine
         // (not Attach to Process / Attach to Stadia Crash Dump).
         void LaunchGame(IChromeTestClientLauncher chromeTestClient)
         {
-            _vsiGameLaunch = _gameLaunchManager.CreateLaunch(chromeTestClient.LaunchParams);
+            _vsiGameLaunch = _gameLauncher.CreateLaunch(chromeTestClient.LaunchParams);
             _vsiGameLaunch?.LaunchInChrome(chromeTestClient, _workingDirectory);
         }
 

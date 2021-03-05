@@ -40,7 +40,7 @@ namespace YetiVSI.Test.GameLaunch
 
         IGameletClient _gameletClient;
         CancelableTask.Factory _cancelableTaskFactory;
-        IGameLaunchManager _gameLaunchManager;
+        IGameLaunchBeHelper _gameLaunchBeHelper;
         IMetrics _metrics;
         ActionRecorder _actionRecorder;
         IDialogUtil _dialogUtil;
@@ -50,14 +50,13 @@ namespace YetiVSI.Test.GameLaunch
         {
             _gameletClient = Substitute.For<IGameletClient>();
             _cancelableTaskFactory = Substitute.For<CancelableTask.Factory>();
-            _gameLaunchManager = Substitute.For<IGameLaunchManager>();
-            _gameLaunchManager.PollingTimeoutMs.Returns(1000);
-            _gameLaunchManager.PollDelayMs.Returns(100);
+            _gameLaunchBeHelper = Substitute.For<IGameLaunchBeHelper>();
             _metrics = Substitute.For<IMetrics>();
             _actionRecorder = Substitute.For<ActionRecorder>(_metrics);
             _dialogUtil = Substitute.For<IDialogUtil>();
             _target = new VsiGameLaunch(_launchName, _gameletClient, _cancelableTaskFactory,
-                                        _gameLaunchManager, _actionRecorder, _dialogUtil);
+                                        _gameLaunchBeHelper, _actionRecorder, _dialogUtil, 1000,
+                                        100);
         }
 
         [Test]
@@ -108,7 +107,7 @@ namespace YetiVSI.Test.GameLaunch
             _actionRecorder.CreateToolAction(ActionType.GameLaunchWaitForEnd).Returns(action);
             var endResult = new DeleteLaunchResult(
                 GetGameLaunch(GameLaunchState.GameLaunchEnded, reason), true);
-            _gameLaunchManager
+            _gameLaunchBeHelper
                 .WaitUntilGameLaunchEndedAsync(_launchName, Arg.Any<ICancelable>(), action)
                 .Returns(Task.FromResult(endResult));
 

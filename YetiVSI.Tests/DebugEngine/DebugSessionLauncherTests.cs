@@ -61,7 +61,6 @@ namespace YetiVSI.Test.DebugEngine
         YetiVSI.DebuggerOptions.DebuggerOptions _debuggerOptions;
         HashSet<string> _libPaths;
         Guid _programId;
-        IGameLaunchManager _gameLaunchManager;
         IVsiGameLaunch _gameLaunch;
 
         IDebugProcess2 _process;
@@ -89,7 +88,6 @@ namespace YetiVSI.Test.DebugEngine
             _process = new DebugProcessStub(enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM, _pid);
             _fileSystem = new MockFileSystem();
             _debugEngine = Substitute.For<IDebugEngine3>();
-            _gameLaunchManager = Substitute.For<IGameLaunchManager>();
             _gameLaunch = Substitute.For<IVsiGameLaunch>();
         }
 
@@ -250,7 +248,6 @@ namespace YetiVSI.Test.DebugEngine
                 GameLaunchEnded = new GameLaunchEnded(EndReason.GameBinaryNotFound)
             };
 
-            _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
             _gameLaunch.GetLaunchStateAsync(Arg.Any<IAction>())
                 .Returns(Task.FromResult(runningGame), Task.FromResult(endedGame));
 
@@ -278,7 +275,6 @@ namespace YetiVSI.Test.DebugEngine
                 GameLaunchEnded = new GameLaunchEnded(EndReason.GameBinaryNotFound)
             };
 
-            _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
             _gameLaunch.GetLaunchStateAsync(Arg.Any<IAction>())
                 .Returns(Task.FromResult(runningGame), Task.FromResult(endedGame));
 
@@ -301,7 +297,6 @@ namespace YetiVSI.Test.DebugEngine
                 GameLaunchState = GameLaunchState.RunningGame
             };
 
-            _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
             _gameLaunch.GetLaunchStateAsync(Arg.Any<IAction>()).Returns(Task.FromResult(launch));
 
             var launcherFactory = CreateLauncherFactory(true);
@@ -323,7 +318,6 @@ namespace YetiVSI.Test.DebugEngine
                 GameLaunchState = GameLaunchState.RunningGame
             };
 
-            _gameLaunchManager.LaunchGameApiEnabled.Returns(true);
             _gameLaunch.GetLaunchStateAsync(Arg.Any<IAction>()).Returns(Task.FromResult(launch));
 
             var launcherFactory = CreateLauncherFactory(true);
@@ -361,7 +355,7 @@ namespace YetiVSI.Test.DebugEngine
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
                                                   "some/core/path", "", "", _gameLaunch);
-            var attachedProgram = await LaunchAsync(launcher);
+            await LaunchAsync(launcher);
             Assert.IsTrue(_debuggerFactory.Debugger.IsInitFileSourced);
         }
 
@@ -375,7 +369,7 @@ namespace YetiVSI.Test.DebugEngine
             var launcherFactory = CreateLauncherFactory(stadiaPlatformAvailable);
             var launcher = launcherFactory.Create(_debugEngine, LaunchOption.AttachToCore,
                                                   "some/core/path", "", "", _gameLaunch);
-            var attachedProgram = await LaunchAsync(launcher);
+            await LaunchAsync(launcher);
             Assert.IsFalse(_debuggerFactory.Debugger.IsInitFileSourced);
         }
 

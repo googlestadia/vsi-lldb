@@ -52,7 +52,7 @@ namespace YetiVSI
         readonly Versions.SdkVersion _sdkVersion;
         readonly ChromeClientLaunchCommandFormatter _launchCommandFormatter;
         readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
-        readonly IGameLaunchManager _gameLaunchManager;
+        readonly IGameLauncher _gameLauncher;
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
@@ -60,15 +60,14 @@ namespace YetiVSI
                                    IApplicationClientFactory applicationClientFactory,
                                    CancelableTask.Factory cancelableTaskFactory,
                                    IDialogUtil dialogUtil, IRemoteDeploy remoteDeploy,
-                                   DebugSessionMetrics metrics, ServiceManager serviceManager,
+                                   DebugSessionMetrics metrics,
                                    ICredentialManager credentialManager,
                                    ITestAccountClientFactory testAccountClientFactory,
                                    IGameletSelectorFactory gameletSelectorFactory,
                                    ICloudRunner cloudRunner, Versions.SdkVersion sdkVersion,
                                    ChromeClientLaunchCommandFormatter launchCommandFormatter,
                                    DebugEngine.DebugEngine.Params.Factory paramsFactory,
-                                   IGameLaunchManager gameLaunchManager,
-                                   IYetiVSIService yetiVsiService)
+                                   IYetiVSIService yetiVsiService, IGameLauncher gameLauncher)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -86,7 +85,7 @@ namespace YetiVSI
             _sdkVersion = sdkVersion;
             _launchCommandFormatter = launchCommandFormatter;
             _paramsFactory = paramsFactory;
-            _gameLaunchManager = gameLaunchManager;
+            _gameLauncher = gameLauncher;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -186,9 +185,9 @@ namespace YetiVSI
 
                 if (launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
                 {
-                    if (_gameLaunchManager.LaunchGameApiEnabled)
+                    if (_gameLauncher.LaunchGameApiEnabled)
                     {
-                        IVsiGameLaunch launch = _gameLaunchManager.CreateLaunch(launchParams);
+                        IVsiGameLaunch launch = _gameLauncher.CreateLaunch(launchParams);
                         if (launch != null)
                         {
                             debugLaunchSettings.Arguments =

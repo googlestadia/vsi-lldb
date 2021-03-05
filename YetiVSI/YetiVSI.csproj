@@ -241,7 +241,8 @@
     <Compile Include="ErrorStrings.cs" />
     <Compile Include="GameLaunch\CreateLaunchResult.cs" />
     <Compile Include="GameLaunch\DeleteLaunchResult.cs" />
-    <Compile Include="GameLaunch\GameLaunchManager.cs" />
+    <Compile Include="GameLaunch\GameLauncher.cs" />
+    <Compile Include="GameLaunch\GameLaunchBeHelper.cs" />
     <Compile Include="GameLaunch\GameletSelector.cs" />
     <Compile Include="GameLaunch\LaunchUtils.cs" />
     <Compile Include="GameLaunch\VsiGameLaunch.cs" />

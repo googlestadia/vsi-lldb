@@ -135,7 +135,8 @@
     <Compile Include="DebugEngine\LldbExceptionManagerTests.cs" />
     <Compile Include="DebugEngine\LldbTransportSessionTests.cs" />
     <Compile Include="DebugEngine\DebugWatchpointTests.cs" />
-    <Compile Include="GameLaunch\GameLaunchManagerTests.cs" />
+    <Compile Include="GameLaunch\GameLauncherTests.cs" />
+    <Compile Include="GameLaunch\GameLaunchBeHelperTests.cs" />
     <Compile Include="GameLaunch\GameletSelectorTests.cs" />
     <Compile Include="MediumTestsSupport\GgpClientStubs.cs" />
     <Compile Include="MediumTestsSupport\GameletClientStub.cs" />

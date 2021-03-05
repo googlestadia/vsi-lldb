@@ -84,23 +84,29 @@ namespace YetiVSI
                 new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
             var debugSessionMetrics = new DebugSessionMetrics(metrics);
             var actionRecorder = new ActionRecorder(debugSessionMetrics);
-            var gameLauncher = new GameLaunchManager(
-                gameletClientFactory.Create(cloudRunner), launchParamsConverter,
-                _cancelableTaskFactory, yetiVsiService, actionRecorder, _dialogUtil);
+            var gameLaunchManager = new GameLaunchBeHelper(gameletClientFactory.Create(cloudRunner),
+                                                          launchParamsConverter);
+            var vsiLaunchFactory = new VsiGameLaunchFactory(
+                gameletClientFactory.Create(cloudRunner), GetCancelableTaskFactory(),
+                gameLaunchManager, actionRecorder, _dialogUtil);
+            var gameLauncher = new GameLauncher(gameletClientFactory.Create(cloudRunner),
+                                                yetiVsiService, launchParamsConverter,
+                                                GetCancelableTaskFactory(), actionRecorder,
+                                                _dialogUtil, vsiLaunchFactory);
             var gameletSelectorFactory = new GameletSelectorFactory(
                 _dialogUtil, cloudRunner, GetGameletSelectorWindowFactory(),
                 GetCancelableTaskFactory(), gameletClientFactory, sshManager, remoteCommand,
-                gameLauncher, taskContext);
+                gameLaunchManager, taskContext);
             var serializer = new JsonUtil();
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(serializer);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,
-                                           _serviceManager, credentialManager,
-                                           testAccountClientFactory, gameletSelectorFactory,
-                                           cloudRunner, sdkVersion, launchCommandFormatter,
-                                           paramsFactory, gameLauncher, yetiVsiService);
+                                           credentialManager, testAccountClientFactory,
+                                           gameletSelectorFactory, cloudRunner, sdkVersion,
+                                           launchCommandFormatter, paramsFactory, yetiVsiService,
+                                           gameLauncher);
         }
 
         public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();

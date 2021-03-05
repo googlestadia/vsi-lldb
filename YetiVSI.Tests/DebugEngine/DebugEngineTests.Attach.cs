@@ -171,7 +171,7 @@ namespace YetiVSI.Test.DebugEngine
             IDebugSessionLauncherFactory debugSessionLauncherFactory, IRemoteDeploy remoteDeploy)
         {
             var compRoot = new DebugEngineFactoryCompRootStub(
-                debugSessionLauncherFactory, remoteDeploy, Substitute.For<IGameLaunchManager>());
+                debugSessionLauncherFactory, remoteDeploy, Substitute.For<IGameLauncher>());
             _metrics = Substitute.For<IMetrics>();
             _metrics.NewDebugSessionId().Returns(_debugSessionId);
             ISessionNotifier sessionNotifier = Substitute.For<ISessionNotifier>();

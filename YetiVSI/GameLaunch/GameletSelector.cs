@@ -46,7 +46,7 @@ namespace YetiVSI.GameLaunch
         readonly IRemoteCommand _remoteCommand;
         readonly ICloudRunner _runner;
         readonly GameletMountChecker _mountChecker;
-        readonly IGameLaunchManager _gameLaunchManager;
+        readonly IGameLaunchBeHelper _gameLaunchBeHelper;
         readonly JoinableTaskContext _taskContext;
         readonly ActionRecorder _actionRecorder;
 
@@ -54,7 +54,7 @@ namespace YetiVSI.GameLaunch
                                GameletSelectionWindow.Factory gameletSelectionWindowFactory,
                                CancelableTask.Factory cancelableTaskFactory,
                                IGameletClientFactory gameletClientFactory, ISshManager sshManager,
-                               IRemoteCommand remoteCommand, IGameLaunchManager gameLaunchManager,
+                               IRemoteCommand remoteCommand, IGameLaunchBeHelper gameLaunchBeHelper,
                                JoinableTaskContext taskContext, ActionRecorder actionRecorder)
         {
             _dialogUtil = dialogUtil;
@@ -66,7 +66,7 @@ namespace YetiVSI.GameLaunch
             _remoteCommand = remoteCommand;
             _mountChecker =
                 new GameletMountChecker(remoteCommand, dialogUtil, cancelableTaskFactory);
-            _gameLaunchManager = gameLaunchManager;
+            _gameLaunchBeHelper = gameLaunchBeHelper;
             _taskContext = taskContext;
             _actionRecorder = actionRecorder;
         }
@@ -200,7 +200,7 @@ namespace YetiVSI.GameLaunch
             ICancelableTask<GgpGrpc.Models.GameLaunch> currentGameLaunchTask =
                 _cancelableTaskFactory.Create(TaskMessages.LookingForTheCurrentLaunch,
                                               async task =>
-                                                  await _gameLaunchManager
+                                                  await _gameLaunchBeHelper
                                                       .GetCurrentGameLaunchAsync(
                                                           testAccount?.Name, getExistingAction));
             if (!currentGameLaunchTask.RunAndRecord(getExistingAction))
@@ -225,7 +225,7 @@ namespace YetiVSI.GameLaunch
             ICancelableTask<DeleteLaunchResult> stopTask = _cancelableTaskFactory.Create(
                 TaskMessages.WaitingForGameStop,
                 async task =>
-                    await _gameLaunchManager.DeleteLaunchAsync(
+                    await _gameLaunchBeHelper.DeleteLaunchAsync(
                         currentGameLaunch.Name, task, deleteAction));
             return stopTask.RunAndRecord(deleteAction) && stopTask.Result.IsSuccessful;
         }

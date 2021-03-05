@@ -44,7 +44,7 @@ namespace YetiVSI.Test.GameLaunch
         IGameletSelectionWindow _gameletSelectionWindow;
         IGameletClient _gameletClient;
         ISshManager _sshManager;
-        IGameLaunchManager _gameLaunchManager;
+        IGameLaunchBeHelper _gameLaunchBeHelper;
 
         Gamelet _gamelet1;
         Gamelet _gamelet2;
@@ -89,7 +89,7 @@ namespace YetiVSI.Test.GameLaunch
             var gameletSelectionWindowFactory = Substitute.For<GameletSelectionWindow.Factory>();
             gameletSelectionWindowFactory.Create(Arg.Any<List<Gamelet>>())
                 .Returns(_gameletSelectionWindow);
-            _gameLaunchManager = Substitute.For<IGameLaunchManager>();
+            _gameLaunchBeHelper = Substitute.For<IGameLaunchBeHelper>();
 
             var cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager,
                                               new CloudConnection(), new GgpSDKUtil());
@@ -117,7 +117,7 @@ namespace YetiVSI.Test.GameLaunch
             _gameletSelector = new GameletSelector(_dialogUtil, cloudRunner,
                                                    gameletSelectionWindowFactory,
                                                    cancelableTaskFactory, gameletClientFactory,
-                                                   _sshManager, _remoteCommand, _gameLaunchManager,
+                                                   _sshManager, _remoteCommand, _gameLaunchBeHelper,
                                                    new JoinableTaskContext(), _actionRecorder);
         }
 
@@ -242,7 +242,7 @@ namespace YetiVSI.Test.GameLaunch
             Gamelet stoppedGamelet = gamelet.Clone();
             _gameletClient.GetGameletByNameAsync(gamelet.Name)
                 .Returns(Task.FromResult(stoppedGamelet));
-            _gameLaunchManager.GetCurrentGameLaunchAsync(Arg.Any<string>(), Arg.Any<IAction>())
+            _gameLaunchBeHelper.GetCurrentGameLaunchAsync(Arg.Any<string>(), Arg.Any<IAction>())
                 .Returns(Task.FromResult((GgpGrpc.Models.GameLaunch)null));
         }
     }

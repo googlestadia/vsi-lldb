@@ -68,25 +68,67 @@ namespace YetiVSI.GameLaunch
         Task<DeleteLaunchResult> WaitForGameLaunchEndedAndRecordAsync();
     }
 
+    public interface IVsiGameLaunchFactory
+    {
+        IVsiGameLaunch Create(string launchName);
+
+        IVsiGameLaunch Create(string launchName, int pollingTimeoutMs, int pollDelayMs);
+    }
+
+    public class VsiGameLaunchFactory : IVsiGameLaunchFactory
+    {
+        readonly IGameletClient _gameletClient;
+        readonly CancelableTask.Factory _cancelableTaskFactory;
+        readonly IDialogUtil _dialogUtil;
+        readonly IGameLaunchBeHelper _gameLaunchBeHelper;
+        readonly ActionRecorder _actionRecorder;
+
+        public VsiGameLaunchFactory(IGameletClient gameletClient,
+                                    CancelableTask.Factory cancelableTaskFactory,
+                                    IGameLaunchBeHelper gameLaunchBeHelper,
+                                    ActionRecorder actionRecorder, IDialogUtil dialogUtil)
+        {
+            _gameletClient = gameletClient;
+            _cancelableTaskFactory = cancelableTaskFactory;
+            _gameLaunchBeHelper = gameLaunchBeHelper;
+            _actionRecorder = actionRecorder;
+            _dialogUtil = dialogUtil;
+        }
+
+        public IVsiGameLaunch Create(string launchName) => new VsiGameLaunch(
+            launchName, _gameletClient, _cancelableTaskFactory, _gameLaunchBeHelper,
+            _actionRecorder, _dialogUtil);
+
+        public IVsiGameLaunch Create(string launchName, int pollingTimeoutMs, int pollDelayMs) =>
+            new VsiGameLaunch(launchName, _gameletClient, _cancelableTaskFactory,
+                              _gameLaunchBeHelper, _actionRecorder, _dialogUtil, pollingTimeoutMs,
+                              pollDelayMs);
+    }
+
     public class VsiGameLaunch : IVsiGameLaunch
     {
         readonly IGameletClient _gameletClient;
         readonly CancelableTask.Factory _cancelableTaskFactory;
         readonly IDialogUtil _dialogUtil;
-        readonly IGameLaunchManager _gameLaunchManager;
+        readonly IGameLaunchBeHelper _gameLaunchBeHelper;
         readonly ActionRecorder _actionRecorder;
+        readonly int _pollingTimeoutMs;
+        readonly int _pollDelayMs;
 
         public VsiGameLaunch(string launchName, IGameletClient gameletClient,
                              CancelableTask.Factory cancelableTaskFactory,
-                             IGameLaunchManager gameLaunchManager, ActionRecorder actionRecorder,
-                             IDialogUtil dialogUtil)
+                             IGameLaunchBeHelper gameLaunchBeHelper, ActionRecorder actionRecorder,
+                             IDialogUtil dialogUtil, int pollingTimeoutMs = 120000,
+                             int pollDelayMs = 500)
         {
             LaunchName = launchName;
             _gameletClient = gameletClient;
             _cancelableTaskFactory = cancelableTaskFactory;
-            _gameLaunchManager = gameLaunchManager;
+            _gameLaunchBeHelper = gameLaunchBeHelper;
             _actionRecorder = actionRecorder;
             _dialogUtil = dialogUtil;
+            _pollingTimeoutMs = pollingTimeoutMs;
+            _pollDelayMs = pollDelayMs;
         }
 
         public string LaunchName { get; }
@@ -110,7 +152,7 @@ namespace YetiVSI.GameLaunch
 
             async Task WaitAndRecordTask()
             {
-                result = await _gameLaunchManager.WaitUntilGameLaunchEndedAsync(
+                result = await _gameLaunchBeHelper.WaitUntilGameLaunchEndedAsync(
                     LaunchName, new NothingToCancel(), action);
                 EndReason? eReason = result.DeletedLaunch?.GameLaunchEnded?.EndReason;
                 var endData = new DeveloperLogEvent
@@ -157,7 +199,7 @@ namespace YetiVSI.GameLaunch
         // ReadyToPlay and DelayedLaunch are transitioning states.
         async Task PollForLaunchStatusAsync(ICancelable task, IAction action)
         {
-            int maxPollCount = _gameLaunchManager.PollingTimeoutMs / _gameLaunchManager.PollDelayMs;
+            int maxPollCount = _pollingTimeoutMs / _pollDelayMs;
             int currentPollCount = 0;
             var devEvent = new DeveloperLogEvent
             {
@@ -182,7 +224,7 @@ namespace YetiVSI.GameLaunch
                     throw new GameLaunchFailError(error);
                 }
 
-                await Task.Delay(_gameLaunchManager.PollDelayMs);
+                await Task.Delay(_pollDelayMs);
             }
 
             if (currentPollCount > maxPollCount)
