@@ -27,16 +27,22 @@ namespace YetiCommon
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GGP");
         }
 
+        // Returns a path to the SSH configuration directory of the Yeti SDK.
+        public static string GetSshConfigPath()
+        {
+            return Path.Combine(GetUserConfigPath(), "ssh");
+        }
+
         // Returns a path to the dev tools ssh key file.
         public static string GetSshKeyFilePath()
         {
-            return Path.Combine(GetUserConfigPath(), "ssh", "id_rsa");
+            return Path.Combine(GetSshConfigPath(), "id_rsa");
         }
 
         // Returns a path to the dev tools ssh known_hosts file.
         public static string GetSshKnownHostsFilePath()
         {
-            return Path.Combine(GetUserConfigPath(), "ssh", "known_hosts");
+            return Path.Combine(GetSshConfigPath(), "known_hosts");
         }
 
         // Returns a path to the user's credentials folder.
