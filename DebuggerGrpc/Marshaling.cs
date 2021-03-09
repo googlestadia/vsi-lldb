@@ -25,16 +25,10 @@ namespace DebuggerGrpc
 
         public override void Complete(byte[] payload)
         {
-            if (buffer_ != null)
-            {
-                throw new InvalidOperationException(
-                    "Complete is called after the buffer is already created!");
-            }
-            buffer_ = new ArrayPoolBufferWriter<byte>(payload.Length);
-
-            var destSpan = buffer_.GetSpan(payload.Length);
-            payload.AsSpan().CopyTo(destSpan);
-            buffer_.Advance(payload.Length);
+            throw new NotImplementedException(
+                $"The method '{nameof(Complete)}' should not be called. " +
+                "If you are seeing this error, chances are you need to " +
+                $"rebuild the '{nameof(DebuggerGrpc)}' project to regenerate proto classes.");
         }
 
         public byte[] GetPayload() => buffer_.WrittenSpan.ToArray();

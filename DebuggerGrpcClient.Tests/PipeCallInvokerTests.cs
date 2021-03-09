@@ -13,6 +13,7 @@
 // limitations under the License.
 
 ﻿using System;
+using System.Buffers;
 using NUnit.Framework;
 using System.IO;
 using System.IO.Pipes;
@@ -46,9 +47,13 @@ namespace DebuggerGrpcClient.Tests
 
             clientInPipes = new AnonymousPipeClientStream[NUM_PIPE_PAIRS];
             clientOutPipes = new AnonymousPipeClientStream[NUM_PIPE_PAIRS];
-
-            stringMarshaller = new Marshaller<string>(str => Encoding.ASCII.GetBytes(str),
-                                                      bytes => Encoding.ASCII.GetString(bytes));
+            stringMarshaller = new Marshaller<string>((message, context) =>
+            {
+                byte[] bytes = Encoding.ASCII.GetBytes(message);
+                context.SetPayloadLength(bytes.Length);
+                context.GetBufferWriter().Write(bytes);
+                context.Complete();
+            }, context => Encoding.ASCII.GetString(context.PayloadAsReadOnlySequence().ToArray()));
 
             stringMethod = new Method<string, string>(MethodType.Unary, "ServiceName", "MethodName",
                                                       stringMarshaller, stringMarshaller);
