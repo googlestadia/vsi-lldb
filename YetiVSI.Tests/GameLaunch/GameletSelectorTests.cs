@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
@@ -36,6 +37,7 @@ namespace YetiVSI.Test.GameLaunch
         const string _testDebugSessionId = "sessiondebugid";
         const string _testAccount = "test account";
         const string _devAccount = "dev_account";
+        const string _launchName = "test/launch/name";
 
         GameletSelector _gameletSelector;
 
@@ -220,12 +222,179 @@ namespace YetiVSI.Test.GameLaunch
                                  DeveloperEventStatus.Types.Code.ExternalToolUnavailable);
         }
 
-        // TODO: add the following tests:
-        // GameLaunch present for the same account: yes stop
-        // GameLaunch present for the same account: no stop
-        // GameLaunch present for another account on gamelet: yes stop
-        // GameLaunch present for another account on gamelet: no stop
+        [TestCase(true, TestName="YesStop")]
+        [TestCase(false, TestName = "NoStop")]
+        public void GameLaunchExistsForAccount(bool confirmStop)
+        {
+            var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
+            _gameletSelectionWindow.Run().Returns(_gamelet2);
+            SetupGetGameletApi(_gamelet2, GameletState.Reserved);
+            SetupGetGameletApi(_gamelet1, GameletState.InUse);
+            SetupGetCurrentGameLaunch(null, _gamelet1.Name);
+            SetupStopGameLaunchDialog(confirmStop);
+            SetupDeleteGameLaunch(_gamelet1.Name, GameLaunchState.GameLaunchEnded, true);
+
+            bool result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                gamelets, null, _devAccount, out Gamelet gamelet);
+
+            Assert.That(result, Is.EqualTo(confirmStop));
+            if (confirmStop)
+            {
+                Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
+                AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchDeleteExisting,
+                                     DeveloperEventStatus.Types.Code.Success);
+            }
+            
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchGetExisting,
+                                 DeveloperEventStatus.Types.Code.Success);
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchStopPrompt,
+                                 confirmStop
+                                     ? DeveloperEventStatus.Types.Code.Success
+                                     : DeveloperEventStatus.Types.Code.Cancelled);
+        }
+
+        [TestCase(true, TestName = "YesStop")]
+        [TestCase(false, TestName = "NoStop")]
+        public void GameLaunchExistsOnGamelet(bool confirmStop)
+        {
+            var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
+            _gameletSelectionWindow.Run().Returns(_gamelet1);
+            SetupGetGameletApi(_gamelet2, GameletState.Reserved);
+            SetupGetGameletApi(_gamelet1, GameletState.InUse, GameletState.InUse,
+                               GameletState.Reserved);
+            SetupGetCurrentGameLaunch(_testAccount, _gamelet1.Name);
+            SetupStopGameletDialog(confirmStop);
+
+            bool result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                gamelets, null, _devAccount, out Gamelet gamelet);
+
+            Assert.That(result, Is.EqualTo(confirmStop));
+            if (confirmStop)
+            {
+                Assert.That(gamelet.Id, Is.EqualTo(_gamelet1.Id));
+                AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsStop,
+                                     DeveloperEventStatus.Types.Code.Success);
+            }
+
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchGetExisting,
+                                 DeveloperEventStatus.Types.Code.Success);
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsPrepare,
+                                 confirmStop
+                                     ? DeveloperEventStatus.Types.Code.Success
+                                     : DeveloperEventStatus.Types.Code.Cancelled);
+        }
+
+        [Test]
+        public void GameLaunchExistsForAnotherAccount()
+        {
+            var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
+            _gameletSelectionWindow.Run().Returns(_gamelet2);
+            SetupGetGameletApi(_gamelet2, GameletState.Reserved);
+            SetupGetGameletApi(_gamelet1, GameletState.InUse);
+            SetupGetCurrentGameLaunch(_testAccount, _gamelet1.Name);
+            SetupDeleteGameLaunch(_gamelet1.Name, GameLaunchState.GameLaunchEnded, true);
+
+            bool result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                gamelets, null, _devAccount, out Gamelet gamelet);
+
+            Assert.That(result, Is.EqualTo(true));
+            Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchGetExisting,
+                                 DeveloperEventStatus.Types.Code.Success);
+            _dialogUtil.DidNotReceive().ShowYesNo(Arg.Any<string>(), Arg.Any<string>());
+        }
+
+        [Test]
+        public void GameLaunchExistsOnGameletAndAccount()
+        {
+            var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
+            _gameletSelectionWindow.Run().Returns(_gamelet1);
+            SetupGetGameletApi(_gamelet2, GameletState.InUse, GameletState.InUse,
+                               GameletState.Reserved);
+            SetupGetGameletApi(_gamelet1, GameletState.InUse, GameletState.InUse,
+                               GameletState.Reserved);
+            SetupGetCurrentGameLaunch(null, _gamelet2.Name);
+            SetupDeleteGameLaunch(_gamelet2.Name, GameLaunchState.GameLaunchEnded, true);
+            SetupStopGameletDialog(true);
+            SetupStopGameLaunchDialog(true);
+
+            bool result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                gamelets, null, _devAccount, out Gamelet gamelet);
+
+            Assert.That(result, Is.True);
+            Assert.That(gamelet.Id, Is.EqualTo(_gamelet1.Id));
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsStop,
+                                 DeveloperEventStatus.Types.Code.Success);
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchGetExisting,
+                                 DeveloperEventStatus.Types.Code.Success);
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsPrepare,
+                                 DeveloperEventStatus.Types.Code.Success);
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchDeleteExisting,
+                                 DeveloperEventStatus.Types.Code.Success);
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchStopPrompt,
+                                 DeveloperEventStatus.Types.Code.Success);
+        }
+
+
         // GameLaunch present for the same and another account on gamelet: yes stop
+
+        void SetupStopGameLaunchDialog(bool confirm)
+        {
+            _dialogUtil
+                .ShowYesNo(
+                    Arg.Is<string>(
+                        m => m.Contains("An account can only play one game at a time")),
+                    ErrorStrings.StopRunningGame).Returns(confirm);
+        }
+
+        void SetupStopGameletDialog(bool confirm)
+        {
+            _dialogUtil
+                .ShowYesNo(
+                    Arg.Is<string>(
+                        m => m.Contains(
+                            "Another account is already playing a game on this instance")),
+                    ErrorStrings.StopRunningGame).Returns(confirm);
+        }
+
+        void SetupDeleteGameLaunch(string gameletName, GameLaunchState? deletedLaunchState,
+                                   bool success)
+        {
+            GgpGrpc.Models.GameLaunch gameLaunch = deletedLaunchState.HasValue
+                ? new GgpGrpc.Models.GameLaunch
+                {
+                    GameLaunchState = deletedLaunchState.Value,
+                    GameletName = gameletName,
+                    Name = _launchName
+                }
+                : null;
+            _gameLaunchBeHelper
+                .DeleteLaunchAsync(_launchName, Arg.Any<ICancelable>(), Arg.Any<IAction>()).Returns(
+                    new DeleteLaunchResult(gameLaunch, success));
+        }
+
+        void SetupGetCurrentGameLaunch(string testAccount, string gameletName)
+        {
+            _gameLaunchBeHelper.GetCurrentGameLaunchAsync(testAccount, Arg.Any<IAction>()).Returns(
+                Task.FromResult(new GgpGrpc.Models.GameLaunch
+                {
+                    GameLaunchState = GameLaunchState.RunningGame,
+                    GameletName = gameletName,
+                    Name = _launchName
+                }));
+        }
+
+        void SetupGetGameletApi(Gamelet gamelet, params GameletState[] states)
+        {
+            IEnumerable<Task<Gamelet>> gameletCopies = states.Select(state =>
+            {
+                Gamelet gameletCopy = gamelet.Clone();
+                gameletCopy.State = state;
+                return Task.FromResult(gameletCopy);
+            }).ToList();
+            _gameletClient.GetGameletByNameAsync(gamelet.Name)
+                .Returns(gameletCopies.First(), gameletCopies.Skip(1).ToArray());
+        }
 
         void AssertMetricRecorded(DeveloperEventType.Types.Type type,
                                   DeveloperEventStatus.Types.Code status)
@@ -239,9 +408,7 @@ namespace YetiVSI.Test.GameLaunch
 
         void SetupGameletClientApi(Gamelet gamelet)
         {
-            Gamelet stoppedGamelet = gamelet.Clone();
-            _gameletClient.GetGameletByNameAsync(gamelet.Name)
-                .Returns(Task.FromResult(stoppedGamelet));
+            SetupGetGameletApi(gamelet, GameletState.Reserved);
             _gameLaunchBeHelper.GetCurrentGameLaunchAsync(Arg.Any<string>(), Arg.Any<IAction>())
                 .Returns(Task.FromResult((GgpGrpc.Models.GameLaunch)null));
         }
