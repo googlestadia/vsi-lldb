@@ -230,6 +230,32 @@ namespace DebuggerGrpcServer.Tests
         }
 
         [Test]
+        public void GetInfoLeadingAnonymousNamespace()
+        {
+            var name = "(anonymous namespace)::f";
+            mockDebuggerStackFrame.GetFunctionName().Returns(name);
+
+            var fields = FrameInfoFlags.FIF_FUNCNAME;
+            var info = stackFrame.GetInfo(fields);
+
+            Assert.That(info.ValidFields.HasFlag(FrameInfoFlags.FIF_FUNCNAME), Is.True);
+            Assert.That(info.FuncName, Is.EqualTo("`anonymous namespace'::f"));
+        }
+
+        [Test]
+        public void GetInfoInnerAnonymousNamespace()
+        {
+            var name = "a::(anonymous namespace)::f";
+            mockDebuggerStackFrame.GetFunctionName().Returns(name);
+
+            var fields = FrameInfoFlags.FIF_FUNCNAME;
+            var info = stackFrame.GetInfo(fields);
+
+            Assert.That(info.ValidFields.HasFlag(FrameInfoFlags.FIF_FUNCNAME), Is.True);
+            Assert.That(info.FuncName, Is.EqualTo("a::`anonymous namespace'::f"));
+        }
+
+        [Test]
         public void GetInfoTypes()
         {
             var fields = FrameInfoFlags.FIF_FUNCNAME |

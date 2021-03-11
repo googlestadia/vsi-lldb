@@ -212,11 +212,7 @@ namespace DebuggerGrpcServer
                         info.FuncName = platformFileSpec.GetFilename() + "!";
                     }
                 }
-                // Strip the leading global scope resolution operator. When viewing parallel stacks
-                // visual studio 2017's UI code blows up if the function name starts with ::. Lldb
-                // is inconsistent about how function names are produced so it's difficult to tell
-                // under which circumstances a function name will include :: ((internal))
-                info.FuncName += StripLeadingScopeResolutionOperator(_sbFrame.GetFunctionName());
+                info.FuncName += PreprocessFunctionName(_sbFrame.GetFunctionName());
                 if ((fields & FrameInfoFlags.FIF_FUNCNAME_ARGS) != 0)
                 {
                     info.FuncName += "(";
@@ -297,8 +293,7 @@ namespace DebuggerGrpcServer
             return info;
         }
 
-        private bool GetFunctionAddressRange(out ulong addressMin, out ulong addressMax,
-            SbTarget target)
+        bool GetFunctionAddressRange(out ulong addressMin, out ulong addressMax, SbTarget target)
         {
             addressMin = 0;
             addressMax = 0;
@@ -319,8 +314,7 @@ namespace DebuggerGrpcServer
             return true;
         }
 
-        private bool GetSymbolAddressRange(out ulong addressMin, out ulong addressMax,
-            SbTarget target)
+        bool GetSymbolAddressRange(out ulong addressMin, out ulong addressMax, SbTarget target)
         {
             addressMin = 0;
             addressMax = 0;
@@ -341,7 +335,8 @@ namespace DebuggerGrpcServer
             return true;
         }
 
-        private bool GetPCAsAddressRange(out ulong addressMin, out ulong addressMax) {
+        bool GetPCAsAddressRange(out ulong addressMin, out ulong addressMax)
+        {
             addressMin = 0;
             addressMax = 0;
             ulong programCounter = _sbFrame.GetPC();
@@ -354,14 +349,24 @@ namespace DebuggerGrpcServer
             return false;
         }
 
-        private string StripLeadingScopeResolutionOperator(string functionName)
+        string PreprocessFunctionName(string functionName)
         {
-            var processed = functionName;
-            while (processed.StartsWith("::"))
+            // Strip the leading global scope resolution operator. When viewing parallel stacks
+            // visual studio 2017's UI code blows up if the function name starts with ::. Lldb
+            // is inconsistent about how function names are produced so it's difficult to tell
+            // under which circumstances a function name will include :: ((internal))
+            while (functionName.StartsWith("::"))
             {
-                processed = processed.Substring(2);
+                functionName = functionName.Substring(2);
             }
-            return processed;
+
+            // Replace (anonymous namespace) with `anonymous namespace' so that Visual Studio
+            // function name parser does not confuse anonymous namespaces with parameters
+            // (see (internal)).
+            functionName =
+                functionName.Replace("(anonymous namespace)::", "`anonymous namespace'::");
+
+            return functionName;
         }
     }
 }
