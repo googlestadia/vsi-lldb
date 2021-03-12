@@ -286,6 +286,8 @@ namespace YetiCommon
 
         public string SdkVersion { get; set; }
 
+        public string GameletSdkVersion { get; set; }
+
         public bool RenderDoc { get; set; }
 
         public bool Rgp { get; set; }

@@ -151,6 +151,7 @@ namespace YetiVSI
 
                 launchParams.GameletName = gamelet.Name;
                 launchParams.PoolId = gamelet.PoolId;
+                launchParams.GameletSdkVersion = gamelet.GameletVersions.DevToolingVersion;
                 launchParams.GameletEnvironmentVars =
                     await project.GetGameletEnvironmentVariablesAsync();
 

@@ -21,20 +21,42 @@ namespace YetiVSI
     // Creates dialogs.
     public interface IDialogUtil
     {
-        // Displays the provided message as an 'Info' dialog.
+        /// <summary>
+        /// Displays the provided message as an 'Info' dialog.
+        /// </summary>
         void ShowMessage(string message);
 
-        // Displays a Yes/No prompt.  Returns true if Yes is selected.
+        /// <summary>
+        /// Displays a Yes/No prompt.  Returns true if Yes is selected.
+        /// </summary>
+        /// <returns>true if 'Yes' selected, otherwise false.</returns>
         bool ShowYesNo(string message, string caption);
 
-        // Displays a Yes/No prompt with a warning icon.  Returns true if Yes is selected.
+        /// <summary>
+        /// Displays a Yes/No prompt with a warning icon.  Returns true if Yes is selected.
+        /// </summary>
+        /// <returns>true if 'Yes' selected, otherwise false.</returns>
         bool ShowYesNoWarning(string message, string caption);
 
-        // Displays an error dialog, with an optional details section.
+        /// <summary>
+        /// Displays an error dialog, with an optional details section.
+        /// </summary>
         void ShowError(string message, string details = null);
 
-        // Displays a warning dialog, with an optional details section.
+        /// <summary>
+        ///  Displays a warning dialog, with an optional details section.
+        /// </summary>
         void ShowWarning(string message, string details = null);
+
+        /// <summary>
+        /// Displays a warning dialog with 'I don't want to see this' button
+        /// and with an optional details section.
+        /// </summary>
+        /// <param name="message">Message to show.</param>
+        /// <param name="settingPath">A path to the setting,
+        /// where presence of this message can be edited.</param>
+        /// <returns>false if 'I don't want to see this' selected, otherwise true.</returns>
+        bool ShowOkNoMoreDisplayWarning(string message, string[] settingPath);
     }
 
     public class DialogUtil : IDialogUtil
@@ -67,19 +89,40 @@ namespace YetiVSI
             ShowDetailsDialog(ErrorStrings.DialogTitleWarning, message, details);
         }
 
+        public bool ShowOkNoMoreDisplayWarning(string message, string[] settingPath) =>
+            ShowDetailsNoMoreDisplayDialog(ErrorStrings.DialogTitleWarning, message, settingPath);
+
         static void ShowDetailsDialog(string title, string message, string details)
         {
             if (System.Windows.Application.Current.Dispatcher.CheckAccess())
             {
-                var dialog = new ErrorDialog(title, message, details);
+                var dialog = new DetailsDialog(title, message, details, false);
                 dialog.ShowModal();
             }
             else
             {
                 Debug.Assert(false);
                 Trace.WriteLine("Can not show error dialog on current thread. " +
-                    $"{Environment.NewLine}Error dialog message: {message}" +
-                    $"{Environment.NewLine}Error dialog details: {details}");
+                                $"{Environment.NewLine}Error dialog message: {message}" +
+                                $"{Environment.NewLine}Error dialog details: {details}");
+            }
+        }
+
+        static bool ShowDetailsNoMoreDisplayDialog(string title, string message,
+                                                   string[] settingPath)
+        {
+            if (System.Windows.Application.Current.Dispatcher.CheckAccess())
+            {
+                var dialog = new DetailsDialog(title, message, null, true, settingPath);
+                dialog.ShowModal();
+                return dialog.DialogResult == true;
+            }
+            else
+            {
+                Debug.Assert(false);
+                Trace.WriteLine("Can not show error dialog on current thread. " +
+                                $"{Environment.NewLine}Error dialog message: {message}");
+                return true;
             }
         }
     }

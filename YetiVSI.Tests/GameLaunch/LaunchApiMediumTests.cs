@@ -274,7 +274,7 @@ namespace YetiVSI.Test.GameLaunch
         OptionPageGrid CreateVsiOptions()
         {
             var vsiOptions = OptionPageGrid.CreateForTesting();
-            vsiOptions.LunchGameApiFlow = LunchGameApiFlowFlag.ENABLED;
+            vsiOptions.LaunchGameApiFlow = LaunchGameApiFlowFlag.ENABLED;
             return vsiOptions;
         }
     }

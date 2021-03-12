@@ -12,41 +12,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio.PlatformUI;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using YetiCommon;
 using YetiCommon.Logging;
 
 namespace YetiVSI
 {
-    // TODO: rename to something generic like DetailsDialog.
-    public partial class ErrorDialog : DialogWindow
+    public partial class DetailsDialog
     {
-        public ErrorDialog(string title, string message, string details)
+        public DetailsDialog(string title, string message, string details, bool dontShowAgainButton,
+                             string[] dontShowAgainSettingPath = null)
         {
             InitializeComponent();
             Title = title;
-            this.message.Text = message;
+            Message.Text = message;
             if (!string.IsNullOrEmpty(details))
             {
-                this.details.Text = details;
+                Details.Text = details;
             }
             else
             {
-                detailsExpander.Visibility = Visibility.Collapsed;
+                DetailsExpander.Visibility = Visibility.Collapsed;
+            }
+
+            DontShowAgain.Visibility = dontShowAgainButton ? Visibility.Visible : Visibility.Hidden;
+            if (dontShowAgainSettingPath != null)
+            {
+                DontShowAgain.ToolTip =
+                    ErrorStrings.DontShowAgainSettingHint(dontShowAgainSettingPath);
             }
         }
 
-        private void okClick(object sender, RoutedEventArgs e)
+        void OkClick(object sender, RoutedEventArgs e)
         {
+            DialogResult = true;
             Close();
         }
 
-        private void openLogs(object sender, RoutedEventArgs e)
+        void OpenLogs(object sender, RoutedEventArgs e)
         {
             var path = "<Invalid>";
             try
@@ -62,16 +68,16 @@ namespace YetiVSI
             catch (InvalidOperationException ex)
             {
                 Trace.WriteLine(ex);
-                logsLink.Text = ErrorStrings.FailedToOpenLogsBecauseLoggingNotInitialized;
+                LogsLink.Text = ErrorStrings.FailedToOpenLogsBecauseLoggingNotInitialized;
             }
             catch (Exception ex) when (ex is Win32Exception || ex is FileNotFoundException)
             {
                 Trace.WriteLine(ex);
-                logsLink.Text = ErrorStrings.FailedToOpenLogsBecauseLogFileMayNotExist(path);
+                LogsLink.Text = ErrorStrings.FailedToOpenLogsBecauseLogFileMayNotExist(path);
             }
         }
 
-        private void detailsExpanded(object sender, RoutedEventArgs e)
+        void DetailsExpanded(object sender, RoutedEventArgs e)
         {
             SizeToContent = SizeToContent.Manual;
             ResizeMode = ResizeMode.CanResizeWithGrip;
@@ -80,11 +86,17 @@ namespace YetiVSI
             SetValue(MaxWidthProperty, DependencyProperty.UnsetValue);
         }
 
-        private void detailsCollapsed(object sender, RoutedEventArgs e)
+        void DetailsCollapsed(object sender, RoutedEventArgs e)
         {
             MaxWidth = 525;
             ResizeMode = ResizeMode.NoResize;
             SizeToContent = SizeToContent.WidthAndHeight;
+        }
+
+        void DoNotShowAgainClick(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
+            Close();
         }
     }
 }

@@ -29,7 +29,9 @@ namespace YetiVSITestsCommon
     {
         public class DialogException : Exception
         {
-            public DialogException(string message) : base(message) { }
+            public DialogException(string message) : base(message)
+            {
+            }
         }
 
         public enum MessageType
@@ -80,6 +82,13 @@ namespace YetiVSITestsCommon
             Trace.WriteLine($"{message} \n\n {details}");
         }
 
+        public bool ShowOkNoMoreDisplayWarning(string message, string[] settingPath)
+        {
+            RecordMessage(message, null, MessageType.Warning);
+            Trace.WriteLine(message);
+            return true;
+        }
+
         public void ShowError(string message, string details = null)
         {
             RecordMessage(message, details, MessageType.Error);
@@ -118,7 +127,7 @@ namespace YetiVSITestsCommon
             {
                 Text = message,
                 Details = details,
-                MessageType =type,
+                MessageType = type,
                 StackTrace = new StackTrace(1, true).ToString()
             });
         }

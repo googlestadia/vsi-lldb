@@ -96,23 +96,47 @@ namespace YetiVSI.GameLaunch
                 return null;
             }
 
-            foreach (string warningMessage in launchRes.Status.WarningMessages)
+            if (!string.IsNullOrWhiteSpace(launchRes.WarningMessage))
             {
-                _dialogUtil.ShowWarning(warningMessage);
+                _dialogUtil.ShowWarning(launchRes.WarningMessage);
+            }
+
+            if (!string.IsNullOrWhiteSpace(launchRes.SdkCompatibilityMessage))
+            {
+                bool showAgain = _dialogUtil.ShowOkNoMoreDisplayWarning(
+                    launchRes.SdkCompatibilityMessage, new[]
+                    {
+                        "Tools", "Options", "Stadia SDK", "Game launch",
+                        "SDK incompatibility warning"
+                    });
+                if (!showAgain)
+                {
+                    _vsiService.Options.AddSdkVersionsToHide(launchParams.GameletSdkVersion,
+                                                             launchParams.SdkVersion,
+                                                             launchParams.GameletName);
+                }
             }
 
             return launchRes.GameLaunch;
         }
 
-        async Task<string> CheckSdkCompatibilityAsync(string gameletName, string sdkVersion,
-                                                      IAction action)
+        async Task<string> CheckSdkCompatibilityAsync(string gameletName, string localVersion,
+                                                      string gameletVersion, IAction action)
         {
+            if (localVersion == gameletVersion ||
+                _vsiService.Options.SdkCompatibilityWarningOption == ShowOption.NeverShow ||
+                _vsiService.Options.SdkCompatibilityWarningOption == ShowOption.AskForEachDialog &&
+                _vsiService.Options.SdkVersionsAreHidden(gameletVersion, localVersion, gameletName))
+            {
+                return null;
+            }
+
             GameletSdkCompatibility sdkCompatibility;
             try
             {
                 sdkCompatibility =
                     await _gameletClient.CheckSdkCompatibilityAsync(
-                        gameletName, sdkVersion, action);
+                        gameletName, localVersion, action);
             }
             catch (Exception e)
             {
@@ -126,11 +150,12 @@ namespace YetiVSI.GameLaunch
                 : sdkCompatibility.Message;
         }
 
-        async Task<CreateLaunchResult> CreateLaunchAsync(
-            ChromeLaunchParams launchParams, ICancelable cancelable, IAction action)
+        async Task<CreateLaunchResult> CreateLaunchAsync(ChromeLaunchParams launchParams,
+                                                         ICancelable cancelable, IAction action)
         {
             Task<string> sdkCompatibilityTask = CheckSdkCompatibilityAsync(
-                launchParams.GameletName, launchParams.SdkVersion, action);
+                launchParams.GameletName, launchParams.SdkVersion, launchParams.GameletSdkVersion,
+                action);
 
             LaunchGameRequest launchRequest = null;
             Task<ConfigStatus> parsingTask =
@@ -147,14 +172,8 @@ namespace YetiVSI.GameLaunch
                 throw new ConfigurationException(parsingState.ErrorMessage);
             }
 
-            parsingState.CompressMessages();
             cancelable.ThrowIfCancellationRequested();
-            string sdkCompatibilityErrorMessage = await sdkCompatibilityTask;
-            if (!string.IsNullOrEmpty(sdkCompatibilityErrorMessage))
-            {
-                parsingState =
-                    parsingState.Merge(ConfigStatus.WarningStatus(sdkCompatibilityErrorMessage));
-            }
+            string sdkCompatibilityMessage = await sdkCompatibilityTask;
 
             cancelable.ThrowIfCancellationRequested();
 
@@ -170,7 +189,9 @@ namespace YetiVSI.GameLaunch
             IVsiGameLaunch vsiLaunch = _vsiLaunchFactory.Create(response.GameLaunchName);
             devEvent.GameLaunchData.LaunchId = vsiLaunch.LaunchId;
             action.UpdateEvent(devEvent);
-            return new CreateLaunchResult(vsiLaunch, parsingState);
+            parsingState.CompressMessages();
+            return new CreateLaunchResult(vsiLaunch, parsingState.WarningMessage,
+                                          sdkCompatibilityMessage);
         }
     }
 }

@@ -12,20 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using YetiCommon.Cloud;
-
 namespace YetiVSI.GameLaunch
 {
     public class CreateLaunchResult
     {
-        public CreateLaunchResult(IVsiGameLaunch gameLaunch, ConfigStatus status)
+        public CreateLaunchResult(IVsiGameLaunch gameLaunch, string warningMessage,
+                                  string sdkCompatibilityMessage)
         {
             GameLaunch = gameLaunch;
-            Status = status;
+            WarningMessage = warningMessage;
+            SdkCompatibilityMessage = sdkCompatibilityMessage;
         }
 
         public IVsiGameLaunch GameLaunch { get; }
 
-        public ConfigStatus Status { get; }
+        public string WarningMessage { get; }
+
+        public string SdkCompatibilityMessage { get; }
     }
 }

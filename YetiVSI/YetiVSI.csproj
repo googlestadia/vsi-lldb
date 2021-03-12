@@ -232,8 +232,8 @@
     <Compile Include="DebugEngine\Variables\RemoteValueExtensions.cs" />
     <Compile Include="DebugEngine\Variables\Variables.cs" />
     <Compile Include="DebugEngine\Variables\VarInfoBuilder.cs" />
-    <Compile Include="ErrorDialog.xaml.cs">
-      <DependentUpon>ErrorDialog.xaml</DependentUpon>
+    <Compile Include="DetailsDialog.xaml.cs">
+      <DependentUpon>DetailsDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="ErrorStrings.cs" />
     <Compile Include="GameLaunch\CreateLaunchResult.cs" />
@@ -293,6 +293,7 @@
     <Compile Include="Util\JoinableTaskContextExtensions.cs" />
     <Compile Include="Util\LldbCommandUtil.cs" />
     <Compile Include="Util\MainThreadDispatcher.cs" />
+    <Compile Include="Util\SdkWarningFlagConverter.cs" />
     <Compile Include="Util\WindowsRegistry.cs" />
     <Compile Include="DebugEngine\DebugBreakpointResolution.cs" />
     <Compile Include="DebugEngine\DebugCodeContext.cs" />
@@ -618,7 +619,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="ErrorDialog.xaml">
+    <Page Include="DetailsDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

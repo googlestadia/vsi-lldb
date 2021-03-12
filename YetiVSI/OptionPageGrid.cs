@@ -28,86 +28,170 @@ namespace YetiVSI
 {
     public enum LLDBVisualizerFeatureFlag
     {
-        [Description("Default - Enabled")]
-        [EnumValueAlias(ENABLED)]
+        [Description("Default - Enabled")] [EnumValueAlias(ENABLED)]
         DEFAULT = 0,
-        [Description("Enabled")]
-        ENABLED = 1,
+        [Description("Enabled")] ENABLED = 1,
+
         [Description("Built-in only (Used for Stadia specific visualizations, e.g. SSE registers)")]
         BUILT_IN_ONLY = 2,
-        [Description("Disabled")]
-        DISABLED = 3,
+        [Description("Disabled")] DISABLED = 3,
     }
 
     public enum SymbolServerFeatureFlag
     {
-        [Description("Default - Disabled")]
-        [EnumValueAlias(DISABLED)]
+        [Description("Default - Disabled")] [EnumValueAlias(DISABLED)]
         DEFAULT = 0,
-        [Description("Enabled")]
-        ENABLED = 1,
-        [Description("Disabled")]
-        DISABLED = 2,
+        [Description("Enabled")] ENABLED = 1,
+        [Description("Disabled")] DISABLED = 2,
     }
 
-    public enum LunchGameApiFlowFlag
+    public enum LaunchGameApiFlowFlag
     {
-        [Description("Default - Disabled")]
-        [EnumValueAlias(DISABLED)]
+        [Description("Default - Disabled")] [EnumValueAlias(DISABLED)]
         DEFAULT = 0,
-        [Description("Enabled")]
-        ENABLED = 1,
-        [Description("Disabled")]
-        DISABLED = 2,
+        [Description("Enabled")] ENABLED = 1,
+        [Description("Disabled")] DISABLED = 2,
+    }
+
+    public enum ShowOption
+    {
+        [Description("Default - Ask for each dialog")]
+        AskForEachDialog,
+
+        [Description("Never show")] NeverShow,
+
+        [Description("Always show")] AlwaysShow,
+    }
+
+    public class SdkPairIdentifier
+    {
+        public string GameletVersion { get; set; }
+
+        public string LocalVersion { get; set; }
+
+        public string GameletName { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is SdkPairIdentifier))
+            {
+                return false;
+            }
+
+            var sdkPair = (SdkPairIdentifier) obj;
+            return Equals(sdkPair);
+        }
+
+        public override int GetHashCode() =>
+            HashCode.Combine(GameletVersion, LocalVersion, GameletName);
+
+        protected bool Equals(SdkPairIdentifier other)
+        {
+            if (other == null)
+            {
+                return false;
+            }
+
+            return string.Equals(GameletVersion, other.GameletVersion) &&
+                string.Equals(LocalVersion, other.LocalVersion) &&
+                string.Equals(GameletName, other.GameletName);
+
+        }
+    }
+
+    public class SdkIncompatibilityWarning
+    {
+        ShowOption _showOption = ShowOption.AskForEachDialog;
+
+        public List<SdkPairIdentifier> SdkVersionPairsToHide { get; set; } =
+            new List<SdkPairIdentifier>();
+
+        public ShowOption ShowOption
+        {
+            get => _showOption;
+            set
+            {
+                if (_showOption == value)
+                {
+                    return;
+                }
+
+                _showOption = value;
+                SdkVersionPairsToHide.Clear();
+            }
+        }
+
+        public override string ToString() => new JsonUtil().Serialize(this);
+
+        public static SdkIncompatibilityWarning FromString(string serialized) =>
+            new JsonUtil().Deserialize<SdkIncompatibilityWarning>(serialized);
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is SdkIncompatibilityWarning))
+            {
+                return false;
+            }
+
+            var sdkCompWarn = (SdkIncompatibilityWarning) obj;
+            return Equals(sdkCompWarn);
+        }
+
+        protected bool Equals(SdkIncompatibilityWarning other)
+        {
+            if (other == null)
+            {
+                return false;
+            }
+
+            if (!other.ShowOption.Equals(ShowOption) ||
+                other.SdkVersionPairsToHide.Count != SdkVersionPairsToHide.Count)
+            {
+                return false;
+            }
+
+            return other.SdkVersionPairsToHide.All(v => SdkVersionPairsToHide.Contains(v));
+        }
+
+        public override int GetHashCode() =>
+            HashCode.Combine((int) _showOption, SdkVersionPairsToHide);
     }
 
     public enum NatvisLoggingLevelFeatureFlag
     {
-        [Description("Default - Disabled")]
-        [EnumValueAlias(OFF)]
+        [Description("Default - Disabled")] [EnumValueAlias(OFF)]
         DEFAULT = 0,
-        [Description("Disabled")]
-        OFF = 1,
-        [Description("Error")]
-        ERROR = 2,
-        [Description("Warning")]
-        WARNING = 3,
-        [Description("Verbose")]
-        VERBOSE = 4,
+        [Description("Disabled")] OFF = 1,
+        [Description("Error")] ERROR = 2,
+        [Description("Warning")] WARNING = 3,
+        [Description("Verbose")] VERBOSE = 4,
     }
 
     public enum FastExpressionEvaluationFlag
     {
-        [Description("Default - Disabled")]
-        [EnumValueAlias(DISABLED)]
+        [Description("Default - Disabled")] [EnumValueAlias(DISABLED)]
         DEFAULT = 0,
-        [Description("Enabled")]
-        ENABLED = 1,
-        [Description("Disabled")]
-        DISABLED = 2,
+        [Description("Enabled")] ENABLED = 1,
+        [Description("Disabled")] DISABLED = 2,
     }
 
     public enum AsyncInterfacesFlag
     {
-        [Description("Default - Enabled")]
-        [EnumValueAlias(ENABLED)]
+        [Description("Default - Enabled")] [EnumValueAlias(ENABLED)]
         DEFAULT = 0,
-        [Description("Enabled")]
-        ENABLED = 1,
-        [Description("Disabled")]
-        DISABLED = 2,
+        [Description("Enabled")] ENABLED = 1,
+        [Description("Disabled")] DISABLED = 2,
     }
 
-    public enum ExpressionEvaluationEngineFlag {
-        [Description("Default - LLDB")]
-        [EnumValueAlias(LLDB)]
+    public enum ExpressionEvaluationEngineFlag
+    {
+        [Description("Default - LLDB")] [EnumValueAlias(LLDB)]
         DEFAULT = 0,
-        [Description("LLDB")]
-        LLDB = 1,
+        [Description("LLDB")] LLDB = 1,
+
         [Description("lldb-eval with fallback to LLDB")]
         LLDB_EVAL_WITH_FALLBACK = 2,
-        [Description("lldb-eval")]
-        LLDB_EVAL = 3,
+        [Description("lldb-eval")] LLDB_EVAL = 3,
     }
 
     public struct GenericOption
@@ -132,6 +216,9 @@ namespace YetiVSI
         FastExpressionEvaluation FastExpressionEvaluation { get; }
         ExpressionEvaluationEngine ExpressionEvaluationEngine { get; }
         AsyncInterfaces AsyncInterfaces { get; }
+        ShowOption SdkCompatibilityWarningOption { get; }
+        void AddSdkVersionsToHide(string gameletVersion, string localVersion, string gameletName);
+        bool SdkVersionsAreHidden(string gameletVersion, string localVersion, string gameletName);
 
         IEnumerable<GenericOption> Options { get; }
     }
@@ -188,12 +275,19 @@ namespace YetiVSI
         [DefaultValue(SymbolServerFeatureFlag.DEFAULT)]
         public SymbolServerFeatureFlag SymbolServerSupport { get; set; }
 
-        [Category("LLDB Debugger")]
+        [Category("Game launch")]
         [DisplayName("Enable new launch flow")]
         [Description("If enabled, the game is launched via the new Launch Game API.")]
         [TypeConverter(typeof(FeatureFlagConverter))]
-        [DefaultValue(LunchGameApiFlowFlag.DEFAULT)]
-        public LunchGameApiFlowFlag LunchGameApiFlow { get; set; }
+        [DefaultValue(LaunchGameApiFlowFlag.DEFAULT)]
+        public LaunchGameApiFlowFlag LaunchGameApiFlow { get; set; }
+
+        [Category("Game launch")]
+        [DisplayName("SDK incompatibility warning")]
+        [Description("Sets whether the SDK incompatibility warning" +
+            " is shown during a game launch or not.")]
+        [TypeConverter(typeof(SdkWarningFlagConverter))]
+        public SdkIncompatibilityWarning SdkIncompatibilityWarning { get; set; }
 
         [Category("LLDB Debugger")]
         [DisplayName("Natvis diagnostic messages")]
@@ -243,7 +337,8 @@ namespace YetiVSI
             "faster experimental engine, more info: http://github.com/google/lldb-eval.")]
         [TypeConverter(typeof(FeatureFlagConverter))]
         [DefaultValue(ExpressionEvaluationEngineFlag.DEFAULT)]
-        public ExpressionEvaluationEngineFlag ExpressionEvaluationEngine {
+        public ExpressionEvaluationEngineFlag ExpressionEvaluationEngine
+        {
             get => _expressionEvaluationEngine;
             set
             {
@@ -258,7 +353,7 @@ namespace YetiVSI
         [Category("LLDB Debugger")]
         [DisplayName("Asynchronous expressions evaluation")]
         [Description("Evaluate some expressions in the background while stepping. This may lead " +
-                     "to a more responsive debugging experience.")]
+            "to a more responsive debugging experience.")]
         [TypeConverter(typeof(FeatureFlagConverter))]
         [DefaultValue(AsyncInterfacesFlag.DEFAULT)]
         public AsyncInterfacesFlag AsyncInterfaces
@@ -314,7 +409,7 @@ namespace YetiVSI
                 .ConvertTo<SymbolServerSupport>();
 
         LaunchGameApiFlow IExtensionOptions.LaunchGameApiFlow =>
-            EnumValueAliasAttribute.GetAliasOrValue(LunchGameApiFlow)
+            EnumValueAliasAttribute.GetAliasOrValue(LaunchGameApiFlow)
                 .ConvertTo<LaunchGameApiFlow>();
 
         NatvisLoggingLevel IExtensionOptions.NatvisLoggingLevel =>
@@ -330,8 +425,40 @@ namespace YetiVSI
                 .ConvertTo<ExpressionEvaluationEngine>();
 
         AsyncInterfaces IExtensionOptions.AsyncInterfaces =>
-            EnumValueAliasAttribute.GetAliasOrValue(AsyncInterfaces)
-                .ConvertTo<AsyncInterfaces>();
+            EnumValueAliasAttribute.GetAliasOrValue(AsyncInterfaces).ConvertTo<AsyncInterfaces>();
+
+        ShowOption IExtensionOptions.SdkCompatibilityWarningOption =>
+            SdkIncompatibilityWarning.ShowOption;
+
+        void IExtensionOptions.AddSdkVersionsToHide(string gameletVersion, string localVersion,
+                                                    string gameletName)
+        {
+            var sdkPair = new SdkPairIdentifier
+            {
+                GameletVersion = gameletVersion, LocalVersion = localVersion,
+                GameletName = gameletName
+            };
+            if (SdkIncompatibilityWarning.SdkVersionPairsToHide.Contains(sdkPair))
+            {
+                return;
+            }
+
+            SdkIncompatibilityWarning.ShowOption = ShowOption.AskForEachDialog;
+            SdkIncompatibilityWarning.SdkVersionPairsToHide.Add(sdkPair);
+            SaveSettingsToStorage();
+        }
+
+        bool IExtensionOptions.SdkVersionsAreHidden(string gameletVersion, string localVersion,
+                                                    string gameletName)
+        {
+            var sdkPair = new SdkPairIdentifier
+            {
+                GameletVersion = gameletVersion,
+                LocalVersion = localVersion,
+                GameletName = gameletName
+            };
+            return SdkIncompatibilityWarning.SdkVersionPairsToHide.Contains(sdkPair);
+        }
 
         IEnumerable<GenericOption> IExtensionOptions.Options
         {
@@ -351,6 +478,7 @@ namespace YetiVSI
                         // Map enum value aliases.
                         realValue = EnumValueAliasAttribute.GetAliasOrValue(p.PropertyType, value);
                     }
+
                     return new GenericOption
                     {
                         Category = GetPropertyCategory(p),
@@ -379,9 +507,14 @@ namespace YetiVSI
 
         static object GetPropertyDefaultValue(PropertyInfo p)
         {
+            if (p.Name == nameof(SdkIncompatibilityWarning))
+            {
+                return new SdkIncompatibilityWarning();
+            }
+
             var defaultValueAttribute =
-                Attribute.GetCustomAttribute(p, typeof(DefaultValueAttribute))
-                    as DefaultValueAttribute;
+                Attribute.GetCustomAttribute(p, typeof(DefaultValueAttribute)) as
+                    DefaultValueAttribute;
             return defaultValueAttribute?.Value;
         }
     }

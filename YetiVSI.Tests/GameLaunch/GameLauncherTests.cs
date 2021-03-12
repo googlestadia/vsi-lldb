@@ -36,11 +36,15 @@ namespace YetiVSI.Test.GameLaunch
         const string _gameLaunchId = "launch-id";
         const string _notCompatibleMessage = "Not compatible";
         const string _errorSdkCheckMessage = "Error on SDK check";
+        const string _sdkVersion = "test.123.654";
+        const string _gameletSdkVersion = "gamelet.test.765";
+        const string _gameletName = "some/gamelet/name";
 
         readonly ChromeLaunchParams _launchParams = new ChromeLaunchParams
         {
-            GameletName = "some/gamelet/name",
-            SdkVersion = "test.123.654"
+            GameletName = _gameletName,
+            SdkVersion = _sdkVersion,
+            GameletSdkVersion = _gameletSdkVersion
         };
 
         GameLauncher _target;
@@ -103,31 +107,76 @@ namespace YetiVSI.Test.GameLaunch
             var launchGameResponse = new LaunchGameResponse
                 { GameLaunchName = _gameLaunchName, RequestId = launchRequest.RequestId };
             SetupGameLaunchApi(launchRequest, launchGameResponse);
+            SetupSdkWarningSetting();
 
             IVsiGameLaunch result = _target.CreateLaunch(_launchParams);
 
             Assert.That(result, Is.Not.Null);
             _dialogUtil.DidNotReceiveWithAnyArgs().ShowError(Arg.Any<string>(), Arg.Any<string>());
 
-            int warningsNumber = 0;
             if (string.IsNullOrEmpty(sdkWarning))
             {
-                _dialogUtil.DidNotReceive().ShowWarning(sdkWarning);
+                _dialogUtil.DidNotReceive()
+                    .ShowOkNoMoreDisplayWarning(sdkWarning, Arg.Any<string[]>());
             }
             else
             {
-                warningsNumber++;
-                _dialogUtil.Received(1).ShowWarning(sdkWarning);
+                _dialogUtil.Received(1).ShowOkNoMoreDisplayWarning(sdkWarning, Arg.Any<string[]>());
             }
 
             if (parserWarnings.Any())
             {
-                warningsNumber++;
                 _dialogUtil.Received(1)
                     .ShowWarning(Arg.Is<string>(m => parserWarnings.All(m.Contains)));
             }
 
-            _dialogUtil.ReceivedWithAnyArgs(warningsNumber).ShowWarning(Arg.Any<string>());
+            Assert.That(_devEvent.GameLaunchData.RequestId, Is.EqualTo(launchRequest.RequestId));
+            Assert.That(_devEvent.GameLaunchData.LaunchId, Is.EqualTo(_gameLaunchId));
+            Assert.That(_devEvent.GameLaunchData.EndReason, Is.Null);
+            _action.Received(1).Record(Arg.Any<Func<bool>>());
+        }
+
+        [TestCase(ShowOption.AlwaysShow, new string[0], true, TestName = "AlwaysShow")]
+        [TestCase(ShowOption.NeverShow, new string[0], false, TestName = "NeverShow")]
+        [TestCase(ShowOption.AskForEachDialog,
+                  new[] { "other.version/" + _sdkVersion, _gameletSdkVersion + "/other.version" },
+                  true, TestName = "AskForEachDialogVersionNotPresent")]
+        [TestCase(ShowOption.AskForEachDialog, new[] { _gameletSdkVersion + "/" + _sdkVersion },
+                  false, TestName = "AskForEachDialogVersionPresent")]
+        public void CreateLaunchSdkWarningSetting(ShowOption sdkShowOption, string[] versionsToHide,
+                                                  bool showSdkWarning)
+        {
+            SetupSdkCompatibility(GameletSdkCompatibilityResult.NotCompatibleOutsideOfRange);
+            var launchRequest = new LaunchGameRequest();
+            SetupParamsParser(launchRequest, ConfigStatus.OkStatus());
+            var launchGameResponse = new LaunchGameResponse
+                { GameLaunchName = _gameLaunchName, RequestId = launchRequest.RequestId };
+            SetupGameLaunchApi(launchRequest, launchGameResponse);
+            _yetiVsiService.Options.SdkCompatibilityWarningOption.Returns(sdkShowOption);
+            _yetiVsiService.Options
+                .SdkVersionsAreHidden(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+                .Returns(false);
+            foreach (string versions in versionsToHide)
+            {
+                string gameletVersion = versions.Split('/')[0];
+                string localVersion = versions.Split('/')[1];
+                _yetiVsiService.Options
+                    .SdkVersionsAreHidden(gameletVersion, localVersion, _gameletName).Returns(true);
+            }
+
+            IVsiGameLaunch result = _target.CreateLaunch(_launchParams);
+
+            Assert.That(result, Is.Not.Null);
+            _dialogUtil.DidNotReceiveWithAnyArgs().ShowError(default);
+
+            if (!showSdkWarning)
+            {
+                _dialogUtil.DidNotReceiveWithAnyArgs().ShowOkNoMoreDisplayWarning(default, default);
+            }
+            else
+            {
+                _dialogUtil.ReceivedWithAnyArgs(1).ShowOkNoMoreDisplayWarning(default, default);
+            }
 
             Assert.That(_devEvent.GameLaunchData.RequestId, Is.EqualTo(launchRequest.RequestId));
             Assert.That(_devEvent.GameLaunchData.LaunchId, Is.EqualTo(_gameLaunchId));
@@ -140,7 +189,7 @@ namespace YetiVSI.Test.GameLaunch
         {
             SetupSdkCompatibility(GameletSdkCompatibilityResult.Compatible);
             var launchRequest = new LaunchGameRequest();
-            var errors = new [] { "error 1", "second error" };
+            var errors = new[] { "error 1", "second error" };
             SetupParamsParser(launchRequest, GetStatus(errors, true));
             var launchGameResponse = new LaunchGameResponse
                 { GameLaunchName = _gameLaunchName, RequestId = launchRequest.RequestId };
@@ -163,6 +212,7 @@ namespace YetiVSI.Test.GameLaunch
             SetupParamsParser(launchRequest, ConfigStatus.OkStatus());
             _gameletClient.LaunchGameAsync(launchRequest, _action)
                 .Throws(new CloudException("fail"));
+            SetupSdkWarningSetting();
 
             IVsiGameLaunch result = _target.CreateLaunch(_launchParams);
 
@@ -170,6 +220,8 @@ namespace YetiVSI.Test.GameLaunch
             _dialogUtil.Received(1)
                 .ShowError(Arg.Is<string>(m => m.Contains(ErrorStrings.LaunchEndedCommonMessage)));
             _dialogUtil.DidNotReceive().ShowWarning(Arg.Any<string>());
+            _dialogUtil.DidNotReceive()
+                .ShowOkNoMoreDisplayWarning(Arg.Any<string>(), Arg.Any<string[]>());
             Assert.That(_devEvent.GameLaunchData.RequestId, Is.EqualTo(launchRequest.RequestId));
             Assert.That(_devEvent.GameLaunchData.LaunchId, Is.Null);
             Assert.That(_devEvent.GameLaunchData.EndReason, Is.Null);
@@ -214,6 +266,14 @@ namespace YetiVSI.Test.GameLaunch
             return status;
         }
 
+        void SetupSdkWarningSetting()
+        {
+            _yetiVsiService.Options.SdkCompatibilityWarningOption.Returns(
+                ShowOption.AskForEachDialog);
+            _yetiVsiService.Options
+                .SdkVersionsAreHidden(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+                .Returns(false);
+        }
 
         void SetupSdkCompatibility(GameletSdkCompatibilityResult? result)
         {
@@ -225,7 +285,7 @@ namespace YetiVSI.Test.GameLaunch
                     {
                         CompatibilityResult = result.Value,
                         Message = _notCompatibleMessage
-                                                });
+                    });
             }
             else
             {
