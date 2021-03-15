@@ -46,6 +46,8 @@ namespace YetiVSI.GameLaunch
                     return ErrorStrings.LaunchEndedQueueAbandonedByUser;
                 case EndReason.QueueReadyTimeout:
                     return ErrorStrings.LaunchEndedQueueReadyTimeout;
+                case EndReason.InstanceUnavailable:
+                    return ErrorStrings.LaunchEndedInstanceUnavailable;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(gameLaunchEnded.EndReason),
                                                           gameLaunchEnded.EndReason,

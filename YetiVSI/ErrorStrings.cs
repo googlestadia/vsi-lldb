@@ -127,6 +127,8 @@ namespace YetiVSI
         public const string LaunchEndedQueueReadyTimeout =
             "The game launch expired because the player didn't start the game when the queue " +
             "was ready, and it timed out.";
+        public const string LaunchEndedInstanceUnavailable =
+            "The game launch expired because the instance was unavailable.";
         public const string ErrorWhileSdkCheck =
             "Could not check the SDK compatibility. See logs for further details.";
         public const string SeeLogs = "See logs for further details.";
