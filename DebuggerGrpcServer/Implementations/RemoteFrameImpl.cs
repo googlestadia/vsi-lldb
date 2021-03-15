@@ -366,29 +366,6 @@ namespace DebuggerGrpcServer
             functionName =
                 functionName.Replace("(anonymous namespace)::", "`anonymous namespace'::");
 
-            // Try to remove the parameter list if present.
-            if (functionName.EndsWith(")"))
-            {
-                int nestingLevel = 0;
-                for (int i = functionName.Length - 1; i >= 0; --i)
-                {
-                    if (functionName[i] == ')')
-                    {
-                        ++nestingLevel;
-                    }
-                    else if (functionName[i] == '(')
-                    {
-                        --nestingLevel;
-                        if (nestingLevel == 0)
-                        {
-                            // We found the start of the parameter list. Let us remove the list.
-                            functionName = functionName.Substring(0, i);
-                            break;
-                        }
-                    }
-                }
-            }
-
             return functionName;
         }
     }
