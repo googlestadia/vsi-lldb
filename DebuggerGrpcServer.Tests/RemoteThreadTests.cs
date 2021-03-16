@@ -68,7 +68,7 @@ namespace DebuggerGrpcServer.Tests
             mockThread.GetFrameAtIndex(1).Returns(mockFrame1);
 
             var mockFrame2 = Substitute.For<SbFrame>();
-            mockFrame2.GetFunctionName().Returns("function2");
+            mockFrame2.GetFunctionName().Returns("function2(int (*)(int), int)");
             mockThread.GetFrameAtIndex(2).Returns(mockFrame2);
 
             mockThread.GetFrameAtIndex(3).Returns((SbFrame)null);

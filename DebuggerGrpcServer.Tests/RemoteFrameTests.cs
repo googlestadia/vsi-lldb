@@ -256,6 +256,32 @@ namespace DebuggerGrpcServer.Tests
         }
 
         [Test]
+        public void GetInfoFunctionNameStripNameParams()
+        {
+            var name = "T<void(*)(int)>::m(a, void (*func)(), b)";
+            mockDebuggerStackFrame.GetFunctionName().Returns(name);
+
+            var fields = FrameInfoFlags.FIF_FUNCNAME;
+            var info = stackFrame.GetInfo(fields);
+
+            Assert.That(info.ValidFields.HasFlag(FrameInfoFlags.FIF_FUNCNAME), Is.True);
+            Assert.That(info.FuncName, Is.EqualTo("T<void(*)(int)>::m"));
+        }
+
+        [Test]
+        public void GetInfoFunctionNameStripNameEmptyParams()
+        {
+            var name = "f()";
+            mockDebuggerStackFrame.GetFunctionName().Returns(name);
+
+            var fields = FrameInfoFlags.FIF_FUNCNAME;
+            var info = stackFrame.GetInfo(fields);
+
+            Assert.That(info.ValidFields.HasFlag(FrameInfoFlags.FIF_FUNCNAME), Is.True);
+            Assert.That(info.FuncName, Is.EqualTo("f"));
+        }
+
+        [Test]
         public void GetInfoTypes()
         {
             var fields = FrameInfoFlags.FIF_FUNCNAME |
@@ -357,6 +383,23 @@ namespace DebuggerGrpcServer.Tests
                 info.ValidFields & FrameInfoFlags.FIF_FUNCNAME);
             Assert.AreEqual(string.Format("{0}({1}, {2})", NAME, ARG1_VALUE, ARG2_VALUE),
                 info.FuncName);
+        }
+
+        [Test]
+        public void GetInfoNamesAndValuesStripFunctionNameParams()
+        {
+            var name = $"{NAME}({ARG1_TYPE_NAME}, {ARG2_TYPE_NAME})";
+            mockDebuggerStackFrame.GetFunctionName().Returns(name);
+
+            var fields = FrameInfoFlags.FIF_FUNCNAME | FrameInfoFlags.FIF_FUNCNAME_ARGS |
+                         FrameInfoFlags.FIF_FUNCNAME_ARGS_NAMES |
+                         FrameInfoFlags.FIF_FUNCNAME_ARGS_VALUES;
+            var info = stackFrame.GetInfo(fields);
+            Assert.AreEqual(FrameInfoFlags.FIF_FUNCNAME,
+                            info.ValidFields & FrameInfoFlags.FIF_FUNCNAME);
+            Assert.AreEqual(string.Format("{0}({1} = {2}, {3} = {4})", NAME, ARG1_NAME, ARG1_VALUE,
+                                          ARG2_NAME, ARG2_VALUE),
+                            info.FuncName);
         }
 
         RemoteFrame CreateMethodStackFrame()
