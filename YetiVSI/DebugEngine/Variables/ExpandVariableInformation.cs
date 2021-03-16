@@ -29,9 +29,13 @@ namespace YetiVSI.DebugEngine.Variables
                 _taskExecutor = taskExecutor;
             }
 
-            public IVariableInformation Create(IVariableInformation varInfo, int index) =>
-                new ExpandVariableInformation(
-                    _taskExecutor.Run(async () => await GetChildAsync(varInfo, index)));
+            public IVariableInformation Create(IVariableInformation varInfo, int index)
+            {
+                string displayName = varInfo.DisplayName;
+                return new ExpandVariableInformation(
+                    _taskExecutor.Run(async () => await GetChildAsync(varInfo, index)),
+                    displayName);
+            }
 
             static async Task<IVariableInformation> GetChildAsync(
                 IVariableInformation varInfo, int index)
@@ -43,11 +47,20 @@ namespace YetiVSI.DebugEngine.Variables
             }
         }
 
-        ExpandVariableInformation(IVariableInformation varInfo) : base(varInfo)
+        string _displayName;
+
+        ExpandVariableInformation(IVariableInformation varInfo, string displayName) : base(varInfo)
         {
+            _displayName = displayName;
         }
 
         public override IVariableInformation GetCachedView() =>
-            new ExpandVariableInformation(VarInfo.GetCachedView());
+            new ExpandVariableInformation(VarInfo.GetCachedView(), _displayName);
+
+        // For expand variables, Fullname just returns the display name, i.e., the expression
+        // with the format specifier.
+        public override string Fullname() => _displayName;
+
+        public override string DisplayName => _displayName;
     }
 }
