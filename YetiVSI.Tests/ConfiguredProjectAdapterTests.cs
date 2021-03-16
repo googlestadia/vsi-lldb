@@ -26,6 +26,14 @@ namespace YetiVSI.Test
     [TestFixture]
     class ConfiguredProjectAdapterTests
     {
+        static ConfiguredProjectAdapterTests()
+        {
+            if (!Microsoft.Build.Locator.MSBuildLocator.IsRegistered)
+            {
+                Microsoft.Build.Locator.MSBuildLocator.RegisterDefaults();
+            }
+        }
+
         [Test]
         public async Task GetOutputDirectoryAsync()
         {

@@ -1,6 +1,5 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(SolutionDir)Common.props" />
-  <Import Project="$(SolutionDir)BuildRoot.props" />
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <RootNamespace>Google</RootNamespace>
@@ -44,7 +43,7 @@
   <Choose>
     <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
       <ItemGroup>
-        <PackageReference Include="Microsoft.Build">
+        <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime">
           <Version>15.9.20</Version>
         </PackageReference>
         <PackageReference Include="Microsoft.VisualStudio.ProjectSystem">
@@ -60,7 +59,7 @@
     </When>
     <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
       <ItemGroup>
-        <PackageReference Include="Microsoft.Build">
+        <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime">
           <Version>16.0.461</Version>
         </PackageReference>
         <PackageReference Include="Microsoft.VisualStudio.ProjectSystem">

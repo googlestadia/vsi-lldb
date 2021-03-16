@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using Google.VisualStudioFake.API;
@@ -23,6 +20,9 @@ using Google.VisualStudioFake.Util;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
 using NUnit.Framework;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using TestsCommon.TestSupport;
 using YetiCommon;
 using YetiCommon.VSProject;
@@ -34,6 +34,14 @@ namespace YetiVSI.Test.GameLaunch
 {
     public class LaunchApiMediumTests
     {
+        static LaunchApiMediumTests()
+        {
+            if (!Microsoft.Build.Locator.MSBuildLocator.IsRegistered)
+            {
+                Microsoft.Build.Locator.MSBuildLocator.RegisterDefaults();
+            }
+        }
+
         static readonly string _sampleDir = Path.Combine(YetiConstants.RootDir, @"TestData\");
         const string _sampleName = "StubTestSample";
 

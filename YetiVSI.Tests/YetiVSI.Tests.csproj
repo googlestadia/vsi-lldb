@@ -1,5 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(SolutionDir)BuildRoot.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(SolutionDir)Common.props" />
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
@@ -19,7 +18,7 @@
      -->
     <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU'">
     <DefineConstants>$(DefineConstants);VS_2017</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2017|AnyCPU'">
@@ -63,6 +62,9 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <None Include="GameLaunch\StubTestSample\StubTestSample.vcxproj" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="$(ThirdPartyRootDir)DebuggerCommonApi\DebuggerCommonApi.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpcClient\DebuggerGrpcClient.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)LldbApi\LldbApi.csproj" />
@@ -89,6 +91,9 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Build.Locator">
+      <Version>1.4.1</Version>
+    </PackageReference>
   </ItemGroup>
   <!-- References required by the run_coverage.bat script -->
   <ItemGroup>
@@ -109,9 +114,7 @@
           <HintPath>$(SolutionDir)lib\Microsoft.VisualStudio.ProjectEngine.15.0.27729.1\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem">
-          <Version>15.8.243</Version>
-        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem" Version="15.8.243" />
       </ItemGroup>
     </When>
     <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
@@ -120,9 +123,7 @@
           <HintPath>$(SolutionDir)lib\Microsoft.VisualStudio.ProjectEngine.16.0.29428.189\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem">
-          <Version>16.2.133-pre</Version>
-        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem" Version="16.2.133-pre" />
       </ItemGroup>
     </When>
   </Choose>

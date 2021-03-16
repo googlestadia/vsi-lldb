@@ -59,6 +59,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{FBB34C
 		BuildRoot.props = BuildRoot.props
 		Common.props = Common.props
 		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
 		GGP.ico = GGP.ico
 		GGP.png = GGP.png
 		InternalBuildSwitch.props = InternalBuildSwitch.props

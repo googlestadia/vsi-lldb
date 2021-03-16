@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!--
+    TODO: Remove this once all projects have their own Output directories set up.
+  -->
+  <Target Name="RemoveMicrosoftBuildAssembliesGlobal" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths
+        Remove="@(ReferenceCopyLocalPaths)"
+        Condition="
+          '%(FileName)' == 'Microsoft.Build' or
+          '%(FileName)' == 'Microsoft.Build.Framework' or
+          '%(FileName)' == 'Microsoft.Build.Tasks.Core' or
+          '%(FileName)' == 'Microsoft.Build.Utilities.Core'
+        " />
+    </ItemGroup>
+  </Target>
+</Project>
