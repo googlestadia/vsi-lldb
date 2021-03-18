@@ -20,7 +20,7 @@ namespace YetiVSI.GameLaunch
     public static class LaunchUtils
     {
         // Some of the statuses might not be applicable for the dev flow.
-        public static string GetEndReason(GameLaunchEnded gameLaunchEnded)
+        public static string GetEndReason(GameLaunchEnded gameLaunchEnded, string instanceName)
         {
             switch (gameLaunchEnded.EndReason)
             {
@@ -47,7 +47,7 @@ namespace YetiVSI.GameLaunch
                 case EndReason.QueueReadyTimeout:
                     return ErrorStrings.LaunchEndedQueueReadyTimeout;
                 case EndReason.InstanceUnavailable:
-                    return ErrorStrings.LaunchEndedInstanceUnavailable;
+                    return ErrorStrings.LaunchEndedInstanceUnavailable(instanceName);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(gameLaunchEnded.EndReason),
                                                           gameLaunchEnded.EndReason,

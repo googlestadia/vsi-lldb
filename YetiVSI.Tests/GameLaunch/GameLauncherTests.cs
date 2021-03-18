@@ -218,7 +218,8 @@ namespace YetiVSI.Test.GameLaunch
 
             Assert.That(result, Is.Null);
             _dialogUtil.Received(1)
-                .ShowError(Arg.Is<string>(m => m.Contains(ErrorStrings.LaunchEndedCommonMessage)));
+                .ShowError(Arg.Is<string>(m => m.Contains(ErrorStrings.CouldNotStartTheGame) &&
+                                              m.Contains("fail")));
             _dialogUtil.DidNotReceive().ShowWarning(Arg.Any<string>());
             _dialogUtil.DidNotReceive()
                 .ShowOkNoMoreDisplayWarning(Arg.Any<string>(), Arg.Any<string[]>());

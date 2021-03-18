@@ -499,7 +499,7 @@ namespace YetiVSI.DebugEngine
                     if (state.GameLaunchEnded != null)
                     {
                         devEvent.GameLaunchData.EndReason = (int)state.GameLaunchEnded.EndReason;
-                        error = LaunchUtils.GetEndReason(state.GameLaunchEnded);
+                        error = LaunchUtils.GetEndReason(state.GameLaunchEnded, state.GameletName);
                     }
 
                     action.UpdateEvent(devEvent);

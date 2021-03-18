@@ -23,6 +23,7 @@ namespace YetiVSI
     // Central location for error strings that may be displayed to the user, sorted alphabetically.
     public static class ErrorStrings
     {
+        public const string StadiaSupport = "stadia.dev/partnersupport";
         public const string AutoAttachNotSupported = "Auto attach is not supported.";
 
         public const string BinaryFileNameUnknown =
@@ -114,52 +115,45 @@ namespace YetiVSI
         public const string GameNotRunningDuringAttach =
             "Cannot proceed with the attach. Game is not running.";
 
-        public const string LaunchEndedCommonMessage = "The game launch expired.";
+        public const string CouldNotStartTheGame = "Could not start the game.";
 
-        public const string LaunchEndedTimeout =
-            LaunchEndedCommonMessage + " Timed out waiting for the game to launch.";
+        public const string LaunchEndedTimeout = "Timed out waiting for the game to start. " +
+            "Make sure that you're signed into your developer account in Chrome, and that the " +
+            "game client loaded successfully. Then, try running your game again.";
 
-        public const string LaunchEndedUnspecified =
-            "The game launch expired because of an unknown error.";
-
+        public static string LaunchEndedUnspecified =
+            "The game either failed to start, or stopped running, because of an unknown error. " +
+            $"Try again. If you keep seeing this error, contact us at {StadiaSupport}.";
         public const string LaunchEndedExitedByUser =
-            "The game launch expired because a user ended the session.";
-
+            "The game didn't start because the user cancelled the launch request.";
         public const string LaunchEndedInactivityTimeout =
-            "The game launch expired because the game stopped due to player inactivity.";
-
+            "The game stopped due to player inactivity. Try running your game again.";
         public const string LaunchEndedClientNeverConnected =
-            "The game launch expired because a player endpoint never connected.";
-
+            "The game stopped because no endpoint connected. Try running your game again.";
         public const string LaunchEndedGameExitedWithSuccessfulCode =
-            "The game launch expired because the game exited.";
-
+            "The game stopped before the debugger attached.";
         public const string LaunchEndedGameExitedWithErrorCode =
-            "The game launch expired because the game exited with an error code. " +
-            "The game may have crashed.";
-
+            "The game stopped with an error before the debugger attached.";
         public const string LaunchEndedGameShutdownBySystem =
-            "The game launch expired because the game stopped unexpectedly. " +
-            "This shouldn't happen. Try relaunching the game in a few minutes.";
-
-        public const string LaunchEndedUnexpectedGameShutdownBySystem =
-            "Game unexpectedly shutdown, presumably by an issue with the system";
-
+            "The game was stopped by the system. Try running your game again in a few minutes.";
+        public static string LaunchEndedUnexpectedGameShutdownBySystem =
+            "The game stopped unexpectedly. This shouldn't happen. " +
+            $"Try running it again in a few minutes or contact us at {StadiaSupport}.";
         public static readonly string LaunchEndedGameBinaryNotFound =
-            "The game launch expired because the game binary was not found. Check your settings " +
+            "Can't start the game because the game binary was not found. Check your settings " +
             "in 'Project Properties' -> 'Debugging' -> 'Deploy executable on launch', " +
             $"and that a valid executable is in {YetiConstants.RemoteDeployPath}, then try again.";
 
         public const string LaunchEndedQueueAbandonedByUser =
-            "The game launch expired because the player left the queue.";
-
+            "The game didn't start because the player left the queue. " +
+            "Try running your game again.";
         public const string LaunchEndedQueueReadyTimeout =
-            "The game launch expired because the player didn't start the game when the queue " +
-            "was ready, and it timed out.";
-
-        public const string LaunchEndedInstanceUnavailable =
-            "The game launch expired because the instance was unavailable.";
-
+            "The player didn't start the game in time. Try running your game again.";
+        public static string LaunchEndedInstanceUnavailable(string instanceName) =>
+            $"Can't start the game because the instance {instanceName} is not available. " +
+            "Check that your current account has reserved the instance, and that the instance " +
+            "isn't running another game, then try running your game again. " +
+            "If it's still unavailable, try reserving another instance.";
         public const string ErrorWhileSdkCheck =
             "Could not check the SDK compatibility. See logs for further details.";
 

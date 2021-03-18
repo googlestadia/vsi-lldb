@@ -89,10 +89,11 @@ namespace YetiVSI.GameLaunch
                 _dialogUtil.ShowError(e.Message);
                 return null;
             }
-            catch (CloudException)
+            catch (CloudException e)
             {
-                _dialogUtil.ShowError(ErrorStrings.LaunchEndedCommonMessage + " " +
-                                      ErrorStrings.SeeLogs);
+                string message = $"{ErrorStrings.CouldNotStartTheGame}{Environment.NewLine}" +
+                    $"{e.Message}{Environment.NewLine}{Environment.NewLine}{ErrorStrings.SeeLogs}";
+                _dialogUtil.ShowError(message);
                 return null;
             }
 

@@ -218,7 +218,8 @@ namespace YetiVSI.GameLaunch
 
                 if (launch.GameLaunchState == GameLaunchState.GameLaunchEnded)
                 {
-                    string error = LaunchUtils.GetEndReason(launch.GameLaunchEnded);
+                    string error =
+                        LaunchUtils.GetEndReason(launch.GameLaunchEnded, launch.GameletName);
                     devEvent.GameLaunchData.EndReason = (int) launch.GameLaunchEnded.EndReason;
                     action.UpdateEvent(devEvent);
                     throw new GameLaunchFailError(error);
