@@ -104,7 +104,7 @@ namespace YetiVSI.Test.TestSupport
         }
 
         // Resolves expressions to values added via AddValueFromExpression().
-        // If there are multiple values added to the same expression it iterates them until we 
+        // If there are multiple values added to the same expression it iterates them until we
         // get to the last value, which is never discarded.
         //
         // Example:
@@ -163,9 +163,13 @@ namespace YetiVSI.Test.TestSupport
                 return values.Count > 1 ? values.Dequeue() : values.Peek();
             }
 
-            var remoteValueError = new RemoteValueFake("", "");
-            remoteValueError.SetError(new SbErrorStub(false, "error: error: No value"));
-            return remoteValueError;
+            // Try resolving the expression as an member access. Child objects (i.e. members) are
+            // not available via the `expressionValues`, so we need to look for them explicitly.
+            if (!expression.StartsWith("["))
+            {
+                expression = (TypeIsPointerType() ? "->" : ".") + expression;
+            }
+            return GetValueForExpressionPath(expression);
         }
 
         public Task<RemoteValue> EvaluateExpressionAsync(string expression) =>
@@ -182,7 +186,7 @@ namespace YetiVSI.Test.TestSupport
                 return dereference;
             }
             var remoteValueError = new RemoteValueFake("", "");
-            remoteValueError.SetError(new SbErrorStub(false, 
+            remoteValueError.SetError(new SbErrorStub(false,
                 "error: error: Not a pointer type or no child"));
             return remoteValueError;
         }

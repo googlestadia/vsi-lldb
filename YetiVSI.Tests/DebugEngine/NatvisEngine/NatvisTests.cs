@@ -59,11 +59,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
     #endregion
 
+    [TestFixture(ExpressionEvaluationEngineFlag.LLDB)]
+    [TestFixture(ExpressionEvaluationEngineFlag.LLDB_EVAL)]
+    [TestFixture(ExpressionEvaluationEngineFlag.LLDB_EVAL_WITH_FALLBACK)]
     [TestFixture]
     public class NatvisTests
     {
         #region Test Class Setup
 
+        readonly ExpressionEvaluationEngineFlag _expressionEvaluationEngineFlag;
         MediumTestDebugEngineFactoryCompRoot compRoot;
 
         private NLogSpy nLogSpy;
@@ -81,6 +85,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         const string MEM_ADDRESS3 = "0x0000000002260773";
         const string MEM_ADDRESS4 = "0x0000000002260774";
         const string MEM_ADDRESS_NULL = "0x0000000000000000";
+
+        public NatvisTests(ExpressionEvaluationEngineFlag expressionEvaluationEngineFlag)
+        {
+            _expressionEvaluationEngineFlag = expressionEvaluationEngineFlag;
+        }
 
         // Helper function to load natvis content from a string.  Verifies there were no errors.
         private void LoadFromString(string xml)
@@ -102,6 +111,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             _natvisExpander = compRoot.GetNatvis();
             compRoot.GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] =
                 DebuggerOptionState.ENABLED;
+            ((OptionPageGrid)compRoot.GetVsiService().Options).ExpressionEvaluationEngine =
+                _expressionEvaluationEngineFlag;
+
             nLogSpy = compRoot.GetNatvisDiagnosticLogSpy();
             nLogSpy.Attach();
 

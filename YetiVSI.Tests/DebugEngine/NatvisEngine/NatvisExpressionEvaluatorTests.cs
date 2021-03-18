@@ -43,6 +43,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         public void SetUp()
         {
             _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+            ((OptionPageGrid)_compRoot.GetVsiService().Options).ExpressionEvaluationEngine =
+                ExpressionEvaluationEngineFlag.LLDB;
+
             _varInfoFactory = _compRoot.GetLldbVariableInformationFactory();
 
             _nLogSpy = _compRoot.GetNatvisDiagnosticLogSpy();

@@ -28,6 +28,13 @@ namespace YetiVSI.Test.TestSupport
             this.success = success;
             this.errCode = errCode;
             this.cString = cString;
+
+            // TODO: `Fail()` should actually be just `errCode != 0`. For now just make sure
+            // `errCode` is always non-zero if `success` is false.
+            if (!this.success && this.errCode == 0)
+            {
+                this.errCode = uint.MaxValue;
+            }
         }
 
         public bool Fail()
