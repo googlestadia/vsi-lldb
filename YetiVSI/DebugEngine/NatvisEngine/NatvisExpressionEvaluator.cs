@@ -150,10 +150,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             if (engine == ExpressionEvaluationEngine.LLDB_EVAL ||
                 engine == ExpressionEvaluationEngine.LLDB_EVAL_WITH_FALLBACK)
             {
-                // Try to evaluate expression using lldb-eval. This is much faster approach than
-                // using a full featured expression evaluation by LLDB.
-                var value = await EvaluateExpressionLldbEvalAsync(variable, expression, displayName,
-                                                                  natvisScope);
+                var value = await variable.EvaluateExpressionLldbEvalAsync(
+                    displayName, expression, natvisScope.ContextVariables);
+
                 if (value != null)
                 {
                     var errorCode = (LldbEvalErrorCode)Enum.ToObject(typeof(LldbEvalErrorCode),
@@ -343,20 +342,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             {
                 variable = variable.Dereference();
             }
-            return variable?.EvaluateExpressionAsync(displayName, vsExpression);
-        }
-
-        /// <summary>
-        /// Tries to resolve the given expression in the context of the variable using lldb-eval.
-        /// Returns a variable representing the result of the evaluation or a variable with error
-        /// if the expression can't be evaluated using lldb-eval.
-        /// </summary>
-        Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
-            IVariableInformation variable, VsExpression vsExpression, string displayName,
-            NatvisScope natvisScope)
-        {
-            return variable?.EvaluateExpressionLldbEvalAsync(displayName, vsExpression,
-                                                             natvisScope?.ContextVariables);
+            return variable.EvaluateExpressionAsync(displayName, vsExpression);
         }
 
         /// <summary>
