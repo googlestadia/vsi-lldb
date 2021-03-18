@@ -336,14 +336,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// Globals can be accessed as well. Returns a variable representing the result of the evaluation
         /// or null if the expression can't be evaluated.
         /// </summary>
-        async Task<IVariableInformation> EvaluateExpressionInVariableScopeAsync(
+        Task<IVariableInformation> EvaluateExpressionInVariableScopeAsync(
             IVariableInformation variable, VsExpression vsExpression, string displayName)
         {
             if (variable.IsPointer || variable.IsReference)
             {
                 variable = variable.Dereference();
             }
-            return await variable?.EvaluateExpressionAsync(displayName, vsExpression);
+            return variable?.EvaluateExpressionAsync(displayName, vsExpression);
         }
 
         /// <summary>
@@ -351,16 +351,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// Returns a variable representing the result of the evaluation or a variable with error
         /// if the expression can't be evaluated using lldb-eval.
         /// </summary>
-        async Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
+        Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
             IVariableInformation variable, VsExpression vsExpression, string displayName,
             NatvisScope natvisScope)
         {
-            if (variable.IsPointer || variable.IsReference)
-            {
-                variable = variable.Dereference();
-            }
-            return await variable?.EvaluateExpressionLldbEvalAsync(displayName, vsExpression,
-                                                                   natvisScope?.ContextVariables);
+            return variable?.EvaluateExpressionLldbEvalAsync(displayName, vsExpression,
+                                                             natvisScope?.ContextVariables);
         }
 
         /// <summary>
