@@ -19,6 +19,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using YetiCommon;
 using System;
+using System.Threading.Tasks;
 
 namespace SymbolStores.Tests
 {
@@ -60,123 +61,133 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_SingleStore()
+        public async Task FindFile_SingleStoreAsync()
         {
-            storeA.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
+            await storeA.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
             symbolServer.AddStore(storeA);
 
-            var fileReference = symbolServer.FindFile(FILENAME, BUILD_ID);
+            var fileReference = await symbolServer.FindFileAsync(FILENAME, BUILD_ID);
 
-            Assert.AreEqual(storeA.FindFile(FILENAME, BUILD_ID).Location, fileReference.Location);
+            Assert.AreEqual(
+                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
         }
 
         [Test]
-        public void FindFile_FirstStore()
+        public async Task FindFile_FirstStoreAsync()
         {
-            storeA.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
-            symbolServer.AddStore(storeA);
-            symbolServer.AddStore(storeB);
-            symbolServer.AddStore(storeC);
-
-            var fileReference = symbolServer.FindFile(FILENAME, BUILD_ID);
-
-            Assert.AreEqual(storeA.FindFile(FILENAME, BUILD_ID).Location, fileReference.Location);
-        }
-
-        [Test]
-        public void FindFile_Cascade()
-        {
-            storeC.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
+            await storeA.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
             symbolServer.AddStore(storeA);
             symbolServer.AddStore(storeB);
             symbolServer.AddStore(storeC);
 
-            var fileReference = symbolServer.FindFile(FILENAME, BUILD_ID);
+            var fileReference = await symbolServer.FindFileAsync(FILENAME, BUILD_ID);
 
-            Assert.NotNull(storeA.FindFile(FILENAME, BUILD_ID));
-            Assert.NotNull(storeB.FindFile(FILENAME, BUILD_ID));
-            Assert.AreEqual(storeA.FindFile(FILENAME, BUILD_ID).Location, fileReference.Location);
+            Assert.AreEqual(
+                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
         }
 
         [Test]
-        public void FindFile_SkipInvalid()
+        public async Task FindFile_CascadeAsync()
         {
-            storeC.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
+            await storeC.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
+            symbolServer.AddStore(storeA);
+            symbolServer.AddStore(storeB);
+            symbolServer.AddStore(storeC);
+
+            var fileReference = await symbolServer.FindFileAsync(FILENAME, BUILD_ID);
+
+            Assert.NotNull(await storeA.FindFileAsync(FILENAME, BUILD_ID));
+            Assert.NotNull(await storeB.FindFileAsync(FILENAME, BUILD_ID));
+            Assert.AreEqual(
+                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+        }
+
+        [Test]
+        public async Task FindFile_SkipInvalidAsync()
+        {
+            await storeC.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
             symbolServer.AddStore(storeA);
             symbolServer.AddStore(invalidStore);
             symbolServer.AddStore(storeC);
 
-            var fileReference = symbolServer.FindFile(FILENAME, BUILD_ID);
+            var fileReference = await symbolServer.FindFileAsync(FILENAME, BUILD_ID);
 
-            Assert.NotNull(storeA.FindFile(FILENAME, BUILD_ID));
-            Assert.AreEqual(storeA.FindFile(FILENAME, BUILD_ID).Location, fileReference.Location);
+            Assert.NotNull(await storeA.FindFileAsync(FILENAME, BUILD_ID));
+            Assert.AreEqual(
+                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
         }
 
         [Test]
-        public void FindFile_NoStores()
+        public async Task FindFile_NoStoresAsync()
         {
-            var fileReference = symbolServer.FindFile(FILENAME, BUILD_ID);
+            var fileReference = await symbolServer.FindFileAsync(FILENAME, BUILD_ID);
 
             Assert.Null(fileReference);
         }
 
         [Test]
-        public void FindFile_NotFound()
+        public async Task FindFile_NotFoundAsync()
         {
             symbolServer.AddStore(storeA);
             symbolServer.AddStore(storeB);
             symbolServer.AddStore(storeC);
 
-            var fileReference = symbolServer.FindFile(FILENAME, BUILD_ID);
+            var fileReference = await symbolServer.FindFileAsync(FILENAME, BUILD_ID);
 
             Assert.Null(fileReference);
         }
 
         [Test]
-        public void AddFile_SingleStore()
+        public async Task AddFile_SingleStoreAsync()
         {
             symbolServer.AddStore(storeA);
 
-            var fileReference = symbolServer.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
+            var fileReference = await symbolServer.AddFileAsync(
+                sourceSymbolFile, FILENAME, BUILD_ID);
 
-            Assert.NotNull(storeA.FindFile(FILENAME, BUILD_ID));
-            Assert.AreEqual(storeA.FindFile(FILENAME, BUILD_ID).Location, fileReference.Location);
+            Assert.NotNull(await storeA.FindFileAsync(FILENAME, BUILD_ID));
+            Assert.AreEqual(
+                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
         }
 
         [Test]
-        public void AddFile_MultipleStores()
+        public async Task AddFile_MultipleStoresAsync()
         {
             symbolServer.AddStore(storeA);
             symbolServer.AddStore(storeB);
             symbolServer.AddStore(storeC);
 
-            var fileReference = symbolServer.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
+            var fileReference = await symbolServer.AddFileAsync(
+                sourceSymbolFile, FILENAME, BUILD_ID);
 
-            Assert.NotNull(storeA.FindFile(FILENAME, BUILD_ID));
-            Assert.NotNull(storeB.FindFile(FILENAME, BUILD_ID));
-            Assert.NotNull(storeC.FindFile(FILENAME, BUILD_ID));
-            Assert.AreEqual(storeA.FindFile(FILENAME, BUILD_ID).Location, fileReference.Location);
+            Assert.NotNull(await storeA.FindFileAsync(FILENAME, BUILD_ID));
+            Assert.NotNull(await storeB.FindFileAsync(FILENAME, BUILD_ID));
+            Assert.NotNull(await storeC.FindFileAsync(FILENAME, BUILD_ID));
+            Assert.AreEqual(
+                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
         }
 
         [Test]
         public void AddFile_NoStores()
         {
-            Assert.Throws<SymbolStoreException>(() =>
-                symbolServer.AddFile(sourceSymbolFile, FILENAME, BUILD_ID));
+            Assert.ThrowsAsync<SymbolStoreException>(() =>
+                symbolServer.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID));
         }
 
         [Test]
-        public void AddFile_SkipInvalidStores()
+        public async Task AddFile_SkipInvalidStoresAsync()
         {
             symbolServer.AddStore(storeA);
             symbolServer.AddStore(invalidStore);
             symbolServer.AddStore(storeC);
 
-            var fileReference = symbolServer.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
+            var fileReference = await symbolServer.AddFileAsync(
+                sourceSymbolFile, FILENAME, BUILD_ID);
 
-            Assert.NotNull(storeA.FindFile(FILENAME, BUILD_ID));
-            Assert.NotNull(storeC.FindFile(FILENAME, BUILD_ID));
-            Assert.AreEqual(storeA.FindFile(FILENAME, BUILD_ID).Location, fileReference.Location);
+            Assert.NotNull(await storeA.FindFileAsync(FILENAME, BUILD_ID));
+            Assert.NotNull(await storeC.FindFileAsync(FILENAME, BUILD_ID));
+            Assert.AreEqual(
+                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
         }
 
         [Test]
@@ -272,10 +283,10 @@ namespace SymbolStores.Tests
             return symbolServer;
         }
 
-        protected override ISymbolStore GetStoreWithFile()
+        protected override async Task<ISymbolStore> GetStoreWithFileAsync()
         {
             symbolServer.AddStore(storeA);
-            symbolServer.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
+            await symbolServer.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
             return symbolServer;
         }
 

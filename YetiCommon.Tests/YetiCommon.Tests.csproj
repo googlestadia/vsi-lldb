@@ -1,11 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(SolutionDir)BuildRoot.props" />
   <Import Project="$(SolutionDir)Common.props" />
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <Configurations>Debug2017;Debug2019;Release2017;Release2019</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Web" />
@@ -68,20 +66,4 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <Choose>
-    <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
-      <ItemGroup>
-        <PackageReference Include="Microsoft.VisualStudio.Threading">
-          <Version>15.8.209</Version>
-        </PackageReference>
-      </ItemGroup>
-    </When>
-    <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
-      <ItemGroup>
-        <PackageReference Include="Microsoft.VisualStudio.Threading">
-          <Version>16.0.102</Version>
-        </PackageReference>
-      </ItemGroup>
-    </When>
-  </Choose>
 </Project>

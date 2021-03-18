@@ -19,6 +19,7 @@ using NUnit.Framework;
 using SymbolStores;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using TestsCommon.TestSupport;
 using YetiCommon;
 using YetiVSI.DebugEngine;
@@ -36,7 +37,8 @@ namespace YetiVSI.Test.DebugEngine
         const string ESCAPED_PATH_IN_STORE = @"C:\\store\\" + SYMBOL_FILE_NAME;
         static string COMMAND = "target symbols add \"" + ESCAPED_PATH_IN_STORE + "\"";
         static string COMMAND_WITH_MODULE_PATH = "target symbols add -s \"" + PLATFORM_DIRECTORY +
-            "/" + BINARY_FILENAME + "\" \"" + ESCAPED_PATH_IN_STORE + "\"";
+                                                 "/" + BINARY_FILENAME + "\" \"" +
+                                                 ESCAPED_PATH_IN_STORE + "\"";
         const string LLDB_OUTPUT = "Test LLDB output";
         const string LLDB_ERROR = "Test LLDB error";
         static BuildId UUID = new BuildId("1234");
@@ -68,7 +70,8 @@ namespace YetiVSI.Test.DebugEngine
 
             mockCommandInterpreter = Substitute.For<SbCommandInterpreter>();
             SetHandleCommandReturnValue(mockCommandInterpreter, COMMAND_WITH_MODULE_PATH,
-                ReturnStatus.SuccessFinishResult, mockSuccessCommandReturnObject);
+                                        ReturnStatus.SuccessFinishResult,
+                                        mockSuccessCommandReturnObject);
 
             mockPlatformFileSpec = Substitute.For<SbFileSpec>();
             mockPlatformFileSpec.GetDirectory().Returns(PLATFORM_DIRECTORY);
@@ -88,7 +91,7 @@ namespace YetiVSI.Test.DebugEngine
             mockModuleUtil.HasSymbolsLoaded(Arg.Any<SbModule>()).Returns(false);
 
             symbolLoader = new SymbolLoader(mockModuleUtil, mockBinaryFileUtil,
-                mockModuleFileFinder, mockCommandInterpreter);
+                                            mockModuleFileFinder, mockCommandInterpreter);
 
             symbolFileInStore = Substitute.For<IFileReference>();
             symbolFileInStore.IsFilesystemLocation.Returns(true);
@@ -105,11 +108,11 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void LoadSymbols()
+        public async Task LoadSymbolsAsync()
         {
             var mockModule = CreateMockModule();
 
-            Assert.IsTrue(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsTrue(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
 
             StringAssert.Contains(LLDB_OUTPUT, searchLog.ToString());
             StringAssert.Contains("Symbols loaded successfully", searchLog.ToString());
@@ -118,15 +121,15 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void LoadSymbols_FindFileFails()
+        public async Task LoadSymbols_FindFileFailsAsync()
         {
             var mockModule = CreateMockModule();
             SetFindFileReturnValue(null);
 
-            Assert.IsFalse(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsFalse(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
         }
 
-        public void LoadSymbols_LLDBCommandFails()
+        public async Task LoadSymbols_LLDBCommandFailsAsync()
         {
             var mockModule = CreateMockModule();
             var mockCommandReturnObject = Substitute.For<SbCommandReturnObject>();
@@ -134,49 +137,51 @@ namespace YetiVSI.Test.DebugEngine
             mockCommandReturnObject.Succeeded().Returns(false);
             mockCommandReturnObject.GetDescription().Returns("Failed: " + LLDB_ERROR);
             SetHandleCommandReturnValue(mockCommandInterpreter, COMMAND_WITH_MODULE_PATH,
-                ReturnStatus.Failed, mockCommandReturnObject);
+                                        ReturnStatus.Failed, mockCommandReturnObject);
 
-            Assert.IsFalse(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsFalse(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
 
             StringAssert.Contains(LLDB_ERROR, searchLog.ToString());
             StringAssert.Contains(LLDB_ERROR, logSpy.GetOutput());
         }
 
         [Test]
-        public void LoadSymbols_AlreadyLoaded()
+        public async Task LoadSymbols_AlreadyLoadedAsync()
         {
             var mockModule = Substitute.For<SbModule>();
             mockModuleUtil.HasSymbolsLoaded(mockModule).Returns(true);
 
-            Assert.IsTrue(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsTrue(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
 
             Assert.IsEmpty(searchLog.ToString());
         }
 
         [Test]
-        public void LoadSymbols_NullSymbolFileSpec()
+        public async Task LoadSymbols_NullSymbolFileSpecAsync()
         {
             var mockModule = CreateMockModule();
             mockModule.GetSymbolFileSpec().Returns((SbFileSpec)null);
-            mockBinaryFileUtil.ReadSymbolFileName(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileNameAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Returns(SYMBOL_FILE_NAME);
 
-            Assert.IsTrue(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsTrue(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
         }
 
         [Test]
-        public void LoadSymbols_SymbolFileSpecEqualsBinaryFileSpec()
+        public async Task LoadSymbols_SymbolFileSpecEqualsBinaryFileSpecAsync()
         {
             var mockModule = CreateMockModule();
             mockModule.GetSymbolFileSpec().Returns(mockBinaryFileSpec);
-            mockBinaryFileUtil.ReadSymbolFileName(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileNameAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Returns(SYMBOL_FILE_NAME);
-            Assert.IsTrue(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsTrue(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
         }
 
         [TestCase(false)]
         [TestCase(true)]
-        public void LoadSymbols_SymbolFileCustomDirSuccess(bool useSymbolStores)
+        public async Task LoadSymbols_SymbolFileCustomDirSuccessAsync(bool useSymbolStores)
         {
             string customFileName = "x.debug";
             string customFileDir = @"C:\custom";
@@ -185,22 +190,25 @@ namespace YetiVSI.Test.DebugEngine
 
             var mockModule = CreateMockModule();
             mockModule.GetSymbolFileSpec().Returns(mockBinaryFileSpec);
-            mockBinaryFileUtil.ReadSymbolFileName(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileNameAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Returns(customFileName);
-            mockBinaryFileUtil.ReadSymbolFileDir(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileDirAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Returns(customFileDir);
-            mockBinaryFileUtil.ReadBuildId(Path.Combine(customFileDir, customFileName))
+            mockBinaryFileUtil.ReadBuildIdAsync(Path.Combine(customFileDir, customFileName))
                 .Returns(UUID);
 
             SetHandleCommandReturnValue(mockCommandInterpreter, expectedCommand,
                                         ReturnStatus.SuccessFinishResult,
                                         mockSuccessCommandReturnObject);
 
-            Assert.IsTrue(symbolLoader.LoadSymbols(mockModule, searchLog, useSymbolStores));
+            Assert.IsTrue(
+                await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, useSymbolStores));
         }
 
         [Test]
-        public void LoadSymbols_SymbolFileCustomDirSuccessFallbackOnBuildIdMismatch()
+        public async Task LoadSymbols_SymbolFileCustomDirSuccessFallbackOnBuildIdMismatchAsync()
         {
             string customFileName = "x.debug";
             string customFileDir = @"C:\symbols";
@@ -210,42 +218,47 @@ namespace YetiVSI.Test.DebugEngine
 
             var mockModule = CreateMockModule();
             mockModule.GetSymbolFileSpec().Returns(mockBinaryFileSpec);
-            mockBinaryFileUtil.ReadSymbolFileName(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileNameAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Returns(customFileName);
-            mockBinaryFileUtil.ReadSymbolFileDir(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileDirAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Returns(customFileDir);
-            mockBinaryFileUtil.ReadBuildId(Path.Combine(customFileDir, customFileName))
+            mockBinaryFileUtil.ReadBuildIdAsync(Path.Combine(customFileDir, customFileName))
                 .Returns(new BuildId("4321"));
 
-            mockModuleFileFinder.FindFile(customFileName, UUID, true, searchLog)
+            mockModuleFileFinder.FindFileAsync(customFileName, UUID, true, searchLog)
                 .Returns(symbolStorePath);
 
             SetHandleCommandReturnValue(mockCommandInterpreter, expectedCommand,
                                         ReturnStatus.SuccessFinishResult,
                                         mockSuccessCommandReturnObject);
 
-            Assert.IsTrue(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsTrue(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
         }
 
         [Test]
-        public void LoadSymbols_SymbolFileCustomDirThrowsSymbolStoreDisabled()
+        public async Task LoadSymbols_SymbolFileCustomDirThrowsSymbolStoreDisabledAsync()
         {
             string customFileName = "x.debug";
 
             var mockModule = CreateMockModule();
             mockModule.GetSymbolFileSpec().Returns(mockBinaryFileSpec);
-            mockBinaryFileUtil.ReadSymbolFileName(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileNameAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Returns(customFileName);
-            mockBinaryFileUtil.ReadSymbolFileDir(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileDirAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Throws(new BinaryFileUtilException("exception"));
 
-            Assert.IsFalse(symbolLoader.LoadSymbols(mockModule, searchLog, false));
+            Assert.IsFalse(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, false));
 
-            mockModuleFileFinder.DidNotReceiveWithAnyArgs().FindFile(null, UUID, true, null);
+            await mockModuleFileFinder.DidNotReceiveWithAnyArgs().FindFileAsync(null, UUID, true,
+                                                                                null);
         }
 
         [Test]
-        public void LoadSymbols_FallbackWhenReadSymbolFileDirThrows()
+        public async Task LoadSymbols_FallbackWhenReadSymbolFileDirThrowsAsync()
         {
             string customFileName = "x.debug";
             string symbolStorePath = @"C:\fallback\x.debug";
@@ -254,63 +267,67 @@ namespace YetiVSI.Test.DebugEngine
 
             var mockModule = CreateMockModule();
             mockModule.GetSymbolFileSpec().Returns(mockBinaryFileSpec);
-            mockBinaryFileUtil.ReadSymbolFileName(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileNameAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Returns(customFileName);
-            mockBinaryFileUtil.ReadSymbolFileDir(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileDirAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Throws(new BinaryFileUtilException("exception"));
 
-            mockModuleFileFinder.FindFile(customFileName, UUID, true, searchLog)
+            mockModuleFileFinder.FindFileAsync(customFileName, UUID, true, searchLog)
                 .Returns(symbolStorePath);
 
             SetHandleCommandReturnValue(mockCommandInterpreter, expectedCommand,
                                         ReturnStatus.SuccessFinishResult,
                                         mockSuccessCommandReturnObject);
 
-            Assert.IsTrue(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsTrue(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
         }
 
         [Test]
-        public void LoadSymbols_PlatformFileSpecNull()
+        public async Task LoadSymbols_PlatformFileSpecNullAsync()
         {
             var mockModule = CreateMockModule();
             mockModule.GetPlatformFileSpec().Returns((SbFileSpec)null);
             SetHandleCommandReturnValue(mockCommandInterpreter, COMMAND,
-                ReturnStatus.SuccessFinishResult, mockSuccessCommandReturnObject);
+                                        ReturnStatus.SuccessFinishResult,
+                                        mockSuccessCommandReturnObject);
 
-            Assert.IsTrue(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsTrue(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
         }
 
         [Test]
-        public void LoadSymbols_AllFileSpecsNull()
+        public async Task LoadSymbols_AllFileSpecsNullAsync()
         {
             var mockModule = CreateMockModule();
             mockModule.GetPlatformFileSpec().Returns((SbFileSpec)null);
             mockModule.GetSymbolFileSpec().Returns((SbFileSpec)null);
             mockModule.GetFileSpec().Returns((SbFileSpec)null);
 
-            Assert.IsFalse(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsFalse(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
 
             StringAssert.Contains(ErrorStrings.SymbolFileNameUnknown, searchLog.ToString());
             StringAssert.Contains(ErrorStrings.SymbolFileNameUnknown, logSpy.GetOutput());
         }
 
         [Test]
-        public void LoadSymbols_ReadSymbolFileNameThrowsException()
+        public async Task LoadSymbols_ReadSymbolFileNameThrowsExceptionAsync()
         {
             const string EXCEPTION_MESSAGE = "test exception";
             var mockModule = CreateMockModule();
             mockModule.GetSymbolFileSpec().Returns((SbFileSpec)null);
-            mockBinaryFileUtil.ReadSymbolFileName(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
+            mockBinaryFileUtil
+                .ReadSymbolFileNameAsync(Path.Combine(BINARY_DIRECTORY, BINARY_FILENAME))
                 .Throws(new BinaryFileUtilException(EXCEPTION_MESSAGE));
 
-            Assert.IsFalse(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsFalse(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
 
             StringAssert.Contains(EXCEPTION_MESSAGE, searchLog.ToString());
             StringAssert.Contains(EXCEPTION_MESSAGE, logSpy.GetOutput());
         }
 
         [Test]
-        public void LoadSymbols_InvalidBinaryFileSpec()
+        public async Task LoadSymbols_InvalidBinaryFileSpecAsync()
         {
             var mockModule = CreateMockModule();
             mockModule.GetSymbolFileSpec().Returns((SbFileSpec)null);
@@ -319,7 +336,7 @@ namespace YetiVSI.Test.DebugEngine
             binaryFileSpec.GetFilename().Returns("<invalid>");
             mockModule.GetFileSpec().Returns(binaryFileSpec);
 
-            Assert.IsFalse(symbolLoader.LoadSymbols(mockModule, searchLog, true));
+            Assert.IsFalse(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
 
             StringAssert.Contains("Illegal characters", searchLog.ToString());
             StringAssert.Contains("Illegal characters", logSpy.GetOutput());
@@ -328,8 +345,8 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void LoadSymbols_NullModule()
         {
-            Assert.Throws<ArgumentNullException>(
-                () => symbolLoader.LoadSymbols(null, searchLog, true));
+            Assert.ThrowsAsync<ArgumentNullException>(
+                () => symbolLoader.LoadSymbolsAsync(null, searchLog, true));
         }
 
         SbModule CreateMockModule()
@@ -344,7 +361,8 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         void SetHandleCommandReturnValue(SbCommandInterpreter mockCommandInterpreter,
-            string command, ReturnStatus returnStatus, SbCommandReturnObject returnObject)
+                                         string command, ReturnStatus returnStatus,
+                                         SbCommandReturnObject returnObject)
         {
             SbCommandReturnObject _;
             mockCommandInterpreter.HandleCommand(command, out _).Returns(x => {
@@ -355,7 +373,8 @@ namespace YetiVSI.Test.DebugEngine
 
         void SetFindFileReturnValue(string path)
         {
-            mockModuleFileFinder.FindFile(SYMBOL_FILE_NAME, UUID, true, searchLog).Returns(path);
+            mockModuleFileFinder.FindFileAsync(SYMBOL_FILE_NAME, UUID, true, searchLog)
+                .Returns(path);
         }
     }
 }

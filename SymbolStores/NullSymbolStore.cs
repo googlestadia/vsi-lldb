@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.IO;
+using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores
@@ -24,7 +25,7 @@ namespace SymbolStores
     {
         public NullSymbolStore() : base(false, false) { }
 
-        public override IFileReference AddFile(IFileReference source, string filename,
+        public override Task<IFileReference> AddFileAsync(IFileReference source, string filename,
             BuildId buildId, TextWriter logWriter)
         {
             throw new NotImplementedException();
@@ -35,10 +36,10 @@ namespace SymbolStores
             return other is NullSymbolStore;
         }
 
-        public override IFileReference FindFile(string filename, BuildId buildId,
-                                                bool isDebugInfoFile, TextWriter logWriter)
+        public override Task<IFileReference> FindFileAsync(
+            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter logWriter)
         {
-            return null;
+            return Task.FromResult<IFileReference>(null);
         }
     }
 }

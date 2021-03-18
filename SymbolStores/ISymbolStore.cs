@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores
@@ -50,9 +51,9 @@ namespace SymbolStores
         /// that the file contains a debug info section. Throws ArgumentNullException if `filename`
         /// is null.
         /// </summary>
-        IFileReference FindFile(string filename, BuildId buildId, bool isDebugInfoFile,
-                                TextWriter log);
-        IFileReference FindFile(string filename, BuildId buildId);
+        Task<IFileReference> FindFileAsync(string filename, BuildId buildId, bool isDebugInfoFile,
+                                           TextWriter log);
+        Task<IFileReference> FindFileAsync(string filename, BuildId buildId);
 
         /// <summary>
         /// Copies the file represented by `source` into the store. The file in the store will be
@@ -64,9 +65,9 @@ namespace SymbolStores
         /// is empty.
         /// Throws NotSupportedException if the store does not support adding files.
         /// </summary>
-        IFileReference AddFile(IFileReference source, string filename, BuildId buildId,
-            TextWriter log);
-        IFileReference AddFile(IFileReference source, string filename, BuildId buildId);
+        Task<IFileReference> AddFileAsync(IFileReference source, string filename, BuildId buildId,
+                                          TextWriter log);
+        Task<IFileReference> AddFileAsync(IFileReference source, string filename, BuildId buildId);
 
         /// <summary>
         /// Deep value equality
