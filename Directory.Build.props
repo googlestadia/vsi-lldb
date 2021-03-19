@@ -18,8 +18,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Allow using deprecated proto fields, see (internal) -->
     <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-    <!-- TODO: Temporary allow conflicting types generated from protos. -->
-    <WarningsNotAsErrors>CS0436</WarningsNotAsErrors>
   </PropertyGroup>
 
   <!--
