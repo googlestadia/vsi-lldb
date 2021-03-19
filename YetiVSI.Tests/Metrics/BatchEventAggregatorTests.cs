@@ -15,25 +15,24 @@
 using NSubstitute;
 using NUnit.Framework;
 using System.Linq;
+using System.Reflection;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 using YetiVSI.Test.Metrics.TestSupport;
 
 namespace YetiVSI.Test.Metrics
 {
     [TestFixture]
-    public class DebugEventRecorderTests
+    public class BatchEventAggregatorTests
     {
         const int _timeout = 1024;
 
-        BatchEventAggregator<DebugEventBatch, DebugEventBatchParams, DebugEventBatchSummary>
-            _batchEventAggregator;
         EventSchedulerFake _eventScheduler;
-        IMetrics _metrics;
         TimerFake _timer;
+        long _currentTimestamp;
 
         // Object under test
-        DebugEventRecorder _debugEventRecorder;
+        BatchEventAggregator<DebugEventBatch, DebugEventBatchParams, DebugEventBatchSummary>
+            _batchEventAggregator;
 
         [SetUp]
         public void SetUp()
@@ -43,42 +42,43 @@ namespace YetiVSI.Test.Metrics
             eventSchedulerFactory.Create(
                 Arg.Do<System.Action>(a => _eventScheduler.Callback = a)).Returns(_eventScheduler);
             _timer = new TimerFake();
+            _currentTimestamp = 0;
             _batchEventAggregator =
                 new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,
-                    DebugEventBatchSummary
-                >(_timeout, eventSchedulerFactory, _timer);
-            _metrics = Substitute.For<IMetrics>();
-            _debugEventRecorder = new DebugEventRecorder(_batchEventAggregator, _metrics);
+                    DebugEventBatchSummary>(_timeout, eventSchedulerFactory, _timer);
         }
 
         [Test]
-        public void TestRecordMultipleEvents()
+        public void TestAddingDebugEvents()
         {
-            _debugEventRecorder.Record(TestClass.MethodInfo1, 0, 123);
-            _debugEventRecorder.Record(TestClass.MethodInfo2, 456, 789);
-            _debugEventRecorder.Record(TestClass.MethodInfo3, 1234, 56789);
-
-            // Get a copy of the batch summary sent to batchEventAggregator so we can verify
-            // that it matches the one being sent to metrics.
             DebugEventBatchSummary batchSummary = null;
             _batchEventAggregator.BatchSummaryReady += (_, newSummary) => batchSummary = newSummary;
 
+            AddEvent(TestClass.MethodInfo1);
+            _timer.Increment(_timeout / 2);
+            _eventScheduler.Increment(_timeout);
+            Assert.IsNull(batchSummary);
+
+            AddEvent(TestClass.MethodInfo2);
+            _timer.Increment(_timeout / 2);
+            _eventScheduler.Increment(_timeout);
+            Assert.IsNull(batchSummary);
+
+            AddEvent(TestClass.MethodInfo3);
             _timer.Increment(_timeout);
             _eventScheduler.Increment(_timeout);
+            Assert.NotNull(batchSummary);
+            Assert.AreEqual(_currentTimestamp, batchSummary.LatencyInMicroseconds);
             CollectionAssert.AreEquivalent(
-                new[] { TestClass.MethodInfo1.GetProto(), TestClass.MethodInfo2.GetProto(),
-                    TestClass.MethodInfo3.GetProto() },
-                batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
-
-            _metrics.Received(1).RecordEvent(
-                DeveloperEventType.Types.Type.VsiDebugEventBatch,
-                new DeveloperLogEvent
-                {
-                    DebugEventBatch = batchSummary.Proto,
-                    StatusCode = DeveloperEventStatus.Types.Code.Success,
-                    LatencyMilliseconds = 56,
-                    LatencyType = DeveloperLogEvent.Types.LatencyType.LatencyTool
-                });
+                new[]
+                    {
+                        TestClass.MethodInfo1.GetProto(), TestClass.MethodInfo2.GetProto(),
+                        TestClass.MethodInfo3.GetProto()
+                    }, batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
         }
+
+        void AddEvent(MethodInfo methodInfo) =>
+            _batchEventAggregator.Add(
+                new DebugEventBatchParams(methodInfo, _currentTimestamp, _currentTimestamp += 1));
     }
 }

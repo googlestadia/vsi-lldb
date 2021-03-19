@@ -251,6 +251,7 @@
     <Compile Include="LoadSymbols\SessionNotifierService.cs" />
     <Compile Include="LoadSymbols\SSessionNotifier.cs" />
     <Compile Include="Metrics\ExceptionRecorder.cs" />
+    <Compile Include="Metrics\IEventBatch.cs" />
     <Compile Include="Metrics\TypeExtensions.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="NoSourceWindowHider.cs" />
@@ -260,7 +261,7 @@
     <Compile Include="GameLaunch\GameletSelectorLegacyFlow.cs" />
     <Compile Include="GgpDebugQueryTarget.cs" />
     <Compile Include="Metrics\Action.cs" />
-    <Compile Include="Metrics\DebugEventAggregator.cs" />
+    <Compile Include="Metrics\BatchEventAggregator.cs" />
     <Compile Include="Metrics\DebugEventBatch.cs" />
     <Compile Include="Metrics\DebugEventBatchSummary.cs" />
     <Compile Include="Metrics\DebugEventRecorder.cs" />

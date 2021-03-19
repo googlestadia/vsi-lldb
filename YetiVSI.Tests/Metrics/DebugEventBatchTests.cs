@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using System.Linq;
 using YetiVSI.Metrics;
 using YetiVSI.Test.Metrics.TestSupport;
@@ -34,26 +34,29 @@ namespace YetiVSI.Test.Metrics
         [Test]
         public void TestEmptyBatch()
         {
-            var batchSummary = _debugEventBatch.GetSummary();
+            var debugEventBatchSummary = _debugEventBatch.GetSummary();
 
-            Assert.False(batchSummary.Proto.BatchStartTimestampMicroseconds.HasValue);
-            Assert.Zero(batchSummary.Proto.DebugEvents.Count);
+            Assert.False(debugEventBatchSummary.Proto.BatchStartTimestampMicroseconds.HasValue);
+            Assert.Zero(debugEventBatchSummary.Proto.DebugEvents.Count);
         }
 
         [Test]
         public void TestSingleEventBatch()
         {
-            long startTimestampUs = 200;
-            long endTimestampUs = 1000;
-            _debugEventBatch.Add(TestClass.MethodInfo1, startTimestampUs, endTimestampUs);
+            const long startTimestampUs = 200;
+            const long endTimestampUs = 1000;
+            _debugEventBatch.Add(
+                new DebugEventBatchParams(TestClass.MethodInfo1, startTimestampUs, endTimestampUs));
 
-            DebugEventBatchSummary batchSummary = _debugEventBatch.GetSummary();
+            var debugEventBatchSummary = _debugEventBatch.GetSummary();
 
-            Assert.AreEqual(startTimestampUs, batchSummary.Proto.BatchStartTimestampMicroseconds);
-            Assert.AreEqual(endTimestampUs - startTimestampUs, batchSummary.LatencyInMicroseconds);
+            Assert.AreEqual(startTimestampUs,
+                            debugEventBatchSummary.Proto.BatchStartTimestampMicroseconds);
+            Assert.AreEqual(endTimestampUs - startTimestampUs,
+                            debugEventBatchSummary.LatencyInMicroseconds);
 
-            Assert.AreEqual(1, batchSummary.Proto.DebugEvents.Count);
-            var debugEvent = batchSummary.Proto.DebugEvents[0];
+            Assert.AreEqual(1, debugEventBatchSummary.Proto.DebugEvents.Count);
+            var debugEvent = debugEventBatchSummary.Proto.DebugEvents[0];
             Assert.Multiple(() =>
             {
                 Assert.AreEqual(TestClass.MethodInfo1.GetProto(), debugEvent.MethodInfo);
@@ -69,18 +72,19 @@ namespace YetiVSI.Test.Metrics
         [Test]
         public void TestMultipleEventsBatch()
         {
-            _debugEventBatch.Add(TestClass.MethodInfo2, 0, 789);
-            _debugEventBatch.Add(TestClass.MethodInfo1, 900, 12300);
-            _debugEventBatch.Add(TestClass.MethodInfo1, 12400, 89789);
-            _debugEventBatch.Add(TestClass.MethodInfo2, 91234, 91237);
-            _debugEventBatch.Add(TestClass.MethodInfo1, 100000, 987654321);
+            _debugEventBatch.Add(new DebugEventBatchParams(TestClass.MethodInfo2, 0, 789));
+            _debugEventBatch.Add(new DebugEventBatchParams(TestClass.MethodInfo1, 900, 12300));
+            _debugEventBatch.Add(new DebugEventBatchParams(TestClass.MethodInfo1, 12400, 89789));
+            _debugEventBatch.Add(new DebugEventBatchParams(TestClass.MethodInfo2, 91234, 91237));
+            _debugEventBatch.Add(
+                new DebugEventBatchParams(TestClass.MethodInfo1, 100000, 987654321));
 
-            var batchSummary = _debugEventBatch.GetSummary();
+            var debugEventBatchSummary = _debugEventBatch.GetSummary();
 
-            Assert.AreEqual(0, batchSummary.Proto.BatchStartTimestampMicroseconds);
-            Assert.AreEqual(987654321, batchSummary.LatencyInMicroseconds);
+            Assert.AreEqual(0, debugEventBatchSummary.Proto.BatchStartTimestampMicroseconds);
+            Assert.AreEqual(987654321, debugEventBatchSummary.LatencyInMicroseconds);
 
-            var debugEvents = batchSummary.Proto.DebugEvents;
+            var debugEvents = debugEventBatchSummary.Proto.DebugEvents;
             Assert.AreEqual(2, debugEvents.Count);
 
             var debugEvent1 = debugEvents.ElementAt(0);

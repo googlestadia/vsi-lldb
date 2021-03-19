@@ -847,14 +847,15 @@ namespace YetiVSI.DebugEngine
 
         public virtual void SetupStepTimeMetrics(List<IInterceptor> apiAspects, IMetrics metrics)
         {
-            var debugEventBatchFactory = new DebugEventBatch.Factory();
             var schedulerFactory = new EventScheduler.Factory();
             var timerFactory = new Timer.Factory();
 
             var timer = timerFactory.Create();
-            var debugEventAggregator = new DebugEventAggregator(
-                debugEventBatchFactory, _minimumDebugEventBatchSeparationInMillis, schedulerFactory,
-                timer);
+            var debugEventAggregator =
+                new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,
+                    DebugEventBatchSummary>(_minimumDebugEventBatchSeparationInMillis,
+                                            schedulerFactory,
+                                            timer);
             var debugEventRecorder = new DebugEventRecorder(debugEventAggregator, metrics);
 
             var timeSource = GetTimeSource();

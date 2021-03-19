@@ -24,34 +24,37 @@ namespace YetiVSI.Metrics
     /// </summary>
     public class DebugEventRecorder : IMethodInvocationRecorder
     {
-        private readonly IDebugEventAggregator debugEventAggregator;
-        private readonly IMetrics metrics;
+        readonly IBatchEventAggregator<DebugEventBatchParams, DebugEventBatchSummary> _batchEventAggregator;
+        readonly IMetrics _metrics;
 
         public DebugEventRecorder(
-            IDebugEventAggregator debugEventAggregator, IMetrics metrics)
+            IBatchEventAggregator<DebugEventBatchParams, DebugEventBatchSummary>
+                batchEventAggregator, IMetrics metrics)
         {
-            this.debugEventAggregator = debugEventAggregator;
-            this.metrics = metrics;
+            _batchEventAggregator = batchEventAggregator;
+            _metrics = metrics;
 
-            debugEventAggregator.BatchSummaryReady +=
+            batchEventAggregator.BatchSummaryReady +=
                 (_, batchSummary) => OnBatchSummaryReady(batchSummary);
         }
 
         public void Record(MethodInfo methodInfo, long startTimestampUs, long endTimestampUs) =>
-            debugEventAggregator.Add(methodInfo, startTimestampUs, endTimestampUs);
+            _batchEventAggregator.Add(
+                new DebugEventBatchParams(methodInfo, startTimestampUs, endTimestampUs));
 
-        private void OnBatchSummaryReady(DebugEventBatchSummary batchSummary)
+        void OnBatchSummaryReady(DebugEventBatchSummary batchSummary)
         {
+            var debugBatchSummary = batchSummary;
             var logEvent = new DeveloperLogEvent
             {
-                DebugEventBatch = batchSummary.Proto,
+                DebugEventBatch = debugBatchSummary.Proto,
                 StatusCode = DeveloperEventStatus.Types.Code.Success,
-                LatencyMilliseconds = MillisFromMicros(batchSummary.LatencyInMicroseconds),
+                LatencyMilliseconds = MillisFromMicros(debugBatchSummary.LatencyInMicroseconds),
                 LatencyType = DeveloperLogEvent.Types.LatencyType.LatencyTool
             };
-            metrics.RecordEvent(DeveloperEventType.Types.Type.VsiDebugEventBatch, logEvent);
+            _metrics.RecordEvent(DeveloperEventType.Types.Type.VsiDebugEventBatch, logEvent);
         }
 
-        private long MillisFromMicros(long valueInMicroseconds) => valueInMicroseconds / 1000;
+        long MillisFromMicros(long valueInMicroseconds) => valueInMicroseconds / 1000;
     }
 }

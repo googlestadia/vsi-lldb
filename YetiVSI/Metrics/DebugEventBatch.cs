@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using YetiVSI.Util;
@@ -22,67 +22,35 @@ using static YetiVSI.Shared.Metrics.VSIDebugEventBatch.Types;
 namespace YetiVSI.Metrics
 {
     /// <summary>
-    /// Stores debug events and generates a <see cref="DebugEventBatchSummary"/> based on them.
+    /// Non-thread safe implementation of <see cref="IEventBatch{TParams, TSummary}"/>. All
+    /// CPU-intensive tasks are delegated to GetProtoDetails so Add can run quickly.
     /// </summary>
-    public interface IDebugEventBatch
+    public class DebugEventBatch : IEventBatch<DebugEventBatchParams, DebugEventBatchSummary>
     {
-        /// <summary>
-        /// Adds a new event. Not thread-safe.
-        /// </summary>
-        /// <param name="methodInfo">Information about the callee method.</param>
-        /// <param name="startTimestampUs">Timestamp just before the method was called,
-        /// in microseconds.</param>
-        /// <param name="endTimestampUs">Timestamp immediately after the method finishes
-        /// executing, in microseconds.</param>
-        /// <remarks>
-        /// Implementations should prioritize performance. CPU-intensive work should be postponed to
-        /// when GetLogEventAndType gets called.
-        /// </remarks>
-        void Add(MethodInfo methodInfo, long startTimestampUs, long endTimestampUs);
-
-        /// <summary>
-        /// Gets a debug event batch proto alongside its latency based on the events added so far.
-        /// It is not safe to call "Add" and this method concurrently.
-        /// </summary>
-        DebugEventBatchSummary GetSummary();
-    }
-
-    /// <summary>
-    /// Non-thread safe implementation of <see cref="IDebugEventBatch"/>. All CPU-intensive tasks
-    /// are delegated to GetProtoDetails so Add can run quickly.
-    /// </summary>
-    public class DebugEventBatch : IDebugEventBatch
-    {
-        public class Factory
-        {
-            public virtual IDebugEventBatch Create() => new DebugEventBatch();
-        }
-
         readonly Dictionary<MethodInfo, List<DebugEventInterval>> _debugEvents =
             new Dictionary<MethodInfo, List<DebugEventInterval>>();
 
         long _firstInitialTimestampInMicro;
         long _lastFinalTimestampInMicro;
 
-        public void Add(
-            MethodInfo methodInfo, long startTimestampUs, long endTimestampUs)
+        public void Add(DebugEventBatchParams batchParams)
         {
-            _lastFinalTimestampInMicro = endTimestampUs;
+            _lastFinalTimestampInMicro = batchParams.EndTimestampUs;
             if (_debugEvents.Count == 0)
             {
-                _firstInitialTimestampInMicro = startTimestampUs;
+                _firstInitialTimestampInMicro = batchParams.StartTimestampUs;
             }
 
-            _debugEvents.GetOrAddValue(methodInfo)
-                .Add(new DebugEventInterval(startTimestampUs, endTimestampUs));
+            _debugEvents.GetOrAddValue(batchParams.MethodInfo).Add(
+                new DebugEventInterval(batchParams.StartTimestampUs,
+                                       batchParams.EndTimestampUs));
         }
 
         public DebugEventBatchSummary GetSummary() =>
             new DebugEventBatchSummary(GetProto(_debugEvents),
-                                       _lastFinalTimestampInMicro -
-                                       _firstInitialTimestampInMicro);
+                                       _lastFinalTimestampInMicro - _firstInitialTimestampInMicro);
 
-        private VSIDebugEventBatch GetProto(
+        VSIDebugEventBatch GetProto(
             Dictionary<MethodInfo, List<DebugEventInterval>> eventData)
         {
             var eventBatch = new VSIDebugEventBatch();
@@ -95,8 +63,8 @@ namespace YetiVSI.Metrics
             return eventBatch;
         }
 
-        private static VSIDebugEvent CreateDebugEvent(MethodInfo eventMethodInfo,
-                                                      List<DebugEventInterval> eventInterval)
+        static VSIDebugEvent CreateDebugEvent(MethodInfo eventMethodInfo,
+                                              List<DebugEventInterval> eventInterval)
         {
             VSIDebugEvent debugEvent = new VSIDebugEvent()
             {
@@ -113,7 +81,7 @@ namespace YetiVSI.Metrics
             return debugEvent;
         }
 
-        private struct DebugEventInterval
+        readonly struct DebugEventInterval
         {
             public long StartOffsetUs { get; }
             public long DurationUs { get; }
@@ -123,6 +91,20 @@ namespace YetiVSI.Metrics
                 StartOffsetUs = startTimestampUs;
                 DurationUs = endTimestampUs - startTimestampUs;
             }
+        }
+    }
+
+    public class DebugEventBatchParams
+    {
+        public MethodInfo MethodInfo { get; }
+        public long StartTimestampUs { get; }
+        public long EndTimestampUs { get; }
+
+        public DebugEventBatchParams(MethodInfo methodInfo, long startTimestampUs, long endTimestampUs)
+        {
+            MethodInfo = methodInfo;
+            StartTimestampUs = startTimestampUs;
+            EndTimestampUs = endTimestampUs;
         }
     }
 }
