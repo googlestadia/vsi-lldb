@@ -478,8 +478,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         {
             RemoteValueFake remoteValue =
                 RemoteValueFakeUtil.CreateClass("MyType", "myType", "myValue");
-            remoteValue.AddValueFromExpression($"auto $test=5; $test",
-                                               RemoteValueFakeUtil.CreateError("declaration error"));
+            remoteValue.AddValueFromExpression(
+                $"auto $test=5; $test", RemoteValueFakeUtil.CreateError("declaration error"));
 
             var natvisScope = new NatvisScope();
             natvisScope.SetScopedName("test", "$test");
@@ -533,12 +533,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             RemoteValueFake remoteValue =
                 RemoteValueFakeUtil.CreateClass("MyType", "myType", "myValue");
             remoteValue.AddValueFromExpression("14",
-                                         RemoteValueFakeUtil.CreateSimpleInt("tmp", 14));
+                                               RemoteValueFakeUtil.CreateSimpleInt("tmp", 14));
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
 
             IVariableInformation result =
-                await _evaluator.EvaluateExpressionAsync("14", varInfo, null, "myVar");
+                await _evaluator.EvaluateExpressionAsync("14", varInfo, new NatvisScope(), "myVar");
 
             Assert.That(await result.ValueAsync(), Is.EqualTo("14"));
             Assert.That(result.DisplayName, Is.EqualTo("myVar"));
@@ -549,13 +549,13 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         {
             RemoteValueFake remoteValue =
                 RemoteValueFakeUtil.CreatePointer("MyType*", "myType", _memAddress);
-            remoteValue.AddValueFromExpression("myVal",
-                RemoteValueFakeUtil.CreateError("invalid expression"));
+            remoteValue.AddValueFromExpression(
+                "myVal", RemoteValueFakeUtil.CreateError("invalid expression"));
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
             var exception = Assert.ThrowsAsync<ExpressionEvaluationFailed>(
-                async () => await _evaluator.EvaluateExpressionAsync(
-                    "myVal", varInfo, null, "tmp"));
+                async () => await _evaluator.EvaluateExpressionAsync("myVal", varInfo,
+                                                                     new NatvisScope(), "tmp"));
 
             Assert.That(exception.Message, Does.Contain("myVal"));
         }
