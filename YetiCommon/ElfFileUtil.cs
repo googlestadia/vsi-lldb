@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+﻿using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -36,10 +37,12 @@ namespace YetiCommon
         static readonly Regex _sectionTableStartRegex = new Regex(@"^Sections:");
         static readonly Regex _debugInfoSectionRegex = new Regex(@"^[ 0-9]*\.debug_info ");
 
-        readonly ManagedProcess.Factory processFactory;
+        JoinableTaskFactory taskFactory;
+        ManagedProcess.Factory processFactory;
 
-        public ElfFileUtil(ManagedProcess.Factory processFactory)
+        public ElfFileUtil(JoinableTaskFactory taskFactory, ManagedProcess.Factory processFactory)
         {
+            this.taskFactory = taskFactory;
             this.processFactory = processFactory;
         }
 
@@ -54,6 +57,11 @@ namespace YetiCommon
         /// Thrown when an error is encountered reading or parsing the build id.
         /// InnerException contains more details.
         /// </exception>
+        public BuildId ReadBuildId(string filepath, SshTarget target = null)
+        {
+            return taskFactory.Run(async () => await ReadBuildIdAsync(filepath, target));
+        }
+
         public async Task<BuildId> ReadBuildIdAsync(string filepath, SshTarget target = null)
         {
             try
@@ -121,8 +129,12 @@ namespace YetiCommon
         /// Thrown when an error is encountered reading or parsing the debug symbol file directory.
         /// InnerException contains more details.
         /// </exception>
+        public string ReadSymbolFileDir(string filepath)
+        {
+            return taskFactory.Run(async () => await ReadSymbolFileDirAsync(filepath));
+        }
 
-        public async Task<string> ReadSymbolFileDirAsync(string filepath)
+        async Task<string> ReadSymbolFileDirAsync(string filepath)
         {
             try
             {
@@ -170,7 +182,12 @@ namespace YetiCommon
         /// Thrown when an error is encountered reading or parsing the debug symbol file name.
         /// InnerException contains more details.
         /// </exception>
-        public async Task<string> ReadSymbolFileNameAsync(string filepath)
+        public string ReadSymbolFileName(string filepath)
+        {
+            return taskFactory.Run(async () => await ReadSymbolFileNameAsync(filepath));
+        }
+
+        async Task<string> ReadSymbolFileNameAsync(string filepath)
         {
             List<string> outputLines;
             try
@@ -211,7 +228,12 @@ namespace YetiCommon
             }
         }
 
-        public async Task VerifySymbolFileAsync(string filepath, bool isDebugInfoFile)
+        public void VerifySymbolFile(string filepath, bool isDebugInfoFile)
+        {
+            taskFactory.Run(async () => await VerifySymbolFileAsync(filepath, isDebugInfoFile));
+        }
+
+        async Task VerifySymbolFileAsync(string filepath, bool isDebugInfoFile)
         {
             try
             {

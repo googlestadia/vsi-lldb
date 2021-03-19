@@ -17,7 +17,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
-using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores
@@ -77,8 +76,8 @@ namespace SymbolStores
 
         #region SymbolStoreBase functions
 
-        public override async Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        public override IFileReference FindFile(string filename, BuildId buildId,
+                                                bool isDebugInfoFile, TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -107,7 +106,7 @@ namespace SymbolStores
             {
                 try
                 {
-                    var actualBuildId = await binaryFileUtil.ReadBuildIdAsync(filepath);
+                    var actualBuildId = binaryFileUtil.ReadBuildId(filepath);
                     if (actualBuildId != buildId)
                     {
                         Trace.WriteLine(Strings.BuildIdMismatch(filepath, buildId, actualBuildId));
@@ -118,7 +117,7 @@ namespace SymbolStores
                 catch (BinaryFileUtilException e)
                 {
                     Trace.WriteLine(e.ToString());
-                    await log.WriteLineAsync(e.Message);
+                    log.WriteLine(e.Message);
                     return null;
                 }
             }
@@ -128,8 +127,8 @@ namespace SymbolStores
             return symbolFileFactory.Create(filepath);
         }
 
-        public override Task<IFileReference> AddFileAsync(
-            IFileReference source, string filename, BuildId buildId, TextWriter log)
+        public override IFileReference AddFile(IFileReference source, string filename,
+            BuildId buildId, TextWriter log)
         {
             throw new NotSupportedException(Strings.CopyToFlatStoreNotSupported);
         }

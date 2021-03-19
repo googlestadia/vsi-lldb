@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores
@@ -56,8 +55,8 @@ namespace SymbolStores
 
         public override IEnumerable<ISymbolStore> Substores => stores;
 
-        public override async Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        public override IFileReference FindFile(string filename, BuildId buildId,
+                                                bool isDebugInfoFile, TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -66,21 +65,18 @@ namespace SymbolStores
 
             for (int i = 0; i < stores.Count; ++i)
             {
-                var fileReference = await stores[i].FindFileAsync(
-                    filename, buildId, isDebugInfoFile, log);
+                var fileReference = stores[i].FindFile(filename, buildId, isDebugInfoFile, log);
                 if (fileReference != null)
                 {
-                    var cascadeFileRef = await CascadeAsync(
-                        fileReference, filename, buildId, i - 1, log);
-                    return cascadeFileRef ?? fileReference;
+                    return Cascade(fileReference, filename, buildId, i - 1, log) ?? fileReference;
                 }
             }
 
             return null;
         }
 
-        public override async Task<IFileReference> AddFileAsync(
-            IFileReference source, string filename, BuildId buildId, TextWriter log)
+        public override IFileReference AddFile(IFileReference source, string filename,
+            BuildId buildId, TextWriter log)
         {
             if (source == null)
             {
@@ -98,7 +94,8 @@ namespace SymbolStores
                     Strings.EmptyBuildId), "buildId");
             }
 
-            var fileReference = await CascadeAsync(source, filename, buildId, stores.Count - 1, log);
+            var fileReference = Cascade(source, filename, buildId, stores.Count - 1, log);
+
             if (fileReference == null)
             {
                 throw new SymbolStoreException(Strings.FailedToCopyToSymbolServer(filename));
@@ -121,8 +118,7 @@ namespace SymbolStores
         // store in reverse order.
         // Returns a reference to the file in the last store that it is succesfully copied to, or
         // null if it was not succesfully copied.
-        async Task<IFileReference> CascadeAsync(
-            IFileReference sourcefileReference, string filename,
+        IFileReference Cascade(IFileReference sourcefileReference, string filename,
             BuildId buildId, int index, TextWriter log)
         {
             IFileReference fileReference = null;
@@ -130,8 +126,8 @@ namespace SymbolStores
             {
                 try
                 {
-                    sourcefileReference = fileReference = await stores[i].AddFileAsync(
-                        sourcefileReference, filename, buildId, log);
+                    sourcefileReference = fileReference = stores[i].AddFile(sourcefileReference,
+                        filename, buildId, log);
                 }
                 catch (Exception e) when (e is NotSupportedException ||
                     e is SymbolStoreException || e is ArgumentException)

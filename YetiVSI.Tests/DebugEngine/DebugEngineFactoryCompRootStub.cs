@@ -98,7 +98,7 @@ namespace YetiVSI.Test.DebugEngine
             var backgroundProcessFactory = new BackgroundProcess.Factory();
 
             var processFactory = new ManagedProcess.Factory();
-            var binaryFileUtil = new ElfFileUtil(processFactory);
+            var binaryFileUtil = new ElfFileUtil(joinableTaskContext.Factory, processFactory);
             var lldbModuleUtil = new LldbModuleUtil();
 
             IModuleFileFinder moduleFileFinder = Substitute.For<IModuleFileFinder>();

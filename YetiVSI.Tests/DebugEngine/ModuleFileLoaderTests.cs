@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using YetiVSI.DebugEngine;
 
 namespace YetiVSI.Test.DebugEngine
@@ -53,13 +52,11 @@ namespace YetiVSI.Test.DebugEngine
 
             mockSymbolLoader = Substitute.For<ISymbolLoader>();
             mockSymbolLoader
-                .LoadSymbolsAsync(Arg.Any<SbModule>(), Arg.Any<TextWriter>(), Arg.Any<bool>())
-                .Returns(Task.FromResult(false));
+                .LoadSymbols(Arg.Any<SbModule>(), Arg.Any<TextWriter>(), Arg.Any<bool>())
+                .Returns(false);
             mockBinaryLoader = Substitute.For<IBinaryLoader>();
             var anyModule = Arg.Any<SbModule>();
-            mockBinaryLoader
-                .LoadBinaryAsync(anyModule, Arg.Any<TextWriter>())
-                .Returns((anyModule, false));
+            mockBinaryLoader.LoadBinary(ref anyModule, Arg.Any<TextWriter>()).Returns(false);
 
             mockModuleSearchLogHolder = new ModuleSearchLogHolder();
             moduleFileLoader = new ModuleFileLoader(mockSymbolLoader, mockBinaryLoader,
@@ -80,7 +77,7 @@ namespace YetiVSI.Test.DebugEngine
             TestName = "LoadModuleFilesFails_SymbolLoadSucceedsFailsSucceeds")]
         [TestCase(VSConstants.E_FAIL, new[] { false, false, false },
             TestName = "LoadModuleFilesFails_SymbolLoadFails3Times")]
-        public async Task LoadModuleFilesAsync(int expectedReturnCode, bool[] loadSymbolsSuccessValues)
+        public void LoadModuleFiles(int expectedReturnCode, bool[] loadSymbolsSuccessValues)
         {
             var modules = loadSymbolsSuccessValues
                               .Select(loadSymbolsSuccessValue => CreateMockModule(
@@ -88,23 +85,17 @@ namespace YetiVSI.Test.DebugEngine
                                           loadSymbolsSuccess: loadSymbolsSuccessValue))
                               .ToList();
 
-            Assert.AreEqual(
-                expectedReturnCode,
-                await moduleFileLoader.LoadModuleFilesAsync(
-                    modules, mockTask, fakeModuleFileLoadRecorder));
+            Assert.AreEqual(expectedReturnCode, moduleFileLoader.LoadModuleFiles(
+                                                    modules, mockTask, fakeModuleFileLoadRecorder));
 
-            foreach (var module in modules)
-            {
-                await AssertLoadBinaryReceivedAsync(module);
-                await AssertLoadSymbolsReceivedAsync(module);
-            }
-
+            modules.ForEach(AssertLoadBinaryReceived);
+            modules.ForEach(AssertLoadSymbolsReceived);
             Assert.AreEqual(fakeModuleFileLoadRecorder.ModulesRecordedBeforeLoad, modules);
             Assert.AreEqual(fakeModuleFileLoadRecorder.ModulesRecordedAfterLoad, modules);
         }
 
         [Test]
-        public async Task LoadModuleFilesWithInclusionSettingsAsync()
+        public void LoadModuleFilesWithInclusionSettings()
         {
             SbModule includedModule = CreateMockModule(true, true, "included");
             SbModule excludedModule = CreateMockModule(true, true, "excluded");
@@ -115,19 +106,18 @@ namespace YetiVSI.Test.DebugEngine
             var settings =
                 new SymbolInclusionSettings(useIncludeList, new List<string>(), includeList);
 
-            Assert.That(
-                await moduleFileLoader.LoadModuleFilesAsync(
-                    modules, settings, true, mockTask, fakeModuleFileLoadRecorder),
-                Is.EqualTo(VSConstants.S_OK));
+            Assert.That(moduleFileLoader.LoadModuleFiles(modules, settings, true, mockTask,
+                                                         fakeModuleFileLoadRecorder),
+                        Is.EqualTo(VSConstants.S_OK));
 
-            await AssertLoadBinaryReceivedAsync(includedModule);
-            await AssertLoadSymbolsReceivedAsync(includedModule);
-            await AssertLoadBinaryNotReceivedAsync(excludedModule);
-            await AssertLoadSymbolsNotReceivedAsync(excludedModule);
+            AssertLoadBinaryReceived(includedModule);
+            AssertLoadSymbolsReceived(includedModule);
+            AssertLoadBinaryNotReceived(excludedModule);
+            AssertLoadSymbolsNotReceived(excludedModule);
         }
 
         [Test]
-        public async Task LoadModuleFilesWithExclusionSettingsAsync()
+        public void LoadModuleFilesWithExclusionSettings()
         {
             SbModule includedModule = CreateMockModule(true, true, "included");
             SbModule excludedModule = CreateMockModule(true, true, "excluded");
@@ -138,28 +128,27 @@ namespace YetiVSI.Test.DebugEngine
             var settings =
                 new SymbolInclusionSettings(useIncludeList, excludeList, new List<string>());
 
-            Assert.That(
-                await moduleFileLoader.LoadModuleFilesAsync(
-                    modules, settings, true, mockTask, fakeModuleFileLoadRecorder),
-                Is.EqualTo(VSConstants.S_OK));
+            Assert.That(moduleFileLoader.LoadModuleFiles(modules, settings, true, mockTask,
+                                                         fakeModuleFileLoadRecorder),
+                        Is.EqualTo(VSConstants.S_OK));
 
-            await AssertLoadBinaryReceivedAsync(includedModule);
-            await AssertLoadSymbolsReceivedAsync(includedModule);
-            await AssertLoadBinaryNotReceivedAsync(excludedModule);
-            await AssertLoadSymbolsNotReceivedAsync(excludedModule);
+            AssertLoadBinaryReceived(includedModule);
+            AssertLoadSymbolsReceived(includedModule);
+            AssertLoadBinaryNotReceived(excludedModule);
+            AssertLoadSymbolsNotReceived(excludedModule);
         }
 
         [Test]
-        public async Task LoadModuleFiles_AlreadyLoadedAsync()
+        public void LoadModuleFiles_AlreadyLoaded()
         {
             var module = CreateMockModule(loadBinarySuccess: true, loadSymbolsSuccess: true);
 
-            Assert.AreEqual(VSConstants.S_OK, await moduleFileLoader.LoadModuleFilesAsync(
+            Assert.AreEqual(VSConstants.S_OK, moduleFileLoader.LoadModuleFiles(
                 new[] { module }, mockTask, fakeModuleFileLoadRecorder));
         }
 
         [Test]
-        public async Task LoadModuleFiles_CanceledAsync()
+        public void LoadModuleFiles_Canceled()
         {
             var modules = new[] {
                 CreateMockModule(loadBinarySuccess: true, loadSymbolsSuccess: false),
@@ -169,46 +158,47 @@ namespace YetiVSI.Test.DebugEngine
                 .Do(Callback.First(x => { }).Then(x => { })
                     .ThenThrow(new OperationCanceledException()));
 
-            Assert.ThrowsAsync<OperationCanceledException>(() =>
-                moduleFileLoader.LoadModuleFilesAsync(modules, mockTask, fakeModuleFileLoadRecorder));
+            Assert.Throws<OperationCanceledException>(() =>
+                moduleFileLoader.LoadModuleFiles(modules, mockTask, fakeModuleFileLoadRecorder));
 
-            await mockSymbolLoader.Received().LoadSymbolsAsync(
-                modules[0], Arg.Any<TextWriter>(), Arg.Any<bool>());
-            await mockSymbolLoader.DidNotReceive().LoadSymbolsAsync(
-                modules[1], Arg.Any<TextWriter>(), Arg.Any<bool>());
+            mockSymbolLoader.Received().LoadSymbols(modules[0], Arg.Any<TextWriter>(),
+                                                    Arg.Any<bool>());
+            mockSymbolLoader.DidNotReceive().LoadSymbols(modules[1], Arg.Any<TextWriter>(),
+                                                         Arg.Any<bool>());
             Assert.AreEqual(fakeModuleFileLoadRecorder.ModulesRecordedBeforeLoad, modules);
         }
 
         [Test]
-        public async Task LoadModuleFiles_LoadBinariesFailsAsync()
+        public void LoadModuleFiles_LoadBinariesFails()
         {
             var module = CreateMockModule(loadBinarySuccess: false, loadSymbolsSuccess: false);
 
-            Assert.AreEqual(VSConstants.E_FAIL, await moduleFileLoader.LoadModuleFilesAsync(
+            Assert.AreEqual(VSConstants.E_FAIL, moduleFileLoader.LoadModuleFiles(
                 new[] { module }, mockTask, fakeModuleFileLoadRecorder));
 
-            await AssertLoadBinaryReceivedAsync(module);
-            await mockSymbolLoader.DidNotReceiveWithAnyArgs().LoadSymbolsAsync(null, null, true);
+            AssertLoadBinaryReceived(module);
+            mockSymbolLoader.DidNotReceiveWithAnyArgs().LoadSymbols(null, null, true);
         }
 
         [Test]
-        public async Task LoadModuleFiles_ReplacedPlaceholderModuleAsync()
+        public void LoadModuleFiles_ReplacedPlaceholderModule()
         {
             var placeholderModule = Substitute.For<SbModule>();
             var newModule = Substitute.For<SbModule>();
-            mockBinaryLoader.LoadBinaryAsync(placeholderModule, Arg.Any<TextWriter>()).Returns(x =>
+            mockBinaryLoader.LoadBinary(ref placeholderModule, Arg.Any<TextWriter>()).Returns(x =>
             {
-                return (newModule, true);
+                x[0] = newModule;
+                return true;
             });
-            mockSymbolLoader.LoadSymbolsAsync(newModule, Arg.Any<TextWriter>(), Arg.Any<bool>())
-                .Returns(Task.FromResult(true));
+            mockSymbolLoader.LoadSymbols(newModule, Arg.Any<TextWriter>(), Arg.Any<bool>())
+                .Returns(true);
             var modules = new[] { placeholderModule };
 
-            Assert.AreEqual(VSConstants.S_OK, await moduleFileLoader.LoadModuleFilesAsync(
+            Assert.AreEqual(VSConstants.S_OK, moduleFileLoader.LoadModuleFiles(
                 modules, mockTask, fakeModuleFileLoadRecorder));
 
-            await AssertLoadBinaryReceivedAsync(placeholderModule);
-            await AssertLoadSymbolsReceivedAsync(newModule);
+            AssertLoadBinaryReceived(placeholderModule);
+            AssertLoadSymbolsReceived(newModule);
             Assert.AreSame(newModule, modules[0]);
             Assert.AreEqual(fakeModuleFileLoadRecorder.ModulesRecordedBeforeLoad,
                 new[] { placeholderModule });
@@ -219,21 +209,21 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void LoadModuleFiles_NullModules()
         {
-            Assert.ThrowsAsync<ArgumentNullException>(
-                () => moduleFileLoader.LoadModuleFilesAsync(null, mockTask, fakeModuleFileLoadRecorder));
+            Assert.Throws<ArgumentNullException>(
+                () => moduleFileLoader.LoadModuleFiles(null, mockTask, fakeModuleFileLoadRecorder));
         }
 
         [Test]
-        public async Task GetSearchLogAsync()
+        public void GetSearchLog()
         {
             var module = Substitute.For<SbModule>();
             module.GetPlatformFileSpec().Returns(mockPlatformFileSpec);
-            mockBinaryLoader.LoadBinaryAsync(module, Arg.Any<TextWriter>()).Returns(x =>
+            mockBinaryLoader.LoadBinary(ref module, Arg.Any<TextWriter>()).Returns(x =>
             {
                 x.Arg<TextWriter>().WriteLine(LOAD_OUTPUT);
-                return (module, false);
+                return false;
             });
-            await moduleFileLoader.LoadModuleFilesAsync(new[] { module }, mockTask,
+            moduleFileLoader.LoadModuleFiles(new[] { module }, mockTask,
                 fakeModuleFileLoadRecorder);
 
             StringAssert.Contains(LOAD_OUTPUT, mockModuleSearchLogHolder.GetSearchLog(module));
@@ -267,33 +257,32 @@ namespace YetiVSI.Test.DebugEngine
         {
             var module = Substitute.For<SbModule>();
             module.GetPlatformFileSpec().GetFilename().Returns(name);
-            mockBinaryLoader.LoadBinaryAsync(module, Arg.Any<TextWriter>())
-                .Returns((module, loadBinarySuccess));
-            mockSymbolLoader.LoadSymbolsAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
-                .Returns(Task.FromResult(loadSymbolsSuccess));
+            mockBinaryLoader.LoadBinary(ref module, Arg.Any<TextWriter>())
+                .Returns(loadBinarySuccess);
+            mockSymbolLoader.LoadSymbols(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
+                .Returns(loadSymbolsSuccess);
             return module;
         }
 
-        async Task AssertLoadBinaryReceivedAsync(SbModule module)
+        void AssertLoadBinaryReceived(SbModule module)
         {
-            await mockBinaryLoader.Received().LoadBinaryAsync(module, Arg.Any<TextWriter>());
+            mockBinaryLoader.Received().LoadBinary(ref module, Arg.Any<TextWriter>());
         }
 
-        async Task AssertLoadSymbolsReceivedAsync(SbModule module)
+        void AssertLoadSymbolsReceived(SbModule module)
         {
-            await mockSymbolLoader.Received().LoadSymbolsAsync(
-                module, Arg.Any<TextWriter>(), Arg.Any<bool>());
+            mockSymbolLoader.Received().LoadSymbols(module, Arg.Any<TextWriter>(), Arg.Any<bool>());
         }
 
-        async Task AssertLoadBinaryNotReceivedAsync(SbModule module)
+        void AssertLoadBinaryNotReceived(SbModule module)
         {
-            await mockBinaryLoader.DidNotReceive().LoadBinaryAsync(module, Arg.Any<TextWriter>());
+            mockBinaryLoader.DidNotReceive().LoadBinary(ref module, Arg.Any<TextWriter>());
         }
 
-        async Task AssertLoadSymbolsNotReceivedAsync(SbModule module)
+        void AssertLoadSymbolsNotReceived(SbModule module)
         {
-            await mockSymbolLoader.DidNotReceive().LoadSymbolsAsync(
-                module, Arg.Any<TextWriter>(), Arg.Any<bool>());
+            mockSymbolLoader.DidNotReceive().LoadSymbols(module, Arg.Any<TextWriter>(),
+                                                         Arg.Any<bool>());
         }
 
         class FakeModuleFileLoadRecorder : IModuleFileLoadMetricsRecorder

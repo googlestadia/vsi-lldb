@@ -13,6 +13,7 @@
 // limitations under the License.
 
 ﻿using GgpGrpc.Cloud;
+using Microsoft.VisualStudio.Threading;
 using Newtonsoft.Json;
 using NSubstitute;
 using NUnit.Framework;
@@ -56,6 +57,7 @@ namespace SymbolStores.Tests
         [SetUp]
         public void SetUp()
         {
+            var taskContext = new JoinableTaskContext();
             fakeFileSystem = new MockFileSystem();
             fakeBinaryFileUtil = new FakeBinaryFileUtil(fakeFileSystem);
             var fileReferenceFactory = new FileReference.Factory(fakeFileSystem);
@@ -68,12 +70,14 @@ namespace SymbolStores.Tests
             symbolServerFactory = new SymbolServer.Factory();
             var httpClient = new HttpClient(new FakeHttpMessageHandler());
             var httpFileReferenceFactory =
-                new HttpFileReference.Factory(fakeFileSystem, httpClient);
-            httpStoreFactory = new HttpSymbolStore.Factory(httpClient, httpFileReferenceFactory);
+                new HttpFileReference.Factory(taskContext.Factory, fakeFileSystem, httpClient);
+            httpStoreFactory = new HttpSymbolStore.Factory(taskContext.Factory, httpClient,
+                                                           httpFileReferenceFactory);
+            var cloudRunner = Substitute.For<ICloudRunner>();
             var crashReportClient = Substitute.For<ICrashReportClient>();
-            stadiaStoreFactory = new StadiaSymbolStore.Factory(httpClient,
+            stadiaStoreFactory = new StadiaSymbolStore.Factory(taskContext.Factory, httpClient,
                                                                httpFileReferenceFactory,
-                                                               crashReportClient);
+                                                               cloudRunner, crashReportClient);
             fakeFileSystem.AddFile(Path.Combine(STADIA_STORE, StadiaSymbolStore.MarkerFileName),
                                    new MockFileData(""));
             pathParser = new SymbolPathParser(

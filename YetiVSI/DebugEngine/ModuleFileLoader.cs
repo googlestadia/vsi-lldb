@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using DebuggerApi;
+﻿using DebuggerApi;
 using Microsoft.VisualStudio;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
 using YetiCommon;
 
 namespace YetiVSI.DebugEngine
@@ -35,17 +34,17 @@ namespace YetiVSI.DebugEngine
         /// </summary>
         /// <returns>S_OK if all binaries and symbols are loaded, E_FAIL otherwise.</returns>
         /// <exception cref="ArgumentNullException">Thrown if any argument is null.</exception>
-        Task<int> LoadModuleFilesAsync(IList<SbModule> modules, ICancelable task,
-                                       IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
+        int LoadModuleFiles(IList<SbModule> modules, ICancelable task,
+                            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
 
         /// <summary>
         /// Same as LoadModuleFiles(IList<SbModule>, ICancelable, IModuleFileLoadMetricsRecorder),
         /// but allows user to additionally specify modules for which symbols should be loaded
         /// via SymbolInclusionSettings.
         /// </summary>
-        Task<int> LoadModuleFilesAsync(
-            IList<SbModule> modules, SymbolInclusionSettings symbolSettings, bool useSymbolStores,
-            ICancelable task, IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
+        int LoadModuleFiles(IList<SbModule> modules, SymbolInclusionSettings symbolSettings,
+                            bool useSymbolStores, ICancelable task,
+                            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
     }
 
     public interface IModuleFileLoaderFactory
@@ -120,9 +119,9 @@ namespace YetiVSI.DebugEngine
             _moduleSearchLogHolder = moduleSearchLogHolder;
         }
 
-        public async Task<int> LoadModuleFilesAsync(
-            IList<SbModule> modules, SymbolInclusionSettings symbolSettings, bool useSymbolStores,
-            ICancelable task, IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
+        public int LoadModuleFiles(IList<SbModule> modules, SymbolInclusionSettings symbolSettings,
+                                   bool useSymbolStores, ICancelable task,
+                                   IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
         {
             if (modules == null)
             {
@@ -157,27 +156,20 @@ namespace YetiVSI.DebugEngine
 
                     if (SkipModule(name, symbolSettings))
                     {
-                        await searchLog.WriteLineAsync(
-                            SymbolInclusionSettings.ModuleExcludedMessage);
+                        searchLog.WriteLine(SymbolInclusionSettings.ModuleExcludedMessage);
                         continue;
                     }
 
                     task.Progress.Report($"Loading binary for {name} ({i}/{modules.Count})");
-
-                    (SbModule newModule, bool ok) =
-                        await _binaryLoader.LoadBinaryAsync(module, searchLog);
-                    if (!ok)
+                    if (!_binaryLoader.LoadBinary(ref module, searchLog))
                     {
                         result = VSConstants.E_FAIL;
                         continue;
                     }
-                    module = newModule;
 
                     task.ThrowIfCancellationRequested();
                     task.Progress.Report($"Loading symbols for {name} ({i}/{modules.Count})");
-                    var loaded =
-                        await _symbolLoader.LoadSymbolsAsync(module, searchLog, useSymbolStores);
-                    if (!loaded)
+                    if (!_symbolLoader.LoadSymbols(module, searchLog, useSymbolStores))
                     {
                         result = VSConstants.E_FAIL;
                         continue;
@@ -195,10 +187,9 @@ namespace YetiVSI.DebugEngine
             return result;
         }
 
-        public Task<int> LoadModuleFilesAsync(
-            IList<SbModule> modules, ICancelable task,
-            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder) =>
-            LoadModuleFilesAsync(modules, null, true, task, moduleFileLoadRecorder);
+        public int LoadModuleFiles(IList<SbModule> modules, ICancelable task,
+                                   IModuleFileLoadMetricsRecorder moduleFileLoadRecorder) =>
+            LoadModuleFiles(modules, null, true, task, moduleFileLoadRecorder);
 
         bool SkipModule(string module, SymbolInclusionSettings settings)
         {

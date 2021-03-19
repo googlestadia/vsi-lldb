@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Threading.Tasks;
+﻿using System;
 
 namespace SymbolStores
 {
@@ -23,7 +23,7 @@ namespace SymbolStores
         // Copies the file to the specified file path.
         // Creates the destination directory if it does not already exist.
         // Throws a SymbolStoreException on failure.
-        Task CopyToAsync(string destFilepath);
+        void CopyTo(string destFilepath);
 
         // The path of the file if the file is accessible through the filesystem, otherwise the
         // file's uri.

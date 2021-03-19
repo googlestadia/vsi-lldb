@@ -16,7 +16,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
 using YetiCommon;
 using YetiVSI.Util;
 
@@ -35,7 +34,7 @@ namespace YetiVSI.DebugEngine
         /// otherwise.
         /// </returns>
         /// <exception cref="ArgumentNullException">Thrown when |lldbModule| is null.</exception>
-        Task<bool> LoadSymbolsAsync(SbModule lldbModule, TextWriter searchLog, bool useSymbolStores);
+        bool LoadSymbols(SbModule lldbModule, TextWriter searchLog, bool useSymbolStores);
     }
 
     public class SymbolLoader : ISymbolLoader
@@ -73,8 +72,8 @@ namespace YetiVSI.DebugEngine
             this.lldbCommandInterpreter = lldbCommandInterpreter;
         }
 
-        public virtual async Task<bool> LoadSymbolsAsync(
-            SbModule lldbModule, TextWriter searchLog, bool useSymbolStores)
+        public virtual bool LoadSymbols(SbModule lldbModule, TextWriter searchLog,
+                                        bool useSymbolStores)
         {
             if (lldbModule == null) { throw new ArgumentNullException(nameof(lldbModule)); }
             searchLog = searchLog ?? TextWriter.Null;
@@ -82,11 +81,10 @@ namespace YetiVSI.DebugEngine
             // Return early if symbols are already loaded
             if (moduleUtil.HasSymbolsLoaded(lldbModule)) { return true; }
 
-            var (symbolFileDir, symbolFileName) =
-                await GetSymbolFileDirAndNameAsync(lldbModule, searchLog);
+            var (symbolFileDir, symbolFileName) = GetSymbolFileDirAndName(lldbModule, searchLog);
             if (string.IsNullOrEmpty(symbolFileName))
             {
-                await searchLog.WriteLineAsync(ErrorStrings.SymbolFileNameUnknown);
+                searchLog.WriteLine(ErrorStrings.SymbolFileNameUnknown);
                 Trace.WriteLine(ErrorStrings.SymbolFileNameUnknown);
                 return false;
             }
@@ -99,7 +97,7 @@ namespace YetiVSI.DebugEngine
                 try
                 {
                     symbolFilePath = Path.Combine(symbolFileDir, symbolFileName);
-                    BuildId fileUUID = await binaryFileUtil.ReadBuildIdAsync(symbolFilePath);
+                    BuildId fileUUID = binaryFileUtil.ReadBuildId(symbolFilePath);
                     if (fileUUID == uuid)
                     {
                         return AddSymbolFile(symbolFilePath, lldbModule, searchLog);
@@ -116,16 +114,14 @@ namespace YetiVSI.DebugEngine
             }
 
             var filepath = useSymbolStores
-                               ? await moduleFileFinder.FindFileAsync(
-                                   symbolFileName, uuid, true, searchLog)
+                               ? moduleFileFinder.FindFile(symbolFileName, uuid, true, searchLog)
                                : null;
             if (filepath == null) { return false; }
 
             return AddSymbolFile(filepath, lldbModule, searchLog);
         }
 
-        async Task<(string, string)> GetSymbolFileDirAndNameAsync(
-            SbModule lldbModule, TextWriter log)
+        (string, string) GetSymbolFileDirAndName(SbModule lldbModule, TextWriter log)
         {
             var symbolFileSpec = lldbModule.GetSymbolFileSpec();
             var symbolFileDirectory = symbolFileSpec?.GetDirectory();
@@ -164,32 +160,32 @@ namespace YetiVSI.DebugEngine
                 var errorString = ErrorStrings.InvalidBinaryPathOrName(binaryDirectory,
                                                                        binaryFilename, e.Message);
                 Trace.WriteLine(errorString);
-                await log.WriteLineAsync(errorString);
+                log.WriteLine(errorString);
                 return (null, null);
             }
 
             // Read the symbol file name from the binary.
             try
             {
-                symbolFileName = await binaryFileUtil.ReadSymbolFileNameAsync(binaryPath);
+                symbolFileName = binaryFileUtil.ReadSymbolFileName(binaryPath);
             }
             catch (BinaryFileUtilException e)
             {
                 Trace.WriteLine(e.ToString());
-                await log.WriteLineAsync(e.Message);
+                log.WriteLine(e.Message);
                 return (null, null);
             }
 
             // Try to read the debug info directory.
             try
             {
-                symbolFileDirectory = await binaryFileUtil.ReadSymbolFileDirAsync(binaryPath);
+                symbolFileDirectory = binaryFileUtil.ReadSymbolFileDir(binaryPath);
             }
             catch (BinaryFileUtilException e)
             {
                 // Just log the message (the directory section is optional).
                 Trace.WriteLine(e.Message);
-                await log.WriteLineAsync(e.Message);
+                log.WriteLine(e.Message);
             }
 
             return (symbolFileDirectory, symbolFileName);

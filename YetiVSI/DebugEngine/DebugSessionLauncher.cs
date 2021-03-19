@@ -706,10 +706,7 @@ namespace YetiVSI.DebugEngine
         {
             string moduleOriginPath = Path.GetDirectoryName(module.Path);
             string moduleName = Path.GetFileName(module.Path);
-            string modulePath = _taskContext.Factory.Run(() =>
-            {
-                return _moduleFileFinder.FindFileAsync(moduleName, module.Id, false, searchLog);
-            });
+            string modulePath = _moduleFileFinder.FindFile(moduleName, module.Id, false, searchLog);
 
             if (!string.IsNullOrWhiteSpace(modulePath))
             {

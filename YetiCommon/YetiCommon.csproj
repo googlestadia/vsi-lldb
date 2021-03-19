@@ -5,6 +5,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>GgpCommon</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Configurations>Debug2017;Debug2019;Release2017;Release2019</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -61,6 +62,22 @@
       <Version>2.1.0.247</Version>
     </PackageReference>
   </ItemGroup>
+  <Choose>
+    <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.VisualStudio.Threading">
+          <Version>15.8.209</Version>
+        </PackageReference>
+      </ItemGroup>
+    </When>
+    <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.VisualStudio.Threading">
+          <Version>16.0.102</Version>
+        </PackageReference>
+      </ItemGroup>
+    </When>
+  </Choose>
   <!--
     If DeployPythonAndToolchainDependencies is off, the code references local paths.
     This code stores the local paths in files, so that C# can get them.

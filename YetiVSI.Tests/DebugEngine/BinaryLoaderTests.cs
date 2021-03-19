@@ -17,7 +17,6 @@ using NSubstitute;
 using NUnit.Framework;
 using System;
 using System.IO;
-using System.Threading.Tasks;
 using YetiCommon;
 using YetiVSI.DebugEngine;
 
@@ -49,8 +48,8 @@ namespace YetiVSI.Test.DebugEngine
             moduleReplacedHandler = Substitute.For<EventHandler<LldbModuleReplacedEventArgs>>();
 
             mockModuleFileFinder = Substitute.For<IModuleFileFinder>();
-            mockModuleFileFinder.FindFileAsync(BINARY_FILENAME, UUID, false, searchLog)
-                .Returns(Task.FromResult(PATH_IN_STORE));
+            mockModuleFileFinder.FindFile(BINARY_FILENAME, UUID, false, searchLog)
+                .Returns(PATH_IN_STORE);
 
             placeholderModule = Substitute.For<SbModule>();
             placeholderModule.GetPlatformFileSpec().GetFilename().Returns(BINARY_FILENAME);
@@ -78,61 +77,53 @@ namespace YetiVSI.Test.DebugEngine
         public void LoadBinary_NullModule()
         {
             SbModule module = null;
-            Assert.ThrowsAsync<ArgumentNullException>(
-                () => binaryLoader.LoadBinaryAsync(module, searchLog));
+            Assert.Throws<ArgumentNullException>(
+                () => binaryLoader.LoadBinary(ref module, searchLog));
         }
 
         [Test]
-        public async Task LoadBinary_AlreadyLoadedAsync()
+        public void LoadBinary_AlreadyLoaded()
         {
             var loadedModule = Substitute.For<SbModule>();
             mockModuleUtil.IsPlaceholderModule(loadedModule).Returns(false);
 
             var module = loadedModule;
-            bool ok;
-            (module, ok) = await binaryLoader.LoadBinaryAsync(module, searchLog);
-            Assert.True(ok);
+            Assert.True(binaryLoader.LoadBinary(ref module, searchLog));
 
             Assert.AreSame(loadedModule, module);
         }
 
         [Test]
-        public async Task LoadBinary_NoBinaryNameAsync()
+        public void LoadBinary_NoBinaryName()
         {
             placeholderModule.GetPlatformFileSpec().Returns((SbFileSpec)null);
 
             var module = placeholderModule;
-            bool ok;
-            (module, ok) = await binaryLoader.LoadBinaryAsync(module, searchLog);
-            Assert.False(ok);
+            Assert.False(binaryLoader.LoadBinary(ref module, searchLog));
 
             Assert.AreSame(module, placeholderModule);
             StringAssert.Contains(ErrorStrings.BinaryFileNameUnknown, searchLog.ToString());
         }
 
         [Test]
-        public async Task LoadBinary_FileNotFoundAsync()
+        public void LoadBinary_FileNotFound()
         {
-            mockModuleFileFinder.FindFileAsync(BINARY_FILENAME, UUID, false, searchLog)
-                .Returns(Task.FromResult<string>(null));
+            mockModuleFileFinder.FindFile(BINARY_FILENAME, UUID, false, searchLog)
+                .Returns((string)null);
 
             var module = placeholderModule;
-            bool ok;
-            (module, ok) = await binaryLoader.LoadBinaryAsync(module, searchLog);
-            Assert.False(ok);
+            Assert.False(binaryLoader.LoadBinary(ref module, searchLog));
 
             Assert.AreSame(module, placeholderModule);
         }
 
         [Test]
-        public async Task LoadBinary_FailedToAddModuleAsync()
+        public void LoadBinary_FailedToAddModule()
         {
             mockTarget.AddModule(PATH_IN_STORE, null, UUID.ToString()).Returns((SbModule)null);
 
             var module = placeholderModule;
-            bool ok;
-            (module, ok) = await binaryLoader.LoadBinaryAsync(module, searchLog);
-            Assert.False(ok);
+            Assert.False(binaryLoader.LoadBinary(ref module, searchLog));
 
             Assert.AreSame(module, placeholderModule);
             StringAssert.Contains(ErrorStrings.FailedToLoadBinary(PATH_IN_STORE),
@@ -140,15 +131,13 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public async Task LoadBinaryAsync()
+        public void LoadBinary()
         {
             var newModule = Substitute.For<SbModule>();
             mockTarget.AddModule(PATH_IN_STORE, null, UUID.ToString()).Returns(newModule);
 
             var module = placeholderModule;
-            bool ok;
-            (module, ok) = await binaryLoader.LoadBinaryAsync(module, searchLog);
-            Assert.True(ok);
+            Assert.True(binaryLoader.LoadBinary(ref module, searchLog));
 
             mockModuleUtil.Received().GetPlaceholderProperties(placeholderModule, mockTarget);
             mockModuleUtil.Received().ApplyPlaceholderProperties(newModule,

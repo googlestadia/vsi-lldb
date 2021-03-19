@@ -12,8 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+﻿using Microsoft.VisualStudio.Threading;
+using NSubstitute;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -37,12 +42,13 @@ namespace SymbolStores.Tests
         {
             base.SetUp();
 
+            var taskContext = new JoinableTaskContext();
             fakeHttpMessageHandler = new FakeHttpMessageHandler();
             httpClient = new HttpClient(fakeHttpMessageHandler);
 
-            var httpFileReferenceFactory = new HttpFileReference.Factory(
+            var httpFileReferenceFactory = new HttpFileReference.Factory(taskContext.Factory,
                 fakeFileSystem, httpClient);
-            httpSymbolStoreFactory = new HttpSymbolStore.Factory(
+            httpSymbolStoreFactory = new HttpSymbolStore.Factory(taskContext.Factory,
                 httpClient, httpFileReferenceFactory);
         }
 
@@ -59,11 +65,11 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_EmptyBuildIdAsync()
+        public void FindFile_EmptyBuildId()
         {
             var store = GetEmptyStore();
 
-            var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true, log);
+            var fileReference = store.FindFile(FILENAME, BuildId.Empty, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchHttpStore(STORE_URL, FILENAME,
@@ -71,13 +77,13 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_HttpRequestExceptionAsync()
+        public void FindFile_HttpRequestException()
         {
             var store = GetEmptyStore();
             fakeHttpMessageHandler.ExceptionMap[new Uri(URL_IN_STORE)]
                 = new HttpRequestException("message");
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            var fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchHttpStore(STORE_URL, FILENAME, "message"),
@@ -85,23 +91,23 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_HeadRequestsNotSupportedAsync()
+        public void FindFile_HeadRequestsNotSupported()
         {
-            var store = await GetStoreWithFileAsync();
+            var store = GetStoreWithFile();
             fakeHttpMessageHandler.SupportsHeadRequests = false;
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            var fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
 
             Assert.AreEqual(URL_IN_STORE, fileReference.Location);
             StringAssert.Contains(Strings.FileFound(URL_IN_STORE), log.ToString());
         }
 
         [Test]
-        public async Task FindFile_ConnectionIsUnencryptedAsync()
+        public void FindFile_ConnectionIsUnencrypted()
         {
             var store = httpSymbolStoreFactory.Create("http://example.com/");
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            var fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
 
             StringAssert.Contains(Strings.ConnectionIsUnencrypted("example.com"), log.ToString());
         }
@@ -133,12 +139,12 @@ namespace SymbolStores.Tests
             return httpSymbolStoreFactory.Create(STORE_URL);
         }
 
-        protected override Task<ISymbolStore> GetStoreWithFileAsync()
+        protected override ISymbolStore GetStoreWithFile()
         {
             fakeHttpMessageHandler.ContentMap[new Uri(URL_IN_STORE)] =
                 Encoding.UTF8.GetBytes(BUILD_ID.ToHexString());
 
-            return Task.FromResult<ISymbolStore>(httpSymbolStoreFactory.Create(STORE_URL));
+            return httpSymbolStoreFactory.Create(STORE_URL);
         }
 
         #endregion

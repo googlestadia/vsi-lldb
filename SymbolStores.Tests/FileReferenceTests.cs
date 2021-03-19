@@ -15,7 +15,6 @@
 ﻿using NUnit.Framework;
 using System;
 using System.IO.Abstractions.TestingHelpers;
-using System.Threading.Tasks;
 
 namespace SymbolStores.Tests
 {
@@ -43,26 +42,26 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task CopyToAsync()
+        public void CopyTo()
         {
             fakeFileSystem.AddFile(SOURCE_PATH, new MockFileData(CONTENTS));
             var fileReference = fileReferenceFactory.Create(SOURCE_PATH);
 
-            await fileReference.CopyToAsync(DEST_PATH);
+            fileReference.CopyTo(DEST_PATH);
 
             Assert.AreEqual(CONTENTS, fakeFileSystem.GetFile(SOURCE_PATH).TextContents);
             Assert.AreEqual(CONTENTS, fakeFileSystem.GetFile(DEST_PATH).TextContents);
         }
 
         [Test]
-        public async Task CopyTo_DestinationAlreadyExistsAsync()
+        public void CopyTo_DestinationAlreadyExists()
         {
             const string DEST_CONTENTS = "dest";
             fakeFileSystem.AddFile(SOURCE_PATH, new MockFileData(CONTENTS));
             fakeFileSystem.AddFile(DEST_PATH, new MockFileData(DEST_CONTENTS));
             var fileReference = fileReferenceFactory.Create(SOURCE_PATH);
 
-            await fileReference.CopyToAsync(DEST_PATH);
+            fileReference.CopyTo(DEST_PATH);
             Assert.AreEqual(CONTENTS, fakeFileSystem.GetFile(SOURCE_PATH).TextContents);
             Assert.AreEqual(CONTENTS, fakeFileSystem.GetFile(DEST_PATH).TextContents);
         }
@@ -72,8 +71,7 @@ namespace SymbolStores.Tests
         {
             var fileReference = fileReferenceFactory.Create(SOURCE_PATH);
 
-            Assert.ThrowsAsync<ArgumentNullException>(
-                () => fileReference.CopyToAsync(null));
+            Assert.Throws<ArgumentNullException>(() => fileReference.CopyTo(null));
         }
     }
 }

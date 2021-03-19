@@ -30,14 +30,19 @@ namespace YetiCommon
         /// </summary>
         ///
         /// <exception cref="BinaryFileUtilException">
-        /// Throws on failure, including when the file cannot be found or the build ID cannot be
-        /// extracted. If there was an error executing the tool used to extract information, the
-        /// InnerException will be a ProcessException.
+        /// Thrown on failure, including when the file cannot be found or
+        /// the build ID cannot be extracted. If there was an error executing the tool used to
+        /// extract information, the InnerException will be a ProcessException.
         /// </exception>
         /// <exception cref="InvalidBuildIdException">
         /// Thrown on failure to find or parse a build ID of an otherwise valid binary, including
         /// the case when the build id has length zero.
         /// </exception>
+        BuildId ReadBuildId(string filepath, SSH.SshTarget target = null);
+
+        /// <summary>
+        /// Async version of ReadBuildId
+        /// </summary>
         Task<BuildId> ReadBuildIdAsync(string filepath, SSH.SshTarget target = null);
 
         /// <summary>
@@ -49,7 +54,7 @@ namespace YetiCommon
         /// the symbol file name cannot be extracted. If there was an error executing the tool used
         /// to extract information, the InnerException will be a ProcessException.
         /// </exception>
-        Task<string> ReadSymbolFileNameAsync(string filepath);
+        string ReadSymbolFileName(string filepath);
 
         /// <summary>
         /// Parses a binary file and returns the directory of the debug symbol file.
@@ -60,7 +65,7 @@ namespace YetiCommon
         /// cannot be extracted. If there was an error executing the tool used to extract
         /// information, the InnerException will be a ProcessException.
         /// </exception>
-        Task<string> ReadSymbolFileDirAsync(string filepath);
+        string ReadSymbolFileDir(string filepath);
 
         /// <summary>
         /// Verifies that the symbol file is a valid elf file. Optionally, it checks if the file
@@ -72,7 +77,7 @@ namespace YetiCommon
         /// en elf file or if no .debug_info section was find. If there was an error executing the
         /// tool used to extract information, the InnerException will be a ProcessException.
         /// </exception>
-        Task VerifySymbolFileAsync(string filepath, bool isDebugInfoFile);
+        void VerifySymbolFile(string filepath, bool isDebugInfoFile);
     }
 
     public class BinaryFileUtilException : Exception, IUserVisibleError

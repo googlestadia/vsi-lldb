@@ -15,7 +15,6 @@
 ﻿using NUnit.Framework;
 using System;
 using System.IO;
-using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores.Tests
@@ -51,11 +50,11 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_EmptyBuildIdAsync()
+        public void FindFile_EmptyBuildId()
         {
             var store = GetEmptyStore();
 
-            var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true, log);
+            var fileReference = store.FindFile(FILENAME, BuildId.Empty, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchStructuredStore(STORE_PATH, FILENAME,
@@ -63,11 +62,11 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_InvalidStoreAsync()
+        public void FindFile_InvalidStore()
         {
             var store = structuredStoreFactory.Create(INVALID_PATH);
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            var fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchStructuredStore(INVALID_PATH, FILENAME,
@@ -75,12 +74,11 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task AddFile_VerifyPathStructure()
+        public void AddFile_VerifyPathStructure()
         {
             var store = GetEmptyStore();
 
-            var fileReference = await store.AddFileAsync(
-                sourceSymbolFile, FILENAME, BUILD_ID, log);
+            var fileReference = store.AddFile(sourceSymbolFile, FILENAME, BUILD_ID, log);
 
             Assert.AreEqual(Path.Combine(STORE_PATH, FILENAME, BUILD_ID.ToString(), FILENAME),
                 fileReference.Location);
@@ -91,8 +89,8 @@ namespace SymbolStores.Tests
         {
             var store = GetEmptyStore();
 
-            var exception = Assert.ThrowsAsync<ArgumentException>(
-                () => store.AddFileAsync(sourceSymbolFile, FILENAME, BuildId.Empty));
+            var exception = Assert.Throws<ArgumentException>(
+                () => store.AddFile(sourceSymbolFile, FILENAME, BuildId.Empty));
 
             StringAssert.Contains(Strings.FailedToCopyToStructuredStore(STORE_PATH, FILENAME,
                 Strings.EmptyBuildId), exception.Message);
@@ -135,10 +133,10 @@ namespace SymbolStores.Tests
             return structuredStoreFactory.Create(STORE_PATH);
         }
 
-        protected override async Task<ISymbolStore> GetStoreWithFileAsync()
+        protected override ISymbolStore GetStoreWithFile()
         {
             var store = structuredStoreFactory.Create(STORE_PATH);
-            await store.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
+            store.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
             return store;
         }
 

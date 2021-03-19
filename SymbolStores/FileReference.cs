@@ -15,7 +15,6 @@
 ﻿using System;
 using System.IO;
 using System.IO.Abstractions;
-using System.Threading.Tasks;
 
 namespace SymbolStores
 {
@@ -56,7 +55,7 @@ namespace SymbolStores
 
         public string Location { get; private set; }
 
-        public Task CopyToAsync(string destFilepath)
+        public void CopyTo(string destFilepath)
         {
             if (destFilepath == null)
             {
@@ -100,8 +99,6 @@ namespace SymbolStores
             {
                 throw new SymbolStoreException(e.Message, e);
             }
-
-            return Task.CompletedTask;
         }
 
         #endregion

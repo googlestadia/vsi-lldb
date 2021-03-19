@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores
@@ -64,8 +63,8 @@ namespace SymbolStores
 
         public override IEnumerable<ISymbolStore> Substores => _stores;
 
-        public override async Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        public override IFileReference FindFile(string filename, BuildId buildId,
+                                                bool isDebugInfoFile, TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -76,8 +75,7 @@ namespace SymbolStores
 
             foreach (var store in _stores)
             {
-                IFileReference fileReference =
-                    await store.FindFileAsync(filename, buildId, false, log);
+                IFileReference fileReference = store.FindFile(filename, buildId, false, log);
 
                 if (fileReference != null)
                 {
@@ -87,20 +85,18 @@ namespace SymbolStores
                         try
                         {
                             fileReference =
-                                await currentCache.AddFileAsync(
-                                    fileReference, filename, buildId, log);
+                                currentCache.AddFile(fileReference, filename, buildId, log);
                         }
                         catch (Exception e) when (e is NotSupportedException ||
                             e is SymbolStoreException || e is ArgumentException)
                         {
                             Trace.WriteLine(e.Message);
-                            await log.WriteLineAsync(e.Message);
+                            log.WriteLine(e.Message);
                         }
                     }
 
                     if (!fileReference.IsFilesystemLocation ||
-                        await VerifySymbolFileAsync(
-                            fileReference.Location, buildId, isDebugInfoFile, log))
+                        VerifySymbolFile(fileReference.Location, buildId, isDebugInfoFile, log))
                     {
                         return fileReference;
                     }
@@ -115,8 +111,8 @@ namespace SymbolStores
             return null;
         }
 
-        public override Task<IFileReference> AddFileAsync(
-            IFileReference sourceFilepath, string filename, BuildId buildId, TextWriter log)
+        public override IFileReference AddFile(IFileReference sourceFilepath, string filename,
+            BuildId buildId, TextWriter log)
         {
             throw new NotSupportedException(Strings.CopyToStoreSequenceNotSupported);
         }
@@ -130,21 +126,21 @@ namespace SymbolStores
         }
         #endregion
 
-        async Task<bool> VerifySymbolFileAsync(
-            string filepath, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        bool VerifySymbolFile(string filepath, BuildId buildId, bool isDebugInfoFile,
+                              TextWriter log)
         {
             try
             {
-                await _binaryFileUtil.VerifySymbolFileAsync(filepath, isDebugInfoFile);
+                _binaryFileUtil.VerifySymbolFile(filepath, isDebugInfoFile);
                 if (buildId != BuildId.Empty)
                 {
-                    var actualBuildId = await _binaryFileUtil.ReadBuildIdAsync(filepath);
+                    var actualBuildId = _binaryFileUtil.ReadBuildId(filepath);
                     if (actualBuildId != buildId)
                     {
                         string errorMessage =
                             Strings.BuildIdMismatch(filepath, buildId, actualBuildId);
                         Trace.WriteLine(errorMessage);
-                        await log.WriteLineAsync(errorMessage);
+                        log.WriteLine(errorMessage);
                         return false;
                     }
                 }
@@ -152,7 +148,7 @@ namespace SymbolStores
             catch (BinaryFileUtilException e)
             {
                 Trace.WriteLine(e.Message);
-                await log.WriteLineAsync(e.Message);
+                log.WriteLine(e.Message);
                 return false;
             }
             return true;

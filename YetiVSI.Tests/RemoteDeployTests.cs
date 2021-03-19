@@ -14,19 +14,18 @@
 
 using GgpGrpc.Models;
 using NSubstitute;
-using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
-using YetiCommon.VSProject;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
+using YetiCommon.VSProject;
 
 namespace YetiVSI.Test
 {
@@ -97,7 +96,7 @@ namespace YetiVSI.Test
 
         MockFileSystem fileSystem;
 
-        Gamelet gamelet = new Gamelet { Id = TEST_GAMELET_ID, IpAddr = TEST_GAMELET_IP };
+        Gamelet gamelet = new Gamelet {Id = TEST_GAMELET_ID, IpAddr = TEST_GAMELET_IP};
         SshTarget target;
         BuildId buildId = new BuildId("2690EE47B4594F0628340990A2FEAA42");
         BuildId previousBuildId = new BuildId("2690EE47B4594F0628340990A2FEAA41");
@@ -309,8 +308,10 @@ namespace YetiVSI.Test
         [Test]
         public void DeployLldbServerFails()
         {
-            binaryFileUtil.ReadBuildIdAsync(TEST_LLDB_SERVER_PATH_REMOTE, target).Throws(
-                SignatureCheckExceptionForErrorType(SignatureErrorType.BINARY_ERROR));
+#pragma warning disable VSTHRD103 // ReadBuildId synchronously blocks.
+            binaryFileUtil.ReadBuildId(TEST_LLDB_SERVER_PATH_REMOTE, target).Returns(
+                x => throw SignatureCheckExceptionForErrorType(SignatureErrorType.BINARY_ERROR));
+#pragma warning restore VSTHRD103
 
             // copying lldb-file to gamelet throws exception
             remoteFile
@@ -333,8 +334,10 @@ namespace YetiVSI.Test
         public void DeployLldbServerFailToSetPermissions()
         {
             // read request for remote lldb-server build id throws exception
-            binaryFileUtil.ReadBuildIdAsync(TEST_LLDB_SERVER_PATH_REMOTE, target).Throws(
-                SignatureCheckExceptionForErrorType(SignatureErrorType.BINARY_ERROR));
+#pragma warning disable VSTHRD103 // ReadBuildId synchronously blocks.
+            binaryFileUtil.ReadBuildId(TEST_LLDB_SERVER_PATH_REMOTE, target).Returns(
+                x => throw SignatureCheckExceptionForErrorType(SignatureErrorType.BINARY_ERROR));
+#pragma warning restore VSTHRD103
 
             remoteCommand
                 .RunWithSuccessAsync(target, $"chmod a+x {YetiConstants.LldbServerLinuxPath}" +
@@ -503,9 +506,10 @@ namespace YetiVSI.Test
 
             fileSystem.AddFile(TEST_TARGET_PREVIOUS_PATH, MockPreviousExeFileData);
 
-            binaryFileUtil.ReadBuildIdAsync(TEST_TARGET_PATH, null).Returns(buildId);
-            binaryFileUtil.ReadBuildIdAsync(TEST_TARGET_PREVIOUS_PATH, null).Returns(buildId);
-
+#pragma warning disable VSTHRD103 // ReadBuildId synchronously blocks.
+            binaryFileUtil.ReadBuildId(TEST_TARGET_PATH, null).Returns(buildId);
+            binaryFileUtil.ReadBuildId(TEST_TARGET_PREVIOUS_PATH, null).Returns(buildId);
+#pragma warning restore VSTHRD103
             project.GetDeployOnLaunchAsync().Returns(DeployOnLaunchSetting.DELTA);
 
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
@@ -540,8 +544,10 @@ namespace YetiVSI.Test
         {
             fileSystem.AddFile(TEST_TARGET_PREVIOUS_PATH, MockPreviousExeFileData);
             fileSystem.AddFile(TEST_TARGET_DELTA_PATH, MockDeltaExeFileData);
-            binaryFileUtil.ReadBuildIdAsync(TEST_TARGET_PATH, null).Returns(buildId);
-            binaryFileUtil.ReadBuildIdAsync(TEST_TARGET_PREVIOUS_PATH, null).Returns(previousBuildId);
+#pragma warning disable VSTHRD103 // ReadBuildId synchronously blocks.
+            binaryFileUtil.ReadBuildId(TEST_TARGET_PATH, null).Returns(buildId);
+            binaryFileUtil.ReadBuildId(TEST_TARGET_PREVIOUS_PATH, null).Returns(previousBuildId);
+#pragma warning restore VSTHRD103
             binaryFileUtil.ReadBuildIdAsync(TEST_TARGET_PATH_REMOTE, target).Returns(BuildId.Empty);
             project.GetDeployOnLaunchAsync().Returns(DeployOnLaunchSetting.DELTA);
 
@@ -566,6 +572,10 @@ namespace YetiVSI.Test
         {
             fileSystem.AddFile(TEST_TARGET_PREVIOUS_PATH, MockPreviousExeFileData);
             fileSystem.AddFile(TEST_TARGET_DELTA_PATH, MockDeltaExeFileData);
+#pragma warning disable VSTHRD103 // ReadBuildId synchronously blocks.
+            binaryFileUtil.ReadBuildId(TEST_TARGET_PATH, null).Returns(buildId);
+            binaryFileUtil.ReadBuildId(TEST_TARGET_PREVIOUS_PATH, null).Returns(previousBuildId);
+#pragma warning restore VSTHRD103
             binaryFileUtil.ReadBuildIdAsync(TEST_TARGET_PATH_REMOTE, target)
                 .Returns(previousBuildId);
             project.GetDeployOnLaunchAsync().Returns(DeployOnLaunchSetting.DELTA);
@@ -603,16 +613,17 @@ namespace YetiVSI.Test
         {
             project.GetDeployOnLaunchAsync().Returns(DeployOnLaunchSetting.ALWAYS);
             project.GetCustomDeployOnLaunchAsync().Returns(TEST_CUSTOM_COMMAND);
-            binaryFileUtil.ReadBuildIdAsync(TEST_LLDB_SERVER_PATH_REMOTE, target).Throws(
-                SignatureCheckExceptionForErrorType(SignatureErrorType.BINARY_ERROR));
+#pragma warning disable VSTHRD103 // ReadBuildId synchronously blocks.
+            binaryFileUtil.ReadBuildId(TEST_LLDB_SERVER_PATH_REMOTE, target).Returns(
+                x => throw SignatureCheckExceptionForErrorType(SignatureErrorType.BINARY_ERROR));
+#pragma warning restore VSTHRD103
 
             var process = MockCustomDeployProcess();
             await remoteDeploy.DeployGameExecutableAsync(project, gamelet, task, action);
             await remoteDeploy.DeployLldbServerAsync(target, action);
             await remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
 
-            Received.InOrder(() =>
-            {
+            Received.InOrder(() => {
                 remoteFile
                     .PutAsync(target, TEST_TARGET_PATH, TEST_TARGET_PATH_REMOTE,
                               DeployCompression.Uncompressed, Arg.Any<IIncrementalProgress>(),

@@ -838,16 +838,14 @@ namespace YetiVSI.DebugEngine
 
             var action = _actionRecorder.CreateToolAction(ActionType.DebugEngineLoadSymbols);
 
+            int result = VSConstants.S_OK;
             var inclusionSettings = _symbolSettingsProvider.GetInclusionSettings();
-            var isSymbolServerEnabled = _symbolSettingsProvider.IsSymbolServerEnabled;
-
             var loadSymbolsTask = _cancelableTaskFactory.Create("Loading symbols...", task => {
-                return _attachedProgram.LoadModuleFilesAsync(
-                    inclusionSettings, isSymbolServerEnabled, task,
+                result = _attachedProgram.LoadModuleFiles(
+                    inclusionSettings, _symbolSettingsProvider.IsSymbolServerEnabled, task,
                     _moduleFileLoadRecorderFactory.Create(action));
             });
-            var completed = loadSymbolsTask.RunAndRecord(action);
-            return completed ? loadSymbolsTask.Result : VSConstants.E_ABORT;
+            return loadSymbolsTask.RunAndRecord(action) ? result : VSConstants.E_ABORT;
         }
 
         public override int SetJustMyCodeState(int fUpdate, uint dwModules,

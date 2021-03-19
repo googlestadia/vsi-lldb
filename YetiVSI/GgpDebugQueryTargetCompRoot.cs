@@ -75,7 +75,8 @@ namespace YetiVSI
                                             socketSender, fileSystem);
             var remoteDeploy = new RemoteDeploy(remoteCommand, remoteFile, managedProcessFactory,
                                                 fileSystem,
-                                                new ElfFileUtil(managedProcessFactory));
+                                                new ElfFileUtil(taskContext.Factory,
+                                                                managedProcessFactory));
             var metrics = _serviceManager.GetGlobalService(typeof(SMetrics)) as IMetrics;
             var sdkVersion = GetSdkVersion();
             var sshManager = GetSshManager(managedProcessFactory, cloudRunner);

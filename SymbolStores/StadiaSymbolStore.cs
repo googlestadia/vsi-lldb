@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc.Cloud;
+﻿using GgpGrpc.Cloud;
 using Grpc.Core;
+using Microsoft.VisualStudio.Threading;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Abstractions;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using YetiCommon;
+using System.IO.Abstractions;
 
 namespace SymbolStores
 {
@@ -39,23 +40,27 @@ namespace SymbolStores
     {
         public class Factory
         {
-            readonly HttpClient _httpClient;
-            readonly HttpFileReference.Factory _httpSymbolFileFactory;
-            readonly ICrashReportClient _crashReportClient;
+            JoinableTaskFactory _taskFactory;
+            HttpClient _httpClient;
+            HttpFileReference.Factory _httpSymbolFileFactory;
+            ICloudRunner _cloudRunner;
+            ICrashReportClient _crashReportClient;
 
-            public Factory(HttpClient httpClient,
+            public Factory(JoinableTaskFactory taskFactory, HttpClient httpClient,
                            HttpFileReference.Factory httpSymbolFileFactory,
-                           ICrashReportClient crashReportClient)
+                           ICloudRunner cloudRunner, ICrashReportClient crashReportClient)
             {
+                _taskFactory = taskFactory;
                 _httpClient = httpClient;
                 _httpSymbolFileFactory = httpSymbolFileFactory;
+                _cloudRunner = cloudRunner;
                 _crashReportClient = crashReportClient;
             }
 
             public virtual IStadiaSymbolStore Create()
             {
-                return new StadiaSymbolStore(
-                    _httpClient, _httpSymbolFileFactory, _crashReportClient);
+                return new StadiaSymbolStore(_taskFactory, _httpClient, _httpSymbolFileFactory,
+                                             _cloudRunner, _crashReportClient);
             }
         }
 
@@ -66,24 +71,28 @@ namespace SymbolStores
             return fileSystem.File.Exists(Path.Combine(path, MarkerFileName));
         }
 
-        readonly HttpClient _httpClient;
-        readonly HttpFileReference.Factory _httpSymbolFileFactory;
-        readonly ICrashReportClient _crashReportClient;
+        JoinableTaskFactory _taskFactory;
+        HttpClient _httpClient;
+        HttpFileReference.Factory _httpSymbolFileFactory;
+        ICloudRunner _cloudRunner;
+        ICrashReportClient _crashReportClient;
 
-        StadiaSymbolStore(HttpClient httpClient,
-                          HttpFileReference.Factory httpSymbolFileFactory,
+        StadiaSymbolStore(JoinableTaskFactory taskFactory, HttpClient httpClient,
+                          HttpFileReference.Factory httpSymbolFileFactory, ICloudRunner cloudRunner,
                           ICrashReportClient crashReportClient)
-            : base(supportsAddingFiles: false, isCache: false)
+            : base(supportsAddingFiles
+                   : false, isCache
+                   : false)
         {
+            _taskFactory = taskFactory;
             _httpClient = httpClient;
             _httpSymbolFileFactory = httpSymbolFileFactory;
+            _cloudRunner = cloudRunner;
             _crashReportClient = crashReportClient;
         }
 
-        #region SymbolStoreBase functions
-
-        public override async Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+                                                 bool isDebugInfoFile, TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -94,7 +103,8 @@ namespace SymbolStores
             {
                 // TODO: simplify logging
                 Trace.WriteLine(Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
-                log.WriteLine(Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
+                await log.WriteLineAsync(
+                    Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
                 return null;
             }
 
@@ -115,14 +125,15 @@ namespace SymbolStores
                     // TODO: simplify logging
                     Trace.WriteLine(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
-                    log.WriteLine(
+                    await log.WriteLineAsync(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
                 }
                 else
                 {
                     // TODO: simplify logging
                     Trace.WriteLine(Strings.FailedToSearchStadiaStore(filename, e.ToString()));
-                    log.WriteLine(Strings.FailedToSearchStadiaStore(filename, e.Message));
+                    await log.WriteLineAsync(
+                        Strings.FailedToSearchStadiaStore(filename, e.Message));
                 }
 
                 return null;
@@ -140,11 +151,11 @@ namespace SymbolStores
             catch (HttpRequestException e)
             {
                 Trace.WriteLine(Strings.FailedToSearchStadiaStore(filename, e.ToString()));
-                log.WriteLine(Strings.FailedToSearchStadiaStore(filename, e.Message));
+                await log.WriteLineAsync(Strings.FailedToSearchStadiaStore(filename, e.Message));
                 return null;
             }
 
-            using (response)
+            using(response)
             {
                 // Handle the most common case of NotFound with a nicer error message.
                 if (response.StatusCode == HttpStatusCode.NotFound)
@@ -152,7 +163,7 @@ namespace SymbolStores
                     // TODO: simplify logging
                     Trace.WriteLine(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
-                    log.WriteLine(
+                    await log.WriteLineAsync(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
                     return null;
                 }
@@ -161,21 +172,30 @@ namespace SymbolStores
                 {
                     // TODO: simplify logging
                     Trace.WriteLine(Strings.FileNotFoundInHttpStore(
-                        filename, (int)response.StatusCode, response.ReasonPhrase));
-                    log.WriteLine(Strings.FileNotFoundInHttpStore(
-                        filename, (int)response.StatusCode, response.ReasonPhrase));
+                        filename, (int) response.StatusCode, response.ReasonPhrase));
+                    await log.WriteLineAsync(Strings.FileNotFoundInHttpStore(
+                        filename, (int) response.StatusCode, response.ReasonPhrase));
                     return null;
                 }
 
                 // TODO: simplify logging
                 Trace.WriteLine(Strings.FileFound(filename));
-                log.WriteLine(Strings.FileFound(filename));
+                await log.WriteLineAsync(Strings.FileFound(filename));
                 return _httpSymbolFileFactory.Create(fileUrl);
             }
         }
 
-        public override Task<IFileReference> AddFileAsync(
-            IFileReference source, string filename, BuildId buildId, TextWriter log)
+#region SymbolStoreBase functions
+
+        public override IFileReference FindFile(string filename, BuildId buildId,
+                                                bool isDebugInfoFile, TextWriter log)
+        {
+            return _taskFactory.Run(
+                async () => await FindFileAsync(filename, buildId, isDebugInfoFile, log));
+        }
+
+        public override IFileReference AddFile(IFileReference source, string filename,
+                                               BuildId buildId, TextWriter log)
         {
             throw new NotSupportedException(Strings.CopyToHttpStoreNotSupported);
         }
@@ -185,6 +205,6 @@ namespace SymbolStores
             return otherStore is StadiaSymbolStore;
         }
 
-        #endregion
+#endregion
     }
 }

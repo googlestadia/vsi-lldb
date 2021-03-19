@@ -195,7 +195,7 @@ namespace YetiVSI.DebugEngine
             var backgroundProcessFactory = new BackgroundProcess.Factory();
 
             var processFactory = new ManagedProcess.Factory();
-            var binaryFileUtil = new ElfFileUtil(processFactory);
+            var binaryFileUtil = new ElfFileUtil(GetJoinableTaskContext().Factory, processFactory);
             var lldbModuleUtil = new LldbModuleUtil();
 
             var symbolServerRequestHandler = new WebRequestHandler(){
@@ -206,14 +206,17 @@ namespace YetiVSI.DebugEngine
             var symbolServerHttpClient = new HttpClient(symbolServerRequestHandler);
             var fileReferenceFactory = new FileReference.Factory(GetFileSystem());
             var httpFileReferenceFactory = new HttpFileReference.Factory(
-                GetFileSystem(), symbolServerHttpClient);
+                GetJoinableTaskContext().Factory, GetFileSystem(), symbolServerHttpClient);
             var symbolPathParser = new SymbolPathParser(
                 GetFileSystem(),
                 new StructuredSymbolStore.Factory(GetFileSystem(), fileReferenceFactory),
                 new FlatSymbolStore.Factory(GetFileSystem(), binaryFileUtil, fileReferenceFactory),
                 new SymbolStoreSequence.Factory(binaryFileUtil), new SymbolServer.Factory(),
-                new HttpSymbolStore.Factory(symbolServerHttpClient, httpFileReferenceFactory),
-                new StadiaSymbolStore.Factory(symbolServerHttpClient, httpFileReferenceFactory,
+                new HttpSymbolStore.Factory(GetJoinableTaskContext().Factory,
+                                            symbolServerHttpClient, httpFileReferenceFactory),
+                new StadiaSymbolStore.Factory(GetJoinableTaskContext().Factory,
+                                              symbolServerHttpClient, httpFileReferenceFactory,
+                                              GetCloudRunner(),
                                               new CrashReportClient(GetCloudRunner())),
                 SDKUtil.GetDefaultSymbolCachePath(), SDKUtil.GetDefaultSymbolStorePath(),
                 YetiConstants.SymbolServerExcludeList);

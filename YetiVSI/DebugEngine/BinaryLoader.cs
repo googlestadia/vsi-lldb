@@ -16,7 +16,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.CastleAspects;
 
@@ -37,13 +36,12 @@ namespace YetiVSI.DebugEngine
         /// binary and replace |lldbModule| with the newly loaded module.
         /// </summary>
         /// <returns>
-        /// A new (updated) module and true if the binary was loaded successfully or was already
-        /// loaded, false otherwise.
+        /// True if the binary was loaded successfully or was already loaded, false otherwise.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// Thrown when |lldbModule| is null.
         /// </exception>
-        Task<(SbModule, bool)> LoadBinaryAsync(SbModule lldbModule, TextWriter searchLog);
+        bool LoadBinary(ref SbModule lldbModule, TextWriter searchLog);
     }
 
     public class LldbModuleReplacedEventArgs : EventArgs
@@ -92,55 +90,55 @@ namespace YetiVSI.DebugEngine
             this.lldbTarget = lldbTarget;
         }
 
-        public virtual async Task<(SbModule, bool)> LoadBinaryAsync(
-            SbModule lldbModule, TextWriter searchLog)
+        public virtual bool LoadBinary(ref SbModule lldbModule, TextWriter searchLog)
         {
             if (lldbModule == null) { throw new ArgumentNullException(nameof(lldbModule)); }
             searchLog = searchLog ?? TextWriter.Null;
 
             if (!moduleUtil.IsPlaceholderModule(lldbModule))
             {
-                return (lldbModule, true);
+                return true;
             }
 
             var binaryName = lldbModule.GetPlatformFileSpec()?.GetFilename();
             if (string.IsNullOrEmpty(binaryName))
             {
-                await searchLog.WriteLineAsync(ErrorStrings.BinaryFileNameUnknown);
+                searchLog.WriteLine(ErrorStrings.BinaryFileNameUnknown);
                 Trace.WriteLine(ErrorStrings.BinaryFileNameUnknown);
-                return (lldbModule, false);
+                return false;
             }
 
-            var binaryPath = await moduleFileFinder.FindFileAsync(
+            var binaryPath = moduleFileFinder.FindFile(
                 binaryName, new BuildId(lldbModule.GetUUIDString()), false, searchLog);
             if (binaryPath == null)
             {
-                return (lldbModule, false);
+                return false;
             }
 
             PlaceholderModuleProperties properties =
                 moduleUtil.GetPlaceholderProperties(lldbModule, lldbTarget);
             if (properties == null)
             {
-                return (lldbModule, false);
+                return false;
             }
             RemoveModule(lldbModule);
 
             var newModule = AddModule(binaryPath, lldbModule.GetUUIDString(), searchLog);
             if (newModule == null)
             {
-                return (lldbModule, false);
+                return false;
             }
 
             if (!moduleUtil.ApplyPlaceholderProperties(newModule, properties, lldbTarget))
             {
-                return (lldbModule, false);
+                return false;
             }
 
             LldbModuleReplaced?.Invoke(Self,
                 new LldbModuleReplacedEventArgs(newModule, lldbModule));
 
-            return (newModule, true);
+            lldbModule = newModule;
+            return true;
         }
 
         SbModule AddModule(string binaryPath, string id, TextWriter searchLog)
