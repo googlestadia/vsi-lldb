@@ -258,7 +258,7 @@ namespace YetiVSI.DebugEngine
 
             ICancelableTask<int> loadSymbolsTask = _cancelableTaskFactory.Create(
                 "Loading symbols...",
-                task => _moduleFileLoader.LoadModuleFiles(new[] {_lldbModule}, task,
+                task => _moduleFileLoader.LoadModuleFilesAsync(new[] {_lldbModule}, task,
                                                           _moduleFileLoadRecorderFactory.Create(
                                                               action)));
 

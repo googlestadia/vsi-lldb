@@ -19,6 +19,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Interfaces;
 using YetiVSI.LLDBShell;
@@ -269,7 +270,7 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void LoadSymbols()
+        public async Task LoadSymbolsAsync()
         {
             var modules = new List<SbModule>() {
                 Substitute.For<SbModule>(),
@@ -288,9 +289,10 @@ namespace YetiVSI.Test
             var symbolSettings =
                 new SymbolInclusionSettings(true, new List<string>(), new List<string>());
             var moduleFileLoadRecorder = Substitute.For<IModuleFileLoadMetricsRecorder>();
-            _attachedProgram.LoadModuleFiles(symbolSettings, true, task, moduleFileLoadRecorder);
+            await _attachedProgram.LoadModuleFilesAsync(
+                symbolSettings, true, task, moduleFileLoadRecorder);
 
-            _moduleFileLoader.Received(1).LoadModuleFiles(
+            await _moduleFileLoader.Received(1).LoadModuleFilesAsync(
                 Arg.Is<IList<SbModule>>(l => l.SequenceEqual(modules)), symbolSettings, true, task,
                 moduleFileLoadRecorder);
         }

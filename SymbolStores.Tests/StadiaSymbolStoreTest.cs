@@ -14,7 +14,6 @@
 
 ﻿using GgpGrpc.Cloud;
 using Grpc.Core;
-using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
 using System;
@@ -41,18 +40,15 @@ namespace SymbolStores.Tests
         {
             base.SetUp();
 
-            var taskContext = new JoinableTaskContext();
             _fakeHttpMessageHandler = new FakeHttpMessageHandler();
             _httpClient = new HttpClient(_fakeHttpMessageHandler);
-            var httpFileReferenceFactory =
-                new HttpFileReference.Factory(taskContext.Factory, fakeFileSystem, _httpClient);
+            var httpFileReferenceFactory = new HttpFileReference.Factory(
+                fakeFileSystem, _httpClient);
 
-            var cloudRunner = Substitute.For<ICloudRunner>();
             _crashReportClient = Substitute.For<ICrashReportClient>();
 
             _stadiaSymbolStoreFactory = new StadiaSymbolStore.Factory(
-                taskContext.Factory, _httpClient, httpFileReferenceFactory, cloudRunner,
-                _crashReportClient);
+                _httpClient, httpFileReferenceFactory, _crashReportClient);
         }
 
         [TearDown]
@@ -62,11 +58,12 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_EmptyBuildId()
+        public async Task FindFile_EmptyBuildId()
         {
             ISymbolStore store = _stadiaSymbolStoreFactory.Create();
 
-            IFileReference fileReference = store.FindFile(FILENAME, BuildId.Empty, true, log);
+            IFileReference fileReference =
+                await store.FindFileAsync(FILENAME, BuildId.Empty, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchStadiaStore(FILENAME, Strings.EmptyBuildId),
@@ -74,7 +71,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_APINotFound()
+        public async Task FindFile_APINotFound()
         {
             var ex =
                 new CloudException("Failed to generate download URL: not found",
@@ -83,7 +80,8 @@ namespace SymbolStores.Tests
                 .Returns(x => Task.FromException<string>(ex));
             ISymbolStore store = _stadiaSymbolStoreFactory.Create();
 
-            IFileReference fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference =
+                await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(
@@ -92,7 +90,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_APIException()
+        public async Task FindFile_APIException()
         {
             var ex = new CloudException(
                 "Failed to generate download URL: permission denied",
@@ -101,7 +99,8 @@ namespace SymbolStores.Tests
                 .Returns(x => Task.FromException<string>(ex));
             ISymbolStore store = _stadiaSymbolStoreFactory.Create();
 
-            IFileReference fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference =
+                await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchStadiaStore(FILENAME, ex.Message),
@@ -109,14 +108,15 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_HttpNotFound()
+        public async Task FindFile_HttpNotFound()
         {
             _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
                 .Returns(_urlInStore);
             // By default, HTTP client returns Not Found for every file.
             ISymbolStore store = _stadiaSymbolStoreFactory.Create();
 
-            IFileReference fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference =
+                await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(
@@ -125,7 +125,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_HttpRequestException()
+        public async Task FindFile_HttpRequestException()
         {
             _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
                 .Returns(_urlInStore);
@@ -133,7 +133,8 @@ namespace SymbolStores.Tests
                 new HttpRequestException("message");
             ISymbolStore store = _stadiaSymbolStoreFactory.Create();
 
-            IFileReference fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference =
+                await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchStadiaStore(FILENAME, "message"),
@@ -162,14 +163,14 @@ namespace SymbolStores.Tests
             return _stadiaSymbolStoreFactory.Create();
         }
 
-        protected override ISymbolStore GetStoreWithFile()
+        protected override Task<ISymbolStore> GetStoreWithFileAsync()
         {
             _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
                 .Returns(_urlInStore);
             _fakeHttpMessageHandler.ContentMap[new Uri(_urlInStore)] =
                 Encoding.UTF8.GetBytes(BUILD_ID.ToHexString());
 
-            return _stadiaSymbolStoreFactory.Create();
+            return Task.FromResult<ISymbolStore>(_stadiaSymbolStoreFactory.Create());
         }
 
 #endregion

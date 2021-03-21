@@ -18,6 +18,7 @@ using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using YetiVSI.DebugEngine.AsyncOperations;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.Interfaces;
@@ -81,9 +82,9 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Load the symbols. Skips modules that already have their symbols loaded.
         /// </summary>
-        int LoadModuleFiles(SymbolInclusionSettings symbolsSettings, bool useSymbolsStores,
-                            ICancelable task,
-                            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
+        Task<int> LoadModuleFilesAsync(
+            SymbolInclusionSettings symbolsSettings, bool useSymbolsStores, ICancelable task,
+            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
 
         /// <summary>
         /// Get the modules with the specified name.
@@ -356,15 +357,17 @@ namespace YetiVSI.DebugEngine
         /// Load missing binaries and symbols. Skips modules that already have their symbols loaded
         /// or that are excluded via Include / Exclude options on symbols settings page.
         /// </summary>
-        public int LoadModuleFiles(SymbolInclusionSettings symbolsSettings, bool useSymbolStores,
-                                   ICancelable task,
-                                   IModuleFileLoadMetricsRecorder moduleFileLoadRecorder) =>
-            _moduleFileLoader.LoadModuleFiles(Enumerable.Range(0, NumLoadedModules)
-                                                  .Select(_target.GetModuleAtIndex)
-                                                  .Where(m => m != null)
-                                                  .ToList(),
-                                              symbolsSettings, useSymbolStores, task,
-                                              moduleFileLoadRecorder);
+        public Task<int> LoadModuleFilesAsync(
+            SymbolInclusionSettings symbolsSettings, bool useSymbolStores, ICancelable task,
+            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
+        {
+            return _moduleFileLoader.LoadModuleFilesAsync(
+                Enumerable.Range(0, NumLoadedModules)
+                    .Select(_target.GetModuleAtIndex)
+                    .Where(m => m != null)
+                    .ToList(),
+                symbolsSettings, useSymbolStores, task, moduleFileLoadRecorder);
+        }
 
         public IList<IDebugModule3> GetModulesByName(string moduleName)
         {

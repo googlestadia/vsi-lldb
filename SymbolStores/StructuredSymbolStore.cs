@@ -17,6 +17,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
+using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores
@@ -90,8 +91,8 @@ namespace SymbolStores
 
         #region SymbolStoreBase functions
 
-        public override IFileReference FindFile(string filename, BuildId buildId,
-                                                bool isDebugInfoFile, TextWriter log)
+        public override async Task<IFileReference> FindFileAsync(
+            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -101,7 +102,7 @@ namespace SymbolStores
             {
                 Trace.WriteLine(
                     Strings.FailedToSearchStructuredStore(path, filename, Strings.EmptyBuildId));
-                log.WriteLine(
+                await log.WriteLineAsync(
                     Strings.FailedToSearchStructuredStore(path, filename, Strings.EmptyBuildId));
                 return null;
             }
@@ -115,23 +116,23 @@ namespace SymbolStores
             catch (ArgumentException e)
             {
                 Trace.WriteLine(Strings.FailedToSearchStructuredStore(path, filename, e.Message));
-                log.WriteLine(Strings.FailedToSearchStructuredStore(path, filename, e.Message));
+                await log.WriteLineAsync(Strings.FailedToSearchStructuredStore(path, filename, e.Message));
                 return null;
             }
             if (!fileSystem.File.Exists(filepath))
             {
                 Trace.WriteLine(Strings.FileNotFound(filepath));
-                log.WriteLine(Strings.FileNotFound(filepath));
+                await log.WriteLineAsync(Strings.FileNotFound(filepath));
                 return null;
             }
 
             Trace.WriteLine(Strings.FileFound(filepath));
-            log.WriteLine(Strings.FileFound(filepath));
+            await log.WriteLineAsync(Strings.FileFound(filepath));
             return fileReferenceFactory.Create(filepath);
         }
 
-        public override IFileReference AddFile(IFileReference source, string filename,
-            BuildId buildId, TextWriter log)
+        public override async Task<IFileReference> AddFileAsync(
+            IFileReference source, string filename, BuildId buildId, TextWriter log)
         {
             if (source == null)
             {
@@ -154,7 +155,7 @@ namespace SymbolStores
                 AddMarkerFileIfNeeded();
 
                 var filepath = Path.Combine(path, filename, buildId.ToString(), filename);
-                source.CopyTo(filepath);
+                await source.CopyToAsync(filepath);
 
                 Trace.WriteLine(Strings.CopiedFile(filename, filepath));
                 log.WriteLine(Strings.CopiedFile(filename, filepath));

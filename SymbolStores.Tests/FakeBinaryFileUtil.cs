@@ -23,8 +23,9 @@ namespace SymbolStores.Tests
 {
     class FakeBinaryFileUtil : IBinaryFileUtil
     {
-        IFileSystem _fileSystem;
-        Dictionary<string, string> _verificationFailures = new Dictionary<string, string>();
+        readonly IFileSystem _fileSystem;
+        readonly Dictionary<string, string> _verificationFailures
+            = new Dictionary<string, string>();
 
         public FakeBinaryFileUtil(IFileSystem fileSystem)
         {
@@ -38,30 +39,25 @@ namespace SymbolStores.Tests
 
         // Instead of properly parsing the file, just read its entire contents as binary and
         // return that as the build ID
-        public BuildId ReadBuildId(string filepath, SshTarget target = null)
-        {
-            return new BuildId(_fileSystem.File.ReadAllText(filepath));
-        }
-
         public async Task<BuildId> ReadBuildIdAsync(string filepath, SshTarget target = null)
         {
-            BuildId buildID = ReadBuildId(filepath);
+            BuildId buildID = new BuildId(_fileSystem.File.ReadAllText(filepath));
             return await Task.FromResult(buildID);
         }
 
-        public string ReadSymbolFileName(string filepath)
+        public Task<string> ReadSymbolFileNameAsync(string filepath)
         {
             throw new NotImplementedTestDoubleException();
         }
 
-        public string ReadSymbolFileDir(string filepath)
+        public Task<string> ReadSymbolFileDirAsync(string filepath)
         {
             throw new NotImplementedTestDoubleException();
         }
 
-        public void VerifySymbolFile(string filepath, bool isDebugInfoFile)
+        public async Task VerifySymbolFileAsync(string filepath, bool isDebugInfoFile)
         {
-            BuildId buildId = ReadBuildId(filepath);
+            BuildId buildId = await ReadBuildIdAsync(filepath);
             if (_verificationFailures.TryGetValue(buildId.ToString(), out string errorString))
             {
                 throw new BinaryFileUtilException(errorString);

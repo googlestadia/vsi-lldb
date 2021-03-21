@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using NSubstitute;
+using NSubstitute;
 using NUnit.Framework;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores.Tests
@@ -43,11 +44,11 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_Exists_EmptyBuildId()
+        public async Task FindFile_Exists_EmptyBuildIdAsync()
         {
-            var store = GetStoreWithFile();
+            var store = await GetStoreWithFileAsync();
 
-            var fileReference = store.FindFile(FILENAME, BuildId.Empty, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true, log);
 
             Assert.AreEqual(Path.Combine(STORE_PATH, FILENAME), fileReference.Location);
             StringAssert.Contains(Strings.FileFound(Path.Combine(STORE_PATH, FILENAME)),
@@ -55,12 +56,12 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_BuildIdMismatch()
+        public async Task FindFile_BuildIdMismatchAsync()
         {
             var mismatchedBuildId = new BuildId("4321");
 
-            var store = GetStoreWithFile();
-            var fileReference = store.FindFile(FILENAME, mismatchedBuildId, true, log);
+            var store = await GetStoreWithFileAsync();
+            var fileReference = await store.FindFileAsync(FILENAME, mismatchedBuildId, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.BuildIdMismatch(Path.Combine(STORE_PATH, FILENAME),
@@ -68,11 +69,11 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_InvalidStore()
+        public async Task FindFile_InvalidStoreAsync()
         {
             var store = flatStoreFactory.Create(INVALID_PATH);
 
-            var fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchFlatStore(INVALID_PATH, FILENAME,
@@ -80,10 +81,10 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_ReadBuildIdFailure()
+        public async Task FindFile_ReadBuildIdFailureAsync()
         {
             var mockBinaryFileUtil = Substitute.For<IBinaryFileUtil>();
-            mockBinaryFileUtil.ReadBuildId(Arg.Any<string>()).Returns(delegate
+            mockBinaryFileUtil.ReadBuildIdAsync(Arg.Any<string>()).Returns<BuildId>(x =>
             {
                 throw new BinaryFileUtilException("test exception");
             });
@@ -91,7 +92,7 @@ namespace SymbolStores.Tests
                 fileReferenceFactory).Create(STORE_PATH);
             fakeBuildIdWriter.WriteBuildId(Path.Combine(STORE_PATH, FILENAME), BUILD_ID);
 
-            var fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains("test exception", log.ToString());
@@ -124,10 +125,10 @@ namespace SymbolStores.Tests
             return flatStoreFactory.Create(STORE_PATH);
         }
 
-        protected override ISymbolStore GetStoreWithFile()
+        protected override Task<ISymbolStore> GetStoreWithFileAsync()
         {
             fakeBuildIdWriter.WriteBuildId(Path.Combine(STORE_PATH, FILENAME), BUILD_ID);
-            return flatStoreFactory.Create(STORE_PATH);
+            return Task.FromResult<ISymbolStore>(flatStoreFactory.Create(STORE_PATH));
         }
 
         #endregion

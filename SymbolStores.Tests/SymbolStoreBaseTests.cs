@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using System;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
+using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores.Tests
@@ -50,49 +51,51 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_Exists()
+        public async Task FindFile_ExistsAsync()
         {
-            var store = GetStoreWithFile();
+            var store = await GetStoreWithFileAsync();
 
-            var fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
-            fileReference.CopyTo(DEST_FILEPATH);
+            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            await fileReference.CopyToAsync(DEST_FILEPATH);
 
-            Assert.AreEqual(BUILD_ID, fakeBinaryFileUtil.ReadBuildId(DEST_FILEPATH));
+            Assert.AreEqual(
+                BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(DEST_FILEPATH));
             StringAssert.Contains(Strings.FileFound(""), log.ToString());
         }
 
         [Test]
-        public void FindFile_NoLog()
+        public async Task FindFile_NoLogAsync()
         {
-            var store = GetStoreWithFile();
+            var store = await GetStoreWithFileAsync();
 
-            var fileReference = store.FindFile(FILENAME, BUILD_ID);
-            fileReference.CopyTo(DEST_FILEPATH);
+            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID);
+            await fileReference.CopyToAsync(DEST_FILEPATH);
 
-            Assert.AreEqual(BUILD_ID, fakeBinaryFileUtil.ReadBuildId(DEST_FILEPATH));
+            Assert.AreEqual(
+                BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(DEST_FILEPATH));
         }
 
         [Test]
-        public void FindFile_NullFilename()
+        public void FindFile_NullFilenameAsync()
         {
             var store = GetEmptyStore();
 
-            Assert.Throws<ArgumentException>(() => store.FindFile(null, BUILD_ID));
+            Assert.ThrowsAsync<ArgumentException>(() => store.FindFileAsync(null, BUILD_ID));
         }
 
         [Test]
-        public void FindFile_DoesNotExist()
+        public async Task FindFile_DoesNotExistAsync()
         {
             var store = GetEmptyStore();
 
-            var fileReference = store.FindFile(FILENAME, BUILD_ID, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FileNotFound(""), log.ToString());
         }
 
         [Test]
-        public void AddFile_WhenSupported()
+        public async Task AddFile_WhenSupportedAsync()
         {
             var store = GetEmptyStore();
             if (!store.SupportsAddingFiles)
@@ -100,9 +103,11 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            var fileReference = store.AddFile(sourceSymbolFile, FILENAME, BUILD_ID, log);
+            var fileReference = await store.AddFileAsync(
+                sourceSymbolFile, FILENAME, BUILD_ID, log);
 
-            Assert.AreEqual(BUILD_ID, fakeBinaryFileUtil.ReadBuildId(fileReference.Location));
+            Assert.AreEqual(
+                BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(fileReference.Location));
             StringAssert.Contains(Strings.CopiedFile(FILENAME, fileReference.Location),
                 log.ToString());
         }
@@ -116,12 +121,12 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            Assert.Throws<NotSupportedException>(
-                () => store.AddFile(sourceSymbolFile, FILENAME, BUILD_ID));
+            Assert.ThrowsAsync<NotSupportedException>(
+                () => store.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID));
         }
 
         [Test]
-        public void AddFile_NoLog()
+        public async Task AddFile_NoLogAsync()
         {
             var store = GetEmptyStore();
             if (!store.SupportsAddingFiles)
@@ -129,22 +134,23 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            var fileReference = store.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
-            fileReference.CopyTo(DEST_FILEPATH);
+            var fileReference = await store.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
+            await fileReference.CopyToAsync(DEST_FILEPATH);
 
-            Assert.AreEqual(BUILD_ID, fakeBinaryFileUtil.ReadBuildId(DEST_FILEPATH));
+            Assert.AreEqual(
+                BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(DEST_FILEPATH));
         }
 
         [Test]
-        public void AddFile_AlreadyExists()
+        public async Task AddFile_AlreadyExistsAsync()
         {
-            var store = GetStoreWithFile();
+            var store = await GetStoreWithFileAsync();
             if (!store.SupportsAddingFiles)
             {
                 return;
             }
 
-            store.AddFile(sourceSymbolFile, FILENAME, BUILD_ID);
+            await store.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
         }
 
         [Test]
@@ -156,11 +162,9 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            Assert.Throws<SymbolStoreException>(() =>
-            {
-                store.AddFile(fileReferenceFactory.Create(MISSING_FILEPATH), FILENAME,
-                    BUILD_ID);
-            });
+            Assert.ThrowsAsync<SymbolStoreException>(() =>
+                store.AddFileAsync(fileReferenceFactory.Create(MISSING_FILEPATH), FILENAME,
+                    BUILD_ID));
         }
 
         [Test]
@@ -172,8 +176,9 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            Assert.Throws<SymbolStoreException>(
-                () => store.AddFile(fileReferenceFactory.Create(INVALID_PATH), FILENAME, BUILD_ID));
+            Assert.ThrowsAsync<SymbolStoreException>(
+                () => store.AddFileAsync(
+                    fileReferenceFactory.Create(INVALID_PATH), FILENAME, BUILD_ID));
         }
 
         [Test]
@@ -185,7 +190,8 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            Assert.Throws<ArgumentException>(() => store.AddFile(null, FILENAME, BUILD_ID));
+            Assert.ThrowsAsync<ArgumentException>(
+                () => store.AddFileAsync(null, FILENAME, BUILD_ID));
         }
 
         [TestCase(null, "1234")]
@@ -199,8 +205,8 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            Assert.Throws<ArgumentException>(
-                () => store.AddFile(sourceSymbolFile, filename, buildId));
+            Assert.ThrowsAsync<ArgumentException>(
+                () => store.AddFileAsync(sourceSymbolFile, filename, buildId));
         }
 
         // Gets a valid store of the type being tested that contains no files. Does not need to be
@@ -209,6 +215,6 @@ namespace SymbolStores.Tests
 
         // Gets a store of the type being tested that contains a file with the filename `FILENAME`
         // and build id `BUILD_ID`
-        protected abstract ISymbolStore GetStoreWithFile();
+        protected abstract Task<ISymbolStore> GetStoreWithFileAsync();
     }
 }

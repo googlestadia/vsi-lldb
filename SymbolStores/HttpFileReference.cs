@@ -16,7 +16,6 @@
 using System.Net.Http;
 using System.IO.Abstractions;
 using System.IO;
-using Microsoft.VisualStudio.Threading;
 using System.Threading.Tasks;
 
 namespace SymbolStores
@@ -26,14 +25,11 @@ namespace SymbolStores
     {
         public class Factory
         {
-            JoinableTaskFactory taskFactory;
             IFileSystem fileSystem;
             HttpClient httpClient;
 
-            public Factory(JoinableTaskFactory taskFactory, IFileSystem fileSystem,
-                HttpClient httpClient)
+            public Factory(IFileSystem fileSystem, HttpClient httpClient)
             {
-                this.taskFactory = taskFactory;
                 this.fileSystem = fileSystem;
                 this.httpClient = httpClient;
             }
@@ -45,24 +41,23 @@ namespace SymbolStores
                     throw new ArgumentNullException(nameof(url));
                 }
 
-                return new HttpFileReference(taskFactory, fileSystem, httpClient, url);
+                return new HttpFileReference(fileSystem, httpClient, url);
             }
         }
 
-        JoinableTaskFactory taskFactory;
         IFileSystem fileSystem;
         HttpClient httpClient;
 
-        HttpFileReference(JoinableTaskFactory taskFactory, IFileSystem fileSystem,
-            HttpClient httpClient, string url)
+        HttpFileReference(IFileSystem fileSystem, HttpClient httpClient, string url)
         {
-            this.taskFactory = taskFactory;
             this.fileSystem = fileSystem;
             Location = url;
             this.httpClient = httpClient;
         }
 
-        async Task CopyToAsync(string destFilepath)
+        #region IFileReference functions
+
+        public async Task CopyToAsync(string destFilepath)
         {
             if (destFilepath == null)
             {
@@ -111,16 +106,9 @@ namespace SymbolStores
             }
         }
 
-        #region IFileReference functions
-
         public bool IsFilesystemLocation => false;
 
         public string Location { get; private set; }
-
-        public void CopyTo(string destFilepath)
-        {
-            taskFactory.Run(async () => await CopyToAsync(destFilepath));
-        }
 
         #endregion
     }

@@ -15,6 +15,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores
@@ -34,22 +35,23 @@ namespace SymbolStores
             IsCache = isCache;
         }
 
-        public abstract IFileReference FindFile(string filename, BuildId buildId,
-                                                bool isDebugInfoFile, TextWriter logWriter);
+        public abstract Task<IFileReference> FindFileAsync(
+            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter logWriter);
 
         // Default implementation that delegates to FindFile(string, BuildId, bool, TextWriter)
-        public IFileReference FindFile(string filename, BuildId buildId)
+        public Task<IFileReference> FindFileAsync(string filename, BuildId buildId)
         {
-            return FindFile(filename, buildId, false, TextWriter.Null);
+            return FindFileAsync(filename, buildId, false, TextWriter.Null);
         }
 
-        public abstract IFileReference AddFile(IFileReference source, string filename,
-            BuildId buildId, TextWriter logWriter);
+        public abstract Task<IFileReference> AddFileAsync(
+            IFileReference source, string filename, BuildId buildId, TextWriter logWriter);
 
         // Default implementation that delegates to AddFile(string, BuildId, TextWriter)
-        public IFileReference AddFile(IFileReference source, string filename, BuildId buildId)
+        public Task<IFileReference> AddFileAsync(
+            IFileReference source, string filename, BuildId buildId)
         {
-            return AddFile(source, filename, buildId, TextWriter.Null);
+            return AddFileAsync(source, filename, buildId, TextWriter.Null);
         }
 
         public abstract bool DeepEquals(ISymbolStore other);
