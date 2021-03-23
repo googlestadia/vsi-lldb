@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft.VisualStudio.Shell;
+﻿using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -185,8 +185,7 @@ namespace YetiVSI
 
     public enum ExpressionEvaluationEngineFlag
     {
-        [Description("Default - lldb-eval with fallback to LLDB")]
-        [EnumValueAlias(LLDB_EVAL_WITH_FALLBACK)]
+        [Description("Default - LLDB")] [EnumValueAlias(LLDB)]
         DEFAULT = 0,
         [Description("LLDB")] LLDB = 1,
 
