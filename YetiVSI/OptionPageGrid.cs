@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.NatvisEngine;
@@ -435,7 +436,8 @@ namespace YetiVSI
         {
             var sdkPair = new SdkPairIdentifier
             {
-                GameletVersion = gameletVersion, LocalVersion = localVersion,
+                GameletVersion = gameletVersion,
+                LocalVersion = localVersion,
                 GameletName = gameletName
             };
             if (SdkIncompatibilityWarning.SdkVersionPairsToHide.Contains(sdkPair))
@@ -516,6 +518,22 @@ namespace YetiVSI
                 Attribute.GetCustomAttribute(p, typeof(DefaultValueAttribute)) as
                     DefaultValueAttribute;
             return defaultValueAttribute?.Value;
+        }
+
+        protected override void LoadSettingFromStorage(PropertyDescriptor prop)
+        {
+            // Sometimes it can happen that extension settings are saved in the wrong format or
+            // some default values changed. The new extension will fail to load because it can't
+            // convert the old settings. This shouldn't happen under normal conditions, but ignore
+            // the load errors and fallback to using default values.
+            try
+            {
+                base.LoadSettingFromStorage(prop);
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine($"Failed to load a setting for {prop.Name}: {e}");
+            }
         }
     }
 }
