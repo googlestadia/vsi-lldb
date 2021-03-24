@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.Collections.Generic;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace YetiVSI.Shared.Metrics
@@ -392,6 +391,7 @@ namespace YetiVSI.Shared.Metrics
         public List<VSIExceptionData> ExceptionsData { get; set; }
         public VSIBoundBreakpointsData BoundBreakpointsData { get; set; }
         public GameLaunchData GameLaunchData { get; set; }
+        public VSIDebugExpressionEvaluationBatch DebugExpressionEvaluationBatch { get; set; }
 
         public DeveloperLogEvent()
         {
@@ -468,12 +468,12 @@ namespace YetiVSI.Shared.Metrics
                 return false;
             }
 
-            if (!object.Equals(other.GrpcErrorDetails, GrpcErrorDetails))
+            if (!Equals(other.GrpcErrorDetails, GrpcErrorDetails))
             {
                 return false;
             }
 
-            if (!object.Equals(other.ExternalToolError, ExternalToolError))
+            if (!Equals(other.ExternalToolError, ExternalToolError))
             {
                 return false;
             }
@@ -488,76 +488,81 @@ namespace YetiVSI.Shared.Metrics
                 return false;
             }
 
-            if (!object.Equals(other.CommandData, CommandData))
+            if (!Equals(other.CommandData, CommandData))
             {
                 return false;
             }
 
-            if (!object.Equals(other.GameletData, GameletData))
+            if (!Equals(other.GameletData, GameletData))
             {
                 return false;
             }
 
             if (other.GrpcCallDetails != GrpcCallDetails &&
-                (other.GrpcCallDetails == null || GrpcCallDetails == null) || 
+                (other.GrpcCallDetails == null || GrpcCallDetails == null) ||
                 !other.GrpcCallDetails.SequenceEqual(GrpcCallDetails))
             {
                 return false;
             }
 
-            if (!object.Equals(other.LoadSymbolData, LoadSymbolData))
+            if (!Equals(other.LoadSymbolData, LoadSymbolData))
             {
                 return false;
             }
 
-            if (!object.Equals(other.DebugPreflightCheckData, DebugPreflightCheckData))
+            if (!Equals(other.DebugPreflightCheckData, DebugPreflightCheckData))
             {
                 return false;
             }
 
-            if (!object.Equals(other.DebugSessionEndData, DebugSessionEndData))
+            if (!Equals(other.DebugSessionEndData, DebugSessionEndData))
             {
                 return false;
             }
 
-            if (!object.Equals(other.DebugEventBatch, DebugEventBatch))
+            if (!Equals(other.DebugEventBatch, DebugEventBatch))
             {
                 return false;
             }
 
-            if (!object.Equals(other.DebugParameters, DebugParameters))
+            if (!Equals(other.DebugParameters, DebugParameters))
             {
                 return false;
             }
 
-            if (!object.Equals(other.CopyExecutable, CopyExecutable))
+            if (!Equals(other.CopyExecutable, CopyExecutable))
             {
                 return false;
             }
 
-            if (!object.Equals(other.CopyLldbServer, CopyLldbServer))
+            if (!Equals(other.CopyLldbServer, CopyLldbServer))
             {
                 return false;
             }
 
-            if (!object.Equals(other.CustomCommand, CustomCommand))
+            if (!Equals(other.CustomCommand, CustomCommand))
             {
                 return false;
             }
 
             if (other.ExceptionsData != ExceptionsData &&
-                (other.ExceptionsData == null || ExceptionsData == null) || 
+                (other.ExceptionsData == null || ExceptionsData == null) ||
                 !other.ExceptionsData.SequenceEqual(ExceptionsData))
             {
                 return false;
             }
 
-            if (!object.Equals(other.BoundBreakpointsData, BoundBreakpointsData))
+            if (!Equals(other.BoundBreakpointsData, BoundBreakpointsData))
             {
                 return false;
             }
 
-            if (!object.Equals(other.GameLaunchData, GameLaunchData))
+            if (!Equals(other.GameLaunchData, GameLaunchData))
+            {
+                return false;
+            }
+
+            if (!Equals(other.DebugExpressionEvaluationBatch, DebugExpressionEvaluationBatch))
             {
                 return false;
             }
@@ -584,6 +589,7 @@ namespace YetiVSI.Shared.Metrics
             clone.ExceptionsData = ExceptionsData?.Select(x => x.Clone()).ToList();
             clone.BoundBreakpointsData = BoundBreakpointsData?.Clone();
             clone.GameLaunchData = GameLaunchData?.Clone();
+            clone.DebugExpressionEvaluationBatch = DebugExpressionEvaluationBatch?.Clone();
             return clone;
         }
 
@@ -812,6 +818,16 @@ namespace YetiVSI.Shared.Metrics
                 }
 
                 GameLaunchData.MergeFrom(other.GameLaunchData);
+            }
+
+            if (other.DebugExpressionEvaluationBatch != null)
+            {
+                if (DebugExpressionEvaluationBatch == null)
+                {
+                    DebugExpressionEvaluationBatch = new VSIDebugExpressionEvaluationBatch();
+                }
+
+                DebugExpressionEvaluationBatch.MergeFrom(other.DebugExpressionEvaluationBatch);
             }
         }
     }
