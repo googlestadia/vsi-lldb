@@ -100,11 +100,24 @@ namespace YetiVSI.Metrics
         public long StartTimestampUs { get; }
         public long EndTimestampUs { get; }
 
-        public DebugEventBatchParams(MethodInfo methodInfo, long startTimestampUs, long endTimestampUs)
+        public DebugEventBatchParams(MethodInfo methodInfo, long startTimestampUs,
+                                     long endTimestampUs)
         {
             MethodInfo = methodInfo;
             StartTimestampUs = startTimestampUs;
             EndTimestampUs = endTimestampUs;
+        }
+    }
+
+    public class DebugEventBatchSummary
+    {
+        public VSIDebugEventBatch Proto { get; }
+        public long LatencyInMicroseconds { get; }
+
+        public DebugEventBatchSummary(VSIDebugEventBatch proto, long latencyInMicroseconds)
+        {
+            Proto = proto;
+            LatencyInMicroseconds = latencyInMicroseconds;
         }
     }
 }
