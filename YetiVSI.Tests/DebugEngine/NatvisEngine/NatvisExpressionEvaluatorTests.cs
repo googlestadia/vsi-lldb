@@ -536,9 +536,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                                          RemoteValueFakeUtil.CreateSimpleInt("tmp", 14));
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
-
-            IVariableInformation result =
-                await _evaluator.EvaluateExpressionAsync("14", varInfo, null, "myVar");
+            IVariableInformation result = await _evaluator.EvaluateExpressionAsync(
+                "14", varInfo, new NatvisScope(), "myVar");
 
             Assert.That(await result.ValueAsync(), Is.EqualTo("14"));
             Assert.That(result.DisplayName, Is.EqualTo("myVar"));
@@ -555,7 +554,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
             var exception = Assert.ThrowsAsync<ExpressionEvaluationFailed>(
                 async () => await _evaluator.EvaluateExpressionAsync(
-                    "myVal", varInfo, null, "tmp"));
+                    "myVal", varInfo, new NatvisScope(), "tmp"));
 
             Assert.That(exception.Message, Does.Contain("myVal"));
         }
