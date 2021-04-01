@@ -60,9 +60,9 @@ namespace YetiCommon.Tests
         {
             sdkConfig.ChromeProfileDir = "MyProfile";
             sdkConfig.Url = "http://theurl.com";
-            sdkConfig.PortalUrl = portalUrl;
+            sdkConfig.PartnerPortalUrl = portalUrl;
             sdkConfig.OrganizationId = "orgId";
-            
+
             launchParams.ApplicationName = "theAppName";
             launchParams.GameletName = "gameletName";
             launchParams.Account = "test@example.com";

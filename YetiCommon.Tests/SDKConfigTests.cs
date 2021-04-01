@@ -12,53 +12,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using NUnit.Framework;
-using System;
-using System.Collections.Generic;
+using NUnit.Framework;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace YetiCommon.Tests
 {
     [TestFixture]
     class SdkConfigTests
     {
-        MockFileSystem filesystem;
-        JsonUtil jsonUtil;
-        SdkConfig.Factory configFactory;
+        MockFileSystem _filesystem;
+        JsonUtil _jsonUtil;
+        SdkConfig.Factory _configFactory;
 
         [SetUp]
         public void SetUp()
         {
-            filesystem = new MockFileSystem();
-            filesystem.AddDirectory(SDKUtil.GetUserConfigPath());
+            _filesystem = new MockFileSystem();
+            _filesystem.AddDirectory(SDKUtil.GetUserConfigPath());
 
-            jsonUtil = new JsonUtil(filesystem);
-            configFactory = new SdkConfig.Factory(jsonUtil);
+            _jsonUtil = new JsonUtil(_filesystem);
+            _configFactory = new SdkConfig.Factory(_jsonUtil);
         }
 
         [Test]
         public void Load()
         {
-            filesystem.AddFile(
+            _filesystem.AddFile(
                 Path.Combine(SDKUtil.GetUserConfigPath(), SdkConfig.SdkConfigFilename),
                 new MockFileData(
                     string.Join("", new string[] {
                         @"{",
                         @"  ""url"":""https://test.com/foo"",", // URL fields
                         @"  ""portalUrl"":""https://test.com/bar"",",
+                        @"  ""playerPortalUrl"":""https://test.com/baz"",",
                         @"  ""organizationId"":""MyOrg"",", // string field
                         @"  ""poolId"":"""",",               // unused field
                         @"  ""disableMetrics"":true",       // boolean field
                         @"}",
                     })));
 
-            var config = configFactory.LoadOrDefault();
+            var config = _configFactory.LoadOrDefault();
             Assert.That(config.Url, Is.EqualTo("https://test.com/foo"));
-            Assert.That(config.PortalUrl, Is.EqualTo("https://test.com/bar"));
+            Assert.That(config.PartnerPortalUrl, Is.EqualTo("https://test.com/bar"));
+            Assert.That(config.PlayerPortalUrl, Is.EqualTo("https://test.com/baz"));
             Assert.That(config.OrganizationId, Is.EqualTo("MyOrg"));
             Assert.That(config.DisableMetrics, Is.EqualTo(true));
 
@@ -67,19 +64,22 @@ namespace YetiCommon.Tests
 
             // Check URL defaults.
             Assert.That(config.UrlOrDefault, Is.EqualTo("https://test.com/foo"));
-            Assert.That(config.PortalUrlOrDefault, Is.EqualTo("https://test.com/bar"));
+            Assert.That(config.PartnerPortalUrlOrDefault, Is.EqualTo("https://test.com/bar"));
+            Assert.That(config.PlayerPortalUrlOrDefault, Is.EqualTo("https://test.com/baz"));
         }
 
         [Test]
         public void Default()
         {
-            var config = configFactory.LoadOrDefault();
+            var config = _configFactory.LoadOrDefault();
 
             Assert.That(config.Url, Is.Null);
-            Assert.That(config.PortalUrl, Is.Null);
+            Assert.That(config.PartnerPortalUrl, Is.Null);
+            Assert.That(config.PlayerPortalUrl, Is.Null);
 
             Assert.That(config.UrlOrDefault, Is.Not.Empty);
-            Assert.That(config.PortalUrlOrDefault, Is.Not.Empty);
+            Assert.That(config.PartnerPortalUrlOrDefault, Is.Not.Empty);
+            Assert.That(config.PlayerPortalUrlOrDefault, Is.Not.Empty);
         }
     }
 }

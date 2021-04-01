@@ -90,7 +90,7 @@ namespace YetiCommon
 
         public string BuildLaunchUrlWithLaunchName(string launchName)
         {
-            string portalUrl = SdkConfig.PortalUrlOrDefault;
+            string portalUrl = SdkConfig.PartnerPortalUrlOrDefault;
             string chromeClientUrl = $"{portalUrl}/organizations/{SdkConfig.OrganizationId}/stream";
             string fragmentString = string.IsNullOrEmpty(LaunchParams.Account)
                 ? ""
@@ -114,7 +114,7 @@ namespace YetiCommon
         //TODO: remove the legacy launch flow.
         public ConfigStatus BuildLaunchUrl(out string url)
         {
-            var portalUrl = SdkConfig.PortalUrlOrDefault;
+            var portalUrl = SdkConfig.PartnerPortalUrlOrDefault;
             string chromeUrl = $"{portalUrl}/organizations/{SdkConfig.OrganizationId}/stream";
 
             var queryParams = new List<QueryParam>

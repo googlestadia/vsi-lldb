@@ -23,16 +23,17 @@ namespace YetiCommon
     {
         public const string SdkConfigFilename = "config.json";
 
-        const string DefaultUrl = "https://cloudcast-pa.googleapis.com";
-        const string DefaultPartnerUrl = "https://console.ggp.google.com";
+        const string _defaultUrl = "https://cloudcast-pa.googleapis.com";
+        const string _defaultPartnerUrl = "https://console.ggp.google.com";
+        const string _defaultPlayerPortalUrl = "https://stadia.google.com";
 
         public class Factory : ISdkConfigFactory
         {
-            JsonUtil jsonUtil;
+            readonly JsonUtil _jsonUtil;
 
             public Factory(JsonUtil jsonUtil)
             {
-                this.jsonUtil = jsonUtil;
+                _jsonUtil = jsonUtil;
             }
 
             // For test substitution.
@@ -40,11 +41,9 @@ namespace YetiCommon
 
             public ISdkConfig LoadGgpSdkConfigOrDefault() => LoadOrDefault();
 
-            public virtual SdkConfig LoadOrDefault()
-            {
-                return jsonUtil.LoadOrDefault<SdkConfig>(
+            public virtual SdkConfig LoadOrDefault() =>
+                _jsonUtil.LoadOrDefault<SdkConfig>(
                     Path.Combine(SDKUtil.GetUserConfigPath(), SdkConfigFilename));
-            }
         }
 
         [JsonProperty("url")]
@@ -60,33 +59,27 @@ namespace YetiCommon
         public string ChromeProfileDir { get; set; }
 
         [JsonProperty("portalUrl")]
-        public string PortalUrl { get; set; }
+        public string PartnerPortalUrl { get; set; }
+
+        [JsonProperty("playerPortalUrl")]
+        public string PlayerPortalUrl { get; set; }
 
         [JsonProperty("disableMetrics")]
         public bool DisableMetrics { get; set; }
 
-        public string UrlOrDefault
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(Url))
-                {
-                    return DefaultUrl;
-                }
-                return Url;
-            }
-        }
+        public string UrlOrDefault =>
+            string.IsNullOrEmpty(Url)
+                ? _defaultUrl
+                : Url;
 
-        public string PortalUrlOrDefault
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(PortalUrl))
-                {
-                    return DefaultPartnerUrl;
-                }
-                return PortalUrl;
-            }
-        }
+        public string PartnerPortalUrlOrDefault =>
+            string.IsNullOrEmpty(PartnerPortalUrl)
+                ? _defaultPartnerUrl
+                : PartnerPortalUrl;
+
+        public string PlayerPortalUrlOrDefault =>
+            string.IsNullOrEmpty(PlayerPortalUrl)
+                ? _defaultPlayerPortalUrl
+                : PlayerPortalUrl;
     }
 }
