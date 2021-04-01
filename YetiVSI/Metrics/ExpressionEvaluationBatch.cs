@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using DebuggerApi;
+using YetiVSI.DebugEngine;
 using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Metrics
@@ -21,65 +24,36 @@ namespace YetiVSI.Metrics
     public class ExpressionEvaluationBatch : IEventBatch<ExpressionEvaluationBatchParams,
         ExpressionEvaluationBatchSummary>
     {
-        readonly VSIDebugExpressionEvaluationBatch _protoBatch =
-            new VSIDebugExpressionEvaluationBatch();
+        readonly List<ExpressionEvaluationBatchParams> _batch =
+            new List<ExpressionEvaluationBatchParams>();
 
         public void Add(ExpressionEvaluationBatchParams batchParams)
         {
-            var expressionEvaluation =
-                new VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation
-                {
-                    Strategy =
-                        (VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
-                            Strategy) batchParams.StrategyParam,
-                    Context =
-                        (VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
-                            Context) batchParams.ContextParam,
-                    StartTimestampMicroseconds = batchParams.StartTimestampUs,
-                    EndTimestampMicroseconds = batchParams.EndTimestampUs,
-                    NatvisValueId = batchParams.NatvisValueId
-                };
-
-            expressionEvaluation.EvaluationSteps.AddRange(
-                batchParams.EvaluationSteps.Select(CreateExpressionEvaluationStep));
-
-            _protoBatch.ExpressionEvaluations.Add(expressionEvaluation);
+            _batch.Add(batchParams);
         }
 
-        public ExpressionEvaluationBatchSummary GetSummary() =>
-            new ExpressionEvaluationBatchSummary(_protoBatch);
-
-        static VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
-            ExpressionEvaluationStep CreateExpressionEvaluationStep(
-                ExpressionEvaluationStep evaluationStep)
+        public ExpressionEvaluationBatchSummary GetSummary()
         {
-            return new
-                VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
-                ExpressionEvaluationStep
-                {
-                    Engine =
-                        (VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
-                            ExpressionEvaluationStep.Types.Engine) evaluationStep.StepEngine,
-                    Result =
-                        (VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
-                            ExpressionEvaluationStep.Types.EngineResult) evaluationStep
-                            .StepEngineResult,
-                    DurationMicroseconds = evaluationStep.DurationUs
-                };
+            var batchProto = new VSIDebugExpressionEvaluationBatch();
+            batchProto.ExpressionEvaluations.AddRange(
+                _batch.Select(evaluation => evaluation.ConvertToProto()));
+
+            return new ExpressionEvaluationBatchSummary(batchProto);
         }
     }
 
     public class ExpressionEvaluationBatchParams
     {
-        public Strategy StrategyParam { get; }
-        public Context ContextParam { get; }
-        public List<ExpressionEvaluationStep> EvaluationSteps { get; }
+        public ExpressionEvaluationStrategy StrategyParam { get; }
+        public ExpressionEvaluationContext ContextParam { get; }
+        public List<ExpressionEvaluationStepBatchParams> EvaluationSteps { get; }
         public long StartTimestampUs { get; }
         public long EndTimestampUs { get; }
         public string NatvisValueId { get; }
 
-        public ExpressionEvaluationBatchParams(Strategy strategy, Context context,
-                                               List<ExpressionEvaluationStep> evaluationSteps,
+        public ExpressionEvaluationBatchParams(ExpressionEvaluationStrategy strategy,
+                                               ExpressionEvaluationContext context,
+                                               List<ExpressionEvaluationStepBatchParams> evaluationSteps,
                                                long startTimestampUs, long endTimestampUs,
                                                string natvisValueId)
         {
@@ -91,56 +65,164 @@ namespace YetiVSI.Metrics
             NatvisValueId = natvisValueId;
         }
 
-        public enum Strategy
+        internal VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation ConvertToProto()
         {
-            UnknownStrategy,
-            Lldb,
-            LldbEval,
-            LldbEvalWithFallback
+            return new VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation
+            {
+                Strategy = GetStrategyProto(),
+                Context = GetContextProto(),
+                EvaluationSteps =
+                    new List<VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
+                        ExpressionEvaluationStep>(
+                        EvaluationSteps.Select(step => step.ConvertToProto())),
+                StartTimestampMicroseconds = StartTimestampUs,
+                EndTimestampMicroseconds = EndTimestampUs,
+                NatvisValueId = NatvisValueId,
+            };
         }
 
-        public enum Context
+        VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.Strategy
+            GetStrategyProto()
         {
-            UnknownContext,
-            Frame,
-            Value
+            switch (StrategyParam)
+            {
+                case ExpressionEvaluationStrategy.LLDB:
+                    return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                        .Strategy.Lldb;
+                case ExpressionEvaluationStrategy.LLDB_EVAL:
+                    return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                        .Strategy.LldbEval;
+                case ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK:
+                    return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                        .Strategy.LldbEvalWithFallback;
+                default:
+                    throw new ArgumentException(
+                        "Expression evaluation Strategy value doesn't have correspondent mapping.");
+            }
+        }
+
+        VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.Context GetContextProto()
+        {
+            switch (ContextParam)
+            {
+                case ExpressionEvaluationContext.FRAME:
+                    return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                        .Context.Frame;
+                case ExpressionEvaluationContext.VALUE:
+                    return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                        .Context.Value;
+                default:
+                    throw new ArgumentException(
+                        "Expression evaluation Context value doesn't have correspondent mapping.");
+            }
         }
     }
 
-    public class ExpressionEvaluationStep
+    public class ExpressionEvaluationStepBatchParams
     {
-        public Engine StepEngine { get; }
-        public EngineResult StepEngineResult { get; }
+        public ExpressionEvaluationEngine StepEngine { get; }
+        public LLDBErrorCode? LldbErrorCode { get; }
+        public LldbEvalErrorCode? LldbEvalErrorCode { get; }
         public long DurationUs { get; }
 
-        public ExpressionEvaluationStep(Engine stepEngine, EngineResult stepEngineResult,
-                                        long durationUs)
+        public ExpressionEvaluationStepBatchParams(ExpressionEvaluationEngine stepEngine,
+                                        LLDBErrorCode lldbErrorCode, long durationUs)
         {
             StepEngine = stepEngine;
-            StepEngineResult = stepEngineResult;
+            LldbErrorCode = lldbErrorCode;
             DurationUs = durationUs;
         }
 
-        public enum Engine
+        public ExpressionEvaluationStepBatchParams(ExpressionEvaluationEngine stepEngine,
+                                        LldbEvalErrorCode lldbEvalErrorCode, long durationUs)
         {
-            UnknownEngine,
-            Lldb,
-            LldbVariablePath,
-            LldbEval
+            StepEngine = stepEngine;
+            LldbEvalErrorCode = lldbEvalErrorCode;
+            DurationUs = durationUs;
         }
 
-        public enum EngineResult
+        internal VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
+            ExpressionEvaluationStep ConvertToProto()
         {
-            UnknownResult,
-            LldbOk,
-            LldbError,
-            LldbEvalUnknown,
-            LldbEvalOk,
-            LldbEvalInvalidExpressionSyntax,
-            LldbEvalInvalidNumericLiteral,
-            LldbEvalInvalidOperandType,
-            LldbEvalUndeclaredIdentifier,
-            LldbEvalNotImplemented
+            return new
+                VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
+                ExpressionEvaluationStep
+                {
+                    Engine = GetEngineProto(),
+                    Result = GetEngineResultProto(),
+                    DurationMicroseconds = DurationUs,
+                };
+        }
+
+        VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.ExpressionEvaluationStep.
+            Types.Engine GetEngineProto()
+        {
+            switch (StepEngine)
+            {
+                case ExpressionEvaluationEngine.LLDB:
+                    return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                        .ExpressionEvaluationStep.Types.Engine.Lldb;
+                case ExpressionEvaluationEngine.LLDB_VARIABLE_PATH:
+                    return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                        .ExpressionEvaluationStep.Types.Engine.LldbVariablePath;
+                case ExpressionEvaluationEngine.LLDB_EVAL:
+                    return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                        .ExpressionEvaluationStep.Types.Engine.LldbEval;
+                default:
+                    throw new ArgumentException(
+                        "Expression evaluation Engine value doesn't have correspondent mapping.");
+            }
+        }
+
+        VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.ExpressionEvaluationStep.
+            Types.EngineResult GetEngineResultProto()
+        {
+            if (LldbErrorCode.HasValue)
+            {
+                switch (LldbErrorCode)
+                {
+                    case LLDBErrorCode.OK:
+                        return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                            .ExpressionEvaluationStep.Types.EngineResult.LldbOk;
+                    case LLDBErrorCode.ERROR:
+                        return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                            .ExpressionEvaluationStep.Types.EngineResult.LldbError;
+                }
+            }
+
+            if (LldbEvalErrorCode.HasValue)
+            {
+                switch (LldbEvalErrorCode)
+                {
+                    case DebuggerApi.LldbEvalErrorCode.Unknown:
+                        return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                            .ExpressionEvaluationStep.Types.EngineResult.LldbEvalUnknown;
+                    case DebuggerApi.LldbEvalErrorCode.Ok:
+                        return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                            .ExpressionEvaluationStep.Types.EngineResult.LldbEvalOk;
+                    case DebuggerApi.LldbEvalErrorCode.InvalidExpressionSyntax:
+                        return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                            .ExpressionEvaluationStep.Types.EngineResult
+                            .LldbEvalInvalidExpressionSyntax;
+                    case DebuggerApi.LldbEvalErrorCode.InvalidNumericLiteral:
+                        return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                            .ExpressionEvaluationStep.Types.EngineResult
+                            .LldbEvalInvalidNumericLiteral;
+                    case DebuggerApi.LldbEvalErrorCode.InvalidOperandType:
+                        return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                            .ExpressionEvaluationStep.Types.EngineResult.LldbEvalInvalidOperandType;
+                    case DebuggerApi.LldbEvalErrorCode.UndeclaredIdentifier:
+                        return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                            .ExpressionEvaluationStep.Types.EngineResult
+                            .LldbEvalUndeclaredIdentifier;
+                    case DebuggerApi.LldbEvalErrorCode.NotImplemented:
+                        return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                            .ExpressionEvaluationStep.Types.EngineResult.LldbEvalNotImplemented;
+                }
+            }
+
+            throw new ArgumentException(
+                "Expression evaluation EngineResult value doesn't have correspondent mapping.");
         }
     }
 

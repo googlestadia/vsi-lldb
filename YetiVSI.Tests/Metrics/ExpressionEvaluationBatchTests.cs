@@ -12,11 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using NUnit.Framework;
 using YetiVSI.Metrics;
-using System;
 using System.Collections.Generic;
-using YetiVSI.Shared.Metrics;
+using DebuggerApi;
+using YetiVSI.DebugEngine;
+using ExpressionEvaluation =
+    YetiVSI.Shared.Metrics.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation;
+using ExpressionEvaluationStep =
+    YetiVSI.Shared.Metrics.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
+    ExpressionEvaluationStep;
 
 namespace YetiVSI.Test.Metrics
 {
@@ -44,34 +50,41 @@ namespace YetiVSI.Test.Metrics
         [Test]
         public void TestSingleEventBatch()
         {
-            const ExpressionEvaluationBatchParams.Strategy strategy =
-                ExpressionEvaluationBatchParams.Strategy.LldbEvalWithFallback;
-            const ExpressionEvaluationBatchParams.Context context =
-                ExpressionEvaluationBatchParams.Context.Frame;
+            var strategySource = ExpressionEvaluationStrategy.LLDB;
+            var strategyExpected = ExpressionEvaluation.Types.Strategy.Lldb;
 
-            const ExpressionEvaluationStep.Engine firstStepEngine =
-                ExpressionEvaluationStep.Engine.LldbEval;
-            const ExpressionEvaluationStep.EngineResult firstStepEngineResult =
-                ExpressionEvaluationStep.EngineResult.LldbEvalNotImplemented;
-            const long firstStepDuration = 500;
-            const ExpressionEvaluationStep.Engine secondStepEngine =
-                ExpressionEvaluationStep.Engine.Lldb;
-            const ExpressionEvaluationStep.EngineResult secondStepEngineResult =
-                ExpressionEvaluationStep.EngineResult.LldbOk;
-            const long secondStepDuration = 2500;
-            var steps = new List<ExpressionEvaluationStep>
+            var contextSource = ExpressionEvaluationContext.FRAME;
+            var contextExpected = ExpressionEvaluation.Types.Context.Frame;
+
+            var firstStepEngineSource = ExpressionEvaluationEngine.LLDB_VARIABLE_PATH;
+            var firstStepEngineExpected = ExpressionEvaluationStep.Types.Engine.LldbVariablePath;
+            var firstStepEngineResultSource = LLDBErrorCode.ERROR;
+            var firstStepEngineResultExpected =
+                ExpressionEvaluationStep.Types.EngineResult.LldbError;
+            const long firstStepDurationUs = 400;
+
+            var secondStepEngineSource = ExpressionEvaluationEngine.LLDB;
+            var secondStepEngineExpected = ExpressionEvaluationStep.Types.Engine.Lldb;
+            var secondStepEngineResultSource = LLDBErrorCode.OK;
+            var secondStepEngineResultExpected = ExpressionEvaluationStep.Types.EngineResult.LldbOk;
+            const long secondStepDurationUs = 16500;
+
+            var steps = new List<ExpressionEvaluationStepBatchParams>
             {
-                new ExpressionEvaluationStep(firstStepEngine, firstStepEngineResult,
-                                             firstStepDuration),
-                new ExpressionEvaluationStep(secondStepEngine, secondStepEngineResult,
-                                             secondStepDuration)
+                new ExpressionEvaluationStepBatchParams(firstStepEngineSource,
+                                                        firstStepEngineResultSource,
+                                                        firstStepDurationUs),
+                new ExpressionEvaluationStepBatchParams(secondStepEngineSource,
+                                                        secondStepEngineResultSource,
+                                                        secondStepDurationUs)
             };
-            const long startTimestamp = 7410;
-            const long endTimestamp = 11410;
 
-            _expressionEvaluationBatch.Add(
-                new ExpressionEvaluationBatchParams(strategy, context, steps, startTimestamp,
-                                                    endTimestamp, null));
+            const long startTimestampUs = 750;
+            const long endTimestampUs = 21562;
+
+            _expressionEvaluationBatch.Add(new ExpressionEvaluationBatchParams(
+                                               strategySource, contextSource, steps,
+                                               startTimestampUs, endTimestampUs, null));
 
             ExpressionEvaluationBatchSummary expressionEvaluationSummary =
                 _expressionEvaluationBatch.GetSummary();
@@ -82,12 +95,12 @@ namespace YetiVSI.Test.Metrics
             Assert.Multiple(() =>
             {
                 Assert.NotNull(expressionEvaluation.Strategy);
-                Assert.AreEqual((int) strategy, (int) expressionEvaluation.Strategy);
+                Assert.AreEqual(strategyExpected, expressionEvaluation.Strategy);
                 Assert.NotNull(expressionEvaluation.Context);
-                Assert.AreEqual((int) context, (int) expressionEvaluation.Context);
+                Assert.AreEqual(contextExpected, expressionEvaluation.Context);
                 Assert.NotNull(expressionEvaluation.EvaluationSteps);
-                Assert.AreEqual(startTimestamp, expressionEvaluation.StartTimestampMicroseconds);
-                Assert.AreEqual(endTimestamp, expressionEvaluation.EndTimestampMicroseconds);
+                Assert.AreEqual(startTimestampUs, expressionEvaluation.StartTimestampMicroseconds);
+                Assert.AreEqual(endTimestampUs, expressionEvaluation.EndTimestampMicroseconds);
                 Assert.Null(expressionEvaluation.NatvisValueId);
             });
 
@@ -97,43 +110,246 @@ namespace YetiVSI.Test.Metrics
             Assert.Multiple(() =>
             {
                 Assert.NotNull(firstStep.Engine);
-                Assert.AreEqual((int) firstStepEngine, (int) firstStep.Engine);
+                Assert.AreEqual(firstStepEngineExpected, firstStep.Engine);
                 Assert.NotNull(firstStep.Result);
-                Assert.AreEqual((int) firstStepEngineResult, (int) firstStep.Result);
-                Assert.AreEqual(firstStepDuration, firstStep.DurationMicroseconds);
+                Assert.AreEqual(firstStepEngineResultExpected, firstStep.Result);
+                Assert.AreEqual(firstStepDurationUs, firstStep.DurationMicroseconds);
                 Assert.NotNull(secondStep.Engine);
-                Assert.AreEqual((int) secondStepEngine, (int) secondStep.Engine);
+                Assert.AreEqual(secondStepEngineExpected, secondStep.Engine);
                 Assert.NotNull(secondStep.Result);
-                Assert.AreEqual((int) secondStepEngineResult, (int) secondStep.Result);
-                Assert.AreEqual(secondStepDuration, secondStep.DurationMicroseconds);
+                Assert.AreEqual(secondStepEngineResultExpected, secondStep.Result);
+                Assert.AreEqual(secondStepDurationUs, secondStep.DurationMicroseconds);
             });
         }
 
-        [TestCase(
-            typeof(VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.Strategy),
-            typeof(ExpressionEvaluationBatchParams.Strategy))]
-        [TestCase(
-            typeof(VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.Context),
-            typeof(ExpressionEvaluationBatchParams.Context))]
-        [TestCase(
-            typeof(VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
-                ExpressionEvaluationStep.Types.Engine), typeof(ExpressionEvaluationStep.Engine))]
-        [TestCase(
-            typeof(VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
-                ExpressionEvaluationStep.Types.EngineResult),
-            typeof(ExpressionEvaluationStep.EngineResult))]
-        public void ExpressionEvaluationBatchParamsEnumsTest(Type sourceType, Type destinationType)
+        [TestCase(ExpressionEvaluationStrategy.LLDB, ExpressionEvaluation.Types.Strategy.Lldb)]
+        [TestCase(ExpressionEvaluationStrategy.LLDB_EVAL,
+                  ExpressionEvaluation.Types.Strategy.LldbEval)]
+        [TestCase(ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK,
+                  ExpressionEvaluation.Types.Strategy.LldbEvalWithFallback)]
+        public void StrategyBatchTest(ExpressionEvaluationStrategy strategySource,
+                                      ExpressionEvaluation.Types.Strategy strategyExpected)
         {
-            string[] sourceEnumNames = Enum.GetNames(sourceType);
-            string[] destinationEnumNames = Enum.GetNames(destinationType);
+            _expressionEvaluationBatch.Add(new ExpressionEvaluationBatchParams(
+                                               strategySource, ExpressionEvaluationContext.FRAME,
+                                               new List<ExpressionEvaluationStepBatchParams>(), 500,
+                                               2000, null));
 
-            Assert.AreEqual(sourceEnumNames.Length, destinationEnumNames.Length);
-            Assert.AreEqual(sourceEnumNames, destinationEnumNames);
-            // Check that enums have the same value
-            foreach (string enumName in sourceEnumNames)
+            var batchSummary = _expressionEvaluationBatch.GetSummary();
+            Assert.NotNull(batchSummary.Proto.ExpressionEvaluations);
+            Assert.AreEqual(1, batchSummary.Proto.ExpressionEvaluations.Count);
+
+            var expressionEvaluation = batchSummary.Proto.ExpressionEvaluations[0];
+            Assert.AreEqual(strategyExpected, expressionEvaluation.Strategy);
+        }
+
+        [TestCase(ExpressionEvaluationContext.FRAME, ExpressionEvaluation.Types.Context.Frame)]
+        [TestCase(ExpressionEvaluationContext.VALUE, ExpressionEvaluation.Types.Context.Value)]
+        public void ContextBatchTest(ExpressionEvaluationContext contextSource,
+                                     ExpressionEvaluation.Types.Context contextExpected)
+        {
+            _expressionEvaluationBatch.Add(new ExpressionEvaluationBatchParams(
+                                               ExpressionEvaluationStrategy.LLDB, contextSource,
+                                               new List<ExpressionEvaluationStepBatchParams>(), 500,
+                                               2000, null));
+
+            var batchSummary = _expressionEvaluationBatch.GetSummary();
+            Assert.NotNull(batchSummary.Proto.ExpressionEvaluations);
+            Assert.AreEqual(1, batchSummary.Proto.ExpressionEvaluations.Count);
+
+            var expressionEvaluation = batchSummary.Proto.ExpressionEvaluations[0];
+            Assert.AreEqual(contextExpected, expressionEvaluation.Context);
+        }
+
+        [TestCase(ExpressionEvaluationEngine.LLDB, ExpressionEvaluationStep.Types.Engine.Lldb)]
+        [TestCase(ExpressionEvaluationEngine.LLDB_VARIABLE_PATH,
+                  ExpressionEvaluationStep.Types.Engine.LldbVariablePath)]
+        [TestCase(ExpressionEvaluationEngine.LLDB_EVAL,
+                  ExpressionEvaluationStep.Types.Engine.LldbEval)]
+        public void EngineStepBatchTest(ExpressionEvaluationEngine engineSource,
+                                        ExpressionEvaluationStep.Types.Engine engineExpected)
+        {
+            var step =
+                new ExpressionEvaluationStepBatchParams(engineSource, LLDBErrorCode.ERROR, 500);
+            var steps = new List<ExpressionEvaluationStepBatchParams> { step };
+
+            var batchParams = new ExpressionEvaluationBatchParams(
+                ExpressionEvaluationStrategy.LLDB, ExpressionEvaluationContext.FRAME, steps, 500,
+                2000, null);
+            _expressionEvaluationBatch.Add(batchParams);
+
+            var batchSummary = _expressionEvaluationBatch.GetSummary();
+            Assert.NotNull(batchSummary.Proto.ExpressionEvaluations);
+            Assert.AreEqual(1, batchSummary.Proto.ExpressionEvaluations.Count);
+
+            var expressionEvaluation = batchSummary.Proto.ExpressionEvaluations[0];
+            Assert.NotNull(expressionEvaluation.EvaluationSteps);
+            Assert.AreEqual(1, expressionEvaluation.EvaluationSteps.Count);
+
+            var firstStep = expressionEvaluation.EvaluationSteps[0];
+            Assert.AreEqual(engineExpected, firstStep.Engine);
+        }
+
+        [TestCase(LLDBErrorCode.OK, ExpressionEvaluationStep.Types.EngineResult.LldbOk)]
+        [TestCase(LLDBErrorCode.ERROR, ExpressionEvaluationStep.Types.EngineResult.LldbError)]
+        public void LldbEvaluationResultBatchTest(LLDBErrorCode resultSource,
+                                                  ExpressionEvaluationStep.Types.EngineResult
+                                                      resultExpected)
+        {
+            var step =
+                new ExpressionEvaluationStepBatchParams(ExpressionEvaluationEngine.LLDB,
+                                                        resultSource, 500);
+            var steps = new List<ExpressionEvaluationStepBatchParams> { step };
+
+            var batchParams = new ExpressionEvaluationBatchParams(
+                ExpressionEvaluationStrategy.LLDB, ExpressionEvaluationContext.FRAME, steps, 500,
+                2000, null);
+            _expressionEvaluationBatch.Add(batchParams);
+
+            var batchSummary = _expressionEvaluationBatch.GetSummary();
+            Assert.NotNull(batchSummary.Proto.ExpressionEvaluations);
+            Assert.AreEqual(1, batchSummary.Proto.ExpressionEvaluations.Count);
+
+            var expressionEvaluation = batchSummary.Proto.ExpressionEvaluations[0];
+            Assert.NotNull(expressionEvaluation.EvaluationSteps);
+            Assert.AreEqual(1, expressionEvaluation.EvaluationSteps.Count);
+
+            var firstStep = expressionEvaluation.EvaluationSteps[0];
+            Assert.AreEqual(resultExpected, firstStep.Result);
+        }
+
+        [TestCase(LldbEvalErrorCode.Unknown,
+                  ExpressionEvaluationStep.Types.EngineResult.LldbEvalUnknown)]
+        [TestCase(LldbEvalErrorCode.Ok, ExpressionEvaluationStep.Types.EngineResult.LldbEvalOk)]
+        [TestCase(LldbEvalErrorCode.InvalidExpressionSyntax,
+                  ExpressionEvaluationStep.Types.EngineResult.LldbEvalInvalidExpressionSyntax)]
+        [TestCase(LldbEvalErrorCode.InvalidNumericLiteral,
+                  ExpressionEvaluationStep.Types.EngineResult.LldbEvalInvalidNumericLiteral)]
+        [TestCase(LldbEvalErrorCode.InvalidOperandType,
+                  ExpressionEvaluationStep.Types.EngineResult.LldbEvalInvalidOperandType)]
+        [TestCase(LldbEvalErrorCode.UndeclaredIdentifier,
+                  ExpressionEvaluationStep.Types.EngineResult.LldbEvalUndeclaredIdentifier)]
+        [TestCase(LldbEvalErrorCode.NotImplemented,
+                  ExpressionEvaluationStep.Types.EngineResult.LldbEvalNotImplemented)]
+        public void LldbEvalEvaluationResultBatchTest(LldbEvalErrorCode resultSource,
+                                                      ExpressionEvaluationStep.Types.EngineResult
+                                                          resultExpected)
+        {
+            var step =
+                new ExpressionEvaluationStepBatchParams(ExpressionEvaluationEngine.LLDB_EVAL,
+                                                        resultSource, 500);
+            var steps = new List<ExpressionEvaluationStepBatchParams> { step };
+
+            var batchParams = new ExpressionEvaluationBatchParams(
+                ExpressionEvaluationStrategy.LLDB, ExpressionEvaluationContext.FRAME, steps, 500,
+                2000, null);
+            _expressionEvaluationBatch.Add(batchParams);
+
+            var batchSummary = _expressionEvaluationBatch.GetSummary();
+            Assert.NotNull(batchSummary.Proto.ExpressionEvaluations);
+            Assert.AreEqual(1, batchSummary.Proto.ExpressionEvaluations.Count);
+
+            var expressionEvaluation = batchSummary.Proto.ExpressionEvaluations[0];
+            Assert.NotNull(expressionEvaluation.EvaluationSteps);
+            Assert.AreEqual(1, expressionEvaluation.EvaluationSteps.Count);
+
+            var firstStep = expressionEvaluation.EvaluationSteps[0];
+            Assert.AreEqual(resultExpected, firstStep.Result);
+        }
+
+        [Test]
+        public void AllStrategyValuesMappedTest()
+        {
+            var enumValues = Enum.GetValues(typeof(ExpressionEvaluationStrategy));
+            var steps = new List<ExpressionEvaluationStepBatchParams>();
+
+            // Validate that all strategy values defined in ExpressionEvaluationStrategy are mapped.
+            foreach (ExpressionEvaluationStrategy value in enumValues)
             {
-                Assert.AreEqual((int) Enum.Parse(sourceType, enumName),
-                                (int) Enum.Parse(destinationType, enumName));
+                var batchParams = new ExpressionEvaluationBatchParams(
+                    value, ExpressionEvaluationContext.FRAME, steps, 500, 2000, null);
+
+                _expressionEvaluationBatch.Add(batchParams);
+
+                Assert.DoesNotThrow(() => { _expressionEvaluationBatch.GetSummary(); });
+            }
+        }
+
+        [Test]
+        public void AllContextValuesMappedTest()
+        {
+            Array enumValues = Enum.GetValues(typeof(ExpressionEvaluationContext));
+            var steps = new List<ExpressionEvaluationStepBatchParams>();
+
+            // Validate that all context values defined in ExpressionEvaluationContext are mapped.
+            foreach (ExpressionEvaluationContext value in enumValues)
+            {
+                var batchParams = new ExpressionEvaluationBatchParams(
+                    ExpressionEvaluationStrategy.LLDB, value, steps, 500, 2000, null);
+
+                _expressionEvaluationBatch.Add(batchParams);
+
+                Assert.DoesNotThrow(() => { _expressionEvaluationBatch.GetSummary(); });
+            }
+        }
+
+        [Test]
+        public void AllEngineValuesMappedTest()
+        {
+            Array enumValues = Enum.GetValues(typeof(ExpressionEvaluationEngine));
+
+            // Validate that all engine values defined in ExpressionEvaluationEngine are mapped.
+            foreach (ExpressionEvaluationEngine value in enumValues)
+            {
+                var step = new ExpressionEvaluationStepBatchParams(value, LLDBErrorCode.OK, 500);
+                var steps = new List<ExpressionEvaluationStepBatchParams> { step };
+                var batchParams = new ExpressionEvaluationBatchParams(
+                    ExpressionEvaluationStrategy.LLDB, ExpressionEvaluationContext.FRAME, steps,
+                    500, 2000, null);
+
+                _expressionEvaluationBatch.Add(batchParams);
+
+                Assert.DoesNotThrow(() => { _expressionEvaluationBatch.GetSummary(); });
+            }
+        }
+
+        [Test]
+        public void AllEngineResultValuesMappedTest()
+        {
+            Array enumValuesLldb = Enum.GetValues(typeof(LLDBErrorCode));
+
+            // Validate that all engine result values for lldb are mapped.
+            foreach (LLDBErrorCode value in enumValuesLldb)
+            {
+                var step =
+                    new ExpressionEvaluationStepBatchParams(ExpressionEvaluationEngine.LLDB, value,
+                                                            500);
+                var steps = new List<ExpressionEvaluationStepBatchParams> { step };
+                var batchParams = new ExpressionEvaluationBatchParams(
+                    ExpressionEvaluationStrategy.LLDB, ExpressionEvaluationContext.FRAME, steps,
+                    500, 2000, null);
+
+                _expressionEvaluationBatch.Add(batchParams);
+
+                Assert.DoesNotThrow(() => { _expressionEvaluationBatch.GetSummary(); });
+            }
+
+            Array enumValuesLldbEval = Enum.GetValues(typeof(LldbEvalErrorCode));
+
+            // Validate that all engine result values for lldb-eval are mapped.
+            foreach (LldbEvalErrorCode value in enumValuesLldbEval)
+            {
+                var step =
+                    new ExpressionEvaluationStepBatchParams(ExpressionEvaluationEngine.LLDB_EVAL,
+                                                            value, 500);
+                var steps = new List<ExpressionEvaluationStepBatchParams> { step };
+                var batchParams = new ExpressionEvaluationBatchParams(
+                    ExpressionEvaluationStrategy.LLDB, ExpressionEvaluationContext.FRAME, steps,
+                    500, 2000, null);
+
+                _expressionEvaluationBatch.Add(batchParams);
+
+                Assert.DoesNotThrow(() => { _expressionEvaluationBatch.GetSummary(); });
             }
         }
     }
