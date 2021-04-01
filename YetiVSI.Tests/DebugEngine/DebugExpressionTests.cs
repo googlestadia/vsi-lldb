@@ -75,13 +75,14 @@ namespace YetiVSI.Test.DebugEngine
             _mockThread = Substitute.For<IDebugThread2>();
         }
 
-        IDebugAsyncExpression CreateExpression(
-            string expression,
-            ExpressionEvaluationEngine expressionEvaluationEngine = ExpressionEvaluationEngine.LLDB)
+        IDebugAsyncExpression CreateExpression(string expression,
+                                               ExpressionEvaluationStrategy
+                                                   expressionEvaluationStrategy =
+                                                   ExpressionEvaluationStrategy.LLDB)
         {
             var extensionOptionsMock = Substitute.For<IExtensionOptions>();
 
-            extensionOptionsMock.ExpressionEvaluationEngine.Returns(expressionEvaluationEngine);
+            extensionOptionsMock.ExpressionEvaluationStrategy.Returns(expressionEvaluationStrategy);
 
             var asyncEvaluatorFactory = new AsyncExpressionEvaluator.Factory(
                 _createPropertyDelegate, _varInfoBuilder, _vsExpressionCreator,
@@ -161,7 +162,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             const string expressionText = "myVar";
             IDebugExpression expression =
-                CreateExpression(expressionText, ExpressionEvaluationEngine.LLDB_EVAL);
+                CreateExpression(expressionText, ExpressionEvaluationStrategy.LLDB_EVAL);
             RemoteValueFake expressionValueNode =
                 RemoteValueFakeUtil.CreateClass("CustomType", "$17", "23");
 
@@ -266,7 +267,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             const string expressionText = "myVar";
             IDebugExpression expression = CreateExpression(
-                expressionText, ExpressionEvaluationEngine.LLDB_EVAL_WITH_FALLBACK);
+                expressionText, ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK);
 
             RemoteValueFake errorValue = RemoteValueFakeUtil.CreateLldbEvalError(lldbEvalErrorCode);
             RemoteValueFake expressionValue =
@@ -298,7 +299,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             const string expressionText = "myVar";
             IDebugExpression expression = CreateExpression(
-                expressionText, ExpressionEvaluationEngine.LLDB_EVAL_WITH_FALLBACK);
+                expressionText, ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK);
 
             RemoteValueFake errorValue = RemoteValueFakeUtil.CreateLldbEvalError(lldbEvalErrorCode);
 
@@ -325,7 +326,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             const string expressionText = "myVar";
             IDebugExpression expression =
-                CreateExpression(expressionText, ExpressionEvaluationEngine.LLDB_EVAL);
+                CreateExpression(expressionText, ExpressionEvaluationStrategy.LLDB_EVAL);
 
             RemoteValueFake errorValue = RemoteValueFakeUtil.CreateLldbEvalError(lldbEvalErrorCode);
 

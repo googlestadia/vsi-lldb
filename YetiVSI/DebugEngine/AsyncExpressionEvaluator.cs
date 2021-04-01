@@ -82,11 +82,11 @@ namespace YetiVSI.DebugEngine
                 // Get preferred expression evaluation option. This is performed here to
                 // pick up configuration changes in runtime (e.g. the user can enable and
                 // disable lldb-eval during a single debug session).
-                var expressionEvaluationEngine = extensionOptions.ExpressionEvaluationEngine;
+                var expressionEvaluationStrategy = extensionOptions.ExpressionEvaluationStrategy;
 
                 return new AsyncExpressionEvaluator(
                     frame, text, vsExpressionCreator, varInfoBuilder, createPropertyDelegate,
-                    errorDebugPropertyFactory, debugEngineCommands, expressionEvaluationEngine);
+                    errorDebugPropertyFactory, debugEngineCommands, expressionEvaluationStrategy);
             }
         }
 
@@ -97,7 +97,7 @@ namespace YetiVSI.DebugEngine
         readonly IDebugEngineCommands debugEngineCommands;
         readonly RemoteFrame frame;
         readonly string text;
-        readonly ExpressionEvaluationEngine expressionEvaluationEngine;
+        readonly ExpressionEvaluationStrategy expressionEvaluationStrategy;
 
         AsyncExpressionEvaluator(RemoteFrame frame, string text,
                                  VsExpressionCreator vsExpressionCreator,
@@ -105,7 +105,7 @@ namespace YetiVSI.DebugEngine
                                  CreateDebugPropertyDelegate createPropertyDelegate,
                                  ErrorDebugProperty.Factory errorDebugPropertyFactory,
                                  IDebugEngineCommands debugEngineCommands,
-                                 ExpressionEvaluationEngine expressionEvaluationEngine)
+                                 ExpressionEvaluationStrategy expressionEvaluationStrategy)
         {
             this.frame = frame;
             this.text = text;
@@ -114,7 +114,7 @@ namespace YetiVSI.DebugEngine
             this.createPropertyDelegate = createPropertyDelegate;
             this.errorDebugPropertyFactory = errorDebugPropertyFactory;
             this.debugEngineCommands = debugEngineCommands;
-            this.expressionEvaluationEngine = expressionEvaluationEngine;
+            this.expressionEvaluationStrategy = expressionEvaluationStrategy;
         }
 
         public async Task<EvaluationResult> EvaluateExpressionAsync()
@@ -194,8 +194,9 @@ namespace YetiVSI.DebugEngine
                 return frame.FindValue(expression.Substring(1), DebuggerApi.ValueType.Register);
             }
 
-            if (expressionEvaluationEngine == ExpressionEvaluationEngine.LLDB_EVAL ||
-                expressionEvaluationEngine == ExpressionEvaluationEngine.LLDB_EVAL_WITH_FALLBACK)
+            if (expressionEvaluationStrategy == ExpressionEvaluationStrategy.LLDB_EVAL ||
+                expressionEvaluationStrategy ==
+                ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK)
             {
                 var remoteValue = await frame.EvaluateExpressionLldbEvalAsync(expression);
 
@@ -217,8 +218,8 @@ namespace YetiVSI.DebugEngine
                     return remoteValue;
                 }
 
-                if (expressionEvaluationEngine !=
-                    ExpressionEvaluationEngine.LLDB_EVAL_WITH_FALLBACK)
+                if (expressionEvaluationStrategy !=
+                    ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK)
                 {
                     // Don't fallback to LLDB native expression evaluator if that option is
                     // disabled.

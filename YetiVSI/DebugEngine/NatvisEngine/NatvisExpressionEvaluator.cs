@@ -129,7 +129,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 v => ReplaceScopedNames(v, natvisScope?.ScopedNames, out variableReplaced));
 
             var lldbErrors = new List<string>();
-            ExpressionEvaluationEngine engine = _extensionOptions.ExpressionEvaluationEngine;
+            ExpressionEvaluationStrategy strategy = _extensionOptions.ExpressionEvaluationStrategy;
 
             // A helper lambda function to construct an exception given the list of lldb errors.
             Func<IList<string>, ExpressionEvaluationFailed> createExpressionEvaluationException =
@@ -147,8 +147,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return new ExpressionEvaluationFailed(exceptionMsg);
             };
 
-            if (engine == ExpressionEvaluationEngine.LLDB_EVAL ||
-                engine == ExpressionEvaluationEngine.LLDB_EVAL_WITH_FALLBACK)
+            if (strategy == ExpressionEvaluationStrategy.LLDB_EVAL ||
+                strategy == ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK)
             {
                 var value = await variable.EvaluateExpressionLldbEvalAsync(
                     displayName, expression, natvisScope.ContextVariables);
@@ -177,7 +177,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 }
             }
 
-            if (engine == ExpressionEvaluationEngine.LLDB)
+            if (strategy == ExpressionEvaluationStrategy.LLDB)
             {
                 // If lldb-eval is not enabled, try to interpret the expression as member access
                 // before using LLDB to evaluate the expression in the context of the variable.
@@ -191,8 +191,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 lldbErrors.Add(value?.ErrorMessage);
             }
 
-            if (engine == ExpressionEvaluationEngine.LLDB ||
-                engine == ExpressionEvaluationEngine.LLDB_EVAL_WITH_FALLBACK)
+            if (strategy == ExpressionEvaluationStrategy.LLDB ||
+                strategy == ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK)
             {
                 var value =
                     await EvaluateExpressionInVariableScopeAsync(variable, expression, displayName);

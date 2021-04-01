@@ -216,7 +216,7 @@ namespace YetiVSI
         LaunchGameApiFlow LaunchGameApiFlow { get; }
         NatvisLoggingLevel NatvisLoggingLevel { get; }
         FastExpressionEvaluation FastExpressionEvaluation { get; }
-        ExpressionEvaluationEngine ExpressionEvaluationEngine { get; }
+        ExpressionEvaluationStrategy ExpressionEvaluationStrategy { get; }
         AsyncInterfaces AsyncInterfaces { get; }
         ShowOption SdkCompatibilityWarningOption { get; }
         void AddSdkVersionsToHide(string gameletVersion, string localVersion, string gameletName);
@@ -432,9 +432,9 @@ namespace YetiVSI
             EnumValueAliasAttribute.GetAliasOrValue(FastExpressionEvaluation)
                 .ConvertTo<FastExpressionEvaluation>();
 
-        ExpressionEvaluationEngine IExtensionOptions.ExpressionEvaluationEngine =>
+        ExpressionEvaluationStrategy IExtensionOptions.ExpressionEvaluationStrategy =>
             EnumValueAliasAttribute.GetAliasOrValue(ExpressionEvaluationEngine)
-                .ConvertTo<ExpressionEvaluationEngine>();
+                .ConvertTo<ExpressionEvaluationStrategy>();
 
         AsyncInterfaces IExtensionOptions.AsyncInterfaces =>
             EnumValueAliasAttribute.GetAliasOrValue(AsyncInterfaces).ConvertTo<AsyncInterfaces>();

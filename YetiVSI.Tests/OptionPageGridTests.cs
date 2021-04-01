@@ -51,7 +51,7 @@ namespace YetiVSI.Test
         [TestCase(nameof(OptionPageGrid.FastExpressionEvaluation),
                   nameof(IExtensionOptions.FastExpressionEvaluation))]
         [TestCase(nameof(OptionPageGrid.ExpressionEvaluationEngine),
-                  nameof(IExtensionOptions.ExpressionEvaluationEngine))]
+                  nameof(IExtensionOptions.ExpressionEvaluationStrategy))]
         public void EnumOption(string optionName, string derivedName)
         {
             // Tests the validity of all enum options.

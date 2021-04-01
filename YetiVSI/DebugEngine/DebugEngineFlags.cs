@@ -24,13 +24,48 @@
     }
 
     /// <summary>
-    /// Indicates whether lldb-eval is preferred over LLDB (including the fallback option).
+    /// Strategy used for expression evaluation, whether lldb-eval is preferred over LLDB
+    /// (including the fallback option).
     /// </summary>
-    public enum ExpressionEvaluationEngine
+    public enum ExpressionEvaluationStrategy
     {
         LLDB,
         LLDB_EVAL,
         LLDB_EVAL_WITH_FALLBACK,
+    }
+
+    /// <summary>
+    /// Context in which an expression is evaluated.
+    /// </summary>
+    public enum ExpressionEvaluationContext
+    {
+        FRAME,
+        VALUE,
+    }
+
+    /// <summary>
+    /// Engine with which the evaluation is performed. This depends on the strategy being used.
+    /// </summary>
+    public enum ExpressionEvaluationEngine
+    {
+        // Full evaluation with lldb engine. This engine is used for LLDB and
+        // LLDB_EVAL_WITH_FALLBACK strategies.
+        LLDB,
+        // Engine used before the full evaluation with LLDB. This engine is only used when the
+        // strategy is LLDB.
+        LLDB_VARIABLE_PATH,
+        // Evaluation with lldb-eval engine. This engine is used for LLDB_EVAL and
+        // LLDB_EVAL_WITH_FALLBACK strategies.
+        LLDB_EVAL,
+    }
+
+    /// <summary>
+    /// Result of an evaluation performed with LLDB or LLDB_VARIABLE_PATH.
+    /// </summary>
+    public enum LLDBErrorCode
+    {
+        OK,
+        ERROR,
     }
 
     /// <summary>
