@@ -80,5 +80,18 @@ namespace YetiVSI.Test
                 });
             }
         }
+
+        [Test]
+        public void ResetSettings()
+        {
+            Assert.IsEmpty(_optionPage.SelectedAccount);
+
+            OptionPageGrid page = (OptionPageGrid)_optionPage;
+            page.SelectedAccount = "Dummy";
+            Assert.AreEqual("Dummy", _optionPage.SelectedAccount);
+
+            page.ResetSettings();
+            Assert.IsEmpty(_optionPage.SelectedAccount);
+        }
     }
 }

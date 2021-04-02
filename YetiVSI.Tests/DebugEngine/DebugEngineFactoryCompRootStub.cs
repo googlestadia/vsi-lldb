@@ -151,13 +151,10 @@ namespace YetiVSI.Test.DebugEngine
         {
             if (_vsiService == null)
             {
-                var vsiServiceOptions =
-                    new OptionPageGrid
-                    {
-                        NatvisLoggingLevel = NatvisLoggingLevelFeatureFlag.VERBOSE
-                    };
+                var serviceOptions = OptionPageGrid.CreateForTesting();
+                serviceOptions.NatvisLoggingLevel = NatvisLoggingLevelFeatureFlag.VERBOSE;
 
-                _vsiService = new YetiVSIService(vsiServiceOptions);
+                _vsiService = new YetiVSIService(serviceOptions);
             }
 
             return _vsiService;

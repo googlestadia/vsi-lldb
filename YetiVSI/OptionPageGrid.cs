@@ -372,13 +372,7 @@ namespace YetiVSI
 
         public OptionPageGrid()
         {
-            // Initialize options to default values, if specified.
-            var optionsWithCategory = GetType().GetProperties()
-                .Where(p => GetPropertyCategory(p) != null);
-            foreach (var option in optionsWithCategory)
-            {
-                option.SetValue(this, GetPropertyDefaultValue(option));
-            }
+            ResetSettings();
         }
 
         /// <summary>
@@ -388,15 +382,31 @@ namespace YetiVSI
         /// </summary>
         public static OptionPageGrid CreateForTesting()
         {
-            // Disable "Use the ThreadHelper.JoinableTaskContext singleton rather than instantiating
-            // your own to avoid deadlocks".
+            var taskContextField = typeof(ThreadHelper).GetField(
+                "_joinableTaskContextCache", BindingFlags.Static | BindingFlags.NonPublic);
+
+            // TODO: Use https://aka.ms/vssdktestfx for tests.
+            if (taskContextField.GetValue(null) == null)
+            {
+                // Disable "Use the ThreadHelper.JoinableTaskContext singleton rather than
+                // instantiating your own to avoid deadlocks".
 #pragma warning disable VSSDK005
-            typeof(ThreadHelper)
-                .GetField("_joinableTaskContextCache", BindingFlags.Static | BindingFlags.NonPublic)
-                .SetValue(null, new JoinableTaskContext());
+                taskContextField.SetValue(null, new JoinableTaskContext());
 #pragma warning restore VSSDK005
+            }
 
             return new OptionPageGrid();
+        }
+
+        public override void ResetSettings()
+        {
+            // Initialize options to default values, if specified.
+            var optionsWithCategory = GetType().GetProperties()
+                .Where(p => GetPropertyCategory(p) != null);
+            foreach (var option in optionsWithCategory)
+            {
+                option.SetValue(this, GetPropertyDefaultValue(option));
+            }
         }
 
         #region IOptionPageGrid
