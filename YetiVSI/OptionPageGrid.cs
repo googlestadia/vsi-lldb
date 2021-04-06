@@ -186,7 +186,8 @@ namespace YetiVSI
 
     public enum ExpressionEvaluationEngineFlag
     {
-        [Description("Default - LLDB")] [EnumValueAlias(LLDB)]
+        [Description("Default - lldb-eval with fallback to LLDB")]
+        [EnumValueAlias(LLDB_EVAL_WITH_FALLBACK)]
         DEFAULT = 0,
         [Description("LLDB")] LLDB = 1,
 
