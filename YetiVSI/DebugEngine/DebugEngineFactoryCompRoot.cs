@@ -357,7 +357,7 @@ namespace YetiVSI.DebugEngine
                 GetTaskExecutor().CancelAsyncOperationIfRequested, processFactory, GetDialogUtil(),
                 vsOutputWindow, GetVsiService());
 
-            var testClientLauncherFactory = new ChromeTestClientLauncher.Factory(
+            var testClientLauncherFactory = new ChromeClientsLauncher.Factory(
                 new ChromeClientLaunchCommandFormatter(GetJsonUtil()), GetSdkConfigFactory(),
                 GetChromeLauncher(backgroundProcessFactory));
 

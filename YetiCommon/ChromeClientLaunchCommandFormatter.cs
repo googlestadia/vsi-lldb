@@ -43,13 +43,13 @@ namespace YetiCommon
         /// <summary>
         /// Create a launch command that can execute using Cmd.exe
         /// </summary>
-        public string CreateFromParams(ChromeLaunchParams launchParams)
+        public string CreateFromParams(LaunchParams launchParams)
             => $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)}\"";
 
         /// <summary>
         /// Create a launch command that can execute using Cmd.exe
         /// </summary>
-        public string CreateWithLaunchName(ChromeLaunchParams launchParams,
+        public string CreateWithLaunchName(LaunchParams launchParams,
                                            string launchName) =>
             $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)} " +
             $"{EncodeLaunchName(launchName)}\"";
@@ -59,7 +59,7 @@ namespace YetiCommon
         /// </summary>
         /// <exception cref="ArgumentException">Thrown if the command is malformed</exception>
         /// <exception cref="ArgumentNullException">Thrown if the command is null</exception>
-        public void Parse(string command, out ChromeLaunchParams launchParams,
+        public void Parse(string command, out LaunchParams launchParams,
                           out string launchName)
         {
             if (command == null)
@@ -93,15 +93,15 @@ namespace YetiCommon
         /// <summary>
         /// Decode a base64 encoded representation of launch parameters.
         /// </summary>
-        public ChromeLaunchParams DecodeLaunchParams(string encodedParams) =>
-            serializer.Deserialize<ChromeLaunchParams>(
+        public LaunchParams DecodeLaunchParams(string encodedParams) =>
+            serializer.Deserialize<LaunchParams>(
                 Encoding.UTF8.GetString(
                     Convert.FromBase64String(encodedParams)));
 
         /// <summary>
         /// base64 encode launch parameters
         /// </summary>
-        public string EncodeLaunchParams(ChromeLaunchParams launchParams) =>
+        public string EncodeLaunchParams(LaunchParams launchParams) =>
             Convert.ToBase64String(
                 Encoding.UTF8.GetBytes(
                     serializer.Serialize(launchParams)));

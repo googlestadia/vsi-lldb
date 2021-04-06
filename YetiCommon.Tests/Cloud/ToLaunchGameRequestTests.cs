@@ -58,7 +58,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestNoQueryParams()
         {
-            ChromeLaunchParams parameters = ValidParams;
+            LaunchParams parameters = ValidParams;
             parameters.RenderDoc = false;
             parameters.Rgp = false;
             parameters.VulkanDriverVariant = string.Empty;
@@ -110,7 +110,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestEnvironmentVariablesOverlap()
         {
-            ChromeLaunchParams parameters = ValidParams;
+            LaunchParams parameters = ValidParams;
             parameters.RenderDoc = true;
             parameters.Rgp = true;
             parameters.GameletEnvironmentVars =
@@ -156,7 +156,7 @@ namespace YetiCommon.Tests.Cloud
         [Test]
         public void ToLaunchGameRequestParametersOverlap()
         {
-            ChromeLaunchParams parameters = ValidParams;
+            LaunchParams parameters = ValidParams;
             parameters.SurfaceEnforcementMode = SurfaceEnforcementSetting.Block;
             parameters.Debug = false;
             parameters.QueryParams = string.Join("&", AllValidQueryParams.Select(

@@ -40,7 +40,7 @@ namespace YetiVSI.Test.GameLaunch
         const string _gameletSdkVersion = "gamelet.test.765";
         const string _gameletName = "some/gamelet/name";
 
-        readonly ChromeLaunchParams _launchParams = new ChromeLaunchParams
+        readonly LaunchParams _launchParams = new LaunchParams
         {
             GameletName = _gameletName,
             SdkVersion = _sdkVersion,

@@ -27,9 +27,10 @@ namespace YetiCommon.Tests
         {
             var launchCommand = new ChromeClientLaunchCommandFormatter(new JsonUtil(), LauncherDir);
 
-            var launchParams = new ChromeLaunchParams()
+            var launchParams = new LaunchParams()
             {
                 ApplicationName = "theAppName",
+                ApplicationId = "theAppId",
                 GameletName= "gameletName",
                 Account = "test@example.com",
                 Cmd = "TestProject",
@@ -43,12 +44,14 @@ namespace YetiCommon.Tests
             };
 
             var command = launchCommand.CreateFromParams(launchParams);
-            launchCommand.Parse(command, out ChromeLaunchParams parsedLaunchParams,
+            launchCommand.Parse(command, out LaunchParams parsedLaunchParams,
                                 out _);
             Assert.Multiple(() =>
             {
                 Assert.That(parsedLaunchParams.ApplicationName,
                             Is.EqualTo(launchParams.ApplicationName));
+                Assert.That(parsedLaunchParams.ApplicationId,
+                            Is.EqualTo(launchParams.ApplicationId));
                 Assert.That(parsedLaunchParams.GameletName, Is.EqualTo(launchParams.GameletName));
                 Assert.That(parsedLaunchParams.Account, Is.EqualTo(launchParams.Account));
                 Assert.That(parsedLaunchParams.Cmd, Is.EqualTo(launchParams.Cmd));
@@ -69,14 +72,14 @@ namespace YetiCommon.Tests
         {
             var launchCommand = new ChromeClientLaunchCommandFormatter(new JsonUtil(), LauncherDir);
             string launchName = "launchName";
-            var launchParams = new ChromeLaunchParams()
+            var launchParams = new LaunchParams()
             {
                 Account = "test@example.com",
                 SdkVersion = "sdkVersion",
             };
 
             var command = launchCommand.CreateWithLaunchName(launchParams, launchName);
-            launchCommand.Parse(command, out ChromeLaunchParams parsedLaunchParams,
+            launchCommand.Parse(command, out LaunchParams parsedLaunchParams,
                                 out string parsedLaunchName);
             Assert.Multiple(() =>
             {

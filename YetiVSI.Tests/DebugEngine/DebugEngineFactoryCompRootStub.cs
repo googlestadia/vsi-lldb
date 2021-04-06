@@ -117,7 +117,7 @@ namespace YetiVSI.Test.DebugEngine
                 vsOutputWindow, vsiService);
 
             var chromeLauncher = new ChromeLauncher(backgroundProcessFactory);
-            var testClientLauncherFactory = new ChromeTestClientLauncher.Factory(
+            var testClientLauncherFactory = new ChromeClientsLauncher.Factory(
                 new ChromeClientLaunchCommandFormatter(GetJsonUtil()), GetSdkConfigFactory(),
                 chromeLauncher);
 

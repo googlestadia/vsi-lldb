@@ -147,7 +147,7 @@ namespace YetiVSI.DebugEngine
             readonly HttpClient _symbolServerHttpClient;
             readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
             readonly IModuleFileFinder _moduleFileFinder;
-            readonly ChromeTestClientLauncher.Factory _testClientLauncherFactory;
+            readonly ChromeClientsLauncher.Factory _testClientLauncherFactory;
             readonly NatvisExpander _natvisExpander;
             readonly NatvisDiagnosticLogger _natvisLogger;
             readonly ExitDialogUtil _exitDialogUtil;
@@ -171,7 +171,7 @@ namespace YetiVSI.DebugEngine
                            HttpClient symbolServerHttpClient,
                            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
                            IModuleFileFinder moduleFileFinder,
-                           ChromeTestClientLauncher.Factory testClientLauncherFactory,
+                           ChromeClientsLauncher.Factory testClientLauncherFactory,
                            NatvisExpander natvisExpander, NatvisDiagnosticLogger natvisLogger,
                            ExitDialogUtil exitDialogUtil,
                            PreflightBinaryChecker preflightBinaryChecker,
@@ -306,7 +306,7 @@ namespace YetiVSI.DebugEngine
         readonly HttpClient _symbolServerHttpClient;
         readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
         readonly IModuleFileFinder _moduleFileFinder;
-        readonly ChromeTestClientLauncher.Factory _testClientLauncherFactory;
+        readonly ChromeClientsLauncher.Factory _testClientLauncherFactory;
         readonly NatvisExpander _natvisExpander;
         readonly NatvisDiagnosticLogger _natvisLogger;
         readonly ExitDialogUtil _exitDialogUtil;
@@ -342,27 +342,24 @@ namespace YetiVSI.DebugEngine
 
         ISessionNotifier _sessionNotifier;
 
-        public DebugEngine(IGgpDebugEngine self, Guid id, IExtensionOptions extensionOptions,
-                           DebuggerOptions.DebuggerOptions debuggerOptions,
-                           DebugSessionMetrics debugSessionMetrics, JoinableTaskContext taskContext,
-                           NatvisLoggerOutputWindowListener natvisLogListener,
-                           ISolutionExplorer solutionExplorer,
-                           CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
-                           YetiDebugTransport yetiTransport, ActionRecorder actionRecorder,
-                           HttpClient symbolServerHttpClient,
-                           ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
-                           IModuleFileFinder moduleFileFinder,
-                           ChromeTestClientLauncher.Factory testClientLauncherFactory,
-                           NatvisExpander natvisExpander, NatvisDiagnosticLogger natvisLogger,
-                           ExitDialogUtil exitDialogUtil,
-                           PreflightBinaryChecker preflightBinaryChecker,
-                           IDebugSessionLauncherFactory debugSessionLauncherFactory,
-                           Params.Factory paramsFactory, IRemoteDeploy remoteDeploy,
-                           IDebugEngineCommands debugEngineCommands,
-                           DebugEventCallbackTransform debugEventCallbackDecorator,
-                           string vsRegistryRoot, ISessionNotifier sessionNotifier,
-                           ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
-                           IGameLauncher gameLauncher)
+        public DebugEngine(
+            IGgpDebugEngine self, Guid id, IExtensionOptions extensionOptions,
+            DebuggerOptions.DebuggerOptions debuggerOptions,
+            DebugSessionMetrics debugSessionMetrics, JoinableTaskContext taskContext,
+            NatvisLoggerOutputWindowListener natvisLogListener, ISolutionExplorer solutionExplorer,
+            CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
+            YetiDebugTransport yetiTransport, ActionRecorder actionRecorder,
+            HttpClient symbolServerHttpClient,
+            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
+            IModuleFileFinder moduleFileFinder,
+            ChromeClientsLauncher.Factory testClientLauncherFactory, NatvisExpander natvisExpander,
+            NatvisDiagnosticLogger natvisLogger, ExitDialogUtil exitDialogUtil,
+            PreflightBinaryChecker preflightBinaryChecker,
+            IDebugSessionLauncherFactory debugSessionLauncherFactory, Params.Factory paramsFactory,
+            IRemoteDeploy remoteDeploy, IDebugEngineCommands debugEngineCommands,
+            DebugEventCallbackTransform debugEventCallbackDecorator, string vsRegistryRoot,
+            ISessionNotifier sessionNotifier, ISymbolSettingsProvider symbolSettingsProvider,
+            bool deployLldbServer, IGameLauncher gameLauncher)
             : base(self)
         {
             taskContext.ThrowIfNotOnMainThread();
@@ -900,7 +897,7 @@ namespace YetiVSI.DebugEngine
 
             _executableFullPath = executableFullPath;
             _executableFileName = Path.GetFileName(executableFullPath);
-            ChromeTestClientLauncher chromeLauncher;
+            ChromeClientsLauncher chromeLauncher;
             if (string.IsNullOrEmpty(args))
             {
                 chromeLauncher = null;
@@ -982,16 +979,17 @@ namespace YetiVSI.DebugEngine
         // _vsiGameLaunch will only be non-null when VS manages the launch. This only
         // applies to the flow with the Launch API and it must be "Debug" flow
         // (not Attach to Process / Attach to Stadia Crash Dump).
-        void LaunchGame(IChromeTestClientLauncher chromeTestClient)
+        void LaunchGame(IChromeClientsLauncher chromeClientsLauncher)
         {
-            _vsiGameLaunch = _gameLauncher.CreateLaunch(chromeTestClient.LaunchParams);
-            _vsiGameLaunch?.LaunchInChrome(chromeTestClient, _workingDirectory);
+            _vsiGameLaunch = _gameLauncher.CreateLaunch(chromeClientsLauncher.LaunchParams);
+            _vsiGameLaunch?.LaunchInChrome(chromeClientsLauncher, _workingDirectory);
         }
 
         //TODO: remove the legacy launch flow.
-        void LegacyLaunchFlow(IChromeTestClientLauncher chromeTestClient)
+        void LegacyLaunchFlow(IChromeClientsLauncher chromeClientsLauncher)
         {
-            ConfigStatus urlBuildStatus = chromeTestClient.BuildLaunchUrl(out string launchUrl);
+            ConfigStatus urlBuildStatus =
+                chromeClientsLauncher.MakeLegacyLaunchUrl(out string launchUrl);
 
             if (urlBuildStatus.IsWarningLevel)
             {
@@ -1005,7 +1003,7 @@ namespace YetiVSI.DebugEngine
 
             // Start Chrome Client. We are starting it as early as possible, so we can
             // initialize the debugger and start the game in parallel.
-            chromeTestClient.LaunchGame(launchUrl, _workingDirectory);
+            chromeClientsLauncher.LaunchGame(launchUrl, _workingDirectory);
         }
 
         /// <summary>

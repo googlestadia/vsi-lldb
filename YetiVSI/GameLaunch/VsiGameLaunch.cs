@@ -42,9 +42,9 @@ namespace YetiVSI.GameLaunch
         /// <summary>
         /// Constructs a URL withe the launch name and opens a Chrome tab with it.
         /// </summary>
-        /// <param name="chromeTestClient">Chrome test client launcher.</param>
+        /// <param name="chromeClientsLauncher">Chrome test client launcher.</param>
         /// <param name="workingDirectory">The working directory.</param>
-        void LaunchInChrome(IChromeTestClientLauncher chromeTestClient, string workingDirectory);
+        void LaunchInChrome(IChromeClientsLauncher chromeClientsLauncher, string workingDirectory);
 
         /// <summary>
         /// Retrieves the launch status form the backend.
@@ -135,11 +135,11 @@ namespace YetiVSI.GameLaunch
 
         public string LaunchId => LaunchName.Split('/').Last();
 
-        public void LaunchInChrome(IChromeTestClientLauncher chromeTestClient,
+        public void LaunchInChrome(IChromeClientsLauncher chromeClientsLauncher,
                                    string workingDirectory)
         {
-            string launchUrl = chromeTestClient.BuildLaunchUrlWithLaunchName(LaunchName);
-            chromeTestClient.LaunchGame(launchUrl, workingDirectory);
+            string launchUrl = chromeClientsLauncher.MakeTestClientUrl(LaunchName);
+            chromeClientsLauncher.LaunchGame(launchUrl, workingDirectory);
         }
 
         public async Task<GgpGrpc.Models.GameLaunch> GetLaunchStateAsync(IAction action) =>

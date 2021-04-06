@@ -35,21 +35,22 @@ namespace ChromeClientLauncher
             {
                 var jsonUtil = new JsonUtil();
 
-                var gameLauncher = new ChromeTestClientLauncher.Factory(
-                    new ChromeClientLaunchCommandFormatter(jsonUtil),
-                    new SdkConfig.Factory(jsonUtil),
-                    new ChromeLauncher(new BackgroundProcess.Factory())).Create(args[0]);
+                var gameLauncher = new ChromeClientsLauncher
+                                       .Factory(new ChromeClientLaunchCommandFormatter(jsonUtil),
+                                                new SdkConfig.Factory(jsonUtil),
+                                                new ChromeLauncher(new BackgroundProcess.Factory()))
+                                       .Create(args[0]);
 
                 // new launch api is enabled.
                 if (args.Length == 2)
                 {
                     string launchName = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
-                    string launchUrl = gameLauncher.BuildLaunchUrlWithLaunchName(launchName);
+                    string launchUrl = gameLauncher.MakeTestClientUrl(launchName);
                     gameLauncher.LaunchGame(launchUrl, Directory.GetCurrentDirectory());
                 }
                 else
                 {
-                    ConfigStatus urlBuildStatus = gameLauncher.BuildLaunchUrl(out string launchUrl);
+                    ConfigStatus urlBuildStatus = gameLauncher.MakeLegacyLaunchUrl(out string launchUrl);
                     if (urlBuildStatus.IsWarningLevel)
                     {
                         Console.WriteLine($"Warning: {urlBuildStatus.WarningMessage}");

@@ -22,8 +22,7 @@ namespace YetiCommon.Cloud
 {
     public interface ILaunchGameParamsConverter
     {
-        ConfigStatus ToLaunchGameRequest(
-            ChromeLaunchParams parameters, out LaunchGameRequest request);
+        ConfigStatus ToLaunchGameRequest(LaunchParams parameters, out LaunchGameRequest request);
 
         /// <summary>
         /// Returns the full game launch name, which can be used in the GetGameLaunchState
@@ -51,7 +50,7 @@ namespace YetiCommon.Cloud
         }
 
         public ConfigStatus ToLaunchGameRequest(
-            ChromeLaunchParams parameters, out LaunchGameRequest request)
+            LaunchParams parameters, out LaunchGameRequest request)
         {
             ConfigStatus status =
                 _queryParametersParser.ParametersToDictionary(
@@ -82,6 +81,8 @@ namespace YetiCommon.Cloud
                 _queryParametersParser.GetFinalQueryString(parametersDict, out string queryString));
             parameters.QueryParams = queryString;
 
+            // TODO: show warning if query params left when Launch on Web is selected.
+
             return status;
         }
 
@@ -96,12 +97,14 @@ namespace YetiCommon.Cloud
                 : $"{testAccount}/gameLaunches/{actualLaunchName}";
         }
 
-        string Parent(ISdkConfig sdkConfig, ChromeLaunchParams parameters) =>
+        // TODO: don't use test account for launch on web and show warning
+        // (or disable the setting) if one is specified.
+        string Parent(ISdkConfig sdkConfig, LaunchParams parameters) =>
             string.IsNullOrWhiteSpace(parameters.TestAccount)
                 ? _developerLaunchGameParent
                 : parameters.TestAccount;
 
-        string ExecutablePath(ChromeLaunchParams parameters)
+        string ExecutablePath(LaunchParams parameters)
         {
             if (string.IsNullOrWhiteSpace(parameters.Cmd))
             {
@@ -112,7 +115,7 @@ namespace YetiCommon.Cloud
             return executableName;
         }
 
-        ConfigStatus CommandLineArguments(ChromeLaunchParams parameters,
+        ConfigStatus CommandLineArguments(LaunchParams parameters,
                                           out string[] args)
         {
             args = new string[0];
@@ -126,7 +129,7 @@ namespace YetiCommon.Cloud
             return ConfigStatus.OkStatus();
         }
 
-        ConfigStatus EnvironmentVariables(ChromeLaunchParams parameters,
+        ConfigStatus EnvironmentVariables(LaunchParams parameters,
                                           out IDictionary<string, string> envVariables)
         {
             ConfigStatus status = ConfigStatus.OkStatus();
@@ -165,7 +168,7 @@ namespace YetiCommon.Cloud
         }
 
         ConfigStatus AddFlagsEnvironmentVariables(
-            ChromeLaunchParams parameters, IDictionary<string, string> variables)
+            LaunchParams parameters, IDictionary<string, string> variables)
         {
             ConfigStatus status = ConfigStatus.OkStatus();
             var flagEnvironmentVariables = new Dictionary<string, string>();

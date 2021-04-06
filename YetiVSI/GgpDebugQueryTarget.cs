@@ -107,7 +107,7 @@ namespace YetiVSI
                 var gameletCommand = (targetFileName + " " +
                     await project.GetGameletLaunchArgumentsAsync()).Trim();
 
-                var launchParams = new ChromeLaunchParams()
+                var launchParams = new LaunchParams()
                 {
                     Cmd = gameletCommand,
                     RenderDoc = await project.GetLaunchRenderDocAsync(),
@@ -129,6 +129,7 @@ namespace YetiVSI
                 }
 
                 launchParams.ApplicationName = setupQueriesResult.Application.Name;
+                launchParams.ApplicationId = setupQueriesResult.Application.Id;
                 if (setupQueriesResult.TestAccount != null)
                 {
                     launchParams.TestAccount = setupQueriesResult.TestAccount.Name;

@@ -38,7 +38,7 @@ namespace YetiVSI.GameLaunch
         /// </summary>
         /// <param name="launchParams">Launch parameters.</param>
         /// <returns>Instance of the VsiGameLaunch if successful, otherwise null.</returns>
-        IVsiGameLaunch CreateLaunch(ChromeLaunchParams launchParams);
+        IVsiGameLaunch CreateLaunch(LaunchParams launchParams);
     }
 
     public class GameLauncher : IGameLauncher
@@ -69,7 +69,7 @@ namespace YetiVSI.GameLaunch
         public bool LaunchGameApiEnabled =>
             _vsiService.Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
 
-        public IVsiGameLaunch CreateLaunch(ChromeLaunchParams launchParams)
+        public IVsiGameLaunch CreateLaunch(LaunchParams launchParams)
         {
             IAction action = _actionRecorder.CreateToolAction(ActionType.GameLaunchCreate);
             CreateLaunchResult launchRes = null;
@@ -151,7 +151,7 @@ namespace YetiVSI.GameLaunch
                 : sdkCompatibility.Message;
         }
 
-        async Task<CreateLaunchResult> CreateLaunchAsync(ChromeLaunchParams launchParams,
+        async Task<CreateLaunchResult> CreateLaunchAsync(LaunchParams launchParams,
                                                          ICancelable cancelable, IAction action)
         {
             Task<string> sdkCompatibilityTask = CheckSdkCompatibilityAsync(

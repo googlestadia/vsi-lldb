@@ -29,7 +29,7 @@ namespace YetiCommon.Cloud
             string queryString, out IDictionary<string, string> queryParams);
 
         ConfigStatus ParseToParameters(IDictionary<string, string> queryParams,
-                                       ChromeLaunchParams parameters);
+                                       LaunchParams parameters);
 
         ConfigStatus GetFinalQueryString(
             IDictionary<string, string> queryParams, out string queryString);
@@ -115,13 +115,13 @@ namespace YetiCommon.Cloud
             // Parameters, which are removed from the query string and
             // are passed as request parameters.
             QueryParamMapping.RequestOnly("test_account",
-                                          nameof(ChromeLaunchParams.TestAccount),
-                                          typeof(ChromeLaunchParams)),
+                                          nameof(LaunchParams.TestAccount),
+                                          typeof(LaunchParams)),
             QueryParamMapping.RequestOnly("renderdoc",
-                                          nameof(ChromeLaunchParams.RenderDoc),
-                                          typeof(ChromeLaunchParams)),
-            QueryParamMapping.RequestOnly("rgp", nameof(ChromeLaunchParams.Rgp),
-                                          typeof(ChromeLaunchParams)),
+                                          nameof(LaunchParams.RenderDoc),
+                                          typeof(LaunchParams)),
+            QueryParamMapping.RequestOnly("rgp", nameof(LaunchParams.Rgp),
+                                          typeof(LaunchParams)),
             QueryParamMapping.RequestOnly("application_name",
                                           nameof(LaunchGameRequest.ApplicationName),
                                           typeof(LaunchGameRequest)),
@@ -211,7 +211,7 @@ namespace YetiCommon.Cloud
         }
 
         public ConfigStatus ParseToParameters(IDictionary<string, string> queryParams,
-                                              ChromeLaunchParams parameters)
+                                              LaunchParams parameters)
         {
             ConfigStatus status = AssignValues(parameters, queryParams);
             return status.Merge(ParseParamsCustomParameters(parameters, queryParams));
@@ -384,14 +384,14 @@ namespace YetiCommon.Cloud
 
         #region ParseParamsCustomParameters
 
-        ConfigStatus ParseParamsCustomParameters(ChromeLaunchParams parameters,
+        ConfigStatus ParseParamsCustomParameters(LaunchParams parameters,
                                                  IDictionary<string, string> queryParams)
         {
             ConfigStatus status = ParseParamsCmd(parameters, queryParams);
             return status.Merge(ParseParamsVars(parameters, queryParams));
         }
 
-        ConfigStatus ParseParamsCmd(ChromeLaunchParams parameters,
+        ConfigStatus ParseParamsCmd(LaunchParams parameters,
                                     IDictionary<string, string> queryParams)
         {
             if (!queryParams.ContainsKey(QueryParamMapping.Cmd))
@@ -423,7 +423,7 @@ namespace YetiCommon.Cloud
             return ConfigStatus.OkStatus();
         }
 
-        ConfigStatus ParseParamsVars(ChromeLaunchParams parameters,
+        ConfigStatus ParseParamsVars(LaunchParams parameters,
                                      IDictionary<string, string> queryParams)
         {
             if (queryParams.ContainsKey(QueryParamMapping.Vars))

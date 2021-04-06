@@ -69,14 +69,14 @@ namespace YetiVSI.Test.GameLaunch
         [Test]
         public void LaunchInChromeTest()
         {
-            var launcher = Substitute.For<IChromeTestClientLauncher>();
+            var launcher = Substitute.For<IChromeClientsLauncher>();
             const string url = "https://test";
             const string workingDir = "C:/dir";
-            launcher.BuildLaunchUrlWithLaunchName(Arg.Any<string>()).Returns(url);
+            launcher.MakeTestClientUrl(Arg.Any<string>()).Returns(url);
 
             _target.LaunchInChrome(launcher, workingDir);
 
-            launcher.Received(1).BuildLaunchUrlWithLaunchName(_launchName);
+            launcher.Received(1).MakeTestClientUrl(_launchName);
             launcher.Received(1).LaunchGame(url, workingDir);
         }
 

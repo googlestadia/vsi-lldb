@@ -20,11 +20,12 @@ namespace YetiCommon.Tests.Cloud
 {
     public static class LaunchRequestParsingTestData
     {
-        public static ChromeLaunchParams ValidParams =>
-            new ChromeLaunchParams
+        public static LaunchParams ValidParams =>
+            new LaunchParams
             {
                 Account = "some_account",
                 ApplicationName = "test/app",
+                ApplicationId = "app-id",
                 Cmd = "some_bin arg1",
                 Debug = true,
                 GameletEnvironmentVars = "Var1=1;vAR2=3",
