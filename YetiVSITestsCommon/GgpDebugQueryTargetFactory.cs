@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Google.VisualStudioFake.API;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
 using Microsoft.VisualStudio.Threading;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using YetiCommon;
-using YetiCommon.VSProject;
 using YetiVSI;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSITestsCommon
 {

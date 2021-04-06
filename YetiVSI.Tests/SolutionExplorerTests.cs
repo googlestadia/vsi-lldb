@@ -19,7 +19,7 @@ using NSubstitute;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.Test
 {

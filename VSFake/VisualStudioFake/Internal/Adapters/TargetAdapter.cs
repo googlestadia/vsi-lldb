@@ -18,7 +18,7 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
 using System.Collections.Generic;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace Google.VisualStudioFake.Internal
 {

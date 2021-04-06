@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿// This file is defined in the YetiCommon assembly as a workaround while it needs to be referenced
-// by both YetiVSI and VSFake. It should be moved back to YetiVSI when possible (see (internal)).
 using GgpGrpc.Models;
 using System.Threading.Tasks;
 
-namespace YetiCommon.VSProject
+namespace YetiVSI.ProjectSystem.Abstractions
 {
     /// <summary>
     /// Specifies under what conditions to deploy executable on launch.

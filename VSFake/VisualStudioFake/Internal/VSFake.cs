@@ -13,7 +13,7 @@
 // limitations under the License.
 
 ﻿using Google.VisualStudioFake.API;
- using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace Google.VisualStudioFake.Internal
 {

@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.VisualStudio.ProjectSystem;
+using Microsoft.VisualStudio.Threading;
 using YetiVSI.ProjectSystem.Abstractions;
 
-namespace Google.VisualStudioFake.API
+namespace YetiVSI.ProjectSystem
 {
-    public interface IVSFake
+    public class ProjectServiceAdapter : IProjectServiceAdapter
     {
-        ITargetAdapter TargetAdapter { get; }
-        IProjectAdapter ProjectAdapter { get; }
-        ISessionDebugManager SessionDebugManager { get; }
-        IDebugSession DebugSession { get; }
-        ISolutionExplorer SolutionExplorer { get; }
+        readonly IProjectService _projectService;
 
-        VSFakeTimeoutSource Timeouts { get; }
+        public ProjectServiceAdapter(IProjectService projectService)
+        {
+            _projectService = projectService;
+        }
+
+        public JoinableTaskContext GetContext()
+        {
+            return _projectService.Services.ThreadingPolicy.JoinableTaskContext.Context;
+        }
     }
 }

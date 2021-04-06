@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿// This file is defined in the YetiCommon assembly as a workaround while it needs to be referenced
-// by both YetiVSI and VSFake. It should be moved back to YetiVSI when possible (see (internal)).
-namespace YetiCommon.VSProject
+namespace YetiVSI.ProjectSystem.Abstractions
 {
     /// <summary>
     /// This class stores the names of properties relevant to Stadia used by the project system.

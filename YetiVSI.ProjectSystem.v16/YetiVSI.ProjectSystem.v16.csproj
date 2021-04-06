@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\YetiVSI.ProjectSystem.Shared\YetiVSI.ProjectSystem.Shared.projitems" Label="Shared" />
+  <Import Project="$(SolutionDir)Common.props" />
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <RootNamespace>YetiVSI.ProjectSystem</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(KeyFileLocation)Key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <Choose>
+    <When Condition="$(IsInternalBuild)">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);INTERNAL_BUILD</DefineConstants>
+      </PropertyGroup>
+      <ItemGroup>
+        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <Reference Include="GgpGrpc, PublicKeyToken=b60cba24c9ed26a2">
+          <HintPath>$(GGP_SDK_PATH)\dev\bin\GgpGrpc.dll</HintPath>
+        </Reference>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup>
+    <ProjectReference Include="..\YetiVSI.ProjectSystem.Abstractions\YetiVSI.ProjectSystem.Abstractions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.ProjectSystem">
+      <Version>16.2.133-pre</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

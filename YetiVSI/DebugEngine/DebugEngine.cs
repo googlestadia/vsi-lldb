@@ -29,7 +29,6 @@ using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
-using YetiCommon.VSProject;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.NatvisEngine;
 using YetiVSI.DebuggerOptions;
@@ -41,6 +40,7 @@ using static YetiVSI.DebuggerOptions.DebuggerOptions;
 using YetiVSI.DebugEngine.CoreDumps;
 using YetiVSI.DebugEngine.Interfaces;
 using YetiVSI.GameLaunch;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.DebugEngine
 {

@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ using NSubstitute;
 using NUnit.Framework;
 using System.IO;
 using System.Threading.Tasks;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 
-namespace YetiVSI.Test
+namespace YetiVSI.ProjectSystem.Tests
 {
     [TestFixture]
-    class ConfiguredProjectAdapterTests
+    partial class ConfiguredProjectAdapterTests
     {
         static ConfiguredProjectAdapterTests()
         {
@@ -463,24 +463,17 @@ namespace YetiVSI.Test
         ConfiguredProject CreateConfiguredProject(ProjectValues projectValues,
             string projectPath)
         {
+            var project = CreateConfiguredProjectBase();
+
             var userProperties = Substitute.For<IProjectProperties>();
             var userPropertiesProvider = Substitute.For<IProjectPropertiesProvider>();
             var projectProperties = Substitute.For<IProjectProperties>();
             var projectPropertiesProvider = Substitute.For<IProjectPropertiesProvider>();
-#if VS_2017
-            var services = Substitute.For<IConfiguredProjectServices>();
-#else
-            var services = Substitute.For<ConfiguredProjectServices>();
-#endif
-            var unconfiguredProject = Substitute.For<UnconfiguredProject>();
-            var project = Substitute.For<ConfiguredProject>();
 
-            project.Services.Returns(services);
-            project.UnconfiguredProject.Returns(unconfiguredProject);
-            unconfiguredProject.FullPath.Returns(projectPath);
-            services.UserPropertiesProvider.Returns(userPropertiesProvider);
+            project.UnconfiguredProject.FullPath.Returns(projectPath);
+            project.Services.UserPropertiesProvider.Returns(userPropertiesProvider);
             userPropertiesProvider.GetCommonProperties().Returns(userProperties);
-            services.ProjectPropertiesProvider.Returns(projectPropertiesProvider);
+            project.Services.ProjectPropertiesProvider.Returns(projectPropertiesProvider);
             projectPropertiesProvider.GetCommonProperties().Returns(projectProperties);
 
             userProperties.GetEvaluatedPropertyValueAsync("GgpGameletLaunchArguments")

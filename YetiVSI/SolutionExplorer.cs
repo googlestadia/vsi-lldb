@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.VCProjectEngine;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.VisualStudio.Threading;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Util;
 
 namespace YetiVSI

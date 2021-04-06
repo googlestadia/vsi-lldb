@@ -26,10 +26,10 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.Cloud;
-using YetiCommon.VSProject;
 using YetiVSI.DebugEngine;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
 

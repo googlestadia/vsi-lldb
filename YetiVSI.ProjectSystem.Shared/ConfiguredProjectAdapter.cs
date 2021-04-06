@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,10 +18,9 @@ using Microsoft.VisualStudio.ProjectSystem.Properties;
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using YetiCommon;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 
-namespace YetiVSI
+namespace YetiVSI.ProjectSystem
 {
     public class ConfiguredProjectAdapter : IAsyncProject
     {
@@ -40,8 +39,8 @@ namespace YetiVSI
 
         public Task<string> GetAbsoluteRootPathAsync()
         {
-            return Task.FromResult(FileUtil.RemoveTrailingSeparator(
-                configuredProject.UnconfiguredProject.MakeRooted(".")));
+            return Task.FromResult(configuredProject.UnconfiguredProject.MakeRooted(".").TrimEnd(
+                Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         }
 
         public async Task<string> GetApplicationAsync()
@@ -102,7 +101,8 @@ namespace YetiVSI
         {
             var executablePath = await projectProperties.GetEvaluatedPropertyValueAsync(
                 ProjectPropertyName.ExecutablePath);
-            return FileUtil.RemoveTrailingSeparator(executablePath);
+            return executablePath.TrimEnd(Path.DirectorySeparatorChar,
+                                          Path.AltDirectorySeparatorChar);
         }
 
         public async Task<string> GetGameletEnvironmentVariablesAsync()
@@ -146,8 +146,8 @@ namespace YetiVSI
 
         public async Task<string> GetTargetFileNameAsync()
         {
-            var targetPath = await userProperties.GetEvaluatedPropertyValueAsync(
-                ProjectPropertyName.TargetPath);
+            var targetPath =
+                await userProperties.GetEvaluatedPropertyValueAsync(ProjectPropertyName.TargetPath);
             if (!string.IsNullOrEmpty(targetPath))
             {
                 return Path.GetFileName(Path.GetFullPath(targetPath));
@@ -157,8 +157,8 @@ namespace YetiVSI
 
         public async Task<string> GetTargetPathAsync()
         {
-            var targetPath = await userProperties.GetEvaluatedPropertyValueAsync(
-                ProjectPropertyName.TargetPath);
+            var targetPath =
+                await userProperties.GetEvaluatedPropertyValueAsync(ProjectPropertyName.TargetPath);
             if (!string.IsNullOrEmpty(targetPath))
             {
                 return Path.GetFullPath(targetPath);
@@ -186,15 +186,16 @@ namespace YetiVSI
                 ProjectPropertyName.OutputDirectory);
             if (!string.IsNullOrEmpty(outDir))
             {
-                return FileUtil.RemoveTrailingSeparator(Path.GetFullPath(outDir));
+                return Path.GetFullPath(outDir).TrimEnd(Path.DirectorySeparatorChar,
+                                                        Path.AltDirectorySeparatorChar);
             }
             return "";
         }
 
         public async Task<string> GetTargetDirectoryAsync()
         {
-            var targetPath = await userProperties.GetEvaluatedPropertyValueAsync(
-                ProjectPropertyName.TargetPath);
+            var targetPath =
+                await userProperties.GetEvaluatedPropertyValueAsync(ProjectPropertyName.TargetPath);
             if (!string.IsNullOrEmpty(targetPath))
             {
                 return Path.GetDirectoryName(Path.GetFullPath(targetPath));

@@ -25,7 +25,7 @@ using System.IO;
 using System.Linq;
 using TestsCommon.TestSupport;
 using YetiCommon;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Test.MediumTestsSupport;
 using YetiVSI.Util;
 using YetiVSITestsCommon;

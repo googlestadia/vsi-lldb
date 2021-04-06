@@ -47,12 +47,12 @@ using EnvDTE80;
 using System;
 using System.Runtime.Serialization;
 using Microsoft.VisualStudio.Debugger.Interop;
-using YetiCommon.VSProject;
 using YetiVSI.DebugEngine.DiagnosticTools;
 using YetiVSI.DebugEngine.Interfaces;
 using YetiCommon.Cloud;
 using YetiVSI.DebugEngine.CoreDumps;
 using YetiVSI.GameLaunch;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.DebugEngine
 {

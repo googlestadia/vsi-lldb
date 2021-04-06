@@ -15,18 +15,17 @@
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using Grpc.Core;
+using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiCommon.SSH;
-using YetiCommon.VSProject;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.GameLaunch
 {

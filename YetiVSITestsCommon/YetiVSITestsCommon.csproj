@@ -32,6 +32,7 @@
     <ProjectReference Include="..\TestsCommon\TestsCommon.csproj" />
     <ProjectReference Include="..\VSFake\VSFake.csproj" />
     <ProjectReference Include="..\YetiCommon\YetiCommon.csproj" />
+    <ProjectReference Include="..\YetiVSI.ProjectSystem.Abstractions\YetiVSI.ProjectSystem.Abstractions.csproj" />
     <ProjectReference Include="..\YetiVSI.Shared\YetiVSI.Shared.csproj" />
     <ProjectReference Include="..\YetiVSI\YetiVSI.csproj" />
   </ItemGroup>
@@ -52,27 +53,11 @@
     <PackageReference Include="Microsoft.VisualStudio.Debugger.Interop.14.0">
       <Version>14.3.25407</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Shell.15.0">
+      <Version>15.9.28307</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Threading">
+      <Version>15.8.209</Version>
+    </PackageReference>
   </ItemGroup>
-  <Choose>
-    <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
-      <ItemGroup>
-        <PackageReference Include="Microsoft.VisualStudio.Shell.15.0">
-          <Version>15.9.28307</Version>
-        </PackageReference>
-        <PackageReference Include="Microsoft.VisualStudio.Threading">
-          <Version>15.8.209</Version>
-        </PackageReference>
-      </ItemGroup>
-    </When>
-    <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
-      <ItemGroup>
-        <PackageReference Include="Microsoft.VisualStudio.Shell.15.0">
-          <Version>16.0.28729</Version>
-        </PackageReference>
-        <PackageReference Include="Microsoft.VisualStudio.Threading">
-          <Version>16.0.102</Version>
-        </PackageReference>
-      </ItemGroup>
-    </When>
-  </Choose>
 </Project>

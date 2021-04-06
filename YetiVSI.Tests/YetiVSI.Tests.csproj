@@ -18,18 +18,6 @@
      -->
     <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU'">
-    <DefineConstants>$(DefineConstants);VS_2017</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2017|AnyCPU'">
-    <DefineConstants>$(DefineConstants);VS_2017</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2019|AnyCPU'">
-    <DefineConstants>$(DefineConstants);VS_2019</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2019|AnyCPU'">
-    <DefineConstants>$(DefineConstants);VS_2019</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup>
     <StartAction>Program</StartAction>
     <StartProgram>C:\Windows\System32\cmd.exe</StartProgram>
@@ -106,25 +94,10 @@
     <PackageReference Include="ReportGenerator">
       <Version>4.6.7</Version>
     </PackageReference>
+    <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>$(SolutionDir)lib\Microsoft.VisualStudio.ProjectEngine.15.0.27729.1\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <PackageReference Include="Microsoft.VisualStudio.ProjectSystem" Version="15.8.243" />
   </ItemGroup>
-  <Choose>
-    <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
-      <ItemGroup>
-        <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-          <HintPath>$(SolutionDir)lib\Microsoft.VisualStudio.ProjectEngine.15.0.27729.1\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem" Version="15.8.243" />
-      </ItemGroup>
-    </When>
-    <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
-      <ItemGroup>
-        <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=16.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-          <HintPath>$(SolutionDir)lib\Microsoft.VisualStudio.ProjectEngine.16.0.29428.189\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <PackageReference Include="Microsoft.VisualStudio.ProjectSystem" Version="16.2.133-pre" />
-      </ItemGroup>
-    </When>
-  </Choose>
 </Project>

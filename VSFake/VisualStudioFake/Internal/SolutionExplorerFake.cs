@@ -15,7 +15,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using YetiCommon.Util;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace Google.VisualStudioFake.Internal
 {

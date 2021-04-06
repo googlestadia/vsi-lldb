@@ -23,7 +23,6 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using TestsCommon.TestSupport;
 using YetiCommon;
 using YetiCommon.CastleAspects;
-using YetiCommon.VSProject;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.NatvisEngine;
@@ -32,6 +31,7 @@ using YetiVSI.Metrics;
 using YetiVSI.Test.TestSupport.DebugEngine.NatvisEngine;
 using YetiVSI.Util;
 using YetiVSITestsCommon;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.Test.DebugEngine
 {

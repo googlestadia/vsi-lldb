@@ -24,13 +24,11 @@ using System.IO.Abstractions;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
-using YetiCommon.VSProject;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebuggerOptions;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
-using ICredentialManager = YetiCommon.ICredentialManager;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI
 {

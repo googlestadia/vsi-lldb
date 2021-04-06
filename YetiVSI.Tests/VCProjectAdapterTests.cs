@@ -18,7 +18,7 @@ using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
 using System.IO;
 using System.Runtime.InteropServices;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.Test
 {

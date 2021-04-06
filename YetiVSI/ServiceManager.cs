@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -39,8 +39,8 @@ namespace YetiVSI
             var service = GetGlobalService(serviceType);
             if (service == null)
             {
-                Trace.WriteLine($"Unable to find {serviceType.ToString()} service");
-                throw new Exception($"Unable to find {serviceType.ToString()} service");
+                Trace.WriteLine($"Unable to find {serviceType} service");
+                throw new Exception($"Unable to find {serviceType} service");
             }
             return service;
         }
@@ -53,7 +53,7 @@ namespace YetiVSI
             var componentModel = (IComponentModel)GetGlobalService(typeof(SComponentModel));
             var projectServiceAccessor = componentModel.GetService<IProjectServiceAccessor>();
             var projectService = projectServiceAccessor.GetProjectService();
-            return projectService.Services.ThreadingPolicy.JoinableTaskContext.Context;
+            return ProjectSystemLoader.CreateProjectServiceAdapter(projectService).GetContext();
         }
     }
 }

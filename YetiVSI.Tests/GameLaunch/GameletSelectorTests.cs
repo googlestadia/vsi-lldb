@@ -23,9 +23,9 @@ using NUnit.Framework;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
-using YetiCommon.VSProject;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
 
@@ -244,7 +244,7 @@ namespace YetiVSI.Test.GameLaunch
                 AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchDeleteExisting,
                                      DeveloperEventStatus.Types.Code.Success);
             }
-            
+
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchGetExisting,
                                  DeveloperEventStatus.Types.Code.Success);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchStopPrompt,

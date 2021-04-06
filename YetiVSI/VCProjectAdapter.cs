@@ -18,7 +18,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using YetiCommon;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI
 {

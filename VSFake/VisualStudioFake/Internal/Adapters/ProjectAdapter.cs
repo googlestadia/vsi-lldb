@@ -24,7 +24,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using YetiCommon;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace Google.VisualStudioFake.Internal
 {

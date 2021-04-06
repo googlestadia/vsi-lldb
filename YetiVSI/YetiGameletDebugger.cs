@@ -18,9 +18,7 @@ using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
-
-using Task = System.Threading.Tasks.Task;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Util;
 
 namespace YetiVSI
@@ -57,7 +55,7 @@ namespace YetiVSI
             var dialogUtil = new DialogUtil();
             var compRoot = new GgpDebugQueryTargetCompRoot(serviceManager, dialogUtil);
             serviceManager.GetJoinableTaskContext().ThrowIfNotOnMainThread();
-            project = new ConfiguredProjectAdapter(configuredProject);
+            project = ProjectSystemLoader.CreateAsyncProject(configuredProject);
             ggpDebugQueryTarget = compRoot.Create();
         }
 

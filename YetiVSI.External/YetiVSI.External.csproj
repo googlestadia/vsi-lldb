@@ -14,20 +14,9 @@
     <ProjectReference Include="..\YetiCommon\YetiCommon.csproj" />
     <ProjectReference Include="..\YetiVSI.Shared\YetiVSI.Shared.csproj" />
   </ItemGroup>
-  <Choose>
-    <When Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">
-      <ItemGroup>
-        <PackageReference Include="Microsoft.VisualStudio.Threading">
-          <Version>15.8.209</Version>
-        </PackageReference>
-      </ItemGroup>
-    </When>
-    <When Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">
-      <ItemGroup>
-        <PackageReference Include="Microsoft.VisualStudio.Threading">
-          <Version>16.0.102</Version>
-        </PackageReference>
-      </ItemGroup>
-    </When>
-  </Choose>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Threading">
+      <Version>15.8.209</Version>
+    </PackageReference>
+  </ItemGroup>
 </Project>

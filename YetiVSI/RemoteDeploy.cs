@@ -23,7 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
-using YetiCommon.VSProject;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI
