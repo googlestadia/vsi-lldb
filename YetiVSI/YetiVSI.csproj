@@ -256,9 +256,7 @@
     <Compile Include="Metrics\TypeExtensions.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="NoSourceWindowHider.cs" />
-    <Compile Include="OptionPageGrid.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="OptionPageGrid.cs" />
     <Compile Include="GameLaunch\GameletSelectorLegacyFlow.cs" />
     <Compile Include="GgpDebugQueryTarget.cs" />
     <Compile Include="Metrics\Action.cs" />
@@ -400,6 +398,8 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationTypes" />
     <Reference Include="WindowsBase" />
     <!--
       This is a workaround for a known issue with older MSBuild:
@@ -672,9 +672,6 @@
     </PackageReference>
     <PackageReference Include="System.Management">
       <Version>4.7.0</Version>
-    </PackageReference>
-    <PackageReference Include="UIAComWrapper">
-      <Version>1.1.0.14</Version>
     </PackageReference>
   </ItemGroup>
   <Choose>
