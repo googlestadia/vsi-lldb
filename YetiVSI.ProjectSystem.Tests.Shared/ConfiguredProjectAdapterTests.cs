@@ -304,6 +304,21 @@ namespace YetiVSI.ProjectSystem.Tests
             IAsyncProject project = new ConfiguredProjectAdapter(configuredProject);
             Assert.AreEqual(projectValues.GgpTestAccount, await project.GetTestAccountAsync());
         }
+
+        [Test]
+        public async Task GetGgpEndpointAsync()
+        {
+            const string projectPath = @"C:\GGP_project_path\";
+            var projectValues = new ProjectValues
+            {
+                GgpEndpoint = "Test Client",
+            };
+
+            var configuredProject = CreateConfiguredProject(projectValues, projectPath);
+            IAsyncProject project = new ConfiguredProjectAdapter(configuredProject);
+            Assert.AreEqual(StadiaEndpoint.TestClient, await project.GetEndpointAsync());
+        }
+
         [Test]
         public async Task GetExecutablePathAsync()
         {
@@ -447,7 +462,7 @@ namespace YetiVSI.ProjectSystem.Tests
             public string GgpLaunchRgp { get; set; } = "";
             public string GgpVulkanDriverVariant { get; set; } = "";
             public string GgpTestAccount { get; set; } = "";
-
+            public string GgpEndpoint { get; set; } = "";
             public string TargetPath { get; set; } = "";
             public string OutDir { get; set; } = "";
             public string ExecutablePath { get; set; } = "";

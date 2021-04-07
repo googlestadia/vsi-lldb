@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This file is defined in the YetiCommon assembly as a workaround while it needs to be referenced
+// by both YetiVSI and VSFake. It should be moved back to YetiVSI when possible (see (internal)).
 using GgpGrpc.Models;
 using System.Threading.Tasks;
 
@@ -53,6 +55,21 @@ namespace YetiVSI.ProjectSystem.Abstractions
         /// Compress with parallel gzip.
         /// </summary>
         Compressed,
+    }
+
+    /// <summary>
+    /// Specifies endpoint to be used on launch.
+    /// </summary>
+    public enum StadiaEndpoint
+    {
+        /// <summary>
+        /// Test Client.
+        /// </summary>
+        TestClient,
+        /// <summary>
+        /// Player endpoint.
+        /// </summary>
+        PlayerEndpoint,
     }
 
     /// <summary>
@@ -144,6 +161,11 @@ namespace YetiVSI.ProjectSystem.Abstractions
         /// Get test account ID to use when launching.
         /// </summary>
         Task<string> GetTestAccountAsync();
+
+        /// <summary>
+        /// Get endpoint to be used when launching.
+        /// </summary>
+        Task<StadiaEndpoint> GetEndpointAsync();
 
         /// <summary>
         /// Get the query parameters to be appended to the URL when launching the chrome client

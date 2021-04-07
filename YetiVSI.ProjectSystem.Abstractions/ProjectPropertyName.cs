@@ -35,6 +35,7 @@ namespace YetiVSI.ProjectSystem.Abstractions
         public const string GgpLaunchRgp = "GgpLaunchRgp";
         public const string GgpVulkanDriverVariant = "GgpVulkanDriverVariant";
         public const string GgpTestAccount = "GgpTestAccount";
+        public const string GgpEndpoint = "GgpEndpoint";
         public const string GgpQueryParams = "GgpQueryParams";
 
         public const string NMakeOutput = "NMakeOutput";

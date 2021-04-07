@@ -173,6 +173,15 @@ namespace YetiVSI.ProjectSystem
             return testAccount;
         }
 
+        public async Task<StadiaEndpoint> GetEndpointAsync()
+        {
+            string endpointString = await userProperties.GetEvaluatedPropertyValueAsync(
+                ProjectPropertyName.GgpEndpoint);
+            return Enum.TryParse(endpointString, true, out StadiaEndpoint endpoint)
+                       ? endpoint
+                       : StadiaEndpoint.TestClient;
+        }
+
         public async Task<string> GetQueryParamsAsync()
         {
             var queryParams = await userProperties.GetEvaluatedPropertyValueAsync(
