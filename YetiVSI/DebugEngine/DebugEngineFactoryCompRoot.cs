@@ -88,6 +88,8 @@ namespace YetiVSI.DebugEngine
 
         DebugSessionMetrics _debugSessionMetrics;
 
+        ExpressionEvaluationRecorder _expressionEvaluationRecorder;
+
         IDecorator _factoryDecorator;
 
         IVariableInformationFactory _variableInformationFactory;
@@ -276,7 +278,7 @@ namespace YetiVSI.DebugEngine
                 GetFactoryDecorator().Decorate(new AsyncExpressionEvaluator.Factory(
                     createDebugPropertyDelegate, GetVarInfoBuilder(), vsExpressionCreator,
                     new ErrorDebugProperty.Factory(), debugEngineCommands,
-                    GetVsiService().Options));
+                    GetVsiService().Options, GetExpressionEvaluationRecorder(), GetTimeSource()));
 
             var debugExpressionFactory = GetFactoryDecorator().Decorate(
                 new DebugExpression.Factory(asyncEvaluatorFactory, GetTaskExecutor()));
@@ -604,6 +606,28 @@ namespace YetiVSI.DebugEngine
             }
 
             return _debugSessionMetrics;
+        }
+
+        public ExpressionEvaluationRecorder GetExpressionEvaluationRecorder()
+        {
+            if (_expressionEvaluationRecorder == null)
+            {
+                var schedulerFactory = new EventScheduler.Factory();
+                var timerFactory = new Timer.Factory();
+
+                ITimer timer = timerFactory.Create();
+
+                var expressionEvaluationEventAggregator =
+                    new BatchEventAggregator<ExpressionEvaluationBatch,
+                        ExpressionEvaluationBatchParams, ExpressionEvaluationBatchSummary>(
+                        _minimumDebugEventBatchSeparationInMillis, schedulerFactory, timer);
+
+                _expressionEvaluationRecorder =
+                    new ExpressionEvaluationRecorder(expressionEvaluationEventAggregator,
+                                                     GetDebugSessionMetrics());
+            }
+
+            return _expressionEvaluationRecorder;
         }
 
         /// <summary>

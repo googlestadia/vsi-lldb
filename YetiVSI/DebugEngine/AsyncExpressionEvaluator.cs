@@ -20,7 +20,9 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using System.Threading.Tasks;
 using DebuggerApi;
 using YetiCommon.CastleAspects;
+using YetiCommon.PerformanceTracing;
 using YetiVSI.DebugEngine.Variables;
+using YetiVSI.Metrics;
 
 namespace YetiVSI.DebugEngine
 {
@@ -51,12 +53,14 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory
         {
-            readonly VsExpressionCreator vsExpressionCreator;
-            readonly VarInfoBuilder varInfoBuilder;
-            readonly CreateDebugPropertyDelegate createPropertyDelegate;
-            readonly ErrorDebugProperty.Factory errorDebugPropertyFactory;
-            readonly IDebugEngineCommands debugEngineCommands;
-            readonly IExtensionOptions extensionOptions;
+            readonly CreateDebugPropertyDelegate _createPropertyDelegate;
+            readonly VarInfoBuilder _varInfoBuilder;
+            readonly VsExpressionCreator _vsExpressionCreator;
+            readonly ErrorDebugProperty.Factory _errorDebugPropertyFactory;
+            readonly IDebugEngineCommands _debugEngineCommands;
+            readonly IExtensionOptions _extensionOptions;
+            readonly ExpressionEvaluationRecorder _expressionEvaluationRecorder;
+            readonly ITimeSource _timeSource;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
             protected Factory()
@@ -64,17 +68,21 @@ namespace YetiVSI.DebugEngine
             }
 
             public Factory(CreateDebugPropertyDelegate createPropertyDelegate,
-                VarInfoBuilder varInfoBuilder, VsExpressionCreator vsExpressionCreator,
-                ErrorDebugProperty.Factory errorDebugPropertyFactory,
-                IDebugEngineCommands debugEngineCommands,
-                IExtensionOptions extensionOptions)
+                           VarInfoBuilder varInfoBuilder, VsExpressionCreator vsExpressionCreator,
+                           ErrorDebugProperty.Factory errorDebugPropertyFactory,
+                           IDebugEngineCommands debugEngineCommands,
+                           IExtensionOptions extensionOptions,
+                           ExpressionEvaluationRecorder expressionEvaluationRecorder,
+                           ITimeSource timeSource)
             {
-                this.createPropertyDelegate = createPropertyDelegate;
-                this.varInfoBuilder = varInfoBuilder;
-                this.vsExpressionCreator = vsExpressionCreator;
-                this.errorDebugPropertyFactory = errorDebugPropertyFactory;
-                this.debugEngineCommands = debugEngineCommands;
-                this.extensionOptions = extensionOptions;
+                _createPropertyDelegate = createPropertyDelegate;
+                _varInfoBuilder = varInfoBuilder;
+                _vsExpressionCreator = vsExpressionCreator;
+                _errorDebugPropertyFactory = errorDebugPropertyFactory;
+                _debugEngineCommands = debugEngineCommands;
+                _extensionOptions = extensionOptions;
+                _expressionEvaluationRecorder = expressionEvaluationRecorder;
+                _timeSource = timeSource;
             }
 
             public virtual IAsyncExpressionEvaluator Create(RemoteFrame frame, string text)
@@ -82,22 +90,30 @@ namespace YetiVSI.DebugEngine
                 // Get preferred expression evaluation option. This is performed here to
                 // pick up configuration changes in runtime (e.g. the user can enable and
                 // disable lldb-eval during a single debug session).
-                var expressionEvaluationStrategy = extensionOptions.ExpressionEvaluationStrategy;
+                var expressionEvaluationStrategy = _extensionOptions.ExpressionEvaluationStrategy;
 
-                return new AsyncExpressionEvaluator(
-                    frame, text, vsExpressionCreator, varInfoBuilder, createPropertyDelegate,
-                    errorDebugPropertyFactory, debugEngineCommands, expressionEvaluationStrategy);
+                return new AsyncExpressionEvaluator(frame, text, _vsExpressionCreator,
+                                                    _varInfoBuilder, _createPropertyDelegate,
+                                                    _errorDebugPropertyFactory,
+                                                    _debugEngineCommands,
+                                                    expressionEvaluationStrategy,
+                                                    _expressionEvaluationRecorder, _timeSource);
             }
         }
 
-        readonly VsExpressionCreator vsExpressionCreator;
-        readonly VarInfoBuilder varInfoBuilder;
-        readonly CreateDebugPropertyDelegate createPropertyDelegate;
-        readonly ErrorDebugProperty.Factory errorDebugPropertyFactory;
-        readonly IDebugEngineCommands debugEngineCommands;
-        readonly RemoteFrame frame;
-        readonly string text;
-        readonly ExpressionEvaluationStrategy expressionEvaluationStrategy;
+        const ExpressionEvaluationContext _expressionEvaluationContext =
+            ExpressionEvaluationContext.FRAME;
+
+        readonly VsExpressionCreator _vsExpressionCreator;
+        readonly VarInfoBuilder _varInfoBuilder;
+        readonly CreateDebugPropertyDelegate _createPropertyDelegate;
+        readonly ErrorDebugProperty.Factory _errorDebugPropertyFactory;
+        readonly IDebugEngineCommands _debugEngineCommands;
+        readonly RemoteFrame _frame;
+        readonly string _text;
+        readonly ExpressionEvaluationStrategy _expressionEvaluationStrategy;
+        readonly ExpressionEvaluationRecorder _expressionEvaluationRecorder;
+        readonly ITimeSource _timeSource;
 
         AsyncExpressionEvaluator(RemoteFrame frame, string text,
                                  VsExpressionCreator vsExpressionCreator,
@@ -105,22 +121,26 @@ namespace YetiVSI.DebugEngine
                                  CreateDebugPropertyDelegate createPropertyDelegate,
                                  ErrorDebugProperty.Factory errorDebugPropertyFactory,
                                  IDebugEngineCommands debugEngineCommands,
-                                 ExpressionEvaluationStrategy expressionEvaluationStrategy)
+                                 ExpressionEvaluationStrategy expressionEvaluationStrategy,
+                                 ExpressionEvaluationRecorder expressionEvaluationRecorder,
+                                 ITimeSource timeSource)
         {
-            this.frame = frame;
-            this.text = text;
-            this.vsExpressionCreator = vsExpressionCreator;
-            this.varInfoBuilder = varInfoBuilder;
-            this.createPropertyDelegate = createPropertyDelegate;
-            this.errorDebugPropertyFactory = errorDebugPropertyFactory;
-            this.debugEngineCommands = debugEngineCommands;
-            this.expressionEvaluationStrategy = expressionEvaluationStrategy;
+            _frame = frame;
+            _text = text;
+            _vsExpressionCreator = vsExpressionCreator;
+            _varInfoBuilder = varInfoBuilder;
+            _createPropertyDelegate = createPropertyDelegate;
+            _errorDebugPropertyFactory = errorDebugPropertyFactory;
+            _debugEngineCommands = debugEngineCommands;
+            _expressionEvaluationStrategy = expressionEvaluationStrategy;
+            _expressionEvaluationRecorder = expressionEvaluationRecorder;
+            _timeSource = timeSource;
         }
 
         public async Task<EvaluationResult> EvaluateExpressionAsync()
         {
             VsExpression vsExpression =
-                await vsExpressionCreator.CreateAsync(text, EvaluateSizeSpecifierExpressionAsync);
+                await _vsExpressionCreator.CreateAsync(_text, EvaluateSizeSpecifierExpressionAsync);
             IDebugProperty2 result;
 
             if (vsExpression.Value.StartsWith("."))
@@ -138,8 +158,8 @@ namespace YetiVSI.DebugEngine
 
             string displayName = vsExpression.ToString();
             IVariableInformation varInfo =
-                varInfoBuilder.Create(remoteValue, displayName, vsExpression.FormatSpecifier);
-            result = createPropertyDelegate.Invoke(varInfo);
+                _varInfoBuilder.Create(remoteValue, displayName, vsExpression.FormatSpecifier);
+            result = _createPropertyDelegate.Invoke(varInfo);
 
             return EvaluationResult.FromResult(result);
         }
@@ -158,12 +178,13 @@ namespace YetiVSI.DebugEngine
             {
                 throw new ExpressionEvaluationFailed("Expression isn't a uint");
             }
+
             return size;
         }
 
         void EvaluateCommand(string command, out IDebugProperty2 debugProperty)
         {
-            debugProperty = errorDebugPropertyFactory.Create(command, "", "Invalid Command");
+            debugProperty = _errorDebugPropertyFactory.Create(command, "", "Invalid Command");
 
             command = command.Trim();
             if (command == ".natvisreload")
@@ -173,7 +194,7 @@ namespace YetiVSI.DebugEngine
                     Trace.WriteLine("Reloading Natvis - triggered by .natvisreload command.");
                     var writer = new StringWriter();
                     Trace.WriteLine(
-                        debugEngineCommands.ReloadNatvis(writer, out string resultDescription)
+                        _debugEngineCommands.ReloadNatvis(writer, out string resultDescription)
                             ? $".natvisreload result: {writer}"
                             : $"Unable to reload Natvis.  {resultDescription}");
                     return resultDescription;
@@ -181,81 +202,138 @@ namespace YetiVSI.DebugEngine
             }
         }
 
+        async Task<RemoteValue> CreateValueFromExpressionAsync(string expression)
+        {
+            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder(_timeSource);
+
+            long startTimestampUs = _timeSource.GetTimestampUs();
+            RemoteValue remoteValue =
+                await CreateValueFromExpressionWithMetricsAsync(expression, stepsRecorder);
+            long endTimestampUs = _timeSource.GetTimestampUs();
+
+            _expressionEvaluationRecorder.Record(_expressionEvaluationStrategy,
+                                                 _expressionEvaluationContext, stepsRecorder,
+                                                 startTimestampUs, endTimestampUs);
+
+            return remoteValue;
+        }
+
         /// <summary>
         /// Asynchronously creates RemoteValue from the expression. Returns null in case of error.
         /// </summary>
-        async Task<RemoteValue> CreateValueFromExpressionAsync(string expression)
+        async Task<RemoteValue> CreateValueFromExpressionWithMetricsAsync(
+            string expression, ExpressionEvaluationRecorder.StepsRecorder stepsRecorder)
         {
-            if (text.StartsWith(ExpressionConstants.RegisterPrefix))
+            if (_text.StartsWith(ExpressionConstants.RegisterPrefix))
             {
                 // If text is prefixed by '$', check if it refers to a register by trying to find
                 // a register named expression[1:]. If we can't, simply return false to prevent
                 // LLDB scratch variables, which also start with '$', from being accessible.
-                return frame.FindValue(expression.Substring(1), DebuggerApi.ValueType.Register);
+                return _frame.FindValue(expression.Substring(1), DebuggerApi.ValueType.Register);
             }
 
-            if (expressionEvaluationStrategy == ExpressionEvaluationStrategy.LLDB_EVAL ||
-                expressionEvaluationStrategy ==
+            if (_expressionEvaluationStrategy == ExpressionEvaluationStrategy.LLDB_EVAL ||
+                _expressionEvaluationStrategy ==
                 ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK)
             {
-                var remoteValue = await frame.EvaluateExpressionLldbEvalAsync(expression);
+                RemoteValue remoteValueLldbEval;
+                LldbEvalErrorCode lldbEvalErrorCode;
 
-                // Convert an error code to the enum value.
-                var errorCode = (LldbEvalErrorCode)Enum.ToObject(
-                    typeof(LldbEvalErrorCode), remoteValue.GetError().GetError());
-
-                if (errorCode == LldbEvalErrorCode.Ok)
+                using (var step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB_EVAL))
                 {
-                    return remoteValue;
+                    remoteValueLldbEval = await _frame.EvaluateExpressionLldbEvalAsync(expression);
+
+                    // Convert an error code to the enum value.
+                    lldbEvalErrorCode = (LldbEvalErrorCode) Enum.ToObject(
+                        typeof(LldbEvalErrorCode), remoteValueLldbEval.GetError().GetError());
+
+                    step.Finalize(lldbEvalErrorCode);
                 }
 
-                if (errorCode == LldbEvalErrorCode.InvalidNumericLiteral ||
-                    errorCode == LldbEvalErrorCode.InvalidOperandType ||
-                    errorCode == LldbEvalErrorCode.UndeclaredIdentifier)
+                if (lldbEvalErrorCode == LldbEvalErrorCode.Ok)
+                {
+                    return remoteValueLldbEval;
+                }
+
+                if (lldbEvalErrorCode == LldbEvalErrorCode.InvalidNumericLiteral ||
+                    lldbEvalErrorCode == LldbEvalErrorCode.InvalidOperandType ||
+                    lldbEvalErrorCode == LldbEvalErrorCode.UndeclaredIdentifier)
                 {
                     // Evaluation failed with a well-known error. Don't fallback to LLDB native
                     // expression evaluator, since it will fail too.
-                    return remoteValue;
+                    return remoteValueLldbEval;
                 }
 
-                if (expressionEvaluationStrategy !=
+                if (_expressionEvaluationStrategy !=
                     ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK)
                 {
                     // Don't fallback to LLDB native expression evaluator if that option is
                     // disabled.
-                    return remoteValue;
+                    return remoteValueLldbEval;
                 }
             }
             else
             {
-                // Variables created via RemoteFrame::EvaluateExpression() don't return a valid,
-                // non-contextual fullname so we attempt to use
-                // RemoteFrame::GetValueForVariablePath() and RemoteFrame::FindValue() first. This
-                // ensures some UI elements (ex variable tooltips) show a human readable expression
-                // that can be re-evaluated across debug sessions.
+                RemoteValue remoteValueLldbVariablePath;
+                LLDBErrorCode errorCodeLldbVariablePath;
 
-                // RemoteFrame::GetValueForVariablePath() was not returning the proper address of
-                // reference types. ex. "&myIntRef".
-                RemoteValue remoteValue;
-                if (!text.Contains("&"))
+                using (var step =
+                    stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB_VARIABLE_PATH))
                 {
-                    remoteValue = frame.GetValueForVariablePath(expression);
-                    if (remoteValue != null)
-                    {
-                        return remoteValue;
-                    }
+                    remoteValueLldbVariablePath = EvaluateWithLldbVariablePath(expression);
+
+                    errorCodeLldbVariablePath = remoteValueLldbVariablePath != null
+                        ? LLDBErrorCode.OK
+                        : LLDBErrorCode.ERROR;
+
+                    step.Finalize(errorCodeLldbVariablePath);
                 }
 
-                // Resolve static class variables because GetValueForVariablePath() doesn't.
-                remoteValue = frame.FindValue(expression, DebuggerApi.ValueType.VariableGlobal);
+                if (errorCodeLldbVariablePath == LLDBErrorCode.OK)
+                {
+                    return remoteValueLldbVariablePath;
+                }
+            }
+
+            RemoteValue remoteValueLldb;
+
+            using (var step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB))
+            {
+                // Fall back on RemoteFrame::EvaluateExpressionAsync().
+                remoteValueLldb = await _frame.EvaluateExpressionAsync(expression);
+
+                LLDBErrorCode lldbErrorCode = remoteValueLldb != null
+                    ? LLDBErrorCode.OK
+                    : LLDBErrorCode.ERROR;
+
+                step.Finalize(lldbErrorCode);
+            }
+
+            return remoteValueLldb;
+        }
+
+        RemoteValue EvaluateWithLldbVariablePath(string expression)
+        {
+            // Variables created via RemoteFrame::EvaluateExpression() don't return a valid,
+            // non-contextual fullname so we attempt to use
+            // RemoteFrame::GetValueForVariablePath() and RemoteFrame::FindValue() first. This
+            // ensures some UI elements (ex variable tooltips) show a human readable expression
+            // that can be re-evaluated across debug sessions.
+
+            // RemoteFrame::GetValueForVariablePath() was not returning the proper address of
+            // reference types. ex. "&myIntRef".
+            if (!_text.Contains("&"))
+            {
+                RemoteValue remoteValue = _frame.GetValueForVariablePath(expression);
+
                 if (remoteValue != null)
                 {
                     return remoteValue;
                 }
             }
 
-            // Fall back on RemoteFrame::EvaluateExpressionAsync().
-            return await frame.EvaluateExpressionAsync(expression);
+            // Resolve static class variables because GetValueForVariablePath() doesn't.
+            return _frame.FindValue(expression, DebuggerApi.ValueType.VariableGlobal);
         }
     }
 }

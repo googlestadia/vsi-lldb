@@ -24,7 +24,12 @@ using YetiVSI.DebugEngine.Variables;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using YetiCommon.PerformanceTracing;
+using YetiCommon.Tests.PerformanceTracing.TestSupport;
 using YetiVSI.DebugEngine.Interfaces;
+using YetiVSI.Metrics;
+using YetiVSI.Shared.Metrics;
+using YetiVSI.Test.Metrics.TestSupport;
 using ValueType = DebuggerApi.ValueType;
 using YetiVSITestsCommon;
 
@@ -41,6 +46,9 @@ namespace YetiVSI.Test.DebugEngine
         VarInfoBuilder _varInfoBuilder;
         IDebugEngineCommands _engineCommandsMock;
         VsExpressionCreator _vsExpressionCreator;
+        IMetrics _metrics;
+        ExpressionEvaluationRecorder _expressionEvaluationRecorder;
+        ITimeSource _timeSource;
 
         ITaskExecutor _taskExecutor;
 
@@ -52,6 +60,22 @@ namespace YetiVSI.Test.DebugEngine
             var varInfoFactory = new LLDBVariableInformationFactory(childAdapterFactory);
 
             _vsExpressionCreator = new VsExpressionCreator();
+
+            _metrics = Substitute.For<IMetrics>();
+            var eventScheduler = new EventSchedulerFake();
+            var eventSchedulerFactory = Substitute.For<IEventSchedulerFactory>();
+            eventSchedulerFactory.Create(Arg.Do<System.Action>(a => eventScheduler.Callback = a))
+                .Returns(eventScheduler);
+            var timer = new TimerFake();
+            const int minimumBatchSeparationMilliseconds = 1;
+            var batchEventAggregator =
+                new BatchEventAggregator<ExpressionEvaluationBatch, ExpressionEvaluationBatchParams,
+                    ExpressionEvaluationBatchSummary>(minimumBatchSeparationMilliseconds,
+                                                      eventSchedulerFactory, timer);
+
+            _expressionEvaluationRecorder =
+                new ExpressionEvaluationRecorder(batchEventAggregator, _metrics);
+            _timeSource = new MonotonicTimeSource();
 
             _taskExecutor = Substitute.ForPartsOf<FakeTaskExecutor>();
 
@@ -86,7 +110,8 @@ namespace YetiVSI.Test.DebugEngine
 
             var asyncEvaluatorFactory = new AsyncExpressionEvaluator.Factory(
                 _createPropertyDelegate, _varInfoBuilder, _vsExpressionCreator,
-                new ErrorDebugProperty.Factory(), _engineCommandsMock, extensionOptionsMock);
+                new ErrorDebugProperty.Factory(), _engineCommandsMock, extensionOptionsMock,
+                _expressionEvaluationRecorder, _timeSource);
 
             return new DebugAsyncExpression.Factory(asyncEvaluatorFactory, _taskExecutor).Create(
                 _mockDebuggerStackFrame, expression, _mockDebugEngineHandler, _mockProgram,
