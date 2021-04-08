@@ -24,7 +24,8 @@ using NUnit.Framework;
 using YetiCommon;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
+ using YetiVSI.ProjectSystem.Abstractions;
+ using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Test.GameLaunch
 {
@@ -44,6 +45,8 @@ namespace YetiVSI.Test.GameLaunch
         IMetrics _metrics;
         ActionRecorder _actionRecorder;
         IDialogUtil _dialogUtil;
+        IChromeClientsLauncher _launcher;
+        LaunchParams _params;
 
         [SetUp]
         public void Setup()
@@ -57,6 +60,9 @@ namespace YetiVSI.Test.GameLaunch
             _target = new VsiGameLaunch(_launchName, _gameletClient, _cancelableTaskFactory,
                                         _gameLaunchBeHelper, _actionRecorder, _dialogUtil, 1000,
                                         100);
+            _launcher = Substitute.For<IChromeClientsLauncher>();
+            _params = new LaunchParams();
+            _launcher.LaunchParams.Returns(_params);
         }
 
         [Test]
@@ -67,17 +73,33 @@ namespace YetiVSI.Test.GameLaunch
         }
 
         [Test]
-        public void LaunchInChromeTest()
+        public void LaunchTestClientTest()
         {
-            var launcher = Substitute.For<IChromeClientsLauncher>();
             const string url = "https://test";
             const string workingDir = "C:/dir";
-            launcher.MakeTestClientUrl(Arg.Any<string>()).Returns(url);
+            _params.Endpoint = StadiaEndpoint.TestClient;
+            _launcher.MakeTestClientUrl(Arg.Any<string>()).Returns(url);
 
-            _target.LaunchInChrome(launcher, workingDir);
+            _target.LaunchInChrome(_launcher, workingDir);
 
-            launcher.Received(1).MakeTestClientUrl(_launchName);
-            launcher.Received(1).LaunchGame(url, workingDir);
+            _launcher.Received(1).MakeTestClientUrl(_launchName);
+            _launcher.DidNotReceive().MakePlayerClientUrl(_launchName);
+            _launcher.Received(1).LaunchGame(url, workingDir);
+        }
+
+        [Test]
+        public void LaunchOnWebTest()
+        {
+            const string url = "https://test";
+            const string workingDir = "C:/dir";
+            _params.Endpoint = StadiaEndpoint.PlayerEndpoint;
+            _launcher.MakePlayerClientUrl(Arg.Any<string>()).Returns(url);
+
+            _target.LaunchInChrome(_launcher, workingDir);
+
+            _launcher.Received(1).MakePlayerClientUrl(_launchId);
+            _launcher.DidNotReceive().MakeTestClientUrl(_launchName);
+            _launcher.Received(1).LaunchGame(url, workingDir);
         }
 
         [Test]

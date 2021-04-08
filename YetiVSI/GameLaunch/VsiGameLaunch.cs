@@ -20,6 +20,7 @@ using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using YetiCommon;
 using YetiVSI.Metrics;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.GameLaunch
@@ -138,7 +139,25 @@ namespace YetiVSI.GameLaunch
         public void LaunchInChrome(IChromeClientsLauncher chromeClientsLauncher,
                                    string workingDirectory)
         {
-            string launchUrl = chromeClientsLauncher.MakeTestClientUrl(LaunchName);
+            string launchUrl;
+            StadiaEndpoint endpoint = chromeClientsLauncher.LaunchParams.Endpoint;
+            switch (endpoint)
+            {
+                case StadiaEndpoint.TestClient:
+                {
+                    launchUrl = chromeClientsLauncher.MakeTestClientUrl(LaunchName);
+                    break;
+                }
+                case StadiaEndpoint.PlayerEndpoint:
+                {
+                    launchUrl = chromeClientsLauncher.MakePlayerClientUrl(LaunchId);
+                    break;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        "LaunchInChrome doesn't support this endpoint: " + endpoint);
+            }
+
             chromeClientsLauncher.LaunchGame(launchUrl, workingDirectory);
         }
 

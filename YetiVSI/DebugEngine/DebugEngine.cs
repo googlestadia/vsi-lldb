@@ -948,7 +948,8 @@ namespace YetiVSI.DebugEngine
                 _rgpEnabled = chromeLauncher.LaunchParams.Rgp;
                 _renderDocEnabled = chromeLauncher.LaunchParams.RenderDoc;
 
-                if (_gameLauncher.LaunchGameApiEnabled)
+                if (_gameLauncher.LaunchGameApiEnabled ||
+                    chromeLauncher.LaunchParams.Endpoint == StadiaEndpoint.PlayerEndpoint)
                 {
                     LaunchGame(chromeLauncher);
                     if (_vsiGameLaunch == null)
