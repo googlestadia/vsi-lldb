@@ -20,6 +20,7 @@ using GgpGrpc.Models;
 using NSubstitute;
 using NUnit.Framework;
 using YetiCommon.Cloud;
+using YetiVSI.ProjectSystem.Abstractions;
 using static YetiCommon.Tests.Cloud.LaunchRequestParsingTestData;
 
 namespace YetiCommon.Tests.Cloud
@@ -72,7 +73,7 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(request.GameletName, Is.EqualTo(parameters.GameletName));
             Assert.That(request.ApplicationName, Is.EqualTo(parameters.ApplicationName));
             Assert.That(request.ExecutablePath, Is.EqualTo("some_bin"));
-            Assert.That(request.CommandLineArguments, Is.EqualTo(new [] {"arg1"}));
+            Assert.That(request.CommandLineArguments, Is.EqualTo(new[] { "arg1" }));
             Assert.That(request.EnvironmentVariablePairs, Is.EqualTo(new Dictionary<string, string>
             {
                 { "Var1", "1" },
@@ -114,8 +115,8 @@ namespace YetiCommon.Tests.Cloud
             parameters.RenderDoc = true;
             parameters.Rgp = true;
             parameters.GameletEnvironmentVars =
-                "RENDERDOC_TEMP=chrome/params/temp;RENDERDOC_DEBUG_LOG_FILE=chrome/params.log;"+
-                "GGP_DEV_VK_DRIVER_VARIANT=opt;GGP_VK_AMDVLK_USE_LLPC=0;Some_Var=12;other=9"+
+                "RENDERDOC_TEMP=chrome/params/temp;RENDERDOC_DEBUG_LOG_FILE=chrome/params.log;" +
+                "GGP_DEV_VK_DRIVER_VARIANT=opt;GGP_VK_AMDVLK_USE_LLPC=0;Some_Var=12;other=9" +
                 ";ENABLE_VK_LAYER_VULKAN_COLOR_TOOLS=0";
             parameters.QueryParams = "color_tools=1&enable_llpc_in_amdvlk=True&" +
                 "enable_pipeline_cache_source_layer=true&vulkan_driver_variant=optprintasserts" +
@@ -134,23 +135,23 @@ namespace YetiCommon.Tests.Cloud
                 Is.EqualTo(3));
             Assert.That(status.WarningMessages.Count(m => m.Contains("edit the setting")),
                         Is.EqualTo(1));
-            Assert.That(request.EnvironmentVariablePairs, Is.EqualTo(new Dictionary<string, string>
-            {
-                {"GGP_DEV_VK_DRIVER_VARIANT", "dbgtrapasserts"},
-                {"ENABLE_VULKAN_RENDERDOC_CAPTURE", "1"},
-                {"RENDERDOC_TEMP", "query/params/temp1"},
-                {"RENDERDOC_DEBUG_LOG_FILE", "chrome/params.log"},
-                {"GGP_INTERNAL_LOAD_RGP", "1"},
-                {"RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log"},
-                {"LD_PRELOAD", "librgpserver.so"},
-                {"ENABLE_VK_LAYER_VULKAN_COLOR_TOOLS", "false"},
-                {"GGP_VK_AMDVLK_USE_LLPC", "0"},
-                {"ENABLE_GOOGLE_PIPELINE_DATA_EXPORT_LAYER", "1"},
-                {"Some_Var", "12"},
-                {"other", "9"},
-                {"Other", "567"},
-                {"OTHER_var", "67"}
-            }));
+            Assert.That(request.EnvironmentVariablePairs,
+                        Is.EqualTo(new Dictionary<string, string> {
+                            { "GGP_DEV_VK_DRIVER_VARIANT", "dbgtrapasserts" },
+                            { "ENABLE_VULKAN_RENDERDOC_CAPTURE", "1" },
+                            { "RENDERDOC_TEMP", "query/params/temp1" },
+                            { "RENDERDOC_DEBUG_LOG_FILE", "chrome/params.log" },
+                            { "GGP_INTERNAL_LOAD_RGP", "1" },
+                            { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
+                            { "LD_PRELOAD", "librgpserver.so" },
+                            { "ENABLE_VK_LAYER_VULKAN_COLOR_TOOLS", "false" },
+                            { "GGP_VK_AMDVLK_USE_LLPC", "0" },
+                            { "ENABLE_GOOGLE_PIPELINE_DATA_EXPORT_LAYER", "1" },
+                            { "Some_Var", "12" },
+                            { "other", "9" },
+                            { "Other", "567" },
+                            { "OTHER_var", "67" }
+                        }));
         }
 
         [Test]
@@ -159,8 +160,9 @@ namespace YetiCommon.Tests.Cloud
             LaunchParams parameters = ValidParams;
             parameters.SurfaceEnforcementMode = SurfaceEnforcementSetting.Block;
             parameters.Debug = false;
-            parameters.QueryParams = string.Join("&", AllValidQueryParams.Select(
-                   p => $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
+            parameters.QueryParams = string.Join(
+                "&", AllValidQueryParams.Select(
+                         p => $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
 
             ConfigStatus status =
                 _parametersConverter.ToLaunchGameRequest(parameters, out LaunchGameRequest request);
@@ -176,16 +178,18 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(request.GameletName, Is.EqualTo(parameters.GameletName));
             Assert.That(request.ApplicationName, Is.EqualTo("params_app_name"));
             Assert.That(request.ExecutablePath, Is.EqualTo("some_bin"));
-            Assert.That(request.CommandLineArguments, Is.EqualTo(new [] { "arg2" }));
-             Assert.That(request.EnvironmentVariablePairs, Is.EqualTo(new Dictionary<string, string>
-            {
-                { "ParamsVar", "val" }, { "Var1", "1" }, { "vAR2", "3" },
-                { "GGP_DEV_VK_DRIVER_VARIANT", "test_variant" }, { "GGP_INTERNAL_LOAD_RGP", "1" },
-                { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
-                { "LD_PRELOAD", "librgpserver.so" }
-            }));
-            Assert.That(request.SurfaceEnforcementMode,
-                        Is.EqualTo(SurfaceEnforcementSetting.Warn));
+            Assert.That(request.CommandLineArguments, Is.EqualTo(new[] { "arg2" }));
+            Assert.That(request.EnvironmentVariablePairs,
+                        Is.EqualTo(new Dictionary<string, string> {
+                            { "ParamsVar", "val" },
+                            { "Var1", "1" },
+                            { "vAR2", "3" },
+                            { "GGP_DEV_VK_DRIVER_VARIANT", "test_variant" },
+                            { "GGP_INTERNAL_LOAD_RGP", "1" },
+                            { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
+                            { "LD_PRELOAD", "librgpserver.so" }
+                        }));
+            Assert.That(request.SurfaceEnforcementMode, Is.EqualTo(SurfaceEnforcementSetting.Warn));
             Assert.That(request.Debug, Is.EqualTo(true));
             Assert.That(request.EnablePipelineCacheSourceUpload, Is.EqualTo(false));
             Assert.That(request.EnableRetroactiveFrameDump, Is.EqualTo(true));
@@ -213,6 +217,23 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(request.StreamerFixedResolution, Is.EqualTo(VideoResolution._1440P));
             Assert.That(request.StreamerMaximumBandWidthKbps, Is.EqualTo(8764));
             Assert.That(request.StreamerMinimumBandWidthKbps, Is.EqualTo(23));
+        }
+
+        [Test]
+        public void ToLaunchGameRequestPlayerEndpointNotSupportedQueryParams()
+        {
+            LaunchParams parameters = ValidParams;
+            parameters.Endpoint = StadiaEndpoint.PlayerEndpoint;
+            parameters.QueryParams = "a=42&vars=valid=1";
+
+            ConfigStatus status =
+                _parametersConverter.ToLaunchGameRequest(parameters, out LaunchGameRequest request);
+
+            Assert.That(status.IsWarningLevel, Is.EqualTo(true));
+            Assert.That(status.WarningMessage,
+                        Does.Contain("are not supported by Player Endpoint"));
+            Assert.That(status.WarningMessage, Does.Contain("a=42"));
+            Assert.That(status.WarningMessage, Does.Not.Contain("vars=valid=1"));
         }
     }
 }

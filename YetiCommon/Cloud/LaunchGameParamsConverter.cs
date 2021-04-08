@@ -17,6 +17,7 @@ using GgpGrpc.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiCommon.Cloud
 {
@@ -81,7 +82,11 @@ namespace YetiCommon.Cloud
                 _queryParametersParser.GetFinalQueryString(parametersDict, out string queryString));
             parameters.QueryParams = queryString;
 
-            // TODO: show warning if query params left when Launch on Web is selected.
+            if (parameters.Endpoint == StadiaEndpoint.PlayerEndpoint &&
+                !string.IsNullOrEmpty(queryString))
+            {
+                status.AppendWarning(ErrorStrings.QueryParamsNotSupported(queryString));
+            }
 
             return status;
         }

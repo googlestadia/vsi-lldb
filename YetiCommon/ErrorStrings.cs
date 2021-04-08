@@ -76,12 +76,16 @@ namespace YetiCommon
             $"{process} exited with error code {errorCode}.";
         public static string SshKeyGenerationFailed(string process, int errorCode) =>
             $"Failed to generate SSH key file. {process} exited with error code {errorCode}.";
+
         public static string TimeoutWaitingForProcess(string process) =>
             $"Timed out waiting for {process} to exit.";
 
         public static string InvalidEnvironmentVariable(string value) =>
             $"Invalid format of environment variable: '{value}'." +
             " Valid format: '<KEY>=<VALUE>'.";
+
+        public static string QueryParamsNotSupported(string queryParams) =>
+            $"The following query parameters are not supported by Player Endpoint: {queryParams}";
 
         public static string MultipleEnvironmentVariableKeys(string key) =>
             $"The custom environment variable '{key}' is set multiple times. " +
