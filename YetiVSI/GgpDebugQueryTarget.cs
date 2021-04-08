@@ -107,14 +107,14 @@ namespace YetiVSI
                 var gameletCommand = (targetFileName + " " +
                     await project.GetGameletLaunchArgumentsAsync()).Trim();
 
-                var launchParams = new LaunchParams()
-                {
+                var launchParams = new LaunchParams() {
                     Cmd = gameletCommand,
                     RenderDoc = await project.GetLaunchRenderDocAsync(),
                     Rgp = await project.GetLaunchRgpAsync(),
                     SurfaceEnforcementMode = await project.GetSurfaceEnforcementAsync(),
                     VulkanDriverVariant = await project.GetVulkanDriverVariantAsync(),
-                    QueryParams = await project.GetQueryParamsAsync()
+                    QueryParams = await project.GetQueryParamsAsync(),
+                    Endpoint = await project.GetEndpointAsync()
                 };
 
                 if (_sdkVersion != null && !string.IsNullOrEmpty(_sdkVersion.ToString()))
@@ -185,7 +185,8 @@ namespace YetiVSI
 
                 if (launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
                 {
-                    if (_gameLauncher.LaunchGameApiEnabled)
+                    if (_gameLauncher.LaunchGameApiEnabled ||
+                        launchParams.Endpoint == StadiaEndpoint.PlayerEndpoint)
                     {
                         IVsiGameLaunch launch = _gameLauncher.CreateLaunch(launchParams);
                         if (launch != null)

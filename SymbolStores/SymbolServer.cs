@@ -137,7 +137,10 @@ namespace SymbolStores
                     e is SymbolStoreException || e is ArgumentException)
                 {
                     Trace.WriteLine(e.Message);
+                    // TODO
+#pragma warning disable VSTHRD103
                     log.WriteLine(e.Message);
+#pragma warning restore VSTHRD103
                 }
             }
             return fileReference;

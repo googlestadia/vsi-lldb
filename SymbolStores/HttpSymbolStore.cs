@@ -94,6 +94,7 @@ namespace SymbolStores
             {
                 Trace.WriteLine(
                     Strings.FailedToSearchHttpStore(url, filename, Strings.EmptyBuildId));
+#pragma warning disable VSTHRD103
                 log.WriteLine(
                     Strings.FailedToSearchHttpStore(url, filename, Strings.EmptyBuildId));
                 return null;
@@ -152,6 +153,7 @@ namespace SymbolStores
             {
                 Trace.WriteLine(Strings.FailedToSearchHttpStore(url, filename, e.ToString()));
                 log.WriteLine(Strings.FailedToSearchHttpStore(url, filename, e.Message));
+#pragma warning restore VSTHRD103
                 return null;
             }
         }

@@ -233,11 +233,15 @@ namespace YetiVSI.Test
         public async Task LaunchNoDebugAsync([Values(false, true)] bool renderdoc,
                                              [Values(false, true)] bool rgp,
                                              [Values(null, "optprintasserts")]
-                                             string vulkanDriverVariant)
+                                             string vulkanDriverVariant,
+                                             [Values(StadiaEndpoint.PlayerEndpoint,
+                                                     StadiaEndpoint.TestClient)]
+                                             StadiaEndpoint endpoint)
         {
             _project.GetLaunchRenderDocAsync().Returns(renderdoc);
             _project.GetLaunchRgpAsync().Returns(rgp);
             _project.GetVulkanDriverVariantAsync().Returns(vulkanDriverVariant);
+            _project.GetEndpointAsync().Returns(endpoint);
 
             var gamelets = new List<Gamelet>
             {
@@ -277,6 +281,7 @@ namespace YetiVSI.Test
                                           out string launchName);
             Assert.That(launchParams.Account, Is.EqualTo(_testAccount));
             Assert.That(launchParams.SdkVersion, Is.EqualTo(_sdkVersionString));
+            Assert.That(launchParams.Endpoint, Is.EqualTo(endpoint));
             Assert.That(launchName, Is.EqualTo(_gameLaunch.LaunchName));
 
             await _remoteDeploy.Received()

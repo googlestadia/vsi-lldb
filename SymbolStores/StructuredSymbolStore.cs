@@ -158,7 +158,9 @@ namespace SymbolStores
                 await source.CopyToAsync(filepath);
 
                 Trace.WriteLine(Strings.CopiedFile(filename, filepath));
+#pragma warning disable VSTHRD103
                 log.WriteLine(Strings.CopiedFile(filename, filepath));
+#pragma warning restore VSTHRD103
 
                 return fileReferenceFactory.Create(filepath);
             }

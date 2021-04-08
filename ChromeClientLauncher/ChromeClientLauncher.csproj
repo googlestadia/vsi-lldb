@@ -8,5 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\YetiCommon\YetiCommon.csproj" />
+    <ProjectReference Include="..\YetiVSI.ProjectSystem.Abstractions\YetiVSI.ProjectSystem.Abstractions.csproj" />
   </ItemGroup>
 </Project>

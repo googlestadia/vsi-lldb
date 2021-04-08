@@ -21,6 +21,7 @@ using System.Linq;
 using System.Net;
 using System.Web;
 using YetiCommon.Cloud;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiCommon
 {
@@ -298,6 +299,8 @@ namespace YetiCommon
         public string Account { get; set; }
 
         public string TestAccount { get; set; }
+
+        public StadiaEndpoint Endpoint { get; set; }
 
         public string GameletEnvironmentVars { get; set; }
 

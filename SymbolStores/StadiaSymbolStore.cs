@@ -94,7 +94,9 @@ namespace SymbolStores
             {
                 // TODO: simplify logging
                 Trace.WriteLine(Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
+#pragma warning disable VSTHRD103
                 log.WriteLine(Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
+#pragma warning restore VSTHRD103
                 return null;
             }
 
@@ -115,6 +117,7 @@ namespace SymbolStores
                     // TODO: simplify logging
                     Trace.WriteLine(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
+#pragma warning disable VSTHRD103
                     log.WriteLine(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
                 }
@@ -171,6 +174,7 @@ namespace SymbolStores
                 Trace.WriteLine(Strings.FileFound(filename));
                 log.WriteLine(Strings.FileFound(filename));
                 return _httpSymbolFileFactory.Create(fileUrl);
+#pragma warning restore VSTHRD103
             }
         }
 

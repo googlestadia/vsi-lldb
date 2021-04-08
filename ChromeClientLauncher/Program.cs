@@ -15,9 +15,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using YetiCommon;
 using YetiCommon.Cloud;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace ChromeClientLauncher
 {
@@ -45,7 +47,25 @@ namespace ChromeClientLauncher
                 if (args.Length == 2)
                 {
                     string launchName = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
-                    string launchUrl = gameLauncher.MakeTestClientUrl(launchName);
+                    string launchUrl;
+                    switch (gameLauncher.LaunchParams.Endpoint)
+                    {
+                        case StadiaEndpoint.TestClient:
+                        {
+                            launchUrl = gameLauncher.MakeTestClientUrl(launchName);
+                            break;
+                        }
+                        case StadiaEndpoint.PlayerEndpoint:
+                        {
+                            string launchId = launchName.Split('/').Last();
+                            launchUrl = gameLauncher.MakePlayerClientUrl(launchId);
+                            break;
+                        }
+                        default:
+                            throw new ArgumentOutOfRangeException(
+                                "Endpoint is not supported: " + gameLauncher.LaunchParams.Endpoint);
+                    }
+
                     gameLauncher.LaunchGame(launchUrl, Directory.GetCurrentDirectory());
                 }
                 else

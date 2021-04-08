@@ -75,7 +75,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task AddFile_VerifyPathStructure()
+        public async Task AddFile_VerifyPathStructureAsync()
         {
             var store = GetEmptyStore();
 

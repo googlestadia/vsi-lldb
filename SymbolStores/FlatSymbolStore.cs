@@ -94,6 +94,7 @@ namespace SymbolStores
             catch (ArgumentException e)
             {
                 Trace.WriteLine(Strings.FailedToSearchFlatStore(path, filename, e.Message));
+#pragma warning disable VSTHRD103
                 log.WriteLine(Strings.FailedToSearchFlatStore(path, filename, e.Message));
                 return null;
             }
@@ -125,6 +126,7 @@ namespace SymbolStores
 
             Trace.WriteLine(Strings.FileFound(filepath));
             log.WriteLine(Strings.FileFound(filepath));
+#pragma warning restore VSTHRD103
             return symbolFileFactory.Create(filepath);
         }
 

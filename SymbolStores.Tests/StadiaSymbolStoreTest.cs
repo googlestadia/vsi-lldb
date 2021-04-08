@@ -58,7 +58,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_EmptyBuildId()
+        public async Task FindFile_EmptyBuildIdAsync()
         {
             ISymbolStore store = _stadiaSymbolStoreFactory.Create();
 
@@ -71,7 +71,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_APINotFound()
+        public async Task FindFile_APINotFoundAsync()
         {
             var ex =
                 new CloudException("Failed to generate download URL: not found",
@@ -90,7 +90,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_APIException()
+        public async Task FindFile_APIExceptionAsync()
         {
             var ex = new CloudException(
                 "Failed to generate download URL: permission denied",
@@ -108,7 +108,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_HttpNotFound()
+        public async Task FindFile_HttpNotFoundAsync()
         {
             _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
                 .Returns(_urlInStore);
@@ -125,7 +125,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_HttpRequestException()
+        public async Task FindFile_HttpRequestExceptionAsync()
         {
             _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
                 .Returns(_urlInStore);

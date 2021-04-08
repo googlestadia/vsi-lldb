@@ -76,7 +76,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public void FindFile_NullFilenameAsync()
+        public void FindFile_NullFilename()
         {
             var store = GetEmptyStore();
 
