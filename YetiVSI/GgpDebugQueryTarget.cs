@@ -133,6 +133,8 @@ namespace YetiVSI
                 if (setupQueriesResult.TestAccount != null)
                 {
                     launchParams.TestAccount = setupQueriesResult.TestAccount.Name;
+                    launchParams.TestAccountGamerName =
+                        setupQueriesResult.TestAccount.GamerStadiaName;
                 }
 
                 DeployOnLaunchSetting deployOnLaunchAsync = await project.GetDeployOnLaunchAsync();

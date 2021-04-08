@@ -227,13 +227,30 @@ namespace YetiCommon.Tests.Cloud
             parameters.QueryParams = "a=42&vars=valid=1";
 
             ConfigStatus status =
-                _parametersConverter.ToLaunchGameRequest(parameters, out LaunchGameRequest request);
+                _parametersConverter.ToLaunchGameRequest(parameters, out LaunchGameRequest _);
 
             Assert.That(status.IsWarningLevel, Is.EqualTo(true));
             Assert.That(status.WarningMessage,
                         Does.Contain("are not supported by Player Endpoint"));
             Assert.That(status.WarningMessage, Does.Contain("a=42"));
             Assert.That(status.WarningMessage, Does.Not.Contain("vars=valid=1"));
+        }
+
+        [Test]
+        public void ToLaunchGameRequestPlayerEndpointNotSupportedTestAccounts()
+        {
+            LaunchParams parameters = ValidParams;
+            parameters.Endpoint = StadiaEndpoint.PlayerEndpoint;
+            parameters.TestAccount = "a/b/c";
+            parameters.TestAccountGamerName = "gamer#1234";
+
+            ConfigStatus status =
+                _parametersConverter.ToLaunchGameRequest(parameters, out LaunchGameRequest _);
+
+            Assert.That(status.IsWarningLevel, Is.EqualTo(true));
+            Assert.That(status.WarningMessage,
+                        Does.Contain("Test accounts are not supported for Player Endpoint"));
+            Assert.That(status.WarningMessage, Does.Contain("gamer#1234"));
         }
     }
 }

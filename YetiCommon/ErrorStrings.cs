@@ -87,6 +87,11 @@ namespace YetiCommon
         public static string QueryParamsNotSupported(string queryParams) =>
             $"The following query parameters are not supported by Player Endpoint: {queryParams}";
 
+        public static string TestAccountsNotSupported(string testAccount) =>
+            $"You specified the test account in the project properties ({testAccount}). " +
+            "Test accounts are not supported for Player Endpoint. " +
+            "Your developer account will be used instead.";
+
         public static string MultipleEnvironmentVariableKeys(string key) =>
             $"The custom environment variable '{key}' is set multiple times. " +
             "The game will use the setting for this variable in " +

@@ -63,6 +63,14 @@ namespace YetiCommon.Cloud
                 EnvironmentVariables(parameters, out IDictionary<string, string> envVariables));
             status = status.Merge(CommandLineArguments(parameters, out string[] cmdArgs));
 
+            if (parameters.Endpoint == StadiaEndpoint.PlayerEndpoint &&
+                !string.IsNullOrEmpty(parameters.TestAccount))
+            {
+                status.AppendWarning(
+                    ErrorStrings.TestAccountsNotSupported(parameters.TestAccountGamerName));
+                parameters.TestAccount = null;
+            }
+
             request = new LaunchGameRequest
             {
                 Parent = Parent(sdkConfig, parameters),
@@ -102,8 +110,6 @@ namespace YetiCommon.Cloud
                 : $"{testAccount}/gameLaunches/{actualLaunchName}";
         }
 
-        // TODO: don't use test account for launch on web and show warning
-        // (or disable the setting) if one is specified.
         string Parent(ISdkConfig sdkConfig, LaunchParams parameters) =>
             string.IsNullOrWhiteSpace(parameters.TestAccount)
                 ? _developerLaunchGameParent
