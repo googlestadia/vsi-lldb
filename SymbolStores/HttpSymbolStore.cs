@@ -36,34 +36,30 @@ namespace SymbolStores
     {
         public class Factory
         {
-            HttpClient httpClient;
-            HttpFileReference.Factory httpSymbolFileFactory;
+            readonly HttpClient _httpClient;
+            readonly HttpFileReference.Factory _httpSymbolFileFactory;
 
             public Factory(HttpClient httpClient,
                            HttpFileReference.Factory httpSymbolFileFactory)
             {
-                this.httpClient = httpClient;
-                this.httpSymbolFileFactory = httpSymbolFileFactory;
+                _httpClient = httpClient;
+                _httpSymbolFileFactory = httpSymbolFileFactory;
             }
 
             // Throws ArgumentException if url is null or empty
-            public virtual IHttpSymbolStore Create(string url)
-            {
-                return new HttpSymbolStore(httpClient, httpSymbolFileFactory, url);
-            }
+            public virtual IHttpSymbolStore Create(string url) => new HttpSymbolStore(
+                _httpClient, _httpSymbolFileFactory, url);
         }
 
-        public static bool IsHttpStore(string pathElement)
-        {
-            Uri uriResult;
-            return Uri.TryCreate(pathElement, UriKind.Absolute, out uriResult) &&
-                (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
-        }
+        public static bool IsHttpStore(string pathElement) =>
+            Uri.TryCreate(pathElement, UriKind.Absolute, out Uri uriResult) &&
+            (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
 
-        HttpClient httpClient;
-        HttpFileReference.Factory httpSymbolFileFactory;
+        readonly HttpClient _httpClient;
+        readonly HttpFileReference.Factory _httpSymbolFileFactory;
 
-        [JsonProperty("Url")] string url;
+        [JsonProperty("Url")]
+        string _url;
 
         HttpSymbolStore(HttpClient httpClient,
                         HttpFileReference.Factory httpSymbolFileFactory, string url)
@@ -75,9 +71,9 @@ namespace SymbolStores
                     Strings.FailedToCreateStructuredStore(Strings.UrlNullOrEmpty));
             }
 
-            this.httpClient = httpClient;
-            this.httpSymbolFileFactory = httpSymbolFileFactory;
-            this.url = url;
+            _httpClient = httpClient;
+            _httpSymbolFileFactory = httpSymbolFileFactory;
+            _url = url;
         }
 
         #region SymbolStoreBase functions
@@ -93,24 +89,23 @@ namespace SymbolStores
             if (buildId == BuildId.Empty)
             {
                 Trace.WriteLine(
-                    Strings.FailedToSearchHttpStore(url, filename, Strings.EmptyBuildId));
-#pragma warning disable VSTHRD103
-                log.WriteLine(
-                    Strings.FailedToSearchHttpStore(url, filename, Strings.EmptyBuildId));
+                    Strings.FailedToSearchHttpStore(_url, filename, Strings.EmptyBuildId));
+                await log.WriteLineAsync(
+                    Strings.FailedToSearchHttpStore(_url, filename, Strings.EmptyBuildId));
                 return null;
             }
 
             try
             {
-                var encodedFilename = Uri.EscapeDataString(filename);
-                var fileUrl = string.Join("/", url.TrimEnd('/'), encodedFilename,
-                                          buildId.ToString(), encodedFilename);
+                string encodedFilename = Uri.EscapeDataString(filename);
+                string fileUrl = string.Join("/", _url.TrimEnd('/'), encodedFilename,
+                                             buildId.ToString(), encodedFilename);
 
                 // Send a HEAD request to check if the file exists at the given url without
                 // downloading it.
-                var response = await httpClient.SendAsync(
-                    new HttpRequestMessage(HttpMethod.Head, fileUrl),
-                    HttpCompletionOption.ResponseHeadersRead);
+                var response =
+                    await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, fileUrl),
+                                                HttpCompletionOption.ResponseHeadersRead);
 
                 // If HEAD requests are not supported by the server, fall back to GET requests.
                 // The vast majority of servers are expected to support HEAD requests.
@@ -118,17 +113,18 @@ namespace SymbolStores
                     response.Content.Headers.Allow.Contains("GET"))
                 {
                     response.Dispose();
-                    response = await httpClient.GetAsync(
-                        fileUrl, HttpCompletionOption.ResponseHeadersRead);
+                    response = await _httpClient.GetAsync(fileUrl,
+                                                          HttpCompletionOption.ResponseHeadersRead);
                 }
 
                 using (response)
                 {
-                    var connectionUri = response.RequestMessage.RequestUri;
+                    Uri connectionUri = response.RequestMessage.RequestUri;
                     if (connectionUri.Scheme != Uri.UriSchemeHttps)
                     {
                         Trace.WriteLine(Strings.ConnectionIsUnencrypted(connectionUri.Host));
-                        log.WriteLine(Strings.ConnectionIsUnencrypted(connectionUri.Host));
+                        await log.WriteLineAsync(
+                            Strings.ConnectionIsUnencrypted(connectionUri.Host));
                     }
 
                     if (!response.IsSuccessStatusCode)
@@ -136,40 +132,34 @@ namespace SymbolStores
                         Trace.WriteLine(Strings.FileNotFoundInHttpStore(
                                             fileUrl, (int)response.StatusCode,
                                             response.ReasonPhrase));
-                        log.WriteLine(
-                            Strings.FileNotFoundInHttpStore(
-                                fileUrl, (int)response.StatusCode, response.ReasonPhrase));
+                        await log.WriteLineAsync(Strings.FileNotFoundInHttpStore(
+                            fileUrl, (int)response.StatusCode, response.ReasonPhrase));
                         return null;
                     }
                     else
                     {
                         Trace.WriteLine(Strings.FileFound(fileUrl));
-                        log.WriteLine(Strings.FileFound(fileUrl));
-                        return httpSymbolFileFactory.Create(fileUrl);
+                        await log.WriteLineAsync(Strings.FileFound(fileUrl));
+                        return _httpSymbolFileFactory.Create(fileUrl);
                     }
                 }
             }
             catch (HttpRequestException e)
             {
-                Trace.WriteLine(Strings.FailedToSearchHttpStore(url, filename, e.ToString()));
-                log.WriteLine(Strings.FailedToSearchHttpStore(url, filename, e.Message));
-#pragma warning restore VSTHRD103
+                Trace.WriteLine(Strings.FailedToSearchHttpStore(_url, filename, e.ToString()));
+                await log.WriteLineAsync(
+                    Strings.FailedToSearchHttpStore(_url, filename, e.Message));
                 return null;
             }
         }
 
-        public override Task<IFileReference> AddFileAsync(
-            IFileReference source, string filename, BuildId buildId, TextWriter log)
-        {
+        public override Task<IFileReference> AddFileAsync(IFileReference source, string filename,
+                                                          BuildId buildId, TextWriter log) =>
             throw new NotSupportedException(Strings.CopyToHttpStoreNotSupported);
-        }
 
-        public override bool DeepEquals(ISymbolStore otherStore)
-        {
-            var other = otherStore as HttpSymbolStore;
-            return other != null && url == other.url;
-        }
+        public override bool DeepEquals(ISymbolStore otherStore) =>
+            otherStore is HttpSymbolStore other && _url == other._url;
 
-        #endregion
+#endregion
     }
 }

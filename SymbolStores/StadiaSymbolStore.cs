@@ -61,10 +61,8 @@ namespace SymbolStores
 
         public static readonly string MarkerFileName = "stadia-store.txt";
 
-        public static bool IsStadiaStore(IFileSystem fileSystem, string path)
-        {
-            return fileSystem.File.Exists(Path.Combine(path, MarkerFileName));
-        }
+        public static bool IsStadiaStore(IFileSystem fileSystem, string path) =>
+            fileSystem.File.Exists(Path.Combine(path, MarkerFileName));
 
         readonly HttpClient _httpClient;
         readonly HttpFileReference.Factory _httpSymbolFileFactory;
@@ -94,9 +92,8 @@ namespace SymbolStores
             {
                 // TODO: simplify logging
                 Trace.WriteLine(Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
-#pragma warning disable VSTHRD103
-                log.WriteLine(Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
-#pragma warning restore VSTHRD103
+                await log.WriteLineAsync(
+                    Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
                 return null;
             }
 
@@ -117,15 +114,15 @@ namespace SymbolStores
                     // TODO: simplify logging
                     Trace.WriteLine(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
-#pragma warning disable VSTHRD103
-                    log.WriteLine(
+                    await log.WriteLineAsync(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
                 }
                 else
                 {
                     // TODO: simplify logging
                     Trace.WriteLine(Strings.FailedToSearchStadiaStore(filename, e.ToString()));
-                    log.WriteLine(Strings.FailedToSearchStadiaStore(filename, e.Message));
+                    await log.WriteLineAsync(
+                        Strings.FailedToSearchStadiaStore(filename, e.Message));
                 }
 
                 return null;
@@ -143,7 +140,7 @@ namespace SymbolStores
             catch (HttpRequestException e)
             {
                 Trace.WriteLine(Strings.FailedToSearchStadiaStore(filename, e.ToString()));
-                log.WriteLine(Strings.FailedToSearchStadiaStore(filename, e.Message));
+                await log.WriteLineAsync(Strings.FailedToSearchStadiaStore(filename, e.Message));
                 return null;
             }
 
@@ -155,7 +152,7 @@ namespace SymbolStores
                     // TODO: simplify logging
                     Trace.WriteLine(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
-                    log.WriteLine(
+                    await log.WriteLineAsync(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
                     return null;
                 }
@@ -165,30 +162,24 @@ namespace SymbolStores
                     // TODO: simplify logging
                     Trace.WriteLine(Strings.FileNotFoundInHttpStore(
                         filename, (int)response.StatusCode, response.ReasonPhrase));
-                    log.WriteLine(Strings.FileNotFoundInHttpStore(
+                    await log.WriteLineAsync(Strings.FileNotFoundInHttpStore(
                         filename, (int)response.StatusCode, response.ReasonPhrase));
                     return null;
                 }
 
                 // TODO: simplify logging
                 Trace.WriteLine(Strings.FileFound(filename));
-                log.WriteLine(Strings.FileFound(filename));
+                await log.WriteLineAsync(Strings.FileFound(filename));
                 return _httpSymbolFileFactory.Create(fileUrl);
-#pragma warning restore VSTHRD103
             }
         }
 
-        public override Task<IFileReference> AddFileAsync(
-            IFileReference source, string filename, BuildId buildId, TextWriter log)
-        {
+        public override Task<IFileReference> AddFileAsync(IFileReference source, string filename,
+                                                          BuildId buildId, TextWriter log) =>
             throw new NotSupportedException(Strings.CopyToHttpStoreNotSupported);
-        }
 
-        public override bool DeepEquals(ISymbolStore otherStore)
-        {
-            return otherStore is StadiaSymbolStore;
-        }
+        public override bool DeepEquals(ISymbolStore otherStore) => otherStore is StadiaSymbolStore;
 
-        #endregion
+#endregion
     }
 }

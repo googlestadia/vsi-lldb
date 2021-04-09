@@ -34,30 +34,28 @@ namespace SymbolStores
     {
         public class Factory
         {
-            IFileSystem fileSystem;
-            IBinaryFileUtil binaryFileUtil;
-            FileReference.Factory symbolFileFactory;
+            readonly IFileSystem _fileSystem;
+            readonly IBinaryFileUtil _binaryFileUtil;
+            readonly FileReference.Factory _symbolFileFactory;
 
             public Factory(IFileSystem fileSystem, IBinaryFileUtil binaryFileUtil,
                 FileReference.Factory symbolFileFactory)
             {
-                this.fileSystem = fileSystem;
-                this.binaryFileUtil = binaryFileUtil;
-                this.symbolFileFactory = symbolFileFactory;
+                _fileSystem = fileSystem;
+                _binaryFileUtil = binaryFileUtil;
+                _symbolFileFactory = symbolFileFactory;
             }
 
             // Throws ArgumentException if path is null or empty
-            public virtual IFlatSymbolStore Create(string path)
-            {
-                return new FlatSymbolStore(fileSystem, binaryFileUtil, symbolFileFactory, path);
-            }
+            public virtual IFlatSymbolStore Create(string path) => new FlatSymbolStore(
+                _fileSystem, _binaryFileUtil, _symbolFileFactory, path);
         }
 
-        IFileSystem fileSystem;
-        IBinaryFileUtil binaryFileUtil;
-        FileReference.Factory symbolFileFactory;
+        readonly IFileSystem _fileSystem;
+        readonly IBinaryFileUtil _binaryFileUtil;
+        readonly FileReference.Factory _symbolFileFactory;
         [JsonProperty("Path")]
-        string path;
+        string _path;
 
         FlatSymbolStore(IFileSystem fileSystem, IBinaryFileUtil binaryFileUtil,
             FileReference.Factory symbolFileFactory, string path)
@@ -69,10 +67,10 @@ namespace SymbolStores
                     Strings.FailedToCreateFlatStore(Strings.PathNullOrEmpty));
             }
 
-            this.fileSystem = fileSystem;
-            this.binaryFileUtil = binaryFileUtil;
-            this.symbolFileFactory = symbolFileFactory;
-            this.path = path;
+            _fileSystem = fileSystem;
+            _binaryFileUtil = binaryFileUtil;
+            _symbolFileFactory = symbolFileFactory;
+            _path = path;
         }
 
         #region SymbolStoreBase functions
@@ -89,30 +87,31 @@ namespace SymbolStores
 
             try
             {
-                filepath = Path.Combine(path, filename);
+                filepath = Path.Combine(_path, filename);
             }
             catch (ArgumentException e)
             {
-                Trace.WriteLine(Strings.FailedToSearchFlatStore(path, filename, e.Message));
-#pragma warning disable VSTHRD103
-                log.WriteLine(Strings.FailedToSearchFlatStore(path, filename, e.Message));
+                Trace.WriteLine(Strings.FailedToSearchFlatStore(_path, filename, e.Message));
+                await log.WriteLineAsync(
+                    Strings.FailedToSearchFlatStore(_path, filename, e.Message));
                 return null;
             }
-            if (!fileSystem.File.Exists(filepath))
+            if (!_fileSystem.File.Exists(filepath))
             {
                 Trace.WriteLine(Strings.FileNotFound(filepath));
-                log.WriteLine(Strings.FileNotFound(filepath));
+                await log.WriteLineAsync(Strings.FileNotFound(filepath));
                 return null;
             }
             if (buildId != BuildId.Empty)
             {
                 try
                 {
-                    var actualBuildId = await binaryFileUtil.ReadBuildIdAsync(filepath);
+                    BuildId actualBuildId = await _binaryFileUtil.ReadBuildIdAsync(filepath);
                     if (actualBuildId != buildId)
                     {
                         Trace.WriteLine(Strings.BuildIdMismatch(filepath, buildId, actualBuildId));
-                        log.WriteLine(Strings.BuildIdMismatch(filepath, buildId, actualBuildId));
+                        await log.WriteLineAsync(
+                            Strings.BuildIdMismatch(filepath, buildId, actualBuildId));
                         return null;
                     }
                 }
@@ -125,23 +124,17 @@ namespace SymbolStores
             }
 
             Trace.WriteLine(Strings.FileFound(filepath));
-            log.WriteLine(Strings.FileFound(filepath));
-#pragma warning restore VSTHRD103
-            return symbolFileFactory.Create(filepath);
+            await log.WriteLineAsync(Strings.FileFound(filepath));
+            return _symbolFileFactory.Create(filepath);
         }
 
-        public override Task<IFileReference> AddFileAsync(
-            IFileReference source, string filename, BuildId buildId, TextWriter log)
-        {
+        public override Task<IFileReference> AddFileAsync(IFileReference source, string filename,
+                                                          BuildId buildId, TextWriter log) =>
             throw new NotSupportedException(Strings.CopyToFlatStoreNotSupported);
-        }
 
-        public override bool DeepEquals(ISymbolStore otherStore)
-        {
-            var other = otherStore as FlatSymbolStore;
-            return other != null && path == other.path;
-        }
+        public override bool DeepEquals(ISymbolStore otherStore) =>
+            otherStore is FlatSymbolStore other && _path == other._path;
 
-        #endregion
+#endregion
     }
 }

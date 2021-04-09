@@ -29,45 +29,40 @@ namespace SymbolStores
     {
         public class Factory
         {
-            public Factory() { }
-
-            public virtual SymbolServer Create(bool isCache = false)
-            {
-                return new SymbolServer(isCache);
-            }
+            public virtual SymbolServer Create(bool isCache = false) => new SymbolServer(isCache);
         }
 
-        public bool IsEmpty => stores.Count == 0;
+        public bool IsEmpty => _stores.Count == 0;
 
         [JsonProperty("Stores")]
-        IList<ISymbolStore> stores;
+        IList<ISymbolStore> _stores;
 
         SymbolServer(bool isCache) : base(true, isCache)
         {
-            stores = new List<ISymbolStore>();
+            _stores = new List<ISymbolStore>();
         }
 
         public void AddStore(ISymbolStore store)
         {
-            stores.Add(store);
+            _stores.Add(store);
         }
 
         #region SymbolStoreBase functions
 
-        public override IEnumerable<ISymbolStore> Substores => stores;
+        public override IEnumerable<ISymbolStore> Substores => _stores;
 
         public override async Task<IFileReference> FindFileAsync(
             string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty, "filename");
+                throw new ArgumentException(Strings.FilenameNullOrEmpty, nameof(filename));
             }
 
-            for (int i = 0; i < stores.Count; ++i)
+            for (int i = 0; i < _stores.Count; ++i)
             {
-                var fileReference = await stores[i].FindFileAsync(
-                    filename, buildId, isDebugInfoFile, log);
+                var fileReference =
+                    await _stores[i].FindFileAsync(filename, buildId, isDebugInfoFile, log);
                 if (fileReference != null)
                 {
                     var cascadeFileRef = await CascadeAsync(
@@ -84,21 +79,25 @@ namespace SymbolStores
         {
             if (source == null)
             {
-                throw new ArgumentException(Strings.FailedToCopyToSymbolServer(filename,
-                    Strings.SourceFileReferenceNull), "sourceFilepath");
+                throw new ArgumentException(
+                    Strings.FailedToCopyToSymbolServer(filename, Strings.SourceFileReferenceNull),
+                    nameof(source));
             }
             if (string.IsNullOrEmpty(filename))
             {
-                throw new ArgumentException(Strings.FailedToCopyToSymbolServer(filename,
-                    Strings.FilenameNullOrEmpty), "filename");
+                throw new ArgumentException(
+                    Strings.FailedToCopyToSymbolServer(filename, Strings.FilenameNullOrEmpty),
+                    nameof(filename));
             }
             if (buildId == BuildId.Empty)
             {
-                throw new ArgumentException(Strings.FailedToCopyToSymbolServer(filename,
-                    Strings.EmptyBuildId), "buildId");
+                throw new ArgumentException(
+                    Strings.FailedToCopyToSymbolServer(filename, Strings.EmptyBuildId),
+                    nameof(buildId));
             }
 
-            var fileReference = await CascadeAsync(source, filename, buildId, stores.Count - 1, log);
+            var fileReference =
+                await CascadeAsync(source, filename, buildId, _stores.Count - 1, log);
             if (fileReference == null)
             {
                 throw new SymbolStoreException(Strings.FailedToCopyToSymbolServer(filename));
@@ -110,37 +109,34 @@ namespace SymbolStores
         public override bool DeepEquals(ISymbolStore otherStore)
         {
             var other = otherStore as SymbolServer;
-            return other != null && IsCache == other.IsCache && stores.Count == other.stores.Count
-                && stores.Zip(other.stores, (a, b) => Tuple.Create(a, b)).All(
-                    x => x.Item1.DeepEquals(x.Item2));
+            return other != null && IsCache == other.IsCache &&
+                   _stores.Count == other._stores.Count &&
+                   _stores.Zip(other._stores, (a, b) => Tuple.Create(a, b))
+                       .All(x => x.Item1.DeepEquals(x.Item2));
         }
 
         #endregion
 
         // Copies the referenced file to the store at `index`, and then from there to each previous
         // store in reverse order.
-        // Returns a reference to the file in the last store that it is succesfully copied to, or
-        // null if it was not succesfully copied.
-        async Task<IFileReference> CascadeAsync(
-            IFileReference sourcefileReference, string filename,
-            BuildId buildId, int index, TextWriter log)
+        // Returns a reference to the file in the last store that it is successfully copied to, or
+        // null if it was not successfully copied.
+        async Task<IFileReference> CascadeAsync(IFileReference sourceFileReference, string filename,
+                                                BuildId buildId, int index, TextWriter log)
         {
             IFileReference fileReference = null;
             for (int i = index; i >= 0; --i)
             {
                 try
                 {
-                    sourcefileReference = fileReference = await stores[i].AddFileAsync(
-                        sourcefileReference, filename, buildId, log);
+                    sourceFileReference = fileReference =
+                        await _stores[i].AddFileAsync(sourceFileReference, filename, buildId, log);
                 }
                 catch (Exception e) when (e is NotSupportedException ||
                     e is SymbolStoreException || e is ArgumentException)
                 {
                     Trace.WriteLine(e.Message);
-                    // TODO
-#pragma warning disable VSTHRD103
-                    log.WriteLine(e.Message);
-#pragma warning restore VSTHRD103
+                    await log.WriteLineAsync(e.Message);
                 }
             }
             return fileReference;

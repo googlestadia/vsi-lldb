@@ -38,37 +38,35 @@ namespace SymbolStores
     {
         public class Factory
         {
-            IFileSystem fileSystem;
-            FileReference.Factory fileReferenceFactory;
+            readonly IFileSystem _fileSystem;
+            readonly FileReference.Factory _fileReferenceFactory;
 
             public Factory(IFileSystem fileSystem, FileReference.Factory fileReferenceFactory)
             {
-                this.fileSystem = fileSystem;
-                this.fileReferenceFactory = fileReferenceFactory;
+                _fileSystem = fileSystem;
+                _fileReferenceFactory = fileReferenceFactory;
             }
 
             // Throws ArgumentException if path is null or empty
-            public virtual IStructuredSymbolStore Create(string path, bool isCache = false,
-                bool shouldInitialize = false)
-            {
-                return new StructuredSymbolStore(fileSystem, fileReferenceFactory, path, isCache,
-                    shouldInitialize);
-            }
+            public virtual IStructuredSymbolStore Create(
+                string path, bool isCache = false,
+                bool shouldInitialize = false) => new StructuredSymbolStore(_fileSystem,
+                                                                            _fileReferenceFactory,
+                                                                            path, isCache,
+                                                                            shouldInitialize);
         }
 
-        // Structured symbol stores can be identified by the existance of a marker file
-        public static bool IsStructuredStore(IFileSystem fileSystem, string path)
-        {
-            return fileSystem.File.Exists(Path.Combine(path, MARKER_FILE_NAME));
-        }
+        // Structured symbol stores can be identified by the existence of a marker file
+        public static bool IsStructuredStore(IFileSystem fileSystem, string path) =>
+            fileSystem.File.Exists(Path.Combine(path, _markerFileName));
 
-        const string MARKER_FILE_NAME = "pingme.txt";
+        const string _markerFileName = "pingme.txt";
 
-        IFileSystem fileSystem;
-        FileReference.Factory fileReferenceFactory;
+        readonly IFileSystem _fileSystem;
+        readonly FileReference.Factory _fileReferenceFactory;
 
         [JsonProperty("Path")]
-        string path;
+        string _path;
 
         StructuredSymbolStore(IFileSystem fileSystem, FileReference.Factory fileReferenceFactory,
             string path, bool isCache, bool shouldInitialize) : base(true, isCache)
@@ -79,9 +77,9 @@ namespace SymbolStores
                     Strings.FailedToCreateStructuredStore(Strings.PathNullOrEmpty));
             }
 
-            this.fileSystem = fileSystem;
-            this.fileReferenceFactory = fileReferenceFactory;
-            this.path = path;
+            _fileSystem = fileSystem;
+            _fileReferenceFactory = fileReferenceFactory;
+            _path = path;
 
             if (shouldInitialize)
             {
@@ -101,9 +99,9 @@ namespace SymbolStores
             if (buildId == BuildId.Empty)
             {
                 Trace.WriteLine(
-                    Strings.FailedToSearchStructuredStore(path, filename, Strings.EmptyBuildId));
+                    Strings.FailedToSearchStructuredStore(_path, filename, Strings.EmptyBuildId));
                 await log.WriteLineAsync(
-                    Strings.FailedToSearchStructuredStore(path, filename, Strings.EmptyBuildId));
+                    Strings.FailedToSearchStructuredStore(_path, filename, Strings.EmptyBuildId));
                 return null;
             }
 
@@ -111,15 +109,16 @@ namespace SymbolStores
 
             try
             {
-                filepath = Path.Combine(path, filename, buildId.ToString(), filename);
+                filepath = Path.Combine(_path, filename, buildId.ToString(), filename);
             }
             catch (ArgumentException e)
             {
-                Trace.WriteLine(Strings.FailedToSearchStructuredStore(path, filename, e.Message));
-                await log.WriteLineAsync(Strings.FailedToSearchStructuredStore(path, filename, e.Message));
+                Trace.WriteLine(Strings.FailedToSearchStructuredStore(_path, filename, e.Message));
+                await log.WriteLineAsync(
+                    Strings.FailedToSearchStructuredStore(_path, filename, e.Message));
                 return null;
             }
-            if (!fileSystem.File.Exists(filepath))
+            if (!_fileSystem.File.Exists(filepath))
             {
                 Trace.WriteLine(Strings.FileNotFound(filepath));
                 await log.WriteLineAsync(Strings.FileNotFound(filepath));
@@ -128,7 +127,7 @@ namespace SymbolStores
 
             Trace.WriteLine(Strings.FileFound(filepath));
             await log.WriteLineAsync(Strings.FileFound(filepath));
-            return fileReferenceFactory.Create(filepath);
+            return _fileReferenceFactory.Create(filepath);
         }
 
         public override async Task<IFileReference> AddFileAsync(
@@ -136,57 +135,56 @@ namespace SymbolStores
         {
             if (source == null)
             {
-                throw new ArgumentException(Strings.FailedToCopyToStructuredStore(path, filename,
-                    Strings.SourceFileReferenceNull), "source");
+                throw new ArgumentException(Strings.FailedToCopyToStructuredStore(
+                                                _path, filename, Strings.SourceFileReferenceNull),
+                                            nameof(source));
             }
             if (string.IsNullOrEmpty(filename))
             {
-                throw new ArgumentException(Strings.FailedToCopyToStructuredStore(path, filename,
-                    Strings.FilenameNullOrEmpty), "filename");
+                throw new ArgumentException(Strings.FailedToCopyToStructuredStore(
+                                                _path, filename, Strings.FilenameNullOrEmpty),
+                                            nameof(filename));
             }
             if (buildId == BuildId.Empty)
             {
-                throw new ArgumentException(Strings.FailedToCopyToStructuredStore(path, filename,
-                    Strings.EmptyBuildId), "buildId");
+                throw new ArgumentException(
+                    Strings.FailedToCopyToStructuredStore(_path, filename, Strings.EmptyBuildId),
+                    nameof(buildId));
             }
 
             try
             {
                 AddMarkerFileIfNeeded();
 
-                var filepath = Path.Combine(path, filename, buildId.ToString(), filename);
+                string filepath = Path.Combine(_path, filename, buildId.ToString(), filename);
                 await source.CopyToAsync(filepath);
 
                 Trace.WriteLine(Strings.CopiedFile(filename, filepath));
-#pragma warning disable VSTHRD103
-                log.WriteLine(Strings.CopiedFile(filename, filepath));
-#pragma warning restore VSTHRD103
+                await log.WriteLineAsync(Strings.CopiedFile(filename, filepath));
 
-                return fileReferenceFactory.Create(filepath);
+                return _fileReferenceFactory.Create(filepath);
             }
             catch (Exception e) when (e is SymbolStoreException || e is IOException ||
                 e is UnauthorizedAccessException || e is NotSupportedException ||
                 e is ArgumentException)
             {
                 throw new SymbolStoreException(
-                    Strings.FailedToCopyToStructuredStore(path, filename, e.Message), e);
+                    Strings.FailedToCopyToStructuredStore(_path, filename, e.Message), e);
             }
         }
 
-        public override bool DeepEquals(ISymbolStore otherStore)
-        {
-            var other = otherStore as StructuredSymbolStore;
-            return other != null && IsCache == other.IsCache && path == other.path;
-        }
+        public override bool DeepEquals(ISymbolStore otherStore) =>
+            otherStore is StructuredSymbolStore other && IsCache == other.IsCache
+            && _path == other._path;
 
-        #endregion
+#endregion
 
         public void AddMarkerFileIfNeeded()
         {
-            if (!fileSystem.File.Exists(Path.Combine(path, MARKER_FILE_NAME)))
+            if (!_fileSystem.File.Exists(Path.Combine(_path, _markerFileName)))
             {
-                fileSystem.Directory.CreateDirectory(path);
-                fileSystem.File.Create(Path.Combine(path, MARKER_FILE_NAME)).Close();
+                _fileSystem.Directory.CreateDirectory(_path);
+                _fileSystem.File.Create(Path.Combine(_path, _markerFileName)).Close();
             }
         }
     }
