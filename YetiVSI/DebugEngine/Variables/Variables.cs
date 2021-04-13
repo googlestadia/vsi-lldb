@@ -140,6 +140,8 @@ namespace YetiVSI.DebugEngine.Variables
 
         bool IsTruthy { get; }
 
+        string Id { get; }
+
         // Determine if the varInfo is a null pointer. Returns true if the varInfo
         // is a pointer and its value is a hex representation of zero, false otherwise.
         bool IsNullPointer();
@@ -271,6 +273,8 @@ namespace YetiVSI.DebugEngine.Variables
 
         public CustomVisualizer CustomVisualizer => VarInfo.CustomVisualizer;
 
+        public string Id => VarInfo.Id;
+
         public bool IsNullPointer() => VarInfo.IsNullPointer();
 
         public virtual bool MightHaveChildren() => VarInfo.MightHaveChildren();
@@ -361,6 +365,8 @@ namespace YetiVSI.DebugEngine.Variables
         public bool IsReference => false;
 
         public bool IsTruthy => false;
+
+        public string Id => "";
 
         public string DisplayName { get; }
 
@@ -502,6 +508,7 @@ namespace YetiVSI.DebugEngine.Variables
             FormatSpecifier = formatSpecifier;
             FallbackValueFormat = fallbackValueFormat;
             CustomVisualizer = customVisualizer;
+            Id = Guid.NewGuid().ToString();
         }
 
         public RemoteValue GetRemoteValue() => _remoteValue;
@@ -621,6 +628,8 @@ namespace YetiVSI.DebugEngine.Variables
                 return false;
             }
         }
+
+        public string Id { get; }
 
         public bool IsNullPointer()
         {
@@ -836,6 +845,7 @@ namespace YetiVSI.DebugEngine.Variables
         public bool IsPointer => false;
         public bool IsReference => false;
         public bool IsTruthy => false;
+        public string Id => "";
         public bool IsNullPointer() => false;
 
         public IVariableInformation GetValueForExpressionPath(VsExpression vsExpression) =>

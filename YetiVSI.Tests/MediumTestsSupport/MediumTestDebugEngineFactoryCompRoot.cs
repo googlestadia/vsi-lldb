@@ -39,7 +39,7 @@ namespace YetiVSI.Test.MediumTestsSupport
     {
         readonly JoinableTaskContext _taskContext;
 
-        readonly ServiceManager _serviceManager;
+        ServiceManager _serviceManager;
 
         IGameletClientFactory _gameletClientFactory;
 
@@ -77,7 +77,15 @@ namespace YetiVSI.Test.MediumTestsSupport
             _windowsRegistry = windowsRegistry;
         }
 
-        public override ServiceManager CreateServiceManager() => _serviceManager;
+        public override ServiceManager CreateServiceManager()
+        {
+            if (_serviceManager == null)
+            {
+                _serviceManager = new MediumTestServiceManager(_taskContext);
+            }
+
+            return _serviceManager;
+        }
 
         public override IFileSystem GetFileSystem()
         {

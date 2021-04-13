@@ -19,7 +19,9 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using YetiCommon.PerformanceTracing;
 using YetiVSI.DebugEngine.Variables;
+using YetiVSI.Metrics;
 
 namespace YetiVSI.DebugEngine.NatvisEngine
 {
@@ -39,10 +41,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         readonly VsExpressionCreator _vsExpressionCreator;
         readonly NatvisDiagnosticLogger _logger;
         readonly IExtensionOptions _extensionOptions;
+        readonly ExpressionEvaluationRecorder _expressionEvaluationRecorder;
+        readonly ITimeSource _timeSource;
 
         public NatvisExpressionEvaluator(NatvisDiagnosticLogger logger,
                                          VsExpressionCreator vsExpressionCreator,
-                                         IExtensionOptions extensionOptions)
+                                         IExtensionOptions extensionOptions,
+                                         ExpressionEvaluationRecorder expressionEvaluationRecorder,
+                                         ITimeSource timeSource)
         {
             _logger = logger;
             _vsExpressionCreator = vsExpressionCreator;
@@ -50,6 +56,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             // IExtensionOptions to get the flag. This will pick up configuration changes in
             // runtime.
             _extensionOptions = extensionOptions;
+            _expressionEvaluationRecorder = expressionEvaluationRecorder;
+            _timeSource = timeSource;
         }
 
         /// <summary>
@@ -91,8 +99,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             string expression, IVariableInformation variable, NatvisScope natvisScope,
             string displayName)
         {
-            var vsExpression =
-                await _vsExpressionCreator.CreateAsync(expression, async (sizeExpression) => {
+            var vsExpression = await _vsExpressionCreator.CreateAsync(
+                expression, async (sizeExpression) =>
+                {
                     IVariableInformation value = await EvaluateLldbExpressionAsync(
                         _vsExpressionCreator.Create(sizeExpression, ""), variable, natvisScope,
                         displayName);
@@ -101,6 +110,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     {
                         throw new ExpressionEvaluationFailed("Expression isn't a uint");
                     }
+
                     return size;
                 });
             return await EvaluateLldbExpressionAsync(vsExpression, variable, natvisScope,
@@ -124,56 +134,81 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                                                                      NatvisScope natvisScope,
                                                                      string displayName)
         {
+            ExpressionEvaluationStrategy strategy = _extensionOptions.ExpressionEvaluationStrategy;
+            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder(_timeSource);
+
+            long startTimestampUs = _timeSource.GetTimestampUs();
+            IVariableInformation variableInformation =
+                await EvaluateLldbExpressionWithMetricsAsync(
+                    expression, variable, natvisScope, displayName, strategy, stepsRecorder);
+            long endTimestampUs = _timeSource.GetTimestampUs();
+
+            _expressionEvaluationRecorder.Record(strategy, ExpressionEvaluationContext.VALUE,
+                                                 stepsRecorder, startTimestampUs, endTimestampUs,
+                                                 variable.Id);
+
+            return variableInformation;
+        }
+
+        async Task<IVariableInformation> EvaluateLldbExpressionWithMetricsAsync(
+            VsExpression expression, IVariableInformation variable, NatvisScope natvisScope,
+            string displayName, ExpressionEvaluationStrategy strategy,
+            ExpressionEvaluationRecorder.StepsRecorder stepsRecorder)
+        {
             bool variableReplaced = false;
             expression = expression.MapValue(
                 v => ReplaceScopedNames(v, natvisScope?.ScopedNames, out variableReplaced));
 
             var lldbErrors = new List<string>();
-            ExpressionEvaluationStrategy strategy = _extensionOptions.ExpressionEvaluationStrategy;
 
             // A helper lambda function to construct an exception given the list of lldb errors.
             Func<IList<string>, ExpressionEvaluationFailed> createExpressionEvaluationException =
                 errors =>
-            {
-                var exceptionMsg = $"Failed to evaluate expression, display name: {displayName}, " +
-                                   $"expression: {expression}";
-
-                errors = errors.Where(error => !string.IsNullOrEmpty(error)).ToList();
-                if (errors.Any())
                 {
-                    exceptionMsg += $", info: {{{string.Join("; ", errors)}}}";
-                }
+                    var exceptionMsg =
+                        $"Failed to evaluate expression, display name: {displayName}, " +
+                        $"expression: {expression}";
 
-                return new ExpressionEvaluationFailed(exceptionMsg);
-            };
+                    errors = errors.Where(error => !string.IsNullOrEmpty(error)).ToList();
+                    if (errors.Any())
+                    {
+                        exceptionMsg += $", info: {{{string.Join("; ", errors)}}}";
+                    }
+
+                    return new ExpressionEvaluationFailed(exceptionMsg);
+                };
 
             if (strategy == ExpressionEvaluationStrategy.LLDB_EVAL ||
                 strategy == ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK)
             {
-                var value = await variable.EvaluateExpressionLldbEvalAsync(
-                    displayName, expression, natvisScope.ContextVariables);
+                IVariableInformation value;
+                LldbEvalErrorCode errorCode;
 
-                if (value != null)
+                using (var step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB_EVAL))
                 {
-                    var errorCode = (LldbEvalErrorCode)Enum.ToObject(typeof(LldbEvalErrorCode),
-                                                                     value.ErrorCode);
+                    value = await variable.EvaluateExpressionLldbEvalAsync(
+                        displayName, expression, natvisScope.ContextVariables);
+                    errorCode = (LldbEvalErrorCode)Enum.ToObject(typeof(LldbEvalErrorCode),
+                                                                 value.ErrorCode);
 
-                    if (errorCode == LldbEvalErrorCode.Ok)
-                    {
-                        value.FallbackValueFormat = variable.FallbackValueFormat;
-                        return value;
-                    }
+                    step.Finalize(errorCode);
+                }
 
-                    lldbErrors.Add(value?.ErrorMessage);
+                if (errorCode == LldbEvalErrorCode.Ok)
+                {
+                    value.FallbackValueFormat = variable.FallbackValueFormat;
+                    return value;
+                }
 
-                    if (errorCode == LldbEvalErrorCode.InvalidNumericLiteral ||
-                        errorCode == LldbEvalErrorCode.InvalidOperandType ||
-                        errorCode == LldbEvalErrorCode.UndeclaredIdentifier)
-                    {
-                        // In the case of a well-known error, there's no need to fallback to
-                        // LLDB, as it will fail with the same error.
-                        throw createExpressionEvaluationException(lldbErrors);
-                    }
+                lldbErrors.Add(value?.ErrorMessage);
+
+                if (errorCode == LldbEvalErrorCode.InvalidNumericLiteral ||
+                    errorCode == LldbEvalErrorCode.InvalidOperandType ||
+                    errorCode == LldbEvalErrorCode.UndeclaredIdentifier)
+                {
+                    // In the case of a well-known error, there's no need to fallback to
+                    // LLDB, as it will fail with the same error.
+                    throw createExpressionEvaluationException(lldbErrors);
                 }
             }
 
@@ -181,8 +216,21 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             {
                 // If lldb-eval is not enabled, try to interpret the expression as member access
                 // before using LLDB to evaluate the expression in the context of the variable.
-                var value = GetValueForMemberAccessExpression(variable, expression, displayName);
-                if (value != null && !value.Error)
+                IVariableInformation value;
+                LLDBErrorCode errorCode;
+
+                using (var step =
+                    stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB_VARIABLE_PATH))
+                {
+                    value = GetValueForMemberAccessExpression(variable, expression, displayName);
+                    errorCode = value != null && !value.Error
+                        ? LLDBErrorCode.OK
+                        : LLDBErrorCode.ERROR;
+
+                    step.Finalize(errorCode);
+                }
+
+                if (errorCode == LLDBErrorCode.OK)
                 {
                     value.FallbackValueFormat = variable.FallbackValueFormat;
                     return value;
@@ -194,9 +242,21 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             if (strategy == ExpressionEvaluationStrategy.LLDB ||
                 strategy == ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK)
             {
-                var value =
-                    await EvaluateExpressionInVariableScopeAsync(variable, expression, displayName);
-                if (value != null && !value.Error)
+                IVariableInformation value;
+                LLDBErrorCode errorCode;
+
+                using (var step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB))
+                {
+                    value = await EvaluateExpressionInVariableScopeAsync(
+                        variable, expression, displayName);
+                    errorCode = value != null && !value.Error
+                        ? LLDBErrorCode.OK
+                        : LLDBErrorCode.ERROR;
+
+                    step.Finalize(errorCode);
+                }
+
+                if (errorCode == LLDBErrorCode.OK)
                 {
                     value.FallbackValueFormat = variable.FallbackValueFormat;
                     return value;
@@ -221,9 +281,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         {
             string scratchVar =
                 ReplaceScopedNames(variableName, natvisScope?.ScopedNames, out bool ignore);
-            VsExpression vsExpression =
-                _vsExpressionCreator.Create(valueExpression, "")
-                    .MapValue(e => ReplaceScopedNames(e, natvisScope?.ScopedNames, out ignore));
+            VsExpression vsExpression = _vsExpressionCreator.Create(valueExpression, "")
+                .MapValue(e => ReplaceScopedNames(e, natvisScope?.ScopedNames, out ignore));
 
             // Declare variable and return it. Pure declaration expressions will always return
             // error because these expressions don't return a valid value.
@@ -305,8 +364,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         {
             if (!vsExpression.Value.StartsWith("["))
             {
-                vsExpression = vsExpression.Clone(
-                    (variable.IsPointer ? "->" : ".") + vsExpression.Value);
+                vsExpression = vsExpression.Clone((variable.IsPointer
+                                                      ? "->"
+                                                      : ".") + vsExpression.Value);
             }
 
             if (!NatvisTextMatcher.IsExpressionPath(vsExpression.Value))
@@ -342,6 +402,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             {
                 variable = variable.Dereference();
             }
+
             return variable.EvaluateExpressionAsync(displayName, vsExpression);
         }
 
@@ -405,6 +466,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                             // to be a scratch variable, e.g. var => $var_0.
                             variableReplaced = true;
                         }
+
                         break; // found a substitute
                     }
                 }

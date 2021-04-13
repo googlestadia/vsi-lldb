@@ -505,8 +505,8 @@ namespace YetiVSI.DebugEngine
             if (_natvisExpressionEvaluator == null)
             {
                 _natvisExpressionEvaluator = new NatvisExpressionEvaluator(
-                    GetNatvisDiagnosticLogger(), new VsExpressionCreator(),
-                    GetVsiService().Options);
+                    GetNatvisDiagnosticLogger(), new VsExpressionCreator(), GetVsiService().Options,
+                    GetExpressionEvaluationRecorder(), GetTimeSource());
             }
 
             return _natvisExpressionEvaluator;
