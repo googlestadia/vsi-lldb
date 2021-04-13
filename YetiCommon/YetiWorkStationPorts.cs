@@ -56,6 +56,10 @@ namespace YetiCommon
         public const int SDK_PROXY = 44448;
         public const int SDK_PROXY_WEB = 44449;
 
+        // Reserve ports 44450-44459 for ggp_sync.
+        public const int GGP_RSYNC_FIRST = 44450;
+        public const int GGP_RSYNC_LAST = 44459;
+
         // Reserve ports 27300, 38920 for rgp and renderdoc.
         public const int RGP_LOCAL = 27300;
         public const int RENDERDOC_LOCAL = 38920;
