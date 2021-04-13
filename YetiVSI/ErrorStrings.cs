@@ -95,7 +95,7 @@ namespace YetiVSI
             "that the file found will match the module being debugged.";
 
         public const string NoApplicationConfigured = "No GGP Application is specified. Set " +
-            "the 'GGP Application ID or Name' field in the 'Debugging' page in your project " +
+            "the 'Stadia Application ID or Name' field in the 'Debugging' page in your project " +
             "properties. To see a list of available applications, run 'ggp application list'.";
 
         public const string NoCoreFileSelected = "Please select a core file to attach to.";
