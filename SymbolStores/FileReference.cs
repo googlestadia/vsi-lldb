@@ -22,35 +22,15 @@ namespace SymbolStores
     // Represents a file that exists at a filesystem path.
     public sealed class FileReference : IFileReference
     {
-        public class Factory
-        {
-            IFileSystem fileSystem;
+        readonly IFileSystem fileSystem;
 
-            public Factory(IFileSystem fileSystem)
-            {
-                this.fileSystem = fileSystem;
-            }
-
-            public FileReference Create(string filepath)
-            {
-                if (filepath == null)
-                {
-                    throw new ArgumentNullException(nameof(filepath));
-                }
-
-                return new FileReference(fileSystem, filepath);
-            }
-        }
-
-        IFileSystem fileSystem;
-
-        FileReference(IFileSystem fileSystem, string filepath)
+        public FileReference(IFileSystem fileSystem, string filepath)
         {
             this.fileSystem = fileSystem;
-            Location = filepath;
+            Location = filepath ?? throw new ArgumentNullException(nameof(filepath));
         }
 
-        #region ISymbolFile functions
+#region ISymbolFile functions
 
         public bool IsFilesystemLocation => true;
 
@@ -96,7 +76,7 @@ namespace SymbolStores
                 }
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException ||
-                e is NotSupportedException || e is ArgumentException)
+                                      e is NotSupportedException || e is ArgumentException)
             {
                 throw new SymbolStoreException(e.Message, e);
             }
@@ -104,6 +84,6 @@ namespace SymbolStores
             return Task.CompletedTask;
         }
 
-        #endregion
+#endregion
     }
 }

@@ -29,11 +29,10 @@ namespace SymbolStores.Tests
     {
         const string _storeUrl = "https://example.com/foo";
         const string _signature = "urlsignature";
-        static string _urlInStore = $"{_storeUrl}/{BUILD_ID}/{FILENAME}?{_signature}";
+        static readonly string _urlInStore = $"{_storeUrl}/{BUILD_ID}/{FILENAME}?{_signature}";
 
         FakeHttpMessageHandler _fakeHttpMessageHandler;
         HttpClient _httpClient;
-        StadiaSymbolStore.Factory _stadiaSymbolStoreFactory;
         ICrashReportClient _crashReportClient;
 
         public override void SetUp()
@@ -42,13 +41,7 @@ namespace SymbolStores.Tests
 
             _fakeHttpMessageHandler = new FakeHttpMessageHandler();
             _httpClient = new HttpClient(_fakeHttpMessageHandler);
-            var httpFileReferenceFactory = new HttpFileReference.Factory(
-                fakeFileSystem, _httpClient);
-
             _crashReportClient = Substitute.For<ICrashReportClient>();
-
-            _stadiaSymbolStoreFactory = new StadiaSymbolStore.Factory(
-                _httpClient, httpFileReferenceFactory, _crashReportClient);
         }
 
         [TearDown]
@@ -60,7 +53,8 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_EmptyBuildIdAsync()
         {
-            ISymbolStore store = _stadiaSymbolStoreFactory.Create();
+            ISymbolStore store =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
             IFileReference fileReference =
                 await store.FindFileAsync(FILENAME, BuildId.Empty, true, log);
@@ -78,10 +72,10 @@ namespace SymbolStores.Tests
                                    new RpcException(new Status(StatusCode.NotFound, "message")));
             _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
                 .Returns(x => Task.FromException<string>(ex));
-            ISymbolStore store = _stadiaSymbolStoreFactory.Create();
+            ISymbolStore store =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
-            IFileReference fileReference =
-                await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(
@@ -97,10 +91,10 @@ namespace SymbolStores.Tests
                 new RpcException(new Status(StatusCode.PermissionDenied, "message")));
             _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
                 .Returns(x => Task.FromException<string>(ex));
-            ISymbolStore store = _stadiaSymbolStoreFactory.Create();
+            ISymbolStore store =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
-            IFileReference fileReference =
-                await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchStadiaStore(FILENAME, ex.Message),
@@ -113,10 +107,10 @@ namespace SymbolStores.Tests
             _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
                 .Returns(_urlInStore);
             // By default, HTTP client returns Not Found for every file.
-            ISymbolStore store = _stadiaSymbolStoreFactory.Create();
+            ISymbolStore store =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
-            IFileReference fileReference =
-                await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(
@@ -131,10 +125,10 @@ namespace SymbolStores.Tests
                 .Returns(_urlInStore);
             _fakeHttpMessageHandler.ExceptionMap[new Uri(_urlInStore)] =
                 new HttpRequestException("message");
-            ISymbolStore store = _stadiaSymbolStoreFactory.Create();
+            ISymbolStore store =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
-            IFileReference fileReference =
-                await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchStadiaStore(FILENAME, "message"),
@@ -144,8 +138,10 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals()
         {
-            ISymbolStore storeA = _stadiaSymbolStoreFactory.Create();
-            ISymbolStore storeB = _stadiaSymbolStoreFactory.Create();
+            ISymbolStore storeA =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
+            ISymbolStore storeB =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
             Assert.True(storeA.DeepEquals(storeB));
             Assert.True(storeB.DeepEquals(storeA));
@@ -160,7 +156,7 @@ namespace SymbolStores.Tests
             _crashReportClient.GenerateSymbolFileDownloadUrlAsync(new BuildId().ToHexString(), null)
                 .ReturnsForAnyArgs(_urlInStore);
 
-            return _stadiaSymbolStoreFactory.Create();
+            return new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
         }
 
         protected override Task<ISymbolStore> GetStoreWithFileAsync()
@@ -170,7 +166,8 @@ namespace SymbolStores.Tests
             _fakeHttpMessageHandler.ContentMap[new Uri(_urlInStore)] =
                 Encoding.UTF8.GetBytes(BUILD_ID.ToHexString());
 
-            return Task.FromResult<ISymbolStore>(_stadiaSymbolStoreFactory.Create());
+            return Task.FromResult<ISymbolStore>(
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient));
         }
 
 #endregion

@@ -27,17 +27,12 @@ namespace SymbolStores
     // the requested file is found, it is copied to all previously searched stores.
     public class SymbolServer : SymbolStoreBase
     {
-        public class Factory
-        {
-            public virtual SymbolServer Create(bool isCache = false) => new SymbolServer(isCache);
-        }
-
         public bool IsEmpty => _stores.Count == 0;
 
         [JsonProperty("Stores")]
-        IList<ISymbolStore> _stores;
+        readonly IList<ISymbolStore> _stores;
 
-        SymbolServer(bool isCache) : base(true, isCache)
+        public SymbolServer(bool isCache = false) : base(true, isCache)
         {
             _stores = new List<ISymbolStore>();
         }
@@ -47,12 +42,13 @@ namespace SymbolStores
             _stores.Add(store);
         }
 
-        #region SymbolStoreBase functions
+#region SymbolStoreBase functions
 
         public override IEnumerable<ISymbolStore> Substores => _stores;
 
-        public override async Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+                                                                 bool isDebugInfoFile,
+                                                                 TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -65,8 +61,8 @@ namespace SymbolStores
                     await _stores[i].FindFileAsync(filename, buildId, isDebugInfoFile, log);
                 if (fileReference != null)
                 {
-                    var cascadeFileRef = await CascadeAsync(
-                        fileReference, filename, buildId, i - 1, log);
+                    var cascadeFileRef =
+                        await CascadeAsync(fileReference, filename, buildId, i - 1, log);
                     return cascadeFileRef ?? fileReference;
                 }
             }
@@ -74,8 +70,9 @@ namespace SymbolStores
             return null;
         }
 
-        public override async Task<IFileReference> AddFileAsync(
-            IFileReference source, string filename, BuildId buildId, TextWriter log)
+        public override async Task<IFileReference> AddFileAsync(IFileReference source,
+                                                                string filename, BuildId buildId,
+                                                                TextWriter log)
         {
             if (source == null)
             {
@@ -115,7 +112,7 @@ namespace SymbolStores
                        .All(x => x.Item1.DeepEquals(x.Item2));
         }
 
-        #endregion
+#endregion
 
         // Copies the referenced file to the store at `index`, and then from there to each previous
         // store in reverse order.
@@ -132,8 +129,8 @@ namespace SymbolStores
                     sourceFileReference = fileReference =
                         await _stores[i].AddFileAsync(sourceFileReference, filename, buildId, log);
                 }
-                catch (Exception e) when (e is NotSupportedException ||
-                    e is SymbolStoreException || e is ArgumentException)
+                catch (Exception e) when (e is NotSupportedException || e is SymbolStoreException ||
+                                          e is ArgumentException)
                 {
                     Trace.WriteLine(e.Message);
                     await log.WriteLineAsync(e.Message);

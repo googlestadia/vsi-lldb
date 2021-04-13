@@ -28,31 +28,17 @@ namespace SymbolStores
     // the list. Each cache overrides previous caches, and caches do not cascade.
     public class SymbolStoreSequence : SymbolStoreBase
     {
-        public class Factory
-        {
-            readonly IBinaryFileUtil _binaryFileUtil;
-
-            public Factory(IBinaryFileUtil binaryFileUtil)
-            {
-                _binaryFileUtil = binaryFileUtil;
-            }
-
-            public virtual SymbolStoreSequence Create()
-            {
-                return new SymbolStoreSequence(_binaryFileUtil);
-            }
-        }
-
         public bool HasCache => _stores.Any(s => s.IsCache == true);
+
+        readonly IBinaryFileUtil _binaryFileUtil;
 
         [JsonProperty("Stores")]
         readonly IList<ISymbolStore> _stores;
-        readonly IBinaryFileUtil _binaryFileUtil;
 
-        SymbolStoreSequence(IBinaryFileUtil binaryFileUtil) : base(false, false)
+        public SymbolStoreSequence(IBinaryFileUtil binaryFileUtil) : base(false, false)
         {
-            _stores = new List<ISymbolStore>();
             _binaryFileUtil = binaryFileUtil;
+            _stores = new List<ISymbolStore>();
         }
 
         public void AddStore(ISymbolStore store)
@@ -60,12 +46,13 @@ namespace SymbolStores
             _stores.Add(store);
         }
 
-        #region SymbolStoreBase functions
+#region SymbolStoreBase functions
 
         public override IEnumerable<ISymbolStore> Substores => _stores;
 
-        public override async Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+                                                                 bool isDebugInfoFile,
+                                                                 TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -86,12 +73,12 @@ namespace SymbolStores
                     {
                         try
                         {
-                            fileReference =
-                                await currentCache.AddFileAsync(
-                                    fileReference, filename, buildId, log);
+                            fileReference = await currentCache.AddFileAsync(fileReference, filename,
+                                                                            buildId, log);
                         }
-                        catch (Exception e) when (e is NotSupportedException ||
-                            e is SymbolStoreException || e is ArgumentException)
+                        catch (Exception e)
+                            when (e is NotSupportedException || e is SymbolStoreException ||
+                                  e is ArgumentException)
                         {
                             Trace.WriteLine(e.Message);
                             await log.WriteLineAsync(e.Message);
@@ -99,8 +86,8 @@ namespace SymbolStores
                     }
 
                     if (!fileReference.IsFilesystemLocation ||
-                        await VerifySymbolFileAsync(
-                            fileReference.Location, buildId, isDebugInfoFile, log))
+                        await VerifySymbolFileAsync(fileReference.Location, buildId,
+                                                    isDebugInfoFile, log))
                     {
                         return fileReference;
                     }
@@ -115,8 +102,9 @@ namespace SymbolStores
             return null;
         }
 
-        public override Task<IFileReference> AddFileAsync(
-            IFileReference sourceFilepath, string filename, BuildId buildId, TextWriter log)
+        public override Task<IFileReference> AddFileAsync(IFileReference sourceFilepath,
+                                                          string filename, BuildId buildId,
+                                                          TextWriter log)
         {
             throw new NotSupportedException(Strings.CopyToStoreSequenceNotSupported);
         }
@@ -128,10 +116,10 @@ namespace SymbolStores
                    _stores.Zip(other._stores, (a, b) => Tuple.Create(a, b))
                        .All(x => x.Item1.DeepEquals(x.Item2));
         }
-        #endregion
+#endregion
 
-        async Task<bool> VerifySymbolFileAsync(
-            string filepath, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        async Task<bool> VerifySymbolFileAsync(string filepath, BuildId buildId,
+                                               bool isDebugInfoFile, TextWriter log)
         {
             try
             {

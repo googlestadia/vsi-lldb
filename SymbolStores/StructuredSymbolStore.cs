@@ -25,8 +25,9 @@ namespace SymbolStores
     /// <summary>
     /// Interface that allows StructuredSymbolStore to be mocked in tests
     /// </summary>
-    public interface IStructuredSymbolStore : ISymbolStore { }
-
+    public interface IStructuredSymbolStore : ISymbolStore
+    {
+    }
 
     /// <summary>
     /// Represents a file system location where symbol files are stored, with the directory
@@ -36,26 +37,6 @@ namespace SymbolStores
     /// </summary>
     public class StructuredSymbolStore : SymbolStoreBase, IStructuredSymbolStore
     {
-        public class Factory
-        {
-            readonly IFileSystem _fileSystem;
-            readonly FileReference.Factory _fileReferenceFactory;
-
-            public Factory(IFileSystem fileSystem, FileReference.Factory fileReferenceFactory)
-            {
-                _fileSystem = fileSystem;
-                _fileReferenceFactory = fileReferenceFactory;
-            }
-
-            // Throws ArgumentException if path is null or empty
-            public virtual IStructuredSymbolStore Create(
-                string path, bool isCache = false,
-                bool shouldInitialize = false) => new StructuredSymbolStore(_fileSystem,
-                                                                            _fileReferenceFactory,
-                                                                            path, isCache,
-                                                                            shouldInitialize);
-        }
-
         // Structured symbol stores can be identified by the existence of a marker file
         public static bool IsStructuredStore(IFileSystem fileSystem, string path) =>
             fileSystem.File.Exists(Path.Combine(path, _markerFileName));
@@ -63,13 +44,12 @@ namespace SymbolStores
         const string _markerFileName = "pingme.txt";
 
         readonly IFileSystem _fileSystem;
-        readonly FileReference.Factory _fileReferenceFactory;
 
         [JsonProperty("Path")]
-        string _path;
+        readonly string _path;
 
-        StructuredSymbolStore(IFileSystem fileSystem, FileReference.Factory fileReferenceFactory,
-            string path, bool isCache, bool shouldInitialize) : base(true, isCache)
+        public StructuredSymbolStore(IFileSystem fileSystem, string path, bool isCache = false)
+            : base(true, isCache)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -78,19 +58,14 @@ namespace SymbolStores
             }
 
             _fileSystem = fileSystem;
-            _fileReferenceFactory = fileReferenceFactory;
             _path = path;
-
-            if (shouldInitialize)
-            {
-                AddMarkerFileIfNeeded();
-            }
         }
 
-        #region SymbolStoreBase functions
+#region SymbolStoreBase functions
 
-        public override async Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+                                                                 bool isDebugInfoFile,
+                                                                 TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -127,11 +102,12 @@ namespace SymbolStores
 
             Trace.WriteLine(Strings.FileFound(filepath));
             await log.WriteLineAsync(Strings.FileFound(filepath));
-            return _fileReferenceFactory.Create(filepath);
+            return new FileReference(_fileSystem, filepath);
         }
 
-        public override async Task<IFileReference> AddFileAsync(
-            IFileReference source, string filename, BuildId buildId, TextWriter log)
+        public override async Task<IFileReference> AddFileAsync(IFileReference source,
+                                                                string filename, BuildId buildId,
+                                                                TextWriter log)
         {
             if (source == null)
             {
@@ -162,11 +138,11 @@ namespace SymbolStores
                 Trace.WriteLine(Strings.CopiedFile(filename, filepath));
                 await log.WriteLineAsync(Strings.CopiedFile(filename, filepath));
 
-                return _fileReferenceFactory.Create(filepath);
+                return new FileReference(_fileSystem, filepath);
             }
             catch (Exception e) when (e is SymbolStoreException || e is IOException ||
-                e is UnauthorizedAccessException || e is NotSupportedException ||
-                e is ArgumentException)
+                                      e is UnauthorizedAccessException ||
+                                      e is NotSupportedException || e is ArgumentException)
             {
                 throw new SymbolStoreException(
                     Strings.FailedToCopyToStructuredStore(_path, filename, e.Message), e);

@@ -27,26 +27,24 @@ namespace SymbolStores.Tests
         const string CONTENTS = "test";
 
         MockFileSystem fakeFileSystem;
-        FileReference.Factory fileReferenceFactory;
 
         [SetUp]
         public void SetUp()
         {
             fakeFileSystem = new MockFileSystem();
-            fileReferenceFactory = new FileReference.Factory(fakeFileSystem);
         }
 
         [Test]
         public void Create_NullFilepath()
         {
-            Assert.Throws<ArgumentNullException>(() => fileReferenceFactory.Create(null));
+            Assert.Throws<ArgumentNullException>(() => new FileReference(fakeFileSystem, null));
         }
 
         [Test]
         public async Task CopyToAsync()
         {
             fakeFileSystem.AddFile(SOURCE_PATH, new MockFileData(CONTENTS));
-            var fileReference = fileReferenceFactory.Create(SOURCE_PATH);
+            var fileReference = new FileReference(fakeFileSystem, SOURCE_PATH);
 
             await fileReference.CopyToAsync(DEST_PATH);
 
@@ -60,7 +58,7 @@ namespace SymbolStores.Tests
             const string DEST_CONTENTS = "dest";
             fakeFileSystem.AddFile(SOURCE_PATH, new MockFileData(CONTENTS));
             fakeFileSystem.AddFile(DEST_PATH, new MockFileData(DEST_CONTENTS));
-            var fileReference = fileReferenceFactory.Create(SOURCE_PATH);
+            var fileReference = new FileReference(fakeFileSystem, SOURCE_PATH);
 
             await fileReference.CopyToAsync(DEST_PATH);
             Assert.AreEqual(CONTENTS, fakeFileSystem.GetFile(SOURCE_PATH).TextContents);
@@ -70,10 +68,9 @@ namespace SymbolStores.Tests
         [Test]
         public void CopyTo_NullDestFilepath()
         {
-            var fileReference = fileReferenceFactory.Create(SOURCE_PATH);
+            var fileReference = new FileReference(fakeFileSystem, SOURCE_PATH);
 
-            Assert.ThrowsAsync<ArgumentNullException>(
-                () => fileReference.CopyToAsync(null));
+            Assert.ThrowsAsync<ArgumentNullException>(() => fileReference.CopyToAsync(null));
         }
     }
 }

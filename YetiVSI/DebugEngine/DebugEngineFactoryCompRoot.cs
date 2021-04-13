@@ -206,17 +206,9 @@ namespace YetiVSI.DebugEngine
                 CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore),
             };
             var symbolServerHttpClient = new HttpClient(symbolServerRequestHandler);
-            var fileReferenceFactory = new FileReference.Factory(GetFileSystem());
-            var httpFileReferenceFactory = new HttpFileReference.Factory(
-                GetFileSystem(), symbolServerHttpClient);
             var symbolPathParser = new SymbolPathParser(
-                GetFileSystem(),
-                new StructuredSymbolStore.Factory(GetFileSystem(), fileReferenceFactory),
-                new FlatSymbolStore.Factory(GetFileSystem(), binaryFileUtil, fileReferenceFactory),
-                new SymbolStoreSequence.Factory(binaryFileUtil), new SymbolServer.Factory(),
-                new HttpSymbolStore.Factory(symbolServerHttpClient, httpFileReferenceFactory),
-                new StadiaSymbolStore.Factory(symbolServerHttpClient, httpFileReferenceFactory,
-                                              new CrashReportClient(GetCloudRunner())),
+                GetFileSystem(), binaryFileUtil, symbolServerHttpClient,
+                new CrashReportClient(GetCloudRunner()),
                 SDKUtil.GetDefaultSymbolCachePath(), SDKUtil.GetDefaultSymbolStorePath(),
                 YetiConstants.SymbolServerExcludeList);
             IModuleFileFinder moduleFileFinder = new ModuleFileFinder(symbolPathParser);

@@ -23,10 +23,12 @@ namespace SymbolStores
     // Intended to act as a placeholder when an actual symbol store has not been provided.
     public class NullSymbolStore : SymbolStoreBase
     {
-        public NullSymbolStore() : base(false, false) { }
+        public NullSymbolStore() : base(false, false)
+        {
+        }
 
         public override Task<IFileReference> AddFileAsync(IFileReference source, string filename,
-            BuildId buildId, TextWriter logWriter)
+                                                          BuildId buildId, TextWriter logWriter)
         {
             throw new NotImplementedException();
         }
@@ -36,8 +38,9 @@ namespace SymbolStores
             return other is NullSymbolStore;
         }
 
-        public override Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter logWriter)
+        public override Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+                                                           bool isDebugInfoFile,
+                                                           TextWriter logWriter)
         {
             return Task.FromResult<IFileReference>(null);
         }

@@ -37,51 +37,29 @@ namespace SymbolStores
     /// </summary>
     public class StadiaSymbolStore : SymbolStoreBase, IStadiaSymbolStore
     {
-        public class Factory
-        {
-            readonly HttpClient _httpClient;
-            readonly HttpFileReference.Factory _httpSymbolFileFactory;
-            readonly ICrashReportClient _crashReportClient;
-
-            public Factory(HttpClient httpClient,
-                           HttpFileReference.Factory httpSymbolFileFactory,
-                           ICrashReportClient crashReportClient)
-            {
-                _httpClient = httpClient;
-                _httpSymbolFileFactory = httpSymbolFileFactory;
-                _crashReportClient = crashReportClient;
-            }
-
-            public virtual IStadiaSymbolStore Create()
-            {
-                return new StadiaSymbolStore(
-                    _httpClient, _httpSymbolFileFactory, _crashReportClient);
-            }
-        }
-
         public static readonly string MarkerFileName = "stadia-store.txt";
 
         public static bool IsStadiaStore(IFileSystem fileSystem, string path) =>
             fileSystem.File.Exists(Path.Combine(path, MarkerFileName));
 
+        readonly IFileSystem _fileSystem;
         readonly HttpClient _httpClient;
-        readonly HttpFileReference.Factory _httpSymbolFileFactory;
         readonly ICrashReportClient _crashReportClient;
 
-        StadiaSymbolStore(HttpClient httpClient,
-                          HttpFileReference.Factory httpSymbolFileFactory,
-                          ICrashReportClient crashReportClient)
+        public StadiaSymbolStore(IFileSystem fileSystem, HttpClient httpClient,
+                                 ICrashReportClient crashReportClient)
             : base(supportsAddingFiles: false, isCache: false)
         {
+            _fileSystem = fileSystem;
             _httpClient = httpClient;
-            _httpSymbolFileFactory = httpSymbolFileFactory;
             _crashReportClient = crashReportClient;
         }
 
-        #region SymbolStoreBase functions
+#region SymbolStoreBase functions
 
-        public override async Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+                                                                 bool isDebugInfoFile,
+                                                                 TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -170,7 +148,8 @@ namespace SymbolStores
                 // TODO: simplify logging
                 Trace.WriteLine(Strings.FileFound(filename));
                 await log.WriteLineAsync(Strings.FileFound(filename));
-                return _httpSymbolFileFactory.Create(fileUrl);
+
+                return new HttpFileReference(_fileSystem, _httpClient, fileUrl);
             }
         }
 

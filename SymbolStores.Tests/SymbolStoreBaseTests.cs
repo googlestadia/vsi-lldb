@@ -34,7 +34,6 @@ namespace SymbolStores.Tests
         protected MockFileSystem fakeFileSystem;
         protected FakeBinaryFileUtil fakeBinaryFileUtil;
         protected FakeBuildIdWriter fakeBuildIdWriter;
-        protected FileReference.Factory fileReferenceFactory;
         protected FileReference sourceSymbolFile;
         protected StringWriter log;
 
@@ -44,9 +43,8 @@ namespace SymbolStores.Tests
             fakeFileSystem = new MockFileSystem();
             fakeBinaryFileUtil = new FakeBinaryFileUtil(fakeFileSystem);
             fakeBuildIdWriter = new FakeBuildIdWriter(fakeFileSystem);
-            fileReferenceFactory = new FileReference.Factory(fakeFileSystem);
             fakeBuildIdWriter.WriteBuildId(SOURCE_FILEPATH, BUILD_ID);
-            sourceSymbolFile = fileReferenceFactory.Create(SOURCE_FILEPATH);
+            sourceSymbolFile = new FileReference(fakeFileSystem, SOURCE_FILEPATH);
             log = new StringWriter();
         }
 
@@ -58,8 +56,7 @@ namespace SymbolStores.Tests
             var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
             await fileReference.CopyToAsync(DEST_FILEPATH);
 
-            Assert.AreEqual(
-                BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(DEST_FILEPATH));
+            Assert.AreEqual(BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(DEST_FILEPATH));
             StringAssert.Contains(Strings.FileFound(""), log.ToString());
         }
 
@@ -71,8 +68,7 @@ namespace SymbolStores.Tests
             var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID);
             await fileReference.CopyToAsync(DEST_FILEPATH);
 
-            Assert.AreEqual(
-                BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(DEST_FILEPATH));
+            Assert.AreEqual(BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(DEST_FILEPATH));
         }
 
         [Test]
@@ -103,13 +99,12 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            var fileReference = await store.AddFileAsync(
-                sourceSymbolFile, FILENAME, BUILD_ID, log);
+            var fileReference = await store.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID, log);
 
-            Assert.AreEqual(
-                BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(fileReference.Location));
+            Assert.AreEqual(BUILD_ID,
+                            await fakeBinaryFileUtil.ReadBuildIdAsync(fileReference.Location));
             StringAssert.Contains(Strings.CopiedFile(FILENAME, fileReference.Location),
-                log.ToString());
+                                  log.ToString());
         }
 
         [Test]
@@ -137,8 +132,7 @@ namespace SymbolStores.Tests
             var fileReference = await store.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
             await fileReference.CopyToAsync(DEST_FILEPATH);
 
-            Assert.AreEqual(
-                BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(DEST_FILEPATH));
+            Assert.AreEqual(BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(DEST_FILEPATH));
         }
 
         [Test]
@@ -162,9 +156,9 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            Assert.ThrowsAsync<SymbolStoreException>(() =>
-                store.AddFileAsync(fileReferenceFactory.Create(MISSING_FILEPATH), FILENAME,
-                    BUILD_ID));
+            Assert.ThrowsAsync<SymbolStoreException>(
+                () => store.AddFileAsync(new FileReference(fakeFileSystem, MISSING_FILEPATH),
+                                         FILENAME, BUILD_ID));
         }
 
         [Test]
@@ -177,8 +171,8 @@ namespace SymbolStores.Tests
             }
 
             Assert.ThrowsAsync<SymbolStoreException>(
-                () => store.AddFileAsync(
-                    fileReferenceFactory.Create(INVALID_PATH), FILENAME, BUILD_ID));
+                () => store.AddFileAsync(new FileReference(fakeFileSystem, INVALID_PATH), FILENAME,
+                                         BUILD_ID));
         }
 
         [Test]
@@ -190,8 +184,8 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            Assert.ThrowsAsync<ArgumentException>(
-                () => store.AddFileAsync(null, FILENAME, BUILD_ID));
+            Assert.ThrowsAsync<ArgumentException>(() =>
+                                                      store.AddFileAsync(null, FILENAME, BUILD_ID));
         }
 
         [TestCase(null, "1234")]

@@ -128,8 +128,7 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void RecordMetrics()
         {
-            var sequence =
-                new SymbolStoreSequence.Factory(Substitute.For<IBinaryFileUtil>()).Create();
+            var sequence = new SymbolStoreSequence(Substitute.For<IBinaryFileUtil>());
             for (int i = 0; i < 4; ++i) sequence.AddStore(Substitute.For<IFlatSymbolStore>());
             for (int i = 0; i < 3; ++i) sequence.AddStore(Substitute.For<IStructuredSymbolStore>());
             for (int i = 0; i < 2; ++i) sequence.AddStore(Substitute.For<IHttpSymbolStore>());

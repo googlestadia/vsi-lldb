@@ -23,39 +23,17 @@ namespace SymbolStores
     // Represents a symbol file that can be downloaded over HTTP.
     public sealed class HttpFileReference : IFileReference
     {
-        public class Factory
-        {
-            IFileSystem fileSystem;
-            HttpClient httpClient;
+        readonly IFileSystem fileSystem;
+        readonly HttpClient httpClient;
 
-            public Factory(IFileSystem fileSystem, HttpClient httpClient)
-            {
-                this.fileSystem = fileSystem;
-                this.httpClient = httpClient;
-            }
-
-            public HttpFileReference Create(string url)
-            {
-                if (url == null)
-                {
-                    throw new ArgumentNullException(nameof(url));
-                }
-
-                return new HttpFileReference(fileSystem, httpClient, url);
-            }
-        }
-
-        IFileSystem fileSystem;
-        HttpClient httpClient;
-
-        HttpFileReference(IFileSystem fileSystem, HttpClient httpClient, string url)
+        public HttpFileReference(IFileSystem fileSystem, HttpClient httpClient, string url)
         {
             this.fileSystem = fileSystem;
-            Location = url;
             this.httpClient = httpClient;
+            Location = url ?? throw new ArgumentNullException(nameof(url));
         }
 
-        #region IFileReference functions
+#region IFileReference functions
 
         public async Task CopyToAsync(string destFilepath)
         {
@@ -86,8 +64,8 @@ namespace SymbolStores
                 string tempFilepath = $"{destFilepath}.{Guid.NewGuid()}.temp";
                 try
                 {
-                    using (var httpStream = await httpClient.GetStreamAsync(Location))
-                    using (var fileStream = fileSystem.File.Open(tempFilepath, FileMode.CreateNew))
+                    using (var httpStream = await httpClient.GetStreamAsync(Location)) using (
+                        var fileStream = fileSystem.File.Open(tempFilepath, FileMode.CreateNew))
                     {
                         httpStream.CopyTo(fileStream);
                     }
@@ -99,8 +77,8 @@ namespace SymbolStores
                 }
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException ||
-                e is NotSupportedException || e is ArgumentException ||
-                e is ObjectDisposedException || e is HttpRequestException)
+                                      e is NotSupportedException || e is ArgumentException ||
+                                      e is ObjectDisposedException || e is HttpRequestException)
             {
                 throw new SymbolStoreException(e.Message, e);
             }
@@ -110,6 +88,6 @@ namespace SymbolStores
 
         public string Location { get; private set; }
 
-        #endregion
+#endregion
     }
 }

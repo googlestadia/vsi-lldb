@@ -26,12 +26,10 @@ namespace SymbolStores.Tests
     {
         const string STORE_URL = "https://example.com/foo";
         const string STORE_URL_B = "https://example.net/bar";
-        const string CACHE_PATH = @"C:\cache";
-        static string URL_IN_STORE = $"{STORE_URL}/{FILENAME}/{BUILD_ID}/{FILENAME}";
-
+        static readonly string URL_IN_STORE = $"{STORE_URL}/{FILENAME}/{BUILD_ID}/{FILENAME}";
         FakeHttpMessageHandler fakeHttpMessageHandler;
+
         HttpClient httpClient;
-        HttpSymbolStore.Factory httpSymbolStoreFactory;
 
         public override void SetUp()
         {
@@ -39,11 +37,6 @@ namespace SymbolStores.Tests
 
             fakeHttpMessageHandler = new FakeHttpMessageHandler();
             httpClient = new HttpClient(fakeHttpMessageHandler);
-
-            var httpFileReferenceFactory = new HttpFileReference.Factory(
-                fakeFileSystem, httpClient);
-            httpSymbolStoreFactory = new HttpSymbolStore.Factory(
-                httpClient, httpFileReferenceFactory);
         }
 
         [TearDown]
@@ -55,7 +48,8 @@ namespace SymbolStores.Tests
         [Test]
         public void Create_EmptyUrl()
         {
-            Assert.Throws<ArgumentException>(() => httpSymbolStoreFactory.Create(""));
+            Assert.Throws<ArgumentException>(
+                () => new HttpSymbolStore(fakeFileSystem, httpClient, ""));
         }
 
         [Test]
@@ -66,22 +60,23 @@ namespace SymbolStores.Tests
             var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true, log);
 
             Assert.Null(fileReference);
-            StringAssert.Contains(Strings.FailedToSearchHttpStore(STORE_URL, FILENAME,
-                Strings.EmptyBuildId), log.ToString());
+            StringAssert.Contains(
+                Strings.FailedToSearchHttpStore(STORE_URL, FILENAME, Strings.EmptyBuildId),
+                log.ToString());
         }
 
         [Test]
         public async Task FindFile_HttpRequestExceptionAsync()
         {
             var store = GetEmptyStore();
-            fakeHttpMessageHandler.ExceptionMap[new Uri(URL_IN_STORE)]
-                = new HttpRequestException("message");
+            fakeHttpMessageHandler.ExceptionMap[new Uri(URL_IN_STORE)] =
+                new HttpRequestException("message");
 
             var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchHttpStore(STORE_URL, FILENAME, "message"),
-                log.ToString());
+                                  log.ToString());
         }
 
         [Test]
@@ -99,7 +94,7 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_ConnectionIsUnencryptedAsync()
         {
-            var store = httpSymbolStoreFactory.Create("http://example.com/");
+            var store = new HttpSymbolStore(fakeFileSystem, httpClient, "http://example.com/");
 
             var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
 
@@ -109,8 +104,8 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals()
         {
-            var storeA = httpSymbolStoreFactory.Create(STORE_URL);
-            var storeB = httpSymbolStoreFactory.Create(STORE_URL);
+            var storeA = new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL);
+            var storeB = new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL);
 
             Assert.True(storeA.DeepEquals(storeB));
             Assert.True(storeB.DeepEquals(storeA));
@@ -119,18 +114,18 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_NotEqual()
         {
-            var storeA = httpSymbolStoreFactory.Create(STORE_URL);
-            var storeB = httpSymbolStoreFactory.Create(STORE_URL_B);
+            var storeA = new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL);
+            var storeB = new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL_B);
 
             Assert.False(storeA.DeepEquals(storeB));
             Assert.False(storeB.DeepEquals(storeA));
         }
 
-        #region SymbolStoreBaseTests functions
+#region SymbolStoreBaseTests functions
 
         protected override ISymbolStore GetEmptyStore()
         {
-            return httpSymbolStoreFactory.Create(STORE_URL);
+            return new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL);
         }
 
         protected override Task<ISymbolStore> GetStoreWithFileAsync()
@@ -138,9 +133,10 @@ namespace SymbolStores.Tests
             fakeHttpMessageHandler.ContentMap[new Uri(URL_IN_STORE)] =
                 Encoding.UTF8.GetBytes(BUILD_ID.ToHexString());
 
-            return Task.FromResult<ISymbolStore>(httpSymbolStoreFactory.Create(STORE_URL));
+            return Task.FromResult<ISymbolStore>(
+                new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL));
         }
 
-        #endregion
+#endregion
     }
 }

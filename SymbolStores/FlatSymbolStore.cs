@@ -25,40 +25,21 @@ namespace SymbolStores
     /// <summary>
     /// Interface that allows FlatSymbolStore to be mocked in tests
     /// </summary>
-    public interface IFlatSymbolStore : ISymbolStore { }
+    public interface IFlatSymbolStore : ISymbolStore
+    {
+    }
 
     /// <summary>
     /// Represents a flat directory containing symbol files
     /// </summary>
     public class FlatSymbolStore : SymbolStoreBase, IFlatSymbolStore
     {
-        public class Factory
-        {
-            readonly IFileSystem _fileSystem;
-            readonly IBinaryFileUtil _binaryFileUtil;
-            readonly FileReference.Factory _symbolFileFactory;
-
-            public Factory(IFileSystem fileSystem, IBinaryFileUtil binaryFileUtil,
-                FileReference.Factory symbolFileFactory)
-            {
-                _fileSystem = fileSystem;
-                _binaryFileUtil = binaryFileUtil;
-                _symbolFileFactory = symbolFileFactory;
-            }
-
-            // Throws ArgumentException if path is null or empty
-            public virtual IFlatSymbolStore Create(string path) => new FlatSymbolStore(
-                _fileSystem, _binaryFileUtil, _symbolFileFactory, path);
-        }
-
         readonly IFileSystem _fileSystem;
         readonly IBinaryFileUtil _binaryFileUtil;
-        readonly FileReference.Factory _symbolFileFactory;
         [JsonProperty("Path")]
         string _path;
 
-        FlatSymbolStore(IFileSystem fileSystem, IBinaryFileUtil binaryFileUtil,
-            FileReference.Factory symbolFileFactory, string path)
+        public FlatSymbolStore(IFileSystem fileSystem, IBinaryFileUtil binaryFileUtil, string path)
             : base(false, false)
         {
             if (string.IsNullOrEmpty(path))
@@ -69,14 +50,14 @@ namespace SymbolStores
 
             _fileSystem = fileSystem;
             _binaryFileUtil = binaryFileUtil;
-            _symbolFileFactory = symbolFileFactory;
             _path = path;
         }
 
-        #region SymbolStoreBase functions
+#region SymbolStoreBase functions
 
-        public override async Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+                                                                 bool isDebugInfoFile,
+                                                                 TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -125,7 +106,8 @@ namespace SymbolStores
 
             Trace.WriteLine(Strings.FileFound(filepath));
             await log.WriteLineAsync(Strings.FileFound(filepath));
-            return _symbolFileFactory.Create(filepath);
+
+            return new FileReference(_fileSystem, filepath);
         }
 
         public override Task<IFileReference> AddFileAsync(IFileReference source, string filename,

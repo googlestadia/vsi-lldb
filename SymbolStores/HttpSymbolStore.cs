@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Abstractions;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -26,7 +27,9 @@ namespace SymbolStores
     /// <summary>
     /// Interface that allows HttpSymbolStore to be mocked in tests
     /// </summary>
-    public interface IHttpSymbolStore : ISymbolStore { }
+    public interface IHttpSymbolStore : ISymbolStore
+    {
+    }
 
     /// <summary>
     /// Represents an http server on which symbol files are stored with the path structure
@@ -34,35 +37,17 @@ namespace SymbolStores
     /// </summary>
     public class HttpSymbolStore : SymbolStoreBase, IHttpSymbolStore
     {
-        public class Factory
-        {
-            readonly HttpClient _httpClient;
-            readonly HttpFileReference.Factory _httpSymbolFileFactory;
-
-            public Factory(HttpClient httpClient,
-                           HttpFileReference.Factory httpSymbolFileFactory)
-            {
-                _httpClient = httpClient;
-                _httpSymbolFileFactory = httpSymbolFileFactory;
-            }
-
-            // Throws ArgumentException if url is null or empty
-            public virtual IHttpSymbolStore Create(string url) => new HttpSymbolStore(
-                _httpClient, _httpSymbolFileFactory, url);
-        }
-
         public static bool IsHttpStore(string pathElement) =>
             Uri.TryCreate(pathElement, UriKind.Absolute, out Uri uriResult) &&
             (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
 
+        readonly IFileSystem _fileSystem;
         readonly HttpClient _httpClient;
-        readonly HttpFileReference.Factory _httpSymbolFileFactory;
 
         [JsonProperty("Url")]
-        string _url;
+        readonly string _url;
 
-        HttpSymbolStore(HttpClient httpClient,
-                        HttpFileReference.Factory httpSymbolFileFactory, string url)
+        public HttpSymbolStore(IFileSystem fileSystem, HttpClient httpClient, string url)
             : base(false, false)
         {
             if (string.IsNullOrEmpty(url))
@@ -71,15 +56,16 @@ namespace SymbolStores
                     Strings.FailedToCreateStructuredStore(Strings.UrlNullOrEmpty));
             }
 
+            _fileSystem = fileSystem;
             _httpClient = httpClient;
-            _httpSymbolFileFactory = httpSymbolFileFactory;
             _url = url;
         }
 
-        #region SymbolStoreBase functions
+#region SymbolStoreBase functions
 
-        public override async Task<IFileReference> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter log)
+        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+                                                                 bool isDebugInfoFile,
+                                                                 TextWriter log)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -130,8 +116,7 @@ namespace SymbolStores
                     if (!response.IsSuccessStatusCode)
                     {
                         Trace.WriteLine(Strings.FileNotFoundInHttpStore(
-                                            fileUrl, (int)response.StatusCode,
-                                            response.ReasonPhrase));
+                            fileUrl, (int)response.StatusCode, response.ReasonPhrase));
                         await log.WriteLineAsync(Strings.FileNotFoundInHttpStore(
                             fileUrl, (int)response.StatusCode, response.ReasonPhrase));
                         return null;
@@ -140,7 +125,8 @@ namespace SymbolStores
                     {
                         Trace.WriteLine(Strings.FileFound(fileUrl));
                         await log.WriteLineAsync(Strings.FileFound(fileUrl));
-                        return _httpSymbolFileFactory.Create(fileUrl);
+
+                        return new HttpFileReference(_fileSystem, _httpClient, fileUrl);
                     }
                 }
             }

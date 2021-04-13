@@ -35,22 +35,17 @@ namespace SymbolStores.Tests
         ISymbolStore storeA;
         ISymbolStore storeB;
         SymbolStoreSequence storeSequence;
-        StructuredSymbolStore.Factory structuredStoreFactory;
-        SymbolStoreSequence.Factory storeSequenceFactory;
 
         public override void SetUp()
         {
             base.SetUp();
 
-            structuredStoreFactory = new StructuredSymbolStore.Factory(fakeFileSystem,
-                fileReferenceFactory);
-            storeSequenceFactory = new SymbolStoreSequence.Factory(fakeBinaryFileUtil);
-            storeSequence = storeSequenceFactory.Create();
+            storeSequence = new SymbolStoreSequence(fakeBinaryFileUtil);
 
-            cacheA = structuredStoreFactory.Create(CACHE_A_PATH, true);
-            cacheB = structuredStoreFactory.Create(CACHE_B_PATH, true);
-            storeA = structuredStoreFactory.Create(STORE_A_PATH);
-            storeB = structuredStoreFactory.Create(STORE_B_PATH);
+            cacheA = new StructuredSymbolStore(fakeFileSystem, CACHE_A_PATH, isCache: true);
+            cacheB = new StructuredSymbolStore(fakeFileSystem, CACHE_B_PATH, isCache: true);
+            storeA = new StructuredSymbolStore(fakeFileSystem, STORE_A_PATH);
+            storeB = new StructuredSymbolStore(fakeFileSystem, STORE_B_PATH);
         }
 
         [Test]
@@ -61,8 +56,8 @@ namespace SymbolStores.Tests
 
             var fileReference = await storeSequence.FindFileAsync(FILENAME, BUILD_ID);
 
-            Assert.AreEqual(
-                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -75,8 +70,8 @@ namespace SymbolStores.Tests
             var fileReference = await storeSequence.FindFileAsync(FILENAME, BUILD_ID);
 
             Assert.NotNull(await cacheA.FindFileAsync(FILENAME, BUILD_ID));
-            Assert.AreEqual(
-                (await cacheA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await cacheA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -89,8 +84,8 @@ namespace SymbolStores.Tests
             var fileReference = await storeSequence.FindFileAsync(FILENAME, BUILD_ID);
 
             Assert.Null(await cacheA.FindFileAsync(FILENAME, BUILD_ID));
-            Assert.AreEqual(
-                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -106,8 +101,8 @@ namespace SymbolStores.Tests
 
             Assert.NotNull(await cacheB.FindFileAsync(FILENAME, BUILD_ID));
             Assert.Null(await cacheA.FindFileAsync(FILENAME, BUILD_ID));
-            Assert.AreEqual(
-                (await cacheB.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await cacheB.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -118,8 +113,8 @@ namespace SymbolStores.Tests
 
             var fileReference = await storeSequence.FindFileAsync(FILENAME, BUILD_ID);
 
-            Assert.AreEqual(
-                (await cacheA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await cacheA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -132,8 +127,8 @@ namespace SymbolStores.Tests
             var fileReference = await storeSequence.FindFileAsync(FILENAME, BUILD_ID);
 
             Assert.Null(await cacheA.FindFileAsync(FILENAME, BUILD_ID));
-            Assert.AreEqual(
-                (await cacheB.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await cacheB.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -169,8 +164,8 @@ namespace SymbolStores.Tests
 
             var fileReference = await storeSequence.FindFileAsync(FILENAME, BUILD_ID);
 
-            Assert.AreEqual(
-                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -179,7 +174,7 @@ namespace SymbolStores.Tests
             string storeAPath = Path.Combine(STORE_A_PATH, FILENAME, BUILD_ID.ToString(), FILENAME);
 
             fakeBuildIdWriter.WriteBuildId(storeAPath, BUILD_ID);
-            sourceSymbolFile = fileReferenceFactory.Create(storeAPath);
+            sourceSymbolFile = new FileReference(fakeFileSystem, storeAPath);
             fakeBinaryFileUtil.AddVerificationFailureFor(BUILD_ID, "Symbol verification error");
 
             storeSequence.AddStore(cacheA);
@@ -187,7 +182,8 @@ namespace SymbolStores.Tests
 
             var logWriter = new StringWriter();
 
-            var fileReference = await storeSequence.FindFileAsync(FILENAME, BUILD_ID, true, logWriter);
+            var fileReference =
+                await storeSequence.FindFileAsync(FILENAME, BUILD_ID, true, logWriter);
 
             Assert.That(fileReference, Is.Null);
         }
@@ -200,12 +196,12 @@ namespace SymbolStores.Tests
             // with the correct file and return a reference to it.
             string storeAPath = Path.Combine(STORE_A_PATH, FILENAME, BUILD_ID.ToString(), FILENAME);
             fakeBuildIdWriter.WriteBuildId(storeAPath, BUILD_ID);
-            sourceSymbolFile = fileReferenceFactory.Create(storeAPath);
+            sourceSymbolFile = new FileReference(fakeFileSystem, storeAPath);
 
             BuildId badBuildId = new BuildId("BAAD");
             string cacheAPath = Path.Combine(CACHE_A_PATH, FILENAME, BUILD_ID.ToString(), FILENAME);
             fakeBuildIdWriter.WriteBuildId(cacheAPath, badBuildId);
-            sourceSymbolFile = fileReferenceFactory.Create(cacheAPath);
+            sourceSymbolFile = new FileReference(fakeFileSystem, cacheAPath);
 
             fakeBinaryFileUtil.AddVerificationFailureFor(badBuildId, "Symbol verification error");
 
@@ -214,20 +210,18 @@ namespace SymbolStores.Tests
 
             var logWriter = new StringWriter();
 
-            var fileReference = await storeSequence.FindFileAsync(FILENAME, BUILD_ID, true, logWriter);
+            var fileReference =
+                await storeSequence.FindFileAsync(FILENAME, BUILD_ID, true, logWriter);
 
-            Assert.That(
-                fileReference.Location,
-                Is.EqualTo((await cacheA.FindFileAsync(FILENAME, BUILD_ID)).Location));
+            Assert.That(fileReference.Location,
+                        Is.EqualTo((await cacheA.FindFileAsync(FILENAME, BUILD_ID)).Location));
 
-            Assert.That(
-                await fakeBinaryFileUtil.ReadBuildIdAsync(
-                    (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location),
-                Is.EqualTo(BUILD_ID));
-            Assert.That(
-                await fakeBinaryFileUtil.ReadBuildIdAsync(
-                    (await cacheA.FindFileAsync(FILENAME, BUILD_ID)).Location),
-                Is.EqualTo(BUILD_ID));
+            Assert.That(await fakeBinaryFileUtil.ReadBuildIdAsync(
+                            (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location),
+                        Is.EqualTo(BUILD_ID));
+            Assert.That(await fakeBinaryFileUtil.ReadBuildIdAsync(
+                            (await cacheA.FindFileAsync(FILENAME, BUILD_ID)).Location),
+                        Is.EqualTo(BUILD_ID));
         }
 
         [Test]
@@ -235,7 +229,7 @@ namespace SymbolStores.Tests
         {
             storeSequence.AddStore(storeA);
             storeSequence.AddStore(cacheA);
-            var subStoreSequence = storeSequenceFactory.Create();
+            var subStoreSequence = new SymbolStoreSequence(fakeBinaryFileUtil);
             subStoreSequence.AddStore(storeB);
             storeSequence.AddStore(subStoreSequence);
 
@@ -247,8 +241,8 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_NoStores()
         {
-            var sequenceA = storeSequenceFactory.Create();
-            var sequenceB = storeSequenceFactory.Create();
+            var sequenceA = new SymbolStoreSequence(fakeBinaryFileUtil);
+            var sequenceB = new SymbolStoreSequence(fakeBinaryFileUtil);
 
             Assert.True(sequenceA.DeepEquals(sequenceB));
             Assert.True(sequenceB.DeepEquals(sequenceA));
@@ -257,10 +251,10 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_WithStores()
         {
-            var sequenceA = storeSequenceFactory.Create();
+            var sequenceA = new SymbolStoreSequence(fakeBinaryFileUtil);
             sequenceA.AddStore(storeA);
             sequenceA.AddStore(storeB);
-            var sequenceB = storeSequenceFactory.Create();
+            var sequenceB = new SymbolStoreSequence(fakeBinaryFileUtil);
             sequenceB.AddStore(storeA);
             sequenceB.AddStore(storeB);
 
@@ -271,9 +265,9 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_StoresNotEquals()
         {
-            var sequenceA = storeSequenceFactory.Create();
+            var sequenceA = new SymbolStoreSequence(fakeBinaryFileUtil);
             sequenceA.AddStore(storeA);
-            var sequenceB = storeSequenceFactory.Create();
+            var sequenceB = new SymbolStoreSequence(fakeBinaryFileUtil);
             sequenceB.AddStore(storeB);
 
             Assert.False(sequenceA.DeepEquals(sequenceB));
@@ -283,17 +277,17 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_DifferentLengths()
         {
-            var sequenceA = storeSequenceFactory.Create();
+            var sequenceA = new SymbolStoreSequence(fakeBinaryFileUtil);
             sequenceA.AddStore(storeA);
             sequenceA.AddStore(storeB);
-            var sequenceB = storeSequenceFactory.Create();
+            var sequenceB = new SymbolStoreSequence(fakeBinaryFileUtil);
             sequenceB.AddStore(storeA);
 
             Assert.False(sequenceA.DeepEquals(sequenceB));
             Assert.False(sequenceB.DeepEquals(sequenceA));
         }
 
-        #region SymbolStoreBaseTests functions
+#region SymbolStoreBaseTests functions
 
         protected override ISymbolStore GetEmptyStore()
         {
@@ -308,6 +302,6 @@ namespace SymbolStores.Tests
             return storeSequence;
         }
 
-        #endregion
+#endregion
     }
 }

@@ -28,12 +28,11 @@ namespace SymbolStores.Tests
     {
         const string SOURCE_URL = @"http://example.com/foo";
         const string DEST_PATH = @"C:\dest\foo";
-        static byte[] CONTENTS = new byte[] { 0x12, 0x34 };
+        static readonly byte[] CONTENTS = new byte[] { 0x12, 0x34 };
 
         MockFileSystem fakeFileSystem;
         FakeHttpMessageHandler fakeHttpMessageHandler;
         HttpClient httpClient;
-        HttpFileReference.Factory httpFileReferenceFactory;
 
         [SetUp]
         public void SetUp()
@@ -41,21 +40,20 @@ namespace SymbolStores.Tests
             fakeFileSystem = new MockFileSystem();
             fakeHttpMessageHandler = new FakeHttpMessageHandler();
             httpClient = new HttpClient(fakeHttpMessageHandler);
-            httpFileReferenceFactory = new HttpFileReference.Factory(
-                fakeFileSystem, httpClient);
         }
 
         [Test]
         public void Create_NullFilepath()
         {
-            Assert.Throws<ArgumentNullException>(() => httpFileReferenceFactory.Create(null));
+            Assert.Throws<ArgumentNullException>(
+                () => new HttpFileReference(fakeFileSystem, httpClient, null));
         }
 
         [Test]
         public async Task CopyToAsync()
         {
             fakeHttpMessageHandler.ContentMap[new Uri(SOURCE_URL)] = CONTENTS;
-            var fileReference = httpFileReferenceFactory.Create(SOURCE_URL);
+            var fileReference = new HttpFileReference(fakeFileSystem, httpClient, SOURCE_URL);
 
             await fileReference.CopyToAsync(DEST_PATH);
 
@@ -68,7 +66,7 @@ namespace SymbolStores.Tests
             var DEST_CONTENTS = new byte[] { 0x56, 0x78 };
             fakeHttpMessageHandler.ContentMap[new Uri(SOURCE_URL)] = CONTENTS;
             fakeFileSystem.AddFile(DEST_PATH, new MockFileData(DEST_CONTENTS));
-            var fileReference = httpFileReferenceFactory.Create(SOURCE_URL);
+            var fileReference = new HttpFileReference(fakeFileSystem, httpClient, SOURCE_URL);
 
             await fileReference.CopyToAsync(DEST_PATH);
             Assert.AreEqual(CONTENTS, fakeFileSystem.GetFile(DEST_PATH).Contents);
@@ -77,22 +75,19 @@ namespace SymbolStores.Tests
         [Test]
         public void CopyTo_HttpRequestException()
         {
-            fakeHttpMessageHandler.ExceptionMap[new Uri(SOURCE_URL)] =
-                new HttpRequestException();
+            fakeHttpMessageHandler.ExceptionMap[new Uri(SOURCE_URL)] = new HttpRequestException();
             fakeFileSystem.AddFile(DEST_PATH, new MockFileData(CONTENTS));
-            var fileReference = httpFileReferenceFactory.Create(SOURCE_URL);
+            var fileReference = new HttpFileReference(fakeFileSystem, httpClient, SOURCE_URL);
 
-            Assert.ThrowsAsync<SymbolStoreException>(
-                () => fileReference.CopyToAsync(DEST_PATH));
+            Assert.ThrowsAsync<SymbolStoreException>(() => fileReference.CopyToAsync(DEST_PATH));
         }
 
         [Test]
         public void CopyTo_NullDestFilepath()
         {
-            var fileReference = httpFileReferenceFactory.Create(SOURCE_URL);
+            var fileReference = new HttpFileReference(fakeFileSystem, httpClient, SOURCE_URL);
 
-            Assert.ThrowsAsync<ArgumentNullException>(
-                () => fileReference.CopyToAsync(null));
+            Assert.ThrowsAsync<ArgumentNullException>(() => fileReference.CopyToAsync(null));
         }
     }
 }

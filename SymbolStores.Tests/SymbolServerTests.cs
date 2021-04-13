@@ -34,29 +34,24 @@ namespace SymbolStores.Tests
         ISymbolStore storeB;
         ISymbolStore storeC;
         ISymbolStore invalidStore;
-        SymbolServer.Factory symbolServerFactory;
         SymbolServer symbolServer;
 
         public override void SetUp()
         {
             base.SetUp();
 
-            var structuredStoreFactory = new StructuredSymbolStore.Factory(fakeFileSystem,
-                fileReferenceFactory);
-            symbolServerFactory = new SymbolServer.Factory();
-
-            storeA = structuredStoreFactory.Create(STORE_A_PATH);
-            storeB = structuredStoreFactory.Create(STORE_B_PATH);
-            storeC = structuredStoreFactory.Create(STORE_C_PATH);
-            invalidStore = structuredStoreFactory.Create(INVALID_PATH);
-            symbolServer = symbolServerFactory.Create();
+            storeA = new StructuredSymbolStore(fakeFileSystem, STORE_A_PATH);
+            storeB = new StructuredSymbolStore(fakeFileSystem, STORE_B_PATH);
+            storeC = new StructuredSymbolStore(fakeFileSystem, STORE_C_PATH);
+            invalidStore = new StructuredSymbolStore(fakeFileSystem, INVALID_PATH);
+            symbolServer = new SymbolServer();
         }
 
         [TestCase(true)]
         [TestCase(false)]
         public void Constructor_IsCache(bool isCache)
         {
-            var store = symbolServerFactory.Create(isCache);
+            var store = new SymbolServer(isCache);
             Assert.AreEqual(isCache, store.IsCache);
         }
 
@@ -68,8 +63,8 @@ namespace SymbolStores.Tests
 
             var fileReference = await symbolServer.FindFileAsync(FILENAME, BUILD_ID);
 
-            Assert.AreEqual(
-                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -82,8 +77,8 @@ namespace SymbolStores.Tests
 
             var fileReference = await symbolServer.FindFileAsync(FILENAME, BUILD_ID);
 
-            Assert.AreEqual(
-                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -98,8 +93,8 @@ namespace SymbolStores.Tests
 
             Assert.NotNull(await storeA.FindFileAsync(FILENAME, BUILD_ID));
             Assert.NotNull(await storeB.FindFileAsync(FILENAME, BUILD_ID));
-            Assert.AreEqual(
-                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -113,8 +108,8 @@ namespace SymbolStores.Tests
             var fileReference = await symbolServer.FindFileAsync(FILENAME, BUILD_ID);
 
             Assert.NotNull(await storeA.FindFileAsync(FILENAME, BUILD_ID));
-            Assert.AreEqual(
-                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -142,12 +137,12 @@ namespace SymbolStores.Tests
         {
             symbolServer.AddStore(storeA);
 
-            var fileReference = await symbolServer.AddFileAsync(
-                sourceSymbolFile, FILENAME, BUILD_ID);
+            var fileReference =
+                await symbolServer.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
 
             Assert.NotNull(await storeA.FindFileAsync(FILENAME, BUILD_ID));
-            Assert.AreEqual(
-                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
@@ -157,21 +152,21 @@ namespace SymbolStores.Tests
             symbolServer.AddStore(storeB);
             symbolServer.AddStore(storeC);
 
-            var fileReference = await symbolServer.AddFileAsync(
-                sourceSymbolFile, FILENAME, BUILD_ID);
+            var fileReference =
+                await symbolServer.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
 
             Assert.NotNull(await storeA.FindFileAsync(FILENAME, BUILD_ID));
             Assert.NotNull(await storeB.FindFileAsync(FILENAME, BUILD_ID));
             Assert.NotNull(await storeC.FindFileAsync(FILENAME, BUILD_ID));
-            Assert.AreEqual(
-                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
         public void AddFile_NoStores()
         {
-            Assert.ThrowsAsync<SymbolStoreException>(() =>
-                symbolServer.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID));
+            Assert.ThrowsAsync<SymbolStoreException>(
+                () => symbolServer.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID));
         }
 
         [Test]
@@ -181,32 +176,32 @@ namespace SymbolStores.Tests
             symbolServer.AddStore(invalidStore);
             symbolServer.AddStore(storeC);
 
-            var fileReference = await symbolServer.AddFileAsync(
-                sourceSymbolFile, FILENAME, BUILD_ID);
+            var fileReference =
+                await symbolServer.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
 
             Assert.NotNull(await storeA.FindFileAsync(FILENAME, BUILD_ID));
             Assert.NotNull(await storeC.FindFileAsync(FILENAME, BUILD_ID));
-            Assert.AreEqual(
-                (await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location, fileReference.Location);
+            Assert.AreEqual((await storeA.FindFileAsync(FILENAME, BUILD_ID)).Location,
+                            fileReference.Location);
         }
 
         [Test]
         public void GetAllStores()
         {
             symbolServer.AddStore(storeA);
-            var subServer = symbolServerFactory.Create();
+            var subServer = new SymbolServer();
             subServer.AddStore(storeB);
             symbolServer.AddStore(subServer);
 
             CollectionAssert.AreEqual(new[] { symbolServer, storeA, subServer, storeB },
-                symbolServer.GetAllStores());
+                                      symbolServer.GetAllStores());
         }
 
         [Test]
         public void DeepEquals_NoStores()
         {
-            var serverA = symbolServerFactory.Create();
-            var serverB = symbolServerFactory.Create();
+            var serverA = new SymbolServer();
+            var serverB = new SymbolServer();
 
             Assert.True(serverA.DeepEquals(serverB));
             Assert.True(serverB.DeepEquals(serverA));
@@ -215,10 +210,10 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_WithStores()
         {
-            var serverA = symbolServerFactory.Create();
+            var serverA = new SymbolServer();
             serverA.AddStore(storeA);
             serverA.AddStore(storeB);
-            var serverB = symbolServerFactory.Create();
+            var serverB = new SymbolServer();
             serverB.AddStore(storeA);
             serverB.AddStore(storeB);
 
@@ -229,10 +224,10 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_DifferentOrder()
         {
-            var serverA = symbolServerFactory.Create();
+            var serverA = new SymbolServer();
             serverA.AddStore(storeA);
             serverA.AddStore(storeB);
-            var serverB = symbolServerFactory.Create();
+            var serverB = new SymbolServer();
             serverB.AddStore(storeB);
             serverB.AddStore(storeA);
 
@@ -243,9 +238,9 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_StoresNotEqual()
         {
-            var serverA = symbolServerFactory.Create();
+            var serverA = new SymbolServer();
             serverA.AddStore(storeA);
-            var serverB = symbolServerFactory.Create();
+            var serverB = new SymbolServer();
             serverB.AddStore(storeB);
 
             Assert.False(serverA.DeepEquals(serverB));
@@ -255,8 +250,8 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_IsCacheMismatch()
         {
-            var serverA = symbolServerFactory.Create(false);
-            var serverB = symbolServerFactory.Create(true);
+            var serverA = new SymbolServer();
+            var serverB = new SymbolServer(isCache: true);
 
             Assert.False(serverA.DeepEquals(serverB));
             Assert.False(serverB.DeepEquals(serverA));
@@ -265,17 +260,17 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_DifferentLengths()
         {
-            var serverA = symbolServerFactory.Create();
+            var serverA = new SymbolServer();
             serverA.AddStore(storeA);
             serverA.AddStore(storeB);
-            var serverB = symbolServerFactory.Create();
+            var serverB = new SymbolServer();
             serverB.AddStore(storeA);
 
             Assert.False(serverA.DeepEquals(serverB));
             Assert.False(serverB.DeepEquals(serverA));
         }
 
-        #region SymbolStoreBaseTests functions
+#region SymbolStoreBaseTests functions
 
         protected override ISymbolStore GetEmptyStore()
         {
@@ -290,6 +285,6 @@ namespace SymbolStores.Tests
             return symbolServer;
         }
 
-        #endregion
+#endregion
     }
 }
