@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using DebuggerApi;
+using YetiCommon.PerformanceTracing;
 using YetiVSI.DebugEngine;
 using YetiVSI.Shared.Metrics;
 
@@ -80,42 +81,99 @@ namespace YetiVSI.Metrics
         public class StepsRecorder
         {
             readonly List<ExpressionEvaluationStepBatchParams> _steps;
+            readonly ITimeSource _timeSource;
 
-            public StepsRecorder()
+            public StepsRecorder(ITimeSource timeSource)
             {
                 _steps = new List<ExpressionEvaluationStepBatchParams>();
+                _timeSource = timeSource;
             }
 
             protected internal List<ExpressionEvaluationStepBatchParams> GetStepsList() => _steps;
 
-            // Add step for LLDB and LLDB_VARIABLE_PATH engines.
-            public void Add(ExpressionEvaluationEngine engine, LLDBErrorCode errorCode,
-                            long durationUs)
+            public Step NewStep(ExpressionEvaluationEngine engine) =>
+                new Step(this, _timeSource, engine);
+
+            protected internal void AddStep(ExpressionEvaluationStepBatchParams stepParams) =>
+                _steps.Add(stepParams);
+
+            public class Step : IDisposable
             {
-                if (engine != ExpressionEvaluationEngine.LLDB &&
-                    engine != ExpressionEvaluationEngine.LLDB_VARIABLE_PATH)
+                readonly StepsRecorder _stepsRecorder;
+                readonly ITimeSource _timeSource;
+                readonly ExpressionEvaluationEngine _engine;
+                readonly long _startTicks;
+
+                bool _finalized;
+
+                internal Step(StepsRecorder stepsRecorder, ITimeSource timeSource,
+                              ExpressionEvaluationEngine engine)
                 {
-                    throw new ArgumentException(
-                        $"Engine {engine} is incompatible with LLDBErrorCode ({errorCode}). "+
-                        "Check the parameters for the invoked method.");
+                    _startTicks = timeSource.GetTimestampTicks();
+                    _stepsRecorder = stepsRecorder;
+                    _timeSource = timeSource;
+                    _engine = engine;
+                    _finalized = false;
                 }
 
-                _steps.Add(new ExpressionEvaluationStepBatchParams(engine, errorCode, durationUs));
-            }
-
-            // Add step for LLDB_EVAL engine.
-            public void Add(ExpressionEvaluationEngine engine, LldbEvalErrorCode lldbEvalErrorCode,
-                            long durationUs)
-            {
-                if (engine != ExpressionEvaluationEngine.LLDB_EVAL)
+                // Step finalization for LLDB and LLDB_VARIABLE_PATH engines.
+                public void Finalize(LLDBErrorCode lldbErrorCode)
                 {
-                    throw new ArgumentException(
-                        $"Engine {engine} is incompatible with LldbEvalErrorCode" +
-                        $" ({lldbEvalErrorCode}). Check the parameters for the invoked method.");
+                    long endTicks = _timeSource.GetTimestampTicks();
+
+                    if (_engine != ExpressionEvaluationEngine.LLDB && _engine !=
+                        ExpressionEvaluationEngine.LLDB_VARIABLE_PATH)
+                    {
+                        throw new ArgumentException(
+                            $"Engine {_engine} is incompatible with LLDBErrorCode " +
+                            $"({lldbErrorCode}). Check the parameters for the invoked method.");
+                    }
+
+                    if (_finalized)
+                    {
+                        throw new InvalidOperationException("Object is already finalized");
+                    }
+
+                    var batchParams = new ExpressionEvaluationStepBatchParams(
+                        _engine, lldbErrorCode, _timeSource.GetDurationUs(_startTicks, endTicks));
+                    _stepsRecorder.AddStep(batchParams);
+
+                    _finalized = true;
                 }
 
-                _steps.Add(
-                    new ExpressionEvaluationStepBatchParams(engine, lldbEvalErrorCode, durationUs));
+                // Step finalization for LLDB_EVAL engine.
+                public void Finalize(LldbEvalErrorCode lldbEvalErrorCode)
+                {
+                    long endTicks = _timeSource.GetTimestampTicks();
+
+                    if (_engine != ExpressionEvaluationEngine.LLDB_EVAL)
+                    {
+                        throw new ArgumentException(
+                            $"Engine {_engine} is incompatible with LldbEvalErrorCode (" +
+                            $"{lldbEvalErrorCode}). Check the parameters for the invoked method.");
+                    }
+
+                    if (_finalized)
+                    {
+                        throw new InvalidOperationException("Object is already finalized");
+                    }
+
+                    var batchParams = new ExpressionEvaluationStepBatchParams(
+                        _engine, lldbEvalErrorCode,
+                        _timeSource.GetDurationUs(_startTicks, endTicks));
+                    _stepsRecorder.AddStep(batchParams);
+
+                    _finalized = true;
+                }
+
+                public void Dispose()
+                {
+                    if (!_finalized)
+                    {
+                        throw new InvalidOperationException(
+                            "Finalize() must be called before disposing the object");
+                    }
+                }
             }
         }
     }

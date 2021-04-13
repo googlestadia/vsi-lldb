@@ -16,6 +16,8 @@ using System;
 using DebuggerApi;
 using NSubstitute;
 using NUnit.Framework;
+using YetiCommon.PerformanceTracing;
+using YetiCommon.Tests.PerformanceTracing.TestSupport;
 using YetiVSI.DebugEngine;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
@@ -25,6 +27,7 @@ using ExpressionEvaluation =
 using ExpressionEvaluationStep =
     YetiVSI.Shared.Metrics.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
     ExpressionEvaluationStep;
+using Step = YetiVSI.Metrics.ExpressionEvaluationRecorder.StepsRecorder.Step;
 
 namespace YetiVSI.Test.Metrics
 {
@@ -39,6 +42,7 @@ namespace YetiVSI.Test.Metrics
         IMetrics _metrics;
         EventSchedulerFake _eventScheduler;
         TimerFake _timer;
+        ITimeSource _timeSource;
 
         // Object under test
         ExpressionEvaluationRecorder _expressionEvaluationRecorder;
@@ -52,6 +56,7 @@ namespace YetiVSI.Test.Metrics
             eventSchedulerFactory.Create(Arg.Do<System.Action>(a => _eventScheduler.Callback = a))
                 .Returns(_eventScheduler);
             _timer = new TimerFake();
+            _timeSource = new MonotonicTimeSource();
             _batchEventAggregator =
                 new BatchEventAggregator<ExpressionEvaluationBatch, ExpressionEvaluationBatchParams,
                     ExpressionEvaluationBatchSummary>(_minimumBatchSeparationMilliseconds,
@@ -67,21 +72,17 @@ namespace YetiVSI.Test.Metrics
             const ExpressionEvaluationStrategy strategySource = ExpressionEvaluationStrategy.LLDB;
             const ExpressionEvaluationContext contextSource = ExpressionEvaluationContext.FRAME;
 
-            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder();
+            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder(_timeSource);
 
-            const ExpressionEvaluationEngine firstStepEngineSource =
-                ExpressionEvaluationEngine.LLDB_VARIABLE_PATH;
-            const LLDBErrorCode firstStepEngineResultSource = LLDBErrorCode.ERROR;
-            const long firstStepDurationUs = 400;
-            stepsRecorder.Add(firstStepEngineSource, firstStepEngineResultSource,
-                              firstStepDurationUs);
+            using (Step step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB_VARIABLE_PATH))
+            {
+                step.Finalize(LLDBErrorCode.ERROR);
+            }
 
-            const ExpressionEvaluationEngine secondStepEngineSource =
-                ExpressionEvaluationEngine.LLDB;
-            const LLDBErrorCode secondStepEngineResultSource = LLDBErrorCode.OK;
-            const long secondStepDurationUs = 16500;
-            stepsRecorder.Add(secondStepEngineSource, secondStepEngineResultSource,
-                              secondStepDurationUs);
+            using (Step step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB))
+            {
+                step.Finalize(LLDBErrorCode.OK);
+            }
 
             const long startTimestampUs = 750;
             const long endTimestampUs = 21562;
@@ -115,7 +116,6 @@ namespace YetiVSI.Test.Metrics
                 Assert.Null(received.NatvisValueId);
             });
 
-
             const ExpressionEvaluationStep.Types.Engine firstStepEngineExpected =
                 ExpressionEvaluationStep.Types.Engine.LldbVariablePath;
             const ExpressionEvaluationStep.Types.EngineResult firstStepEngineResultExpected =
@@ -131,10 +131,10 @@ namespace YetiVSI.Test.Metrics
             {
                 Assert.AreEqual(firstStepEngineExpected, firstStep.Engine);
                 Assert.AreEqual(firstStepEngineResultExpected, firstStep.Result);
-                Assert.AreEqual(firstStepDurationUs, firstStep.DurationMicroseconds);
+                Assert.AreEqual(1, firstStep.DurationMicroseconds);
                 Assert.AreEqual(secondStepEngineExpected, secondStep.Engine);
                 Assert.AreEqual(secondStepEngineResultExpected, secondStep.Result);
-                Assert.AreEqual(secondStepDurationUs, secondStep.DurationMicroseconds);
+                Assert.AreEqual(1, secondStep.DurationMicroseconds);
             });
 
             _metrics.Received(1)
@@ -153,10 +153,12 @@ namespace YetiVSI.Test.Metrics
                 ExpressionEvaluationStrategy.LLDB_EVAL;
             const ExpressionEvaluationContext contextSource = ExpressionEvaluationContext.VALUE;
 
-            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder();
-            const long stepDurationUs = 400;
-            stepsRecorder.Add(ExpressionEvaluationEngine.LLDB_EVAL, LldbEvalErrorCode.Ok,
-                              stepDurationUs);
+            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder(_timeSource);
+
+            using (Step step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB_EVAL))
+            {
+                step.Finalize(LldbEvalErrorCode.Ok);
+            }
 
             const long startTimestampUs = 750;
             const long endTimestampUs = 21562;
@@ -206,12 +208,12 @@ namespace YetiVSI.Test.Metrics
             const ExpressionEvaluationStep.Types.EngineResult stepEngineResultExpected =
                 ExpressionEvaluationStep.Types.EngineResult.LldbEvalOk;
 
-            ExpressionEvaluationStep step = received.EvaluationSteps[0];
+            ExpressionEvaluationStep receivedEvaluationStep = received.EvaluationSteps[0];
             Assert.Multiple(() =>
             {
-                Assert.AreEqual(stepEngineExpected, step.Engine);
-                Assert.AreEqual(stepEngineResultExpected, step.Result);
-                Assert.AreEqual(stepDurationUs, step.DurationMicroseconds);
+                Assert.AreEqual(stepEngineExpected, receivedEvaluationStep.Engine);
+                Assert.AreEqual(stepEngineResultExpected, receivedEvaluationStep.Result);
+                Assert.AreEqual(1, receivedEvaluationStep.DurationMicroseconds);
             });
 
             _metrics.Received(1)
@@ -226,15 +228,14 @@ namespace YetiVSI.Test.Metrics
         [Test]
         public void EmptyNatvisValueIdExceptionTest()
         {
-            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder();
+            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder(_timeSource);
 
             Assert.Throws<ArgumentException>(() =>
             {
                 _expressionEvaluationRecorder.Record(
                     ExpressionEvaluationStrategy.LLDB,
                     ExpressionEvaluationContext.VALUE,
-                    stepsRecorder,
-                    startTimestampUs: 750,
+                    stepsRecorder, startTimestampUs: 750,
                     endTimestampUs: 21562);
             });
         }
@@ -243,25 +244,19 @@ namespace YetiVSI.Test.Metrics
         [TestCase(ExpressionEvaluationEngine.LLDB_VARIABLE_PATH)]
         public void IncompatibleLldbResultExceptionTest(ExpressionEvaluationEngine engine)
         {
-            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder();
+            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder(_timeSource);
 
-            Assert.Throws<ArgumentException>(() =>
-            {
-                stepsRecorder.Add(
-                    engine, LldbEvalErrorCode.Ok, durationUs: 400);
-            });
+            Step step = stepsRecorder.NewStep(engine);
+            Assert.Throws<ArgumentException>(() => { step.Finalize(LldbEvalErrorCode.Ok); });
         }
 
         [Test]
         public void IncompatibleLldbEvalResultExceptionTest()
         {
-            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder();
+            var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder(_timeSource);
 
-            Assert.Throws<ArgumentException>(() =>
-            {
-                stepsRecorder.Add(
-                    ExpressionEvaluationEngine.LLDB_EVAL, LLDBErrorCode.OK, durationUs: 400);
-            });
+            Step step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB_EVAL);
+            Assert.Throws<ArgumentException>(() => { step.Finalize(LLDBErrorCode.OK); });
         }
     }
 }
