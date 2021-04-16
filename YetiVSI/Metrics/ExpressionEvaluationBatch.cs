@@ -218,6 +218,13 @@ namespace YetiVSI.Metrics
                     case DebuggerApi.LldbEvalErrorCode.NotImplemented:
                         return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
                             .ExpressionEvaluationStep.Types.EngineResult.LldbEvalNotImplemented;
+
+                    default:
+                        // TODO: Currently error code from lldb-eval can be -1 (and
+                        // potentially other values too), map them to "Unknown". This should
+                        // be fixed on lldb-eval side.
+                        return VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types
+                            .ExpressionEvaluationStep.Types.EngineResult.LldbEvalUnknown;
                 }
             }
 

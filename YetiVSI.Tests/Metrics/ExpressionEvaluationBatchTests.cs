@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using NUnit.Framework;
-using YetiVSI.Metrics;
-using System.Collections.Generic;
 using DebuggerApi;
+using NUnit.Framework;
+using System;
+using System.Collections.Generic;
 using YetiVSI.DebugEngine;
+using YetiVSI.Metrics;
 using ExpressionEvaluation =
     YetiVSI.Shared.Metrics.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation;
 using ExpressionEvaluationStep =
@@ -351,6 +351,26 @@ namespace YetiVSI.Test.Metrics
 
                 Assert.DoesNotThrow(() => { _expressionEvaluationBatch.GetSummary(); });
             }
+        }
+
+        [TestCase(-1)]
+        [TestCase(-2)]
+        [Test]
+        public void InvalidLldbEvalErrorCodeMappedToUnknownTest(LldbEvalErrorCode code)
+        {
+            var step = new ExpressionEvaluationStepBatchParams(
+                ExpressionEvaluationEngine.LLDB_EVAL, code, 500);
+            var steps = new List<ExpressionEvaluationStepBatchParams> { step };
+            var batchParams = new ExpressionEvaluationBatchParams(
+                ExpressionEvaluationStrategy.LLDB_EVAL, ExpressionEvaluationContext.FRAME,
+                steps, 500, 2000, null);
+
+            _expressionEvaluationBatch.Add(batchParams);
+
+            var summary = _expressionEvaluationBatch.GetSummary();
+            Assert.AreEqual(
+                ExpressionEvaluationStep.Types.EngineResult.LldbEvalUnknown,
+                summary.Proto.ExpressionEvaluations[0].EvaluationSteps[0].Result.Value);
         }
     }
 }
