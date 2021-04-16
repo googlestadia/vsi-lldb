@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using DebuggerApi;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 using System.Diagnostics;
 using System.IO;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Debugger.Interop;
 using System.Threading.Tasks;
-using DebuggerApi;
 using YetiCommon.CastleAspects;
 using YetiCommon.PerformanceTracing;
 using YetiVSI.DebugEngine.Variables;
@@ -172,13 +172,10 @@ namespace YetiVSI.DebugEngine
             {
                 throw new ExpressionEvaluationFailed(err.GetCString());
             }
-
-            uint size;
-            if (!uint.TryParse(value.GetValue(ValueFormat.Default), out size))
+            if (!uint.TryParse(value.GetValue(ValueFormat.Default), out uint size))
             {
                 throw new ExpressionEvaluationFailed("Expression isn't a uint");
             }
-
             return size;
         }
 
@@ -236,32 +233,32 @@ namespace YetiVSI.DebugEngine
                 _expressionEvaluationStrategy ==
                 ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK)
             {
-                RemoteValue remoteValueLldbEval;
-                LldbEvalErrorCode lldbEvalErrorCode;
+                RemoteValue value;
+                LldbEvalErrorCode errorCode;
 
                 using (var step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB_EVAL))
                 {
-                    remoteValueLldbEval = await _frame.EvaluateExpressionLldbEvalAsync(expression);
+                    value = await _frame.EvaluateExpressionLldbEvalAsync(expression);
 
                     // Convert an error code to the enum value.
-                    lldbEvalErrorCode = (LldbEvalErrorCode) Enum.ToObject(
-                        typeof(LldbEvalErrorCode), remoteValueLldbEval.GetError().GetError());
+                    errorCode = (LldbEvalErrorCode)Enum.ToObject(
+                        typeof(LldbEvalErrorCode), value.GetError().GetError());
 
-                    step.Finalize(lldbEvalErrorCode);
+                    step.Finalize(errorCode);
                 }
 
-                if (lldbEvalErrorCode == LldbEvalErrorCode.Ok)
+                if (errorCode == LldbEvalErrorCode.Ok)
                 {
-                    return remoteValueLldbEval;
+                    return value;
                 }
 
-                if (lldbEvalErrorCode == LldbEvalErrorCode.InvalidNumericLiteral ||
-                    lldbEvalErrorCode == LldbEvalErrorCode.InvalidOperandType ||
-                    lldbEvalErrorCode == LldbEvalErrorCode.UndeclaredIdentifier)
+                if (errorCode == LldbEvalErrorCode.InvalidNumericLiteral ||
+                    errorCode == LldbEvalErrorCode.InvalidOperandType ||
+                    errorCode == LldbEvalErrorCode.UndeclaredIdentifier)
                 {
                     // Evaluation failed with a well-known error. Don't fallback to LLDB native
                     // expression evaluator, since it will fail too.
-                    return remoteValueLldbEval;
+                    return value;
                 }
 
                 if (_expressionEvaluationStrategy !=
@@ -269,47 +266,48 @@ namespace YetiVSI.DebugEngine
                 {
                     // Don't fallback to LLDB native expression evaluator if that option is
                     // disabled.
-                    return remoteValueLldbEval;
+                    return value;
                 }
             }
             else
             {
-                RemoteValue remoteValueLldbVariablePath;
-                LLDBErrorCode errorCodeLldbVariablePath;
+                RemoteValue value;
 
                 using (var step =
                     stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB_VARIABLE_PATH))
                 {
-                    remoteValueLldbVariablePath = EvaluateWithLldbVariablePath(expression);
-
-                    errorCodeLldbVariablePath = remoteValueLldbVariablePath != null
-                        ? LLDBErrorCode.OK
-                        : LLDBErrorCode.ERROR;
-
-                    step.Finalize(errorCodeLldbVariablePath);
+                    value = EvaluateWithLldbVariablePath(expression);
+                    step.Finalize(ToErrorCodeLLDB(value));
                 }
 
-                if (errorCodeLldbVariablePath == LLDBErrorCode.OK)
+                if (value != null)
                 {
-                    return remoteValueLldbVariablePath;
+                    return value;
                 }
+
             }
 
-            RemoteValue remoteValueLldb;
-
-            using (var step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB))
+            // Evaluate the expression using LLDB.
             {
-                // Fall back on RemoteFrame::EvaluateExpressionAsync().
-                remoteValueLldb = await _frame.EvaluateExpressionAsync(expression);
+                RemoteValue value;
 
-                LLDBErrorCode lldbErrorCode = remoteValueLldb != null
-                    ? LLDBErrorCode.OK
-                    : LLDBErrorCode.ERROR;
+                using (var step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB))
+                {
+                    value = await _frame.EvaluateExpressionAsync(expression);
+                    step.Finalize(ToErrorCodeLLDB(value));
+                }
 
-                step.Finalize(lldbErrorCode);
+                return value;
             }
 
-            return remoteValueLldb;
+            LLDBErrorCode ToErrorCodeLLDB(RemoteValue v)
+            {
+                if (v == null)
+                {
+                    return LLDBErrorCode.ERROR;
+                }
+                return v.GetError().Success() ? LLDBErrorCode.OK : LLDBErrorCode.ERROR;
+            }
         }
 
         RemoteValue EvaluateWithLldbVariablePath(string expression)
