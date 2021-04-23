@@ -440,12 +440,6 @@
           <Project>{2c7ec26a-f6cb-44a4-ac66-718fbdd0e632}</Project>
           <Name>GgpGrpc</Name>
         </ProjectReference>
-        <ProjectReference Include="$(SolutionDir)\Google.Build.CPPTasks.Yeti\Google.Build.CPPTasks.Yeti.csproj">
-          <Project>{315aea06-6465-47ed-8abe-84297aea2b30}</Project>
-          <Name>Google.Build.CPPTasks.Yeti</Name>
-          <Private>False</Private>
-          <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-        </ProjectReference>
         <ProjectReference Include="$(SolutionDir)MetricsUploader\MetricsUploader.csproj">
           <Project>{534205a2-b924-4618-b3c8-bdd91abe7043}</Project>
           <Name>MetricsUploader</Name>
