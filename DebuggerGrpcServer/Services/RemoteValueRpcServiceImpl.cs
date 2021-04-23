@@ -201,6 +201,19 @@ namespace DebuggerGrpcServer
             return Task.FromResult(response);
         }
 
+        public override Task<CloneResponse> Clone(CloneRequest request, ServerCallContext context)
+        {
+            RemoteValue value = valueStore.GetObject(request.Value.Id);
+            RemoteValue cloneResult = value.Clone();
+            var response = new CloneResponse();
+            if (cloneResult != null)
+            {
+                response.CloneResult =
+                    GrpcFactoryUtils.CreateValue(cloneResult, valueStore.AddObject(cloneResult));
+            }
+            return Task.FromResult(response);
+        }
+
         public override Task<DereferenceResponse> Dereference(
             DereferenceRequest request, ServerCallContext context)
         {

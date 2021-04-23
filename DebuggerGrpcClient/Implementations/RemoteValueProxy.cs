@@ -352,6 +352,20 @@ namespace DebuggerGrpcClient
             return null;
         }
 
+        public RemoteValue Clone()
+        {
+            CloneResponse response = null;
+            if (connection.InvokeRpc(
+                    () => { response = client.Clone(new CloneRequest { Value = grpcSbValue }); }))
+            {
+                if (response.CloneResult != null && response.CloneResult.Id != 0)
+                {
+                    return valueFactory.Create(connection, response.CloneResult);
+                }
+            }
+            return null;
+        }
+
         public RemoteValue Dereference()
         {
             DereferenceResponse response = null;

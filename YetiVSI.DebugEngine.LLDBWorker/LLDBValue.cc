@@ -349,6 +349,26 @@ uint64_t LLDBValue::GetValueAsUnsigned() {
   return value_->GetValueAsUnsigned();
 }
 
+SbValue ^ LLDBValue::Clone() {
+  lldb::SBData data = value_->GetData();
+  lldb::SBError ignore;
+  auto rawData = std::make_unique<uint8_t[]>(data.GetByteSize());
+  data.ReadRawData(ignore, 0, rawData.get(), data.GetByteSize());
+
+  lldb::SBTarget target = value_->GetTarget();
+  lldb::SBType type = value_->GetType();
+
+  // Create value from bytes.
+  lldb::SBData cloneData;
+  cloneData.SetData(
+      ignore, rawData.get(), type.GetByteSize(), target.GetByteOrder(),
+      static_cast<uint8_t>(target.GetAddressByteSize()));
+  lldb::SBValue cloneValue =
+      target.CreateValueFromData(value_->GetName(), cloneData, type).GetStaticValue();
+
+  return gcnew LLDBValue(cloneValue);
+}
+
 SbValue ^ LLDBValue::Dereference() {
   lldb::SBValue dereferenceValue = value_->Dereference();
   if (dereferenceValue.IsValid()) {

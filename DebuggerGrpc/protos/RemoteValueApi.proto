@@ -44,6 +44,8 @@ service RemoteValueRpcService {
   rpc EvaluateExpression(EvaluateExpressionRequest)
       returns (EvaluateExpressionResponse) {
   }
+  rpc Clone(CloneRequest) returns (CloneResponse) {
+  }
   rpc Dereference(DereferenceRequest) returns (DereferenceResponse) {
   }
   rpc GetChildMemberWithName(GetChildMemberWithNameRequest)
@@ -163,6 +165,14 @@ message CreateValueFromAddressRequest {
 
 message CreateValueFromAddressResponse {
   Common.GrpcSbValue expressionResult = 1;
+}
+
+message CloneRequest {
+  Common.GrpcSbValue value = 1;
+}
+
+message CloneResponse {
+  Common.GrpcSbValue cloneResult = 1;
 }
 
 message DereferenceRequest {

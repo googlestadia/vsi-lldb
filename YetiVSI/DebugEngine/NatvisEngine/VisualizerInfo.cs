@@ -29,7 +29,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             NatvisScope = new NatvisScope();
             for (int i = 0; i < name.Args.Count; ++i)
             {
-                NatvisScope.SetScopedName($"$T{i + 1}", name.Args[i].FullyQualifiedName);
+                NatvisScope.AddScopedName($"$T{i + 1}", name.Args[i].FullyQualifiedName);
             }
         }
 

@@ -43,6 +43,7 @@ namespace YetiVSI.Test.TestSupport
         private Dictionary<ulong, RemoteValue> valuesForAddress;
         private RemoteValue addressOf;
         private RemoteValue dereference;
+        private RemoteValue clone;
 
         private RemoteValueFake parent;
 
@@ -63,6 +64,7 @@ namespace YetiVSI.Test.TestSupport
             sbError = new SbErrorStub(true);
             addressOf = null;
             dereference = null;
+            clone = this;
         }
 
         public Debugger.Common.GrpcSbValue GrpcValue => null;
@@ -178,6 +180,16 @@ namespace YetiVSI.Test.TestSupport
         public Task<RemoteValue> EvaluateExpressionLldbEvalAsync(
             string expression, IDictionary<string, RemoteValue> contextVariables = null) =>
             EvaluateExpressionAsync(expression);
+
+        public RemoteValue Clone()
+        {
+            return clone;
+        }
+
+        public void SetClone(RemoteValue value)
+        {
+            clone = value;
+        }
 
         public RemoteValue Dereference()
         {

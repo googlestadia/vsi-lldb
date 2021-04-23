@@ -136,6 +136,8 @@ namespace DebuggerGrpcClient.Implementations
             string expression, IDictionary<string, RemoteValue> scratchVariables = null) =>
             await remoteProxy.EvaluateExpressionLldbEvalAsync(expression, scratchVariables);
 
+        public RemoteValue Clone() => remoteProxy.Clone();
+
         public RemoteValue Dereference() => remoteProxy.Dereference();
 
         public RemoteValue GetValueForExpressionPath(string expressionPath) =>

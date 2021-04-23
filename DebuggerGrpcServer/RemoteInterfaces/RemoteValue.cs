@@ -115,6 +115,11 @@ namespace DebuggerGrpcServer
                                                IDictionary<string, SbValue> contextVariables);
 
         /// <summary>
+        /// Creates a new value with the same data content (copies the value).
+        /// </summary>
+        RemoteValue Clone();
+
+        /// <summary>
         /// Dereferences a variable if it is a pointer.
         /// If the variable is not a pointer, it returns null.
         /// </summary>

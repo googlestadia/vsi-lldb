@@ -50,7 +50,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             ContextVariables = new Dictionary<string, RemoteValue>(other.ContextVariables);
         }
 
-        public void SetScopedName(string name, string transformedName)
+        public void AddScopedName(string name, string transformedName)
         {
             ScopedNames[name] = transformedName;
         }
@@ -58,6 +58,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         public void AddContextVariable(string name, RemoteValue value)
         {
             ContextVariables[name] = value;
+        }
+
+        public bool IsContextVariable(string name)
+        {
+            return ScopedNames.ContainsKey(name) && ContextVariables.ContainsKey(ScopedNames[name]);
         }
     }
 }

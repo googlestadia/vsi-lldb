@@ -155,7 +155,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 RemoteValueFakeUtil.CreateSimpleIntArray("myArray", 3, 4, 5, 6);
 
             var natvisScope = new NatvisScope();
-            natvisScope.SetScopedName("$i", "2");
+            natvisScope.AddScopedName("$i", "2");
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
             IVariableInformation exprVarInfo =
@@ -349,7 +349,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var natvisScope = new NatvisScope();
             var contextVar = RemoteValueFakeUtil.CreateSimpleInt("var", 14);
-            natvisScope.SetScopedName("var", "$var_0");
+            natvisScope.AddScopedName("var", "$var_0");
             natvisScope.AddContextVariable("$var_0", contextVar);
 
             await _evaluator.EvaluateExpressionAsync(
@@ -372,8 +372,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             RemoteValue mockVariable = CreateMockVariable();
 
             var natvisScope = new NatvisScope();
-            natvisScope.SetScopedName("$T1", "int");
-            natvisScope.SetScopedName("$i", "2U");
+            natvisScope.AddScopedName("$T1", "int");
+            natvisScope.AddScopedName("$i", "2U");
 
             await _evaluator.EvaluateExpressionAsync(
                 "($T1)3.14 + $i", _varInfoFactory.Create(mockVariable), natvisScope, "result");
@@ -464,7 +464,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("$test", createdValue);
 
             var natvisScope = new NatvisScope();
-            natvisScope.SetScopedName("test", "$test");
+            natvisScope.AddScopedName("test", "$test");
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
             await _evaluator.DeclareVariableAsync(varInfo, "test", "var1+var2", natvisScope);
@@ -482,7 +482,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                                                RemoteValueFakeUtil.CreateError("declaration error"));
 
             var natvisScope = new NatvisScope();
-            natvisScope.SetScopedName("test", "$test");
+            natvisScope.AddScopedName("test", "$test");
 
             IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
             var exception = Assert.ThrowsAsync<ExpressionEvaluationFailed>(
@@ -568,6 +568,34 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var varInfo = _varInfoFactory.Create(remoteValue);
             Assert.That(remoteValue.Dereference(), Is.EqualTo(pointee));
+        }
+
+        [TestCase(" var ", "$var_0", "2")] // 2 is cloned value
+        [TestCase("-var", "-$var_0", "1")]
+        [TestCase("$i", "1U", "1")]
+        [TestCase("a + b", "a + b", "1")]
+        public async Task CloneContextVariablesAsync(string expr, string transformedExpr,
+                                                     string expectedValue)
+        {
+            RemoteValueFake remoteValue =
+                RemoteValueFakeUtil.CreateClass("MyType", "myType", "myValue");
+            RemoteValueFake exprResult = RemoteValueFakeUtil.CreateSimpleInt("x", 1);
+            exprResult.SetClone(RemoteValueFakeUtil.CreateSimpleInt("y", 2));
+
+            remoteValue.AddValueFromExpression(transformedExpr, exprResult);
+
+            IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
+
+            var natvisScope = new NatvisScope();
+            natvisScope.AddScopedName("$i", "1U");
+            natvisScope.AddScopedName("var", "$var_0");
+            natvisScope.AddContextVariable("$var_0", exprResult);
+
+            IVariableInformation result =
+                await _evaluator.EvaluateExpressionAsync(expr, varInfo, natvisScope, "myVar");
+
+            Assert.That(await result.ValueAsync(), Is.EqualTo(expectedValue));
+            Assert.That(result.DisplayName, Is.EqualTo("myVar"));
         }
     }
 }

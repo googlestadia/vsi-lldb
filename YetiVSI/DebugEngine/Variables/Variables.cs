@@ -132,7 +132,7 @@ namespace YetiVSI.DebugEngine.Variables
 
         string ErrorMessage { get; }
 
-        uint ErrorCode { get;  }
+        uint ErrorCode { get; }
 
         bool IsPointer { get; }
 
@@ -180,6 +180,17 @@ namespace YetiVSI.DebugEngine.Variables
         Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
             string displayName, VsExpression expression,
             IDictionary<string, RemoteValue> contextVariables = null);
+
+        /// <summary>
+        /// Creates a copy of the value.
+        /// </summary>
+        /// <param name="formatSpecifier">Format specifier</param>
+        /// <returns>Information of copied value.</returns>
+        // TODO: Use format specifier from the variable information. Right now, variable
+        // information contains a string representation instead of a `FormatSpecifier`, which isn't
+        // enough for cloning a variable. VariableInformation should be refactored to use the
+        // `FormatSpecifier` representation.
+        IVariableInformation Clone(FormatSpecifier formatSpecifier);
 
         /// <summary>
         /// Dereferences a variable if it is a pointer.
@@ -301,6 +312,9 @@ namespace YetiVSI.DebugEngine.Variables
             await VarInfo.EvaluateExpressionLldbEvalAsync(displayName, expression,
                                                           contextVariables);
 
+        public IVariableInformation Clone(FormatSpecifier formatSpecifier) =>
+            VarInfo.Clone(formatSpecifier);
+
         public IVariableInformation Dereference() => VarInfo.Dereference();
 
         public IVariableInformation FindChildByName(string name) => VarInfo.FindChildByName(name);
@@ -420,6 +434,9 @@ namespace YetiVSI.DebugEngine.Variables
         {
             throw new NotImplementedException();
         }
+
+        public IVariableInformation Clone(FormatSpecifier formatSpecifier) =>
+            throw new NotImplementedException();
 
         public IVariableInformation Dereference()
         {
@@ -704,6 +721,20 @@ namespace YetiVSI.DebugEngine.Variables
                                                 formatSpecifier: vsExpression.FormatSpecifier);
         }
 
+        public IVariableInformation Clone(FormatSpecifier formatSpecifier)
+        {
+            RemoteValue clonedValue = _remoteValue.Clone();
+            if (clonedValue == null)
+            {
+                return null;
+            }
+
+            IVariableInformation clonedVarInfo =
+                _varInfoBuilder.Create(clonedValue, DisplayName, formatSpecifier);
+            clonedVarInfo.FallbackValueFormat = FallbackValueFormat;
+            return clonedVarInfo;
+        }
+
         public IVariableInformation Dereference()
         {
             RemoteValue dereferencedValue = _remoteValue.Dereference();
@@ -861,6 +892,9 @@ namespace YetiVSI.DebugEngine.Variables
         public Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(
             string displayName, VsExpression expression,
             IDictionary<string, RemoteValue> contextVariables = null) =>
+            throw new NotImplementedException();
+
+        public IVariableInformation Clone(FormatSpecifier formatSpecifier) =>
             throw new NotImplementedException();
 
         public IVariableInformation Dereference() => throw new NotImplementedException();

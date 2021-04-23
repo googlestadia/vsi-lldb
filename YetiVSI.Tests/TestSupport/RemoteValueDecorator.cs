@@ -58,6 +58,11 @@ namespace YetiVSI.Test.TestSupport
             string expression, IDictionary<string, RemoteValue> contextVariables = null) =>
             await value.EvaluateExpressionLldbEvalAsync(expression);
 
+        public virtual RemoteValue Clone()
+        {
+            return value.Clone();
+        }
+
         public virtual RemoteValue Dereference()
         {
             return value.Dereference();

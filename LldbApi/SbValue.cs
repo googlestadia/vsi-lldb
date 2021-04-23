@@ -113,6 +113,11 @@ namespace LldbApi
         SbValue EvaluateExpression(string expression, SbExpressionOptions options);
 
         /// <summary>
+        /// Creates a new value with the same data content (copies the value).
+        /// </summary>
+        SbValue Clone();
+
+        /// <summary>
         /// Dereferences a variable if it is a pointer.
         /// If the variable is not a pointer, it returns null.
         /// </summary>

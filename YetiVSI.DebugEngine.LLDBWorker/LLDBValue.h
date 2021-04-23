@@ -56,6 +56,7 @@ ref class LLDBValue sealed : SbValue {
                                            SbType ^ type);
   virtual SbValue ^ EvaluateExpression(System::String ^ expression,
                                        SbExpressionOptions ^ options);
+  virtual SbValue ^ Clone();
   virtual SbValue ^ Dereference();
   virtual SbValue ^ GetChildMemberWithName(System::String ^ name);
   virtual SbValue ^ AddressOf();

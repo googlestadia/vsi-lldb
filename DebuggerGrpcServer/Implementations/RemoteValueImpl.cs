@@ -91,6 +91,8 @@ namespace DebuggerGrpcServer
             _valueFactory.Create(LldbEval.EvaluateExpression(_sbValue, expression,
                                                              contextVariables));
 
+        public RemoteValue Clone() => _valueFactory.Create(_sbValue.Clone());
+
         public RemoteValue Dereference() => _valueFactory.Create(_sbValue.Dereference());
 
         public RemoteValue GetChildMemberWithName(string name) =>

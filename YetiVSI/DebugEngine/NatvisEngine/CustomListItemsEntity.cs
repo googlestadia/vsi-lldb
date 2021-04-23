@@ -197,7 +197,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             foreach (var varType in _customList.Variable ?? Enumerable.Empty<VariableType>())
             {
-                _ctx.NatvisScope.SetScopedName(varType.Name,
+                _ctx.NatvisScope.AddScopedName(varType.Name,
                                                _nameTransformer.TransformName(varType.Name));
                 await _evaluator.DeclareVariableAsync(_variable, varType.Name, varType.InitialValue,
                                                       _ctx.NatvisScope);

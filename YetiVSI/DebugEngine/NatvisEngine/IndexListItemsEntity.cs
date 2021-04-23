@@ -101,7 +101,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             for (int index = from; index < from + count; index++)
             {
                 IVariableInformation varInfo = await _store.GetOrEvaluateAsync(index, async i => {
-                    indexDic.SetScopedName("$i", $"{i}U");
+                    indexDic.AddScopedName("$i", $"{i}U");
                     string displayName = $"[{i}]";
 
                     // From the list of all <ValueNode> children, filter all with non-empty body

@@ -138,9 +138,20 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             var stepsRecorder = new ExpressionEvaluationRecorder.StepsRecorder(_timeSource);
 
             long startTimestampUs = _timeSource.GetTimestampUs();
+
             IVariableInformation variableInformation =
                 await EvaluateLldbExpressionWithMetricsAsync(
                     expression, variable, natvisScope, displayName, strategy, stepsRecorder);
+            // Evaluating a context variable will just return the reference to it. Because of
+            // deferred evaluation of display values, some values could be incorrectly displayed
+            // (in the case a context variable was changed in between two expression evaluations).
+            // In order to prevent this, we create a copy of result if the expression was simply
+            // a context variable.
+            if (natvisScope.IsContextVariable(expression.Value))
+            {
+                variableInformation = variableInformation.Clone(expression.FormatSpecifier);
+            }
+
             long endTimestampUs = _timeSource.GetTimestampUs();
 
             _expressionEvaluationRecorder.Record(strategy, ExpressionEvaluationContext.VALUE,
