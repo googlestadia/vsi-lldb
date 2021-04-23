@@ -48,10 +48,10 @@ namespace YetiVSI
 
     public enum LaunchGameApiFlowFlag
     {
-        [Description("Default - Disabled")] [EnumValueAlias(DISABLED)]
+        [Description("Default - Enabled")] [EnumValueAlias(ENABLED)]
         DEFAULT = 0,
         [Description("Enabled")] ENABLED = 1,
-        [Description("Disabled")] DISABLED = 2,
+        [Description("Disabled - Deprecated")] DISABLED = 2,
     }
 
     public enum ShowOption
@@ -279,7 +279,9 @@ namespace YetiVSI
 
         [Category("Game launch")]
         [DisplayName("Enable new launch flow")]
-        [Description("If enabled, the game is launched via the new Launch Game API.")]
+        [Description("If enabled, the game is launched via the new Launch Game API. " +
+            "This option will be removed in 1.68 and the new Launch Game API " +
+            "will be enabled for all launches.")]
         [TypeConverter(typeof(FeatureFlagConverter))]
         [DefaultValue(LaunchGameApiFlowFlag.DEFAULT)]
         public LaunchGameApiFlowFlag LaunchGameApiFlow { get; set; }
