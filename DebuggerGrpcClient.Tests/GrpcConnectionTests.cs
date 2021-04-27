@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Grpc.Core;
+using Grpc.Core;
 using Microsoft.VisualStudio.Threading;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
-using YetiVSITestsCommon;
+using YetiCommon;
 
 namespace DebuggerGrpcClient.Tests
 {

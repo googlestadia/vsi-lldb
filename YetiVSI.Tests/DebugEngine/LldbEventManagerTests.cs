@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using YetiCommon;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.Interfaces;
@@ -117,7 +118,7 @@ namespace YetiVSI.Test.DebugEngine
 
             _mockListenerSubscriber = Substitute.For<LldbListenerSubscriber>(_mockSbListener);
 
-            var threadContext = new YetiVSITestsCommon.FakeMainThreadContext();
+            var threadContext = new FakeMainThreadContext();
 
             _eventManager =
                 new LldbEventManager

@@ -61,7 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Use a "real" vsixmanifest for the VersionsTests tests, so that it's guaranteed to be up-to-date. -->
-    <None Include="$(SolutionDir)\manifest\2019\source.extension.vsixmanifest">
+    <None Include="$(SolutionDir)\source.extension.vsixmanifest">
       <Link>TestData\source.extension.vsixmanifest</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

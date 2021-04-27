@@ -8,7 +8,6 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
-    <Configurations>Debug2017;Debug2019;Release2017;Release2019</Configurations>
     <!--
       Supress warning MSB3270:
       There was a mismatch between the processor architecture of the project being built "MSIL"

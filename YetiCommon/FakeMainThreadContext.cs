@@ -18,7 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 
-namespace YetiVSITestsCommon
+namespace YetiCommon
 {
     /// <summary>
     /// Class that can be used to create a "main thread" and corresponding JoinableTaskContext for

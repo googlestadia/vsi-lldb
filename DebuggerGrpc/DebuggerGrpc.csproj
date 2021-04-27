@@ -32,6 +32,9 @@
     <PackageReference Include="Microsoft.Toolkit.HighPerformance">
       <Version>6.1.1</Version>
     </PackageReference>
+    <PackageReference Include="System.Buffers">
+      <Version>4.5.1</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(ThirdPartyRootDir)LldbApi\LldbApi.csproj" />

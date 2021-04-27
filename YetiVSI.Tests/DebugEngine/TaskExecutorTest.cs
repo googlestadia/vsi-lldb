@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using Microsoft.VisualStudio.Threading;
+using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
-using NUnit.Framework;
+using YetiCommon;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Interfaces;
-using YetiVSITestsCommon;
 
 namespace YetiVSI.Test.DebugEngine
 {

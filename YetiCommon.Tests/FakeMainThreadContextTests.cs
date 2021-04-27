@@ -16,7 +16,7 @@
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
-namespace YetiVSITestsCommon
+namespace YetiCommon.Tests
 {
     [TestFixture]
     class FakeMainThreadContextTests

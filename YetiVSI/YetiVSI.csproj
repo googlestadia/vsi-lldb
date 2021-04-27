@@ -36,19 +36,18 @@
     <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
     <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug2017|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG;VS_2017</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-    <SharedConfiguration>Debug</SharedConfiguration>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2017|AnyCPU'">
-    <DefineConstants>TRACE;VS_2017</DefineConstants>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -56,39 +55,11 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-    <SharedConfiguration>Release</SharedConfiguration>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug2019|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG;VS_2019</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-    <SharedConfiguration>Debug</SharedConfiguration>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release2019|AnyCPU'">
-    <DefineConstants>TRACE;VS_2019</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
-    <SharedConfiguration>Release</SharedConfiguration>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- Make sure we run the devenv.exe in the target VS version, not the version used to compile the extension. -->
-    <TargetDevEnvDir Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'">C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\</TargetDevEnvDir>
-    <TargetDevEnvDir Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'">C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\</TargetDevEnvDir>
   </PropertyGroup>
   <PropertyGroup>
     <StartAction>Program</StartAction>
-    <StartProgram>$(TargetDevEnvDir)devenv.exe</StartProgram>
-    <StartArguments>/rootsuffix Exp /log</StartArguments>
+    <StartProgram>$(DevEnvDir)devenv.exe</StartProgram>
+    <StartArguments>/rootSuffix Exp /log</StartArguments>
   </PropertyGroup>
   <PropertyGroup>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
@@ -363,10 +334,7 @@
     <None Include="DebugEngine\NatvisEngine\VS2017\natvis-2017-original.xsd">
       <SubType>Designer</SubType>
     </None>
-    <None Condition="'$(Configuration)' == 'Debug2017' OR '$(Configuration)' == 'Release2017'" Include="$(SolutionDir)\manifest\2017\source.extension.vsixmanifest">
-      <SubType>Designer</SubType>
-    </None>
-    <None Condition="'$(Configuration)' == 'Debug2019' OR '$(Configuration)' == 'Release2019'" Include="$(SolutionDir)\manifest\2019\source.extension.vsixmanifest">
+    <None Include="$(SolutionDir)\source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
@@ -541,7 +509,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="$(OutputBaseDir)bin\$(SharedConfiguration)\GgpVsi.DebugEngine.LLDBEval.dll">
+    <Content Include="$(OutputBaseDir)bin\$(Configuration)\GgpVsi.DebugEngine.LLDBEval.dll">
       <!-- LLDBEval is an unmanaged DLL. Alternative solutions to include it caused issues, cf. (internal). -->
       <Link>GgpVsi.DebugEngine.LLDBEval.dll</Link>
       <Visible>false</Visible>
@@ -700,7 +668,6 @@
       <Private>True</Private>
     </Reference>
   </ItemGroup>
-
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
   <PropertyGroup>

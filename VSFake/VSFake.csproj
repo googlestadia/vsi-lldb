@@ -6,7 +6,6 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWPF>true</UseWPF>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
-    <Configurations>Debug2017;Debug2019;Release2017;Release2019</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(ThirdPartyRootDir)TestsCommon\TestsCommon.csproj" />

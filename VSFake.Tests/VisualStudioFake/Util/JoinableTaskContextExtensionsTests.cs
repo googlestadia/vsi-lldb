@@ -17,7 +17,7 @@ using Microsoft.VisualStudio.Threading;
 using NUnit.Framework;
 using System;
 // TODO: VSFake project should not depend on any Yeti projects.
-using YetiVSITestsCommon;
+using YetiCommon;
 
 namespace Google.Tests.VisualStudioFake.Util
 {
