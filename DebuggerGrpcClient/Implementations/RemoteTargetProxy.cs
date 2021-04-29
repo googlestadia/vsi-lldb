@@ -449,5 +449,24 @@ namespace DebuggerGrpcClient
             }
             return new List<InstructionInfo>();
         }
+
+        public EventType AddListener(SbListener listener, EventType eventMask)
+        {
+            var request = new AddListenerRequest
+            {
+                Target = grpcSbTarget,
+                Listener = new GrpcSbListener { Id = listener.GetId() },
+                EventMask = (uint)eventMask
+            };
+            AddListenerResponse response = null;
+            if (connection.InvokeRpc(() =>
+            {
+                response = client.AddListener(request);
+            }))
+            {
+                return (EventType)response.Result;
+            }
+            return 0;
+        }
     }
 }

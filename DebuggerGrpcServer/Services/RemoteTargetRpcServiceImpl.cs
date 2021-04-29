@@ -353,6 +353,25 @@ namespace DebuggerGrpcServer
             return Task.FromResult(response);
         }
 
-#endregion
+        public override Task<AddListenerResponse> AddListener(
+            AddListenerRequest request, ServerCallContext context)
+        {
+            if (!_targetStore.TryGetValue(request.Target.Id, out RemoteTarget target))
+            {
+                ErrorUtils.ThrowError(StatusCode.Internal,
+                                      "Could not find target in store: " + request.Target.Id);
+            }
+
+            if (!_listenerStore.TryGetValue(request.Listener.Id, out SbListener listener))
+            {
+                ErrorUtils.ThrowError(StatusCode.Internal,
+                                      "Could not find listener in store: " + request.Listener.Id);
+            }
+
+            uint response = target.GetBroadcaster().AddListener(listener, request.EventMask);
+            return Task.FromResult(new AddListenerResponse { Result = response });
+        }
+
+        #endregion
     }
 }

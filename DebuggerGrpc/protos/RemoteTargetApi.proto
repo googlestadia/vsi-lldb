@@ -64,6 +64,8 @@ service RemoteTargetRpcService {
   rpc ReadInstructionInfos(ReadInstructionInfosRequest)
       returns (ReadInstructionInfosResponse) {
   }
+  rpc AddListener(AddListenerRequest) returns (AddListenerResponse) {
+  }
 }
 
 message AttachToProcessWithIDRequest {
@@ -221,4 +223,14 @@ message ReadInstructionInfosRequest {
 
 message ReadInstructionInfosResponse {
   repeated Common.GrpcInstructionInfo instructions = 1;
+}
+
+message AddListenerRequest {
+  Common.GrpcSbTarget target = 1;
+  Common.GrpcSbListener listener = 2;
+  uint32 eventMask = 3;
+}
+
+message AddListenerResponse {
+  uint32 result = 1;
 }

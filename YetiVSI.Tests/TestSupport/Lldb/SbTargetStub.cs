@@ -30,7 +30,7 @@ namespace YetiVSI.Test.TestSupport.Lldb
 
         public RemoteTargetStub(string fileName, string targetAttachErrorString = null)
         {
-            Filename = Filename;
+            Filename = fileName;
             _targetAttachErrorString = targetAttachErrorString;
         }
 
@@ -43,17 +43,13 @@ namespace YetiVSI.Test.TestSupport.Lldb
             return process;
         }
 
-        public SbModule GetModuleAtIndex(int index)
-        {
-            throw new IndexOutOfRangeException();
-        }
+        public SbModule GetModuleAtIndex(int index) => throw new IndexOutOfRangeException();
 
         public int GetNumModules() => 0;
 
-        public SbProcess LoadCore(string coreFile)
-        {
-            return new SbProcessStub(this, coreFile);
-        }
+        public SbProcess LoadCore(string coreFile) => new SbProcessStub(this, coreFile);
+
+        public EventType AddListener(SbListener listener, EventType eventMask) => eventMask;
 
         #region Not Implemented
         public SbModule AddModule(string path, string triple, string uuid)
@@ -127,6 +123,7 @@ namespace YetiVSI.Test.TestSupport.Lldb
         {
             throw new NotImplementedTestDoubleException();
         }
+
         #endregion
     }
 }

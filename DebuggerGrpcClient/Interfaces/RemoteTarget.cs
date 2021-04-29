@@ -128,5 +128,16 @@ namespace DebuggerApi
         /// Fetch all the information required for displaying disassembly in a single gRPC call.
         /// </summary>
         List<InstructionInfo> ReadInstructionInfos(SbAddress address, uint count, string flavor);
+
+        /// <summary>
+        /// Adds a listener to target's broadcaster.
+        /// Only one listener can be subscribed to a specific event type.
+        /// </summary>
+        /// <param name="listener">The listener.</param>
+        /// <param name="eventMask">An event type mask, which specifies
+        /// event types the listener should listen to.</param>
+        /// <returns>An event mask, which specifies an actual event set,
+        /// to which the listener was subscribed.</returns>
+        EventType AddListener(SbListener listener, EventType eventMask);
     }
 }
