@@ -48,6 +48,11 @@ System::String ^ LLDBEvent::GetDescription() {
   return gcnew System::String("");
 }
 
+System::String ^ LLDBEvent::GetDataFlavor() {
+  auto dataFlavor = event_->GetDataFlavor();
+  return gcnew System::String(dataFlavor);
+}
+
 StateType LLDBEvent::GetStateType() {
   switch (lldb::SBProcess::GetStateFromEvent(*(*event_))) {
     case lldb::eStateConnected:

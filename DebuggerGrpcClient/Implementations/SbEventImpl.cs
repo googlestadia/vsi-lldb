@@ -74,6 +74,8 @@ namespace DebuggerGrpcClient
             return grpcSbEvent.HasProcessResumed;
         }
 
+        public string GetDataFlavor() => grpcSbEvent.DataFlavor;
+
         #endregion
     }
 }

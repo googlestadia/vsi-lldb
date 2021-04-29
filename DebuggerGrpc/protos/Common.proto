@@ -245,6 +245,7 @@ message GrpcSbEvent {
   }
   StateType state_type = 3;
   bool hasProcessResumed = 4;
+  string dataFlavor = 5;
 }
 
 message GrpcSbAddress {

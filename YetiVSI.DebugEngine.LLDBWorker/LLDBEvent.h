@@ -36,6 +36,7 @@ ref class LLDBEvent sealed : SbEvent {
   virtual System::String ^ GetDescription();
   virtual StateType GetStateType();
   virtual bool GetProcessRestarted();
+  virtual System::String ^ GetDataFlavor();
 
  private:
   ManagedUniquePtr<lldb::SBEvent> ^ event_;
