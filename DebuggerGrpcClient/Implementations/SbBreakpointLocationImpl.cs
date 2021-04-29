@@ -151,5 +151,19 @@ namespace DebuggerGrpcClient
                     });
             });
         }
+
+        public uint GetHitCount()
+        {
+            GetHitCountResponse response = null;
+            if (connection.InvokeRpc(() =>
+            {
+                response = client.GetHitCount(
+                    new GetHitCountRequest { BreakpointLocation = grpcSbBreakpointLocation });
+            }))
+            {
+                return response.Result;
+            }
+            return 0;
+        }
     }
 }

@@ -37,5 +37,8 @@ namespace LldbApi
 
         // Set the breakpoint location to ignore the next |ignoreCount| hits.
         void SetIgnoreCount(uint ignoreCount);
+
+        // Get number of times the breakpoint location was already hit.
+        uint GetHitCount();
     }
 }

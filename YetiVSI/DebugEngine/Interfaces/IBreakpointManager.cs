@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using DebuggerApi;
 using Microsoft.VisualStudio.Debugger.Interop;
 
@@ -87,5 +88,18 @@ namespace YetiVSI.DebugEngine.Interfaces
         /// Getter for number of bound breakpoints.
         /// </summary>
         uint GetNumBoundBreakpoints();
+
+        /// <summary>
+        /// Remove the breakpoint.
+        /// </summary>
+        void RemovePendingBreakpoint(IPendingBreakpoint breakpoint);
+
+        /// <summary>
+        /// This event should be emitted when new breakpoint locations have been added.
+        /// </summary>
+        void EmitBreakpointBoundEvent(
+            IPendingBreakpoint breakpoint,
+            IEnumerable<IDebugBoundBreakpoint2> newlyBoundBreakpoints,
+            BoundBreakpointEnumFactory breakpointBoundEnumFactory);
     }
 }

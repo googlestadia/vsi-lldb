@@ -37,6 +37,7 @@ ref class LLDBBreakpointLocation : SbBreakpointLocation {
   virtual SbAddress ^ GetAddress();
   virtual void SetCondition(System::String ^ condition);
   virtual void SetIgnoreCount(unsigned int ignoreCount);
+  virtual uint32_t GetHitCount();
 
  private:
   ManagedUniquePtr<lldb::SBBreakpointLocation> ^ breakpointLocation_;

@@ -19,10 +19,10 @@ using Microsoft.VisualStudio;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.VisualStudio.Debugger.Interop;
 using YetiVSI.DebugEngine;
 using Microsoft.VisualStudio.Threading;
-using System.IO;
 using DebuggerGrpcClient.Interfaces;
 using YetiVSI.DebugEngine.Interfaces;
 
@@ -31,7 +31,7 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class DebugPendingBreakpoint_DeletedTests
     {
-        private IPendingBreakpoint pendingBreakpoint;
+        IPendingBreakpoint pendingBreakpoint;
 
         [SetUp]
         public void SetUp()
@@ -748,9 +748,63 @@ namespace YetiVSI.Test.DebugEngine
             Assert.AreEqual(0, pendingBreakpoint.GetNumLocations());
         }
 
+        [Test]
+        public void UpdateLocationsNewLocationsAdded()
+        {
+            MockDocumentPosition(TEST_FILE_NAME, LINE_NUMBER, COLUMN_NUMBER);
+            MockBreakpoint(1);
+            pendingBreakpoint.Bind();
+            MockBreakpoint(3);
+
+            pendingBreakpoint.UpdateLocations();
+
+            mockBreakpointManager.Received(1).EmitBreakpointBoundEvent(
+                pendingBreakpoint, Arg.Is<IEnumerable<IDebugBoundBreakpoint2>>(a => a.Count() == 2),
+                Arg.Any<BoundBreakpointEnumFactory>());
+            Assert.That(pendingBreakpoint.EnumBoundBreakpoints(out var boundBreakpoints),
+                        Is.EqualTo(VSConstants.S_OK));
+            Assert.That(boundBreakpoints.GetCount(out uint count), Is.EqualTo(VSConstants.S_OK));
+            Assert.That(count, Is.EqualTo(3));
+
+            // Test that locations are not updated and BreakpointBoundEvent is not emitted,
+            // when locations state hasn't changed and UpdateLocations is executed.
+            mockBreakpointManager.ClearReceivedCalls();
+            pendingBreakpoint.UpdateLocations();
+            mockBreakpointManager.DidNotReceive().EmitBreakpointBoundEvent(
+                pendingBreakpoint, Arg.Any<IEnumerable<IDebugBoundBreakpoint2>>(),
+                Arg.Any<BoundBreakpointEnumFactory>());
+            Assert.That(pendingBreakpoint.EnumBoundBreakpoints(out boundBreakpoints),
+                        Is.EqualTo(VSConstants.S_OK));
+            Assert.That(boundBreakpoints.GetCount(out count), Is.EqualTo(VSConstants.S_OK));
+            Assert.That(count, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void UpdateLocationsLocationsRemoved()
+        {
+            MockDocumentPosition(TEST_FILE_NAME, LINE_NUMBER, COLUMN_NUMBER);
+            MockBreakpoint(0);
+            pendingBreakpoint.Bind();
+            MockBreakpoint(3);
+            pendingBreakpoint.UpdateLocations();
+            mockBreakpointManager.ClearReceivedCalls();
+            MockBreakpoint(0);
+            pendingBreakpoint.UpdateLocations();
+
+            mockBreakpointManager.DidNotReceiveWithAnyArgs().EmitBreakpointBoundEvent(
+                Arg.Any<IPendingBreakpoint>(), Arg.Any<IEnumerable<IDebugBoundBreakpoint2>>(),
+                Arg.Any<BoundBreakpointEnumFactory>());
+            mockBreakpointManager.Received(1)
+                .ReportBreakpointError(Arg.Any<DebugBreakpointError>());
+            Assert.That(pendingBreakpoint.EnumBoundBreakpoints(out var boundBreakpoints),
+                        Is.EqualTo(VSConstants.S_OK));
+            Assert.That(boundBreakpoints.GetCount(out uint count), Is.EqualTo(VSConstants.S_OK));
+            Assert.That(count, Is.EqualTo(0));
+        }
+
         // Update the mock breakpoint request to return a specific breakpoint type.  This must be
         // called before constructing the pending breakpoint.
-        private void SetBreakpointType(enum_BP_LOCATION_TYPE type)
+        void SetBreakpointType(enum_BP_LOCATION_TYPE type)
         {
             requestInfo.dwFields |= enum_BPREQI_FIELDS.BPREQI_BPLOCATION;
             requestInfo.bpLocation.bpLocationType = (uint)type;
@@ -758,7 +812,7 @@ namespace YetiVSI.Test.DebugEngine
 
         // Update the mock breakpoint request to return a condition.  This must be called before
         // constructing the pending breakpoint.
-        private void SetCondition(enum_BP_COND_STYLE conditionStyle, string conditionString)
+        void SetCondition(enum_BP_COND_STYLE conditionStyle, string conditionString)
         {
             requestInfo.dwFields |= enum_BPREQI_FIELDS.BPREQI_CONDITION;
             requestInfo.bpCondition = new BP_CONDITION
@@ -770,7 +824,7 @@ namespace YetiVSI.Test.DebugEngine
 
         // Update the mock breakpoint request to return a pass count.  This must be called before
         // constructing the pending breakpoint.
-        private void SetPassCount(enum_BP_PASSCOUNT_STYLE passCountStyle, uint passCount)
+        void SetPassCount(enum_BP_PASSCOUNT_STYLE passCountStyle, uint passCount)
         {
             requestInfo.dwFields |= enum_BPREQI_FIELDS.BPREQI_PASSCOUNT;
             requestInfo.bpPassCount = new BP_PASSCOUNT
@@ -780,7 +834,7 @@ namespace YetiVSI.Test.DebugEngine
             };
         }
 
-        private IDebugErrorBreakpoint2 GetBreakpointError()
+        IDebugErrorBreakpoint2 GetBreakpointError()
         {
             IEnumDebugErrorBreakpoints2 errorBreakpointsEnum;
             pendingBreakpoint.EnumErrorBreakpoints(enum_BP_ERROR_TYPE.BPET_ALL,
@@ -798,7 +852,7 @@ namespace YetiVSI.Test.DebugEngine
             return breakpointErrors[0];
         }
 
-        private string GetBreakpointErrorMessage(IDebugErrorBreakpoint2 breakpointError)
+        string GetBreakpointErrorMessage(IDebugErrorBreakpoint2 breakpointError)
         {
             IDebugErrorBreakpointResolution2 errorBreakpointResolution;
             Assert.NotNull(breakpointError);
@@ -815,7 +869,7 @@ namespace YetiVSI.Test.DebugEngine
             return errorResolutionInfo[0].bstrMessage;
         }
 
-        private List<IDebugBoundBreakpoint2> GetBoundBreakpoints()
+        List<IDebugBoundBreakpoint2> GetBoundBreakpoints()
         {
             IEnumDebugBoundBreakpoints2 boundBreakpointsEnum;
             pendingBreakpoint.EnumBoundBreakpoints(out boundBreakpointsEnum);
@@ -839,7 +893,7 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         // Create default mocks, and return values for the document position.
-        private void MockDocumentPosition(string filename, uint lineNumber, uint columnNumber)
+        void MockDocumentPosition(string filename, uint lineNumber, uint columnNumber)
         {
             var mockDocumentPosition = Substitute.For<IDebugDocumentPosition2>();
             string value;
@@ -869,7 +923,7 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         // Create default mocks, and return values for the function position.
-        private void MockFunctionPosition(string functionName)
+        void MockFunctionPosition(string functionName)
         {
             var mockFunctionPosition = Substitute.For<IDebugFunctionPosition2>();
             string value;
@@ -887,7 +941,7 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         // Create default mocks, and return values for the code context position.
-        private void MockCodeContext(ulong address)
+        void MockCodeContext(ulong address)
         {
             // Create mock code context with the specified address.
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
@@ -908,13 +962,13 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         // Create return values for the address position.
-        private void MockCodeAddress(string address)
+        void MockCodeAddress(string address)
         {
             // Code address holds the address as a string
             mockMarshal.GetStringFromIntPtr(Arg.Any<IntPtr>()).Returns(address);
         }
 
-        private List<SbBreakpointLocation> CreateMockBreakpointLocations(
+        List<SbBreakpointLocation> CreateMockBreakpointLocations(
             int numBreakpointLocations)
         {
             List<SbBreakpointLocation> breakpointLocations =
@@ -930,7 +984,7 @@ namespace YetiVSI.Test.DebugEngine
 
         // Create default mocks, and return values for the lldb breakpoint and breakpoint locations.
         // numBreakpointLocations specifies how many mock breakpoint locations to return.
-        private List<SbBreakpointLocation> MockBreakpoint(int numBreakpointLocations)
+        List<SbBreakpointLocation> MockBreakpoint(int numBreakpointLocations)
         {
             List<SbBreakpointLocation> breakpointLocations =
                 CreateMockBreakpointLocations(numBreakpointLocations);
@@ -941,7 +995,7 @@ namespace YetiVSI.Test.DebugEngine
         // Create default mocks, and return values for the lldb breakpoint and breakpoint locations.
         // breakpointLocations is a list of mock breakpoint locations that will be returned by the
         // mock lldb breakpoint.
-        private void MockBreakpoint(List<SbBreakpointLocation> breakpointLocations)
+        void MockBreakpoint(List<SbBreakpointLocation> breakpointLocations)
         {
             for (uint i = 0; i < breakpointLocations.Count; i++)
             {
@@ -955,7 +1009,7 @@ namespace YetiVSI.Test.DebugEngine
         // Create default mocks, and return values for the lldb breakpoint and breakpoint locations
         // for a function breakpoint.  numBreakpointLocations specifies how many mock breakpoint
         // locations to return.
-        private void MockFunctionBreakpoint(int numBreakpointLocations)
+        void MockFunctionBreakpoint(int numBreakpointLocations)
         {
             List<SbBreakpointLocation> breakpointLocations =
                 CreateMockBreakpointLocations(numBreakpointLocations);
@@ -965,7 +1019,7 @@ namespace YetiVSI.Test.DebugEngine
         // Create default mocks, and return values for the lldb breakpoint and breakpoint locations
         // for a function breakpoint.  breakpointLocations is a list of mock breakpoint locations
         // that will be returned by the mock lldb breakpoint.
-        private void MockFunctionBreakpoint(List<SbBreakpointLocation> breakpointLocations)
+        void MockFunctionBreakpoint(List<SbBreakpointLocation> breakpointLocations)
         {
             for (uint i = 0; i < breakpointLocations.Count; i++)
             {
@@ -978,7 +1032,7 @@ namespace YetiVSI.Test.DebugEngine
         // Create default mocks, and return values for the lldb breakpoint and breakpoint locations
         // for an assembly breakpoint.  numBreakpointLocations specifies how many mock breakpoint
         // locations to return.
-        private void MockAssemblyBreakpoint(int numBreakpointLocations)
+        void MockAssemblyBreakpoint(int numBreakpointLocations)
         {
             List<SbBreakpointLocation> breakpointLocations =
                 CreateMockBreakpointLocations(numBreakpointLocations);
@@ -988,7 +1042,7 @@ namespace YetiVSI.Test.DebugEngine
         // Create default mocks, and return values for the lldb breakpoint and breakpoint locations
         // for an assembly breakpoint. breakpointLocations is a list of mock breakpoint locations
         // that will be returned by the mock lldb breakpoint.
-        private void MockAssemblyBreakpoint(List<SbBreakpointLocation> breakpointLocations)
+        void MockAssemblyBreakpoint(List<SbBreakpointLocation> breakpointLocations)
         {
             for (uint i = 0; i < breakpointLocations.Count; i++)
             {
@@ -998,8 +1052,8 @@ namespace YetiVSI.Test.DebugEngine
             mockTarget.BreakpointCreateByAddress(TEST_ADDRESS).Returns(mockLldbBreakpoint);
         }
 
-        private int BuildBreakpointRequestInfo(enum_BPREQI_FIELDS fields,
-            out BP_REQUEST_INFO breakpointRequestInfo)
+        int BuildBreakpointRequestInfo(enum_BPREQI_FIELDS fields,
+                                       out BP_REQUEST_INFO breakpointRequestInfo)
         {
             breakpointRequestInfo = new BP_REQUEST_INFO();
             if ((fields & enum_BPREQI_FIELDS.BPREQI_BPLOCATION) != 0 &&

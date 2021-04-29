@@ -45,6 +45,11 @@ namespace YetiVSI.DebugEngine
         /// Get the number of bound breakpoints for the pending breakpoint.
         /// </summary>
         uint GetNumLocations();
+
+        /// <summary>
+        /// Update the list of bound breakpoints.
+        /// </summary>
+        void UpdateLocations();
     }
 
     /// <summary>
@@ -225,9 +230,9 @@ namespace YetiVSI.DebugEngine
         public bool GetBoundBreakpointById(int id, out IBoundBreakpoint boundBreakpoint) =>
             _boundBreakpoints.TryGetValue(id, out boundBreakpoint);
 
-#endregion
+        #endregion
 
-#region IDebugPendingBreakpoint2 functions
+        #region IDebugPendingBreakpoint2 functions
         public int Bind()
         {
             if (_deleted)
@@ -348,13 +353,19 @@ namespace YetiVSI.DebugEngine
                 return VSConstants.S_FALSE;
             }
 
-            if (_lldbBreakpoint.GetNumLocations() == 0)
-            {
-                SetError(enum_BP_ERROR_TYPE.BPET_GENERAL_WARNING, _breakpointLocationNotSet);
-                return VSConstants.S_FALSE;
-            }
+            UpdateLocations();
+            _breakpointManager.RegisterPendingBreakpoint(Self);
 
-            for (uint i = 0; i < _lldbBreakpoint.GetNumLocations(); i++)
+            return _boundBreakpoints.Count == 0
+                ? VSConstants.S_FALSE
+                : VSConstants.S_OK;
+        }
+
+        public void UpdateLocations()
+        {
+            var remoteLocations = new Dictionary<int, SbBreakpointLocation>();
+            uint lldbBreakpointLocationNum = _lldbBreakpoint.GetNumLocations();
+            for (uint i = 0; i < lldbBreakpointLocationNum; i++)
             {
                 SbBreakpointLocation breakpointLocation = _lldbBreakpoint.GetLocationAtIndex(i);
                 if (breakpointLocation == null)
@@ -362,30 +373,60 @@ namespace YetiVSI.DebugEngine
                     Trace.WriteLine("Failed to get breakpoint location.");
                     continue;
                 }
-                // Make sure the newly created bound breakpoints have the same enabled state as the
-                // pending breakpoint.
-                IBoundBreakpoint boundBreakpoint =
-                    _debugBoundBreakpointFactory.Create(Self, breakpointLocation, _program,
-                                                        _requestInfo.guidLanguage);
-                boundBreakpoint.Enable(Convert.ToInt32(_enabled));
-                if ((_requestInfo.dwFields & enum_BPREQI_FIELDS.BPREQI_CONDITION) != 0)
-                {
-                    boundBreakpoint.SetCondition(_requestInfo.bpCondition);
-                }
-                if ((_requestInfo.dwFields & enum_BPREQI_FIELDS.BPREQI_PASSCOUNT) != 0)
-                {
-                    boundBreakpoint.SetPassCount(_requestInfo.bpPassCount);
-                }
-                _boundBreakpoints[breakpointLocation.GetId()] = boundBreakpoint;
+
+                remoteLocations.Add(breakpointLocation.GetId(), breakpointLocation);
             }
+
+            foreach (int boundBreakpointId in _boundBreakpoints.Keys.ToList())
+            {
+                if (!remoteLocations.ContainsKey(boundBreakpointId))
+                {
+                    _boundBreakpoints[boundBreakpointId].Delete();
+                    _boundBreakpoints.Remove(boundBreakpointId);
+                }
+            }
+
+            List<IDebugBoundBreakpoint2> newLocations = new List<IDebugBoundBreakpoint2>();
+
+            foreach (SbBreakpointLocation remoteLocation in remoteLocations.Values)
+            {
+                if (!_boundBreakpoints.ContainsKey(remoteLocation.GetId()))
+                {
+                    // Make sure the newly created bound breakpoints have the same
+                    // enabled state as the pending breakpoint.
+                    IBoundBreakpoint boundBreakpoint =
+                        _debugBoundBreakpointFactory.Create(Self, remoteLocation, _program,
+                                                            _requestInfo.guidLanguage);
+                    boundBreakpoint.Enable(Convert.ToInt32(_enabled));
+                    if ((_requestInfo.dwFields & enum_BPREQI_FIELDS.BPREQI_CONDITION) != 0)
+                    {
+                        boundBreakpoint.SetCondition(_requestInfo.bpCondition);
+                    }
+
+                    if ((_requestInfo.dwFields & enum_BPREQI_FIELDS.BPREQI_PASSCOUNT) != 0)
+                    {
+                        boundBreakpoint.SetPassCount(_requestInfo.bpPassCount);
+                    }
+
+                    _boundBreakpoints.Add(remoteLocation.GetId(), boundBreakpoint);
+                    newLocations.Add(boundBreakpoint);
+                }
+            }
+
             if (_boundBreakpoints.Count == 0)
             {
                 SetError(enum_BP_ERROR_TYPE.BPET_GENERAL_WARNING, _breakpointLocationNotSet);
-                return VSConstants.S_FALSE;
             }
-            _breakpointManager.RegisterPendingBreakpoint(Self);
+            else
+            {
+                _breakpointError = null;
+            }
 
-            return VSConstants.S_OK;
+            if (newLocations.Any())
+            {
+                _breakpointManager.EmitBreakpointBoundEvent(
+                    Self, newLocations, _breakpointBoundEnumFactory);
+            }
         }
 
         public int CanBind(out IEnumDebugErrorBreakpoints2 errorBreakpointsEnum)
@@ -419,6 +460,7 @@ namespace YetiVSI.DebugEngine
             _deleted = true;
             if (_lldbBreakpoint != null)
             {
+                _breakpointManager.RemovePendingBreakpoint(Self);
                 _target.BreakpointDelete(_lldbBreakpoint.GetId());
                 _lldbBreakpoint = null;
             }

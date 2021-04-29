@@ -103,6 +103,14 @@ namespace DebuggerGrpcServer
             return Task.FromResult(new SetIgnoreCountResponse());
         }
 
+        public override Task<GetHitCountResponse> GetHitCount(
+            GetHitCountRequest request, ServerCallContext context)
+        {
+            SbBreakpointLocation location = GetBreakpointLocation(request.BreakpointLocation);
+            uint result = location.GetHitCount();
+            return Task.FromResult(new GetHitCountResponse { Result = result });
+        }
+
         #endregion
 
         private SbBreakpointLocation GetBreakpointLocation(

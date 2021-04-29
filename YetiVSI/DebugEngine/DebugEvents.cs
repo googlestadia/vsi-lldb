@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using YetiVSI.DebugEngine.Exit;
@@ -174,17 +175,40 @@ namespace YetiVSI.DebugEngine
     public class BreakpointBoundEvent : DebugEvent, IDebugBreakpointBoundEvent2
     {
         readonly IDebugPendingBreakpoint2 _pendingBreakpoint;
+        readonly IEnumerable<IDebugBoundBreakpoint2> _newlyBoundBreakpoints;
+        readonly BoundBreakpointEnumFactory _breakpointBoundEnumFactory;
 
         public BreakpointBoundEvent(IDebugPendingBreakpoint2 pendingBreakpoint)
             : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS,
                    new Guid("1dddb704-cf99-4b8a-b746-dabb01dd13a0"))
         {
             _pendingBreakpoint = pendingBreakpoint;
+            _newlyBoundBreakpoints = null;
+            _breakpointBoundEnumFactory = null;
+        }
+
+        public BreakpointBoundEvent(
+            IDebugPendingBreakpoint2 pendingBreakpoint,
+            IEnumerable<IDebugBoundBreakpoint2> newlyBoundBreakpoints,
+            BoundBreakpointEnumFactory breakpointBoundEnumFactory)
+            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS,
+                   new Guid("1dddb704-cf99-4b8a-b746-dabb01dd13a0"))
+        {
+            _pendingBreakpoint = pendingBreakpoint;
+            _newlyBoundBreakpoints = newlyBoundBreakpoints;
+            _breakpointBoundEnumFactory = breakpointBoundEnumFactory;
         }
 
         public int EnumBoundBreakpoints(out IEnumDebugBoundBreakpoints2 boundBreakpointsEnum)
         {
-            _pendingBreakpoint.EnumBoundBreakpoints(out boundBreakpointsEnum);
+            if (_newlyBoundBreakpoints != null && _breakpointBoundEnumFactory != null)
+            {
+                boundBreakpointsEnum = _breakpointBoundEnumFactory.Create(_newlyBoundBreakpoints);
+            }
+            else
+            {
+                _pendingBreakpoint.EnumBoundBreakpoints(out boundBreakpointsEnum);
+            }
             return VSConstants.S_OK;
         }
 

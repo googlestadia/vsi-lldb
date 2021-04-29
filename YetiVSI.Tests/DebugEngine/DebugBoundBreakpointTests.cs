@@ -119,12 +119,12 @@ namespace YetiVSI.Test.DebugEngine
         {
             string name = "";
             mockBreakpoint = Substitute.For<RemoteBreakpoint>();
-            mockBreakpoint.GetHitCount().Returns(HIT_COUNT);
             lineEntry = new LineEntryInfo();
             mockPendingBreakpoint = Substitute.For<IDebugPendingBreakpoint2>();
             mockBreakpointLocation = Substitute.For<SbBreakpointLocation>();
             mockAddress = Substitute.For<SbAddress>();
             mockAddress.GetLineEntry().Returns(lineEntry);
+            mockBreakpointLocation.GetHitCount().Returns(HIT_COUNT);
             mockBreakpointLocation.GetLoadAddress().Returns(ADDRESS);
             mockBreakpointLocation.GetBreakpoint().Returns(mockBreakpoint);
             mockBreakpointLocation.GetId().Returns(ID);
@@ -400,7 +400,7 @@ namespace YetiVSI.Test.DebugEngine
             BP_PASSCOUNT passCount;
             passCount.dwPassCount = PASS_COUNT;
             passCount.stylePassCount = enum_BP_PASSCOUNT_STYLE.BP_PASSCOUNT_EQUAL;
-            mockBreakpoint.GetHitCount().Returns(HIT_COUNT);
+            mockBreakpointLocation.GetHitCount().Returns(HIT_COUNT);
             boundBreakpoint.SetPassCount(passCount);
             mockBreakpointLocation.Received(1).SetIgnoreCount(1);
             mockBreakpointLocation.DidNotReceive().SetEnabled(false);
@@ -458,7 +458,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             const uint PASS_COUNT = 3;
             const uint HIT_COUNT = 1;
-            mockBreakpoint.GetHitCount().Returns(HIT_COUNT);
+            mockBreakpointLocation.GetHitCount().Returns(HIT_COUNT);
             BP_PASSCOUNT passCount;
             passCount.stylePassCount = enum_BP_PASSCOUNT_STYLE.BP_PASSCOUNT_MOD;
             passCount.dwPassCount = PASS_COUNT;
@@ -476,7 +476,7 @@ namespace YetiVSI.Test.DebugEngine
             BP_PASSCOUNT passCount;
             passCount.dwPassCount = PASS_COUNT;
             passCount.stylePassCount = enum_BP_PASSCOUNT_STYLE.BP_PASSCOUNT_EQUAL;
-            mockBreakpoint.GetHitCount().Returns(HIT_COUNT);
+            mockBreakpointLocation.GetHitCount().Returns(HIT_COUNT);
             boundBreakpoint.SetPassCount(passCount);
             mockBreakpointLocation.Received(1).SetIgnoreCount(PASS_COUNT - HIT_COUNT - 1);
             boundBreakpoint.SetHitCount(NEW_HIT_COUNT);
@@ -492,7 +492,7 @@ namespace YetiVSI.Test.DebugEngine
             BP_PASSCOUNT passCount;
             passCount.dwPassCount = PASS_COUNT;
             passCount.stylePassCount = enum_BP_PASSCOUNT_STYLE.BP_PASSCOUNT_EQUAL;
-            mockBreakpoint.GetHitCount().Returns(HIT_COUNT);
+            mockBreakpointLocation.GetHitCount().Returns(HIT_COUNT);
             boundBreakpoint.SetPassCount(passCount);
             mockBreakpointLocation.Received(1).SetIgnoreCount(PASS_COUNT - HIT_COUNT - 1);
             boundBreakpoint.SetHitCount(NEW_HIT_COUNT);
@@ -540,10 +540,10 @@ namespace YetiVSI.Test.DebugEngine
         {
             const uint HIT_COUNT = 5;
             const uint NEW_HIT_COUNT = 1;
-            mockBreakpoint.GetHitCount().Returns(HIT_COUNT);
+            mockBreakpointLocation.GetHitCount().Returns(HIT_COUNT);
             boundBreakpoint.SetHitCount(NEW_HIT_COUNT);
 
-            mockBreakpoint.GetHitCount().Returns(HIT_COUNT + 1);
+            mockBreakpointLocation.GetHitCount().Returns(HIT_COUNT + 1);
             boundBreakpoint.OnHit();
 
             uint hitCount;

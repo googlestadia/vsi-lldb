@@ -64,5 +64,9 @@ void LLDBBreakpointLocation::SetIgnoreCount(unsigned int ignoreCount) {
   breakpointLocation_->SetIgnoreCount(ignoreCount);
 }
 
+uint32_t LLDBBreakpointLocation::GetHitCount() {
+  return breakpointLocation_->GetHitCount();
+}
+
 }  // namespace DebugEngine
 }  // namespace YetiVSI

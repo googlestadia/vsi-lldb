@@ -20,7 +20,40 @@ using System.Threading.Tasks;
 
 namespace YetiVSI.DebugEngine
 {
-    public class LldbListenerSubscriber
+    public interface ILldbListenerSubscriber
+    {
+        bool IsRunning { get; }
+
+        /// <summary>
+        /// Raised on any exception in event processing. This is called from a background thread.
+        /// </summary>
+        event EventHandler<ExceptionOccuredEventArgs> ExceptionOccured;
+
+        /// <summary>
+        /// Raised on the debugger state change. This is called from a background thread.
+        /// </summary>
+        event EventHandler<StateChangedEventArgs> StateChanged;
+
+        /// <summary>
+        /// Raised on every update in file processing (during attach).
+        /// This is called from a background thread.
+        /// </summary>
+        event EventHandler<FileUpdateReceivedEventArgs> FileUpdateReceived;
+
+        /// <summary>
+        /// Raised when remote breakpoint has changed.
+        /// </summary>
+        event EventHandler<BreakpointChangedEventArgs> BreakpointChanged;
+
+        /// <summary>
+        /// Spin off a thread that will constantly try to get new events from the SbListener.
+        /// </summary>
+        void Start();
+
+        void Stop();
+    }
+
+    public class LldbListenerSubscriber : ILldbListenerSubscriber
     {
         public bool IsRunning { get; private set; }
         readonly SbListener _lldbListener;
@@ -44,6 +77,12 @@ namespace YetiVSI.DebugEngine
         /// This is called from a background thread.
         /// </summary>
         public virtual event EventHandler<FileUpdateReceivedEventArgs> FileUpdateReceived;
+
+        /// <summary>
+        /// Raised when remote breakpoint has changed.
+        /// </summary>
+        public virtual event EventHandler<BreakpointChangedEventArgs> BreakpointChanged;
+
         public LldbListenerSubscriber(SbListener lldbListener)
         {
             _lldbListener = lldbListener;
@@ -77,7 +116,12 @@ namespace YetiVSI.DebugEngine
                         }
 
                         var eventType = lldbEvent.GetEventType();
-                        if ((eventType & EventType.STATE_CHANGED) != 0)
+                        if (lldbEvent.IsBreakpointEvent)
+                        {
+                            BreakpointChanged?.Invoke(
+                                null, new BreakpointChangedEventArgs(lldbEvent));
+                        }
+                        else if ((eventType & EventType.STATE_CHANGED) != 0)
                         {
                             StateChanged?.Invoke(null, new StateChangedEventArgs(lldbEvent));
                         }
@@ -148,6 +192,16 @@ namespace YetiVSI.DebugEngine
         public ExceptionOccuredEventArgs(Exception exception)
         {
             Exception = exception;
+        }
+    }
+
+    public sealed class BreakpointChangedEventArgs : EventArgs
+    {
+        public SbEvent Event { get; }
+
+        public BreakpointChangedEventArgs(SbEvent evt)
+        {
+            Event = evt;
         }
     }
 }

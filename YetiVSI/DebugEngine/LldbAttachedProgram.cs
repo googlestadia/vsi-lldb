@@ -82,9 +82,9 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Load the symbols. Skips modules that already have their symbols loaded.
         /// </summary>
-        Task<int> LoadModuleFilesAsync(
-            SymbolInclusionSettings symbolsSettings, bool useSymbolsStores, ICancelable task,
-            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
+        Task<int> LoadModuleFilesAsync(SymbolInclusionSettings symbolsSettings,
+                                       bool useSymbolsStores, ICancelable task,
+                                       IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
 
         /// <summary>
         /// Get the modules with the specified name.
@@ -224,7 +224,8 @@ namespace YetiVSI.DebugEngine
                 return new LldbAttachedProgram(breakpointManager, eventManager, _lldbShell,
                                                moduleFileLoader, debugEngineHandler, _taskExecutor,
                                                debugProgram, debugger, target, process,
-                                               exceptionManager, debugModuleCache, remotePid);
+                                               exceptionManager, debugModuleCache,
+                                               listenerSubscriber, remotePid);
             }
         }
 
@@ -243,6 +244,7 @@ namespace YetiVSI.DebugEngine
         readonly SbProcess _process;
 
         readonly IDebugModuleCache _debugModuleCache;
+        readonly ILldbListenerSubscriber _listenerSubscriber;
 
         public LldbAttachedProgram(IBreakpointManager breakpointManager, IEventManager eventManager,
                                    ILLDBShell lldbShell, IModuleFileLoader moduleFileLoader,
@@ -250,7 +252,8 @@ namespace YetiVSI.DebugEngine
                                    ITaskExecutor taskExecutor, IGgpDebugProgram debugProgram,
                                    SbDebugger debugger, RemoteTarget target, SbProcess process,
                                    IExceptionManager exceptionManager,
-                                   IDebugModuleCache debugModuleCache, uint remotePid)
+                                   IDebugModuleCache debugModuleCache,
+                                   ILldbListenerSubscriber listenerSubscriber, uint remotePid)
         {
             _debugProgram = debugProgram;
             _breakpointManager = breakpointManager;
@@ -264,6 +267,7 @@ namespace YetiVSI.DebugEngine
             _process = process;
             _exceptionManager = exceptionManager;
             _debugModuleCache = debugModuleCache;
+            _listenerSubscriber = listenerSubscriber;
             RemotePid = remotePid;
         }
 
@@ -273,6 +277,7 @@ namespace YetiVSI.DebugEngine
         /// </summary>
         public void Start(IDebugEngine2 debugEngine)
         {
+            _listenerSubscriber.BreakpointChanged += OnBreakpointChanged;
             // The order of these two events is important!! Visual studio always needs to know that
             // the engine has been created before the program is created.
             _debugEngineHandler.SendEvent(new EngineCreateEvent(debugEngine), _debugProgram);
@@ -285,6 +290,7 @@ namespace YetiVSI.DebugEngine
         public void Stop()
         {
             _eventManager.StopListener();
+            _listenerSubscriber.BreakpointChanged -= OnBreakpointChanged;
             _taskExecutor.AbortAsyncTasks();
             _lldbShell.RemoveDebugger(_debugger);
         }
@@ -385,5 +391,22 @@ namespace YetiVSI.DebugEngine
         public uint RemotePid { get; }
 
         void UpdateModulesList() => _debugProgram.EnumModules(out _);
+
+        /// <summary>
+        /// If a remote breakpoint gets bound, binds local breakpoint as well.
+        /// </summary>
+        void OnBreakpointChanged(object sender, BreakpointChangedEventArgs args)
+        {
+            IEventBreakpointData breakpointData = args.Event.BreakpointData;
+            if (breakpointData.EventType.HasFlag(BreakpointEventType.LOCATIONS_ADDED) ||
+                breakpointData.EventType.HasFlag(BreakpointEventType.LOCATIONS_REMOVED))
+            {
+                if (_breakpointManager.GetPendingBreakpointById(
+                    breakpointData.BreakpointId, out IPendingBreakpoint pendingBreakpoint))
+                {
+                    pendingBreakpoint.UpdateLocations();
+                }
+            }
+        }
     }
 }

@@ -110,7 +110,6 @@ namespace YetiVSI.DebugEngine
                 Trace.WriteLine(
                     "Failed to register PendingBreakpoint: breakpoint does not have an ID.");
             }
-            debugEngineHandler.OnBreakpointBound(pendingBreakpoint, debugProgram);
         }
 
         public void RegisterWatchpoint(IWatchpoint watchpoint)
@@ -188,6 +187,33 @@ namespace YetiVSI.DebugEngine
         public uint GetNumBoundBreakpoints()
         {
             return (uint)pendingBreakpoints.Values.Sum(bp => bp.GetNumLocations());
+        }
+
+        public void RemovePendingBreakpoint(IPendingBreakpoint breakpoint)
+        {
+            int id = breakpoint.GetId();
+            if (id != -1)
+            {
+                pendingBreakpoints.Remove(id);
+            }
+            else
+            {
+                Trace.WriteLine(
+                    "Failed to remove PendingBreakpoint: breakpoint does not have an ID.");
+            }
+        }
+
+        public void EmitBreakpointBoundEvent(
+            IPendingBreakpoint breakpoint,
+            IEnumerable<IDebugBoundBreakpoint2> newlyBoundBreakpoints,
+            BoundBreakpointEnumFactory breakpointBoundEnumFactory)
+        {
+            if (breakpoint.GetId() != -1)
+            {
+                debugEngineHandler.OnBreakpointBound(
+                    breakpoint, newlyBoundBreakpoints,
+                    breakpointBoundEnumFactory, debugProgram);
+            }
         }
     }
 }

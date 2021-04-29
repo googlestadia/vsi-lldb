@@ -31,6 +31,8 @@ service SbBreakpointLocationRpcService {
   }
   rpc SetIgnoreCount(SetIgnoreCountRequest) returns (SetIgnoreCountResponse) {
   }
+  rpc GetHitCount(GetHitCountRequest) returns (GetHitCountResponse) {
+  }
 }
 
 message SetEnabledRequest {
@@ -79,4 +81,12 @@ message SetIgnoreCountRequest {
 }
 
 message SetIgnoreCountResponse {
+}
+
+message GetHitCountRequest {
+  Common.GrpcSbBreakpointLocation breakpoint_location = 1;
+}
+
+message GetHitCountResponse {
+  uint32 result = 1;
 }

@@ -35,7 +35,7 @@ namespace YetiVSI.Test
 
         IEventManager _eventManager;
 
-        SbListener _listener;
+        ILldbListenerSubscriber _listenerSubscriber;
         SbProcess _process;
         SbDebugger _debugger;
 
@@ -63,7 +63,7 @@ namespace YetiVSI.Test
 
             _debugger = Substitute.For<SbDebugger>();
             _target = Substitute.For<RemoteTarget>();
-            _listener = Substitute.For<SbListener>();
+            _listenerSubscriber = Substitute.For<ILldbListenerSubscriber>();
             _process = Substitute.For<SbProcess>();
 
             _debugEngineHandler = Substitute.For<IDebugEngineHandler>();
@@ -80,7 +80,7 @@ namespace YetiVSI.Test
             _attachedProgram = new LldbAttachedProgram(
                 _breakpointManager, _eventManager, _lldbShell, _moduleFileLoader,
                 _debugEngineHandler, _taskExecutor, _debugProgram, _debugger, _target, _process,
-                exceptionManager, _debugModuleCache, _remotePid);
+                exceptionManager, _debugModuleCache, _listenerSubscriber, _remotePid);
         }
 
         [Test]
@@ -331,6 +331,43 @@ namespace YetiVSI.Test
             Assert.That(modules.Length, Is.EqualTo(2));
             Assert.That(modules[0], Is.EqualTo(matchingDebugModule));
             Assert.That(modules[1], Is.EqualTo(matchingDebugModule));
+        }
+
+        [TestCase(BreakpointEventType.LOCATIONS_REMOVED, TestName = "LocationsRemoved")]
+        [TestCase(BreakpointEventType.LOCATIONS_ADDED, TestName = "LocationsAdded")]
+        public void OnBreakpointChanged(BreakpointEventType eventType)
+        {
+            IPendingBreakpoint[] breakpoints = {
+                GetBreakpointSubstitute(1), GetBreakpointSubstitute(2),
+                GetBreakpointSubstitute(3)
+            };
+            _breakpointManager.GetPendingBreakpointById(Arg.Any<int>(), out IPendingBreakpoint _)
+                .Returns(x =>
+                {
+                    x[1] = breakpoints.First(b => b.GetId() == (int) x[0]);
+                    return true;
+                });
+            SbEvent evnt = Substitute.For<SbEvent>();
+            IEventBreakpointData breakpointData = Substitute.For<IEventBreakpointData>();
+            evnt.IsBreakpointEvent.Returns(true);
+            evnt.BreakpointData.Returns(breakpointData);
+            breakpointData.BreakpointId.Returns(2);
+            breakpointData.EventType.Returns(eventType);
+
+            _attachedProgram.Start(Substitute.For<IDebugEngine2>());
+            _listenerSubscriber.BreakpointChanged +=
+                Raise.EventWith(null, new BreakpointChangedEventArgs(evnt));
+
+            breakpoints[0].DidNotReceive().UpdateLocations();
+            breakpoints[1].Received(1).UpdateLocations();
+            breakpoints[2].DidNotReceive().UpdateLocations();
+        }
+
+        public IPendingBreakpoint GetBreakpointSubstitute(int id)
+        {
+            var breakpoint = Substitute.For<IPendingBreakpoint>();
+            breakpoint.GetId().Returns(id);
+            return breakpoint;
         }
     }
 }

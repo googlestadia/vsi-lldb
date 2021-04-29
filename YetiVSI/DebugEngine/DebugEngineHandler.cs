@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using DebuggerApi;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio;
@@ -67,10 +68,14 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Send a breakpoint bound event to the SDM.
         /// </summary>
-        public static void OnBreakpointBound(this IDebugEngineHandler handler,
-                                             IPendingBreakpoint pendingBreakpoint,
-                                             IGgpDebugProgram program) =>
-            handler.SendEvent(new BreakpointBoundEvent(pendingBreakpoint), program);
+        public static void OnBreakpointBound(
+            this IDebugEngineHandler handler, IPendingBreakpoint pendingBreakpoint,
+            IEnumerable<IDebugBoundBreakpoint2> newlyBoundBreakpoints,
+            BoundBreakpointEnumFactory breakpointBoundEnumFactory,
+            IGgpDebugProgram program) =>
+            handler.SendEvent(
+                new BreakpointBoundEvent(pendingBreakpoint, newlyBoundBreakpoints,
+                                         breakpointBoundEnumFactory), program);
 
         /// <summary>
         /// Send a watchpoint bound event to the SDM.

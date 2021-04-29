@@ -48,6 +48,7 @@ namespace YetiVSI.Test.DebugEngine
             var calledStateChanged = 0;
             var calledExceptionOccured = 0;
             var calledFileUpdate = 0;
+            var calledBreakpointChanged = 0;
             FileProcessingUpdate fileUpdate = null;
 
             lldbListenerSubscriber.StateChanged += (c, e) =>
@@ -60,6 +61,8 @@ namespace YetiVSI.Test.DebugEngine
                 fileUpdate = e?.Update;
                 eventReceived.Set();
             };
+            lldbListenerSubscriber.BreakpointChanged += (c, e) =>
+                UpdateCounterAndSetEventReceived(ref calledBreakpointChanged, eventReceived);
 
             lldbListenerSubscriber.Start();
             Assert.IsTrue(eventReceived.WaitOne(_maxTimeSpanWaitingForEvent));
@@ -67,6 +70,7 @@ namespace YetiVSI.Test.DebugEngine
 
             Assert.That(calledExceptionOccured, Is.EqualTo(0));
             Assert.That(calledStateChanged, Is.EqualTo(0));
+            Assert.That(calledBreakpointChanged, Is.EqualTo(0));
             Assert.That(calledFileUpdate, Is.EqualTo(1));
             Assert.That(fileUpdate, Is.Not.Null);
             Assert.That(fileUpdate.File, Is.EqualTo("/usr/local/cloudcast/lib/libggp.so"));
@@ -92,12 +96,15 @@ namespace YetiVSI.Test.DebugEngine
             var calledStateChanged = 0;
             var calledExceptionOccured = 0;
             var calledFileUpdate = 0;
+            var calledBreakpointChanged = 0;
             lldbListenerSubscriber.StateChanged += (c, e) =>
                 UpdateCounterAndSetEventReceived(ref calledStateChanged, eventReceived);
             lldbListenerSubscriber.ExceptionOccured += (c, e) =>
                 UpdateCounterAndSetEventReceived(ref calledExceptionOccured, eventReceived);
             lldbListenerSubscriber.FileUpdateReceived += (c, e) =>
                 UpdateCounterAndSetEventReceived(ref calledFileUpdate, eventReceived);
+            lldbListenerSubscriber.BreakpointChanged += (c, e) =>
+                UpdateCounterAndSetEventReceived(ref calledBreakpointChanged, eventReceived);
 
             lldbListenerSubscriber.Start();
             Assert.IsTrue(eventReceived.WaitOne(_maxTimeSpanWaitingForEvent));
@@ -106,6 +113,7 @@ namespace YetiVSI.Test.DebugEngine
             Assert.That(calledExceptionOccured, Is.EqualTo(0));
             Assert.That(calledStateChanged, Is.EqualTo(1));
             Assert.That(calledFileUpdate, Is.EqualTo(0));
+            Assert.That(calledBreakpointChanged, Is.EqualTo(0));
         }
 
         [Test]
@@ -131,12 +139,15 @@ namespace YetiVSI.Test.DebugEngine
             var calledStateChanged = 0;
             var calledExceptionOccured = 0;
             var calledFileUpdate = 0;
+            var calledBreakpointChanged = 0;
             lldbListenerSubscriber.StateChanged += (c, e) =>
                 UpdateCounterAndSetEventReceived(ref calledStateChanged, eventReceived);
             lldbListenerSubscriber.ExceptionOccured += (c, e) =>
                 UpdateCounterAndSetEventReceived(ref calledExceptionOccured, eventReceived);
             lldbListenerSubscriber.FileUpdateReceived += (c, e) =>
                 UpdateCounterAndSetEventReceived(ref calledFileUpdate, eventReceived);
+            lldbListenerSubscriber.BreakpointChanged += (c, e) =>
+                UpdateCounterAndSetEventReceived(ref calledBreakpointChanged, eventReceived);
 
             lldbListenerSubscriber.Start();
             Assert.IsTrue(eventReceived.WaitOne(_maxTimeSpanWaitingForEvent));
@@ -145,6 +156,7 @@ namespace YetiVSI.Test.DebugEngine
             Assert.That(calledExceptionOccured, Is.EqualTo(0));
             Assert.That(calledStateChanged, Is.EqualTo(0));
             Assert.That(calledFileUpdate, Is.EqualTo(0));
+            Assert.That(calledBreakpointChanged, Is.EqualTo(0));
         }
 
         [Test]
@@ -159,12 +171,15 @@ namespace YetiVSI.Test.DebugEngine
             var calledStateChanged = 0;
             var calledExceptionOccured = 0;
             var calledFileUpdate = 0;
+            var calledBreakpointChanged = 0;
             lldbListenerSubscriber.StateChanged += (c, e) =>
                 UpdateCounterAndSetEventReceived(ref calledStateChanged, eventReceived);
             lldbListenerSubscriber.ExceptionOccured += (c, e) =>
                 UpdateCounterAndSetEventReceived(ref calledExceptionOccured, eventReceived);
             lldbListenerSubscriber.FileUpdateReceived += (c, e) =>
                 UpdateCounterAndSetEventReceived(ref calledFileUpdate, eventReceived);
+            lldbListenerSubscriber.BreakpointChanged += (c, e) =>
+                UpdateCounterAndSetEventReceived(ref calledBreakpointChanged, eventReceived);
 
             lldbListenerSubscriber.Start();
             Assert.IsTrue(eventReceived.WaitOne(_maxTimeSpanWaitingForEvent));
@@ -173,6 +188,46 @@ namespace YetiVSI.Test.DebugEngine
             Assert.That(calledExceptionOccured, Is.EqualTo(1));
             Assert.That(calledStateChanged, Is.EqualTo(0));
             Assert.That(calledFileUpdate, Is.EqualTo(0));
+            Assert.That(calledBreakpointChanged, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void SubscriberWithBreakpointEventAvailableTest()
+        {
+            var eventReceived = new AutoResetEvent(false);
+            var mockSbEvent = Substitute.For<SbEvent>();
+            mockSbEvent.GetEventType().Returns(EventType.STATE_CHANGED);
+            mockSbEvent.IsBreakpointEvent.Returns(true);
+
+            var mockSbListener = Substitute.For<SbListener>();
+            mockSbListener.WaitForEvent(Arg.Any<uint>(), out var _).Returns(x => {
+                x[1] = mockSbEvent;
+                return true;
+            });
+
+            var lldbListenerSubscriber = new LldbListenerSubscriber(mockSbListener);
+
+            var calledStateChanged = 0;
+            var calledExceptionOccurred = 0;
+            var calledFileUpdate = 0;
+            var calledBreakpointChanged = 0;
+            lldbListenerSubscriber.StateChanged += (c, e) =>
+                UpdateCounterAndSetEventReceived(ref calledStateChanged, eventReceived);
+            lldbListenerSubscriber.ExceptionOccured += (c, e) =>
+                UpdateCounterAndSetEventReceived(ref calledExceptionOccurred, eventReceived);
+            lldbListenerSubscriber.FileUpdateReceived += (c, e) =>
+                UpdateCounterAndSetEventReceived(ref calledFileUpdate, eventReceived);
+            lldbListenerSubscriber.BreakpointChanged += (c, e) =>
+                UpdateCounterAndSetEventReceived(ref calledBreakpointChanged, eventReceived);
+
+            lldbListenerSubscriber.Start();
+            Assert.IsTrue(eventReceived.WaitOne(_maxTimeSpanWaitingForEvent));
+            lldbListenerSubscriber.Stop();
+
+            Assert.That(calledExceptionOccurred, Is.EqualTo(0));
+            Assert.That(calledStateChanged, Is.EqualTo(0));
+            Assert.That(calledFileUpdate, Is.EqualTo(0));
+            Assert.That(calledBreakpointChanged, Is.EqualTo(1));
         }
 
         void UpdateCounterAndSetEventReceived(ref int counter, AutoResetEvent eventAwaiter)

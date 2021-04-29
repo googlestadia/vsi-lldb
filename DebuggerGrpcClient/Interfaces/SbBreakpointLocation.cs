@@ -53,5 +53,10 @@ namespace DebuggerApi
         /// Set the breakpoint location to ignore the next |ignoreCount| hits.
         /// </summary>
         void SetIgnoreCount(uint ignoreCount);
+
+        /// <summary>
+        /// Get number of hits for the particular location.
+        /// </summary>
+        uint GetHitCount();
     }
 }

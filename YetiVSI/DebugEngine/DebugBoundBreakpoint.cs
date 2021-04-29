@@ -207,7 +207,7 @@ namespace YetiVSI.DebugEngine
             {
                 return AD7Constants.E_BP_DELETED;
             }
-            hitCount = _breakpointLocation.GetBreakpoint().GetHitCount();
+            hitCount = _breakpointLocation.GetHitCount();
             if (hitCount < _baseHitCount)
             {
                 Trace.WriteLine(
@@ -272,7 +272,7 @@ namespace YetiVSI.DebugEngine
             {
                 return AD7Constants.E_BP_DELETED;
             }
-            var totalHitCount = _breakpointLocation.GetBreakpoint().GetHitCount();
+            var totalHitCount = _breakpointLocation.GetHitCount();
             _baseHitCount = Convert.ToInt32(totalHitCount) - Convert.ToInt32(hitCount);
             // Recalculate the criteria that depend on hit count.
             SetPassCount(_passCount);

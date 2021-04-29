@@ -360,6 +360,8 @@ namespace YetiVSI.DebugEngine
             }
 
             var lldbListener = CreateListener(grpcConnection);
+            // This is required to catch breakpoint change events.
+            lldbTarget.AddListener(lldbListener, EventType.STATE_CHANGED);
             var listenerSubscriber = new LldbListenerSubscriber(lldbListener);
             var eventHandler = new EventHandler<FileUpdateReceivedEventArgs>(
                 (s, e) => ListenerSubscriberOnFileUpdateReceived(task, e));
