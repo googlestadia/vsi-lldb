@@ -20,6 +20,7 @@
 
 #include "LLDBAddress.h"
 #include "LLDBBreakpoint.h"
+#include "LLDBBroadcaster.h"
 #include "LLDBError.h"
 #include "LLDBInstruction.h"
 #include "LLDBListener.h"
@@ -187,6 +188,10 @@ SbProcess ^ LLDBTarget::GetProcess() {
     return nullptr;
   }
   return gcnew LLDBProcess(process);
+}
+
+SbBroadcaster ^ LLDBTarget::GetBroadcaster() {
+  return gcnew LLDBBroadcaster(target_->GetBroadcaster());
 }
 
 }  // namespace DebugEngine

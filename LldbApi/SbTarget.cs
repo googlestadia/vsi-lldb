@@ -116,5 +116,10 @@ namespace LldbApi
         /// Gets the process corresponding to the target.
         /// </summary>
         SbProcess GetProcess();
+
+        /// <summary>
+        /// Gets the broadcaster corresponding to the target.
+        /// </summary>
+        SbBroadcaster GetBroadcaster();
     }
 }

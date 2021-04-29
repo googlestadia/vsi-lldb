@@ -240,7 +240,9 @@ namespace DebuggerGrpcServer
             return new BreakpointErrorPair(breakpoint, BreakpointError.Success);
         }
 
-#endregion
+        public SbBroadcaster GetBroadcaster() => _sbTarget.GetBroadcaster();
+
+        #endregion
 
 #region RemoteTarget Helpers
 

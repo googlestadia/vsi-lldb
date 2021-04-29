@@ -60,6 +60,7 @@ ref class LLDBTarget sealed : SbTarget {
   virtual SbError ^
       SetModuleLoadAddress(SbModule ^ module, int64_t sectionsOffset);
   virtual SbProcess ^ GetProcess();
+  virtual SbBroadcaster ^ LLDBTarget::GetBroadcaster();
 
   // Get the underlying lldb object.
   lldb::SBTarget GetNativeObject();

@@ -139,5 +139,10 @@ namespace DebuggerGrpcServer
         // Returns the underlying SbTarget
         // </summary>
         SbTarget GetSbTarget();
+
+        /// <summary>
+        /// Returns the corresponding broadcaster.
+        /// </summary>
+        SbBroadcaster GetBroadcaster();
     }
 }
