@@ -42,6 +42,7 @@
     <ClCompile Include="LLDBEvalApi.cc" />
     <ClCompile Include="LLDBExpressionOptionsFactory.cc" />
     <ClCompile Include="LLDBExpressionOptions.cc" />
+    <ClCompile Include="LLDBBroadcaster.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LLDBCommandInterpreter.h" />
@@ -87,6 +88,7 @@
     <ClInclude Include="LLDBEvalApi.h" />
     <ClInclude Include="LLDBExpressionOptionsFactory.h" />
     <ClInclude Include="LLDBExpressionOptions.h" />
+    <ClInclude Include="LLDBBroadcaster.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source.def" />

@@ -12,6 +12,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="LLDBBroadcaster.h" />
     <ClInclude Include="LLDBCommandInterpreter.h" />
     <ClInclude Include="LLDBCommandReturnObject.h" />
     <ClInclude Include="LLDBEvalApi.h" />
@@ -60,6 +61,7 @@
     <ClCompile Include="LLDBAddress.cc" />
     <ClCompile Include="LLDBBreakpoint.cc" />
     <ClCompile Include="LLDBBreakpointLocation.cc" />
+    <ClCompile Include="LLDBBroadcaster.cc" />
     <ClCompile Include="LLDBCommandInterpreter.cpp" />
     <ClCompile Include="LLDBCommandReturnObject.cpp" />
     <ClCompile Include="LLDBError.cc" />
@@ -168,7 +170,6 @@
     <LinkKeyFile>$(KeyFileLocation)Key.snk</LinkKeyFile>
     <TargetName>GgpVsi.DebugEngine.LLDBWorker</TargetName>
   </PropertyGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
