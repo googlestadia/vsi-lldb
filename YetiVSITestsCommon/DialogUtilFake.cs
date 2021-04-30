@@ -99,8 +99,9 @@ namespace YetiVSITestsCommon
 
         public bool ShowYesNo(string message, string caption)
         {
-            ConfiguredResponse response =
-                _responses.FirstOrDefault(r => message.Contains(r.QuestionFragment));
+            ConfiguredResponse response = _responses.FirstOrDefault(
+                r => message.Contains(r.QuestionFragment) ||
+                    caption?.Contains(r.QuestionFragment) == true);
             if (response != null)
             {
                 RecordMessage(message, caption, MessageType.AnsweredYesNo);

@@ -228,7 +228,7 @@ namespace YetiVSI.GameLaunch
             bool okToStop = _actionRecorder.RecordUserAction(
                 ActionType.GameletPrepare,
                 () => _dialogUtil.ShowYesNo(ErrorStrings.GameletBusyDialogText,
-                                            "Stop running game?"));
+                                            ErrorStrings.StopRunningGame));
             if (!okToStop)
             {
                 return false;
