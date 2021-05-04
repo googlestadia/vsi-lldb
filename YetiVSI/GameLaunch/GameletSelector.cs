@@ -240,8 +240,8 @@ namespace YetiVSI.GameLaunch
             }
 
             bool thisInstance = selectedGamelet.Name == currentGameLaunch.GameletName;
-            string instanceName = gamelets.Single(g => g.Name == currentGameLaunch.GameletName)
-                .DisplayName;
+            string instanceName = gamelets
+                .SingleOrDefault(g => g.Name == currentGameLaunch.GameletName)?.DisplayName;
             bool okToStop = actionRecorder.RecordUserAction(ActionType.GameLaunchStopPrompt,
                                                             () => _dialogUtil.ShowYesNo(
                                                                 ErrorStrings.LaunchExistsDialogText(

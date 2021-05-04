@@ -170,13 +170,20 @@ namespace YetiVSI
             $"{Environment.NewLine}Would you like to stop the active game and launch this one?";
 
         public static string LaunchExistsDialogText(bool thisInstance, string instance,
-                                                    string testAccount, string devAccount) =>
-            $"Stop active game and launch new game?{Environment.NewLine}{Environment.NewLine}" +
-            $"Your {(string.IsNullOrEmpty(testAccount) ? "developer" : "test")} account " +
-            $"{(string.IsNullOrEmpty(testAccount) ? devAccount : testAccount)} is already " +
-            $"playing a game on {(thisInstance ? ThisInstance : $"the instance '{instance}'")}." +
-            $" An account can only play one game at a time.{Environment.NewLine}" +
-            "Would you like to stop your active game and launch this one?";
+                                                    string testAccount, string devAccount)
+        {
+            string instanceText = thisInstance ? ThisInstance :
+                string.IsNullOrWhiteSpace(instance) ? "another instance" :
+                $"the instance '{instance}'";
+            return
+                $"Stop active game and launch new game?{Environment.NewLine}{Environment.NewLine}" +
+                $"Your {(string.IsNullOrEmpty(testAccount) ? "developer" : "test")} account " +
+                $"{(string.IsNullOrEmpty(testAccount) ? devAccount : testAccount)} is already " +
+                $"playing a game on {instanceText}." +
+                $" An account can only play one game at a time.{Environment.NewLine}" +
+                "Would you like to stop your active game and launch this one?";
+        }
+
 
         public static string BuildIdCheckDetails(IEnumerable<string> matchedFiles,
                                                  IEnumerable<string> searchedPaths) =>
