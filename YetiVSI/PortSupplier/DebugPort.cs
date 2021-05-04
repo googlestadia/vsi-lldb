@@ -33,55 +33,54 @@ namespace YetiVSI.PortSupplier
     {
         public class Factory
         {
-            readonly DebugProcess.Factory debugProcessFactory;
-            readonly ProcessListRequest.Factory processListRequestFactory;
-            readonly CancelableTask.Factory cancelableTaskFactory;
-            readonly IDialogUtil dialogUtil;
-            readonly ISshManager sshManager;
-            readonly IMetrics metrics;
-            readonly string developerAccount;
+            readonly DebugProcess.Factory _debugProcessFactory;
+            readonly ProcessListRequest.Factory _processListRequestFactory;
+            readonly CancelableTask.Factory _cancelableTaskFactory;
+            readonly IDialogUtil _dialogUtil;
+            readonly ISshManager _sshManager;
+            readonly IMetrics _metrics;
+            readonly string _developerAccount;
 
             // For test substitution.
-            public Factory() { }
+            public Factory()
+            {
+            }
 
             public Factory(DebugProcess.Factory debugProcessFactory,
                            ProcessListRequest.Factory processListRequestFactory,
                            CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
                            ISshManager sshManager, IMetrics metrics, string developerAccount)
             {
-                this.debugProcessFactory = debugProcessFactory;
-                this.processListRequestFactory = processListRequestFactory;
-                this.cancelableTaskFactory = cancelableTaskFactory;
-                this.dialogUtil = dialogUtil;
-                this.sshManager = sshManager;
-                this.metrics = metrics;
-                this.developerAccount = developerAccount;
+                _debugProcessFactory = debugProcessFactory;
+                _processListRequestFactory = processListRequestFactory;
+                _cancelableTaskFactory = cancelableTaskFactory;
+                _dialogUtil = dialogUtil;
+                _sshManager = sshManager;
+                _metrics = metrics;
+                _developerAccount = developerAccount;
             }
 
-            public virtual IDebugPort2 Create(Gamelet gamelet, IDebugPortSupplier2 supplier,
-                string debugSessionId)
-            {
-                return new DebugPort(debugProcessFactory, processListRequestFactory,
-                                     cancelableTaskFactory, dialogUtil, sshManager, metrics,
-                                     gamelet, supplier, debugSessionId, developerAccount);
-            }
+            public virtual IDebugPort2 Create(
+                Gamelet gamelet, IDebugPortSupplier2 supplier, string debugSessionId) =>
+                new DebugPort(_debugProcessFactory, _processListRequestFactory,
+                              _cancelableTaskFactory, _dialogUtil, _sshManager, _metrics, gamelet,
+                              supplier, debugSessionId, _developerAccount);
         }
 
-        readonly CancelableTask.Factory cancelableTaskFactory;
-        readonly ISshManager sshManager;
-        readonly DebugProcess.Factory debugProcessFactory;
-        readonly ProcessListRequest.Factory processListRequestFactory;
-        readonly IDialogUtil dialogUtil;
-        readonly ActionRecorder actionRecorder;
-        readonly Guid guid;
-        readonly IDebugPortSupplier2 supplier;
-        readonly string developerAccount;
-        readonly DebugSessionMetrics debugSessionMetrics;
-
+        readonly CancelableTask.Factory _cancelableTaskFactory;
+        readonly ISshManager _sshManager;
+        readonly DebugProcess.Factory _debugProcessFactory;
+        readonly ProcessListRequest.Factory _processListRequestFactory;
+        readonly IDialogUtil _dialogUtil;
+        readonly ActionRecorder _actionRecorder;
+        readonly Guid _guid;
+        readonly IDebugPortSupplier2 _supplier;
+        readonly string _developerAccount;
+        readonly DebugSessionMetrics _debugSessionMetrics;
 
         public Gamelet Gamelet { get; }
 
-        public string DebugSessionId => debugSessionMetrics.DebugSessionId;
+        public string DebugSessionId => _debugSessionMetrics.DebugSessionId;
 
         DebugPort(DebugProcess.Factory debugProcessFactory,
                   ProcessListRequest.Factory processListRequestFactory,
@@ -89,29 +88,31 @@ namespace YetiVSI.PortSupplier
                   ISshManager sshManager, IMetrics metrics, Gamelet gamelet,
                   IDebugPortSupplier2 supplier, string debugSessionId, string developerAccount)
         {
-            this.debugProcessFactory = debugProcessFactory;
-            this.processListRequestFactory = processListRequestFactory;
-            this.dialogUtil = dialogUtil;
-            guid = Guid.NewGuid();
-            this.supplier = supplier;
-            this.developerAccount = developerAccount;
-            this.cancelableTaskFactory = cancelableTaskFactory;
-            this.sshManager = sshManager;
-            debugSessionMetrics = new DebugSessionMetrics(metrics);
-            debugSessionMetrics.DebugSessionId = debugSessionId;
-            actionRecorder = new ActionRecorder(debugSessionMetrics);
+            _debugProcessFactory = debugProcessFactory;
+            _processListRequestFactory = processListRequestFactory;
+            _dialogUtil = dialogUtil;
+            _guid = Guid.NewGuid();
+            _supplier = supplier;
+            _developerAccount = developerAccount;
+            _cancelableTaskFactory = cancelableTaskFactory;
+            _sshManager = sshManager;
+            _debugSessionMetrics = new DebugSessionMetrics(metrics);
+            _debugSessionMetrics.DebugSessionId = debugSessionId;
+            _actionRecorder = new ActionRecorder(_debugSessionMetrics);
             Gamelet = gamelet;
         }
 
-        private List<ProcessListEntry> GetProcessList(IProcessListRequest request)
+        List<ProcessListEntry> GetProcessList(IProcessListRequest request)
         {
             // TODO: Use single cancelable task for both actions
             try
             {
-                var enableSshAction = actionRecorder.CreateToolAction(ActionType.GameletEnableSsh);
-                if (!cancelableTaskFactory.Create(TaskMessages.EnablingSSH,
-                    async _ => await sshManager.EnableSshAsync(Gamelet, enableSshAction))
-                        .RunAndRecord(enableSshAction))
+                var enableSshAction = _actionRecorder.CreateToolAction(ActionType.GameletEnableSsh);
+                if (!_cancelableTaskFactory
+                         .Create(TaskMessages.EnablingSSH,
+                                 async _ =>
+                                     await _sshManager.EnableSshAsync(Gamelet, enableSshAction))
+                         .RunAndRecord(enableSshAction))
                 {
                     return new List<ProcessListEntry>();
                 }
@@ -119,13 +120,14 @@ namespace YetiVSI.PortSupplier
             catch (Exception e) when (e is SshKeyException || e is CloudException)
             {
                 Trace.WriteLine(e.ToString());
-                dialogUtil.ShowError(ErrorStrings.FailedToEnableSsh(e.Message), e.ToString());
+                _dialogUtil.ShowError(ErrorStrings.FailedToEnableSsh(e.Message), e.ToString());
                 return new List<ProcessListEntry>();
             }
 
             // TODO: Handle ProcessException
-            var processListAction = actionRecorder.CreateToolAction(ActionType.ProcessList);
-            var queryProcessesTask = cancelableTaskFactory.Create("Querying instance processes...",
+            var processListAction = _actionRecorder.CreateToolAction(ActionType.ProcessList);
+            var queryProcessesTask = _cancelableTaskFactory.Create(
+                "Querying instance processes...",
                 async () => await request.GetBySshAsync(new SshTarget(Gamelet)));
             queryProcessesTask.RunAndRecord(processListAction);
             return queryProcessesTask.Result;
@@ -133,7 +135,7 @@ namespace YetiVSI.PortSupplier
 
         public int GetPortName(out string name)
         {
-            if (developerAccount != Gamelet.ReserverEmail)
+            if (_developerAccount != Gamelet.ReserverEmail)
             {
                 string reserver = string.IsNullOrEmpty(Gamelet.ReserverName)
                     ? Gamelet.ReserverEmail
@@ -155,29 +157,30 @@ namespace YetiVSI.PortSupplier
 
         public int EnumProcesses(out IEnumDebugProcesses2 processesEnum)
         {
-            List<IDebugProcess2> processes = null;
+            List<IDebugProcess2> processes;
             try
             {
-                var results = GetProcessList(processListRequestFactory.Create());
-                processes = results.Select(r =>
-                {
-                    return debugProcessFactory.Create(this, r.Pid, r.Title, r.Command);
-                }).ToList();
+                var results = GetProcessList(_processListRequestFactory.Create());
+                processes =
+                    results
+                        .Select(r => _debugProcessFactory.Create(this, r.Pid, r.Title, r.Command))
+                        .ToList();
             }
             catch (ProcessException e)
             {
-                Trace.WriteLine("ProcessException:" + e.ToString());
-                dialogUtil.ShowError(ErrorStrings.ErrorQueryingGameletProcesses(e.Message),
-                    e.ToString());
+                Trace.WriteLine("ProcessException:" + e);
+                _dialogUtil.ShowError(ErrorStrings.ErrorQueryingGameletProcesses(e.Message),
+                                      e.ToString());
                 processes = new List<IDebugProcess2>();
             }
+
             processesEnum = new ProcessesEnum(processes.ToArray());
             return VSConstants.S_OK;
         }
 
         public int GetPortId(out Guid guid)
         {
-            guid = this.guid;
+            guid = _guid;
             return VSConstants.S_OK;
         }
 
@@ -189,7 +192,7 @@ namespace YetiVSI.PortSupplier
 
         public int GetPortSupplier(out IDebugPortSupplier2 supplier)
         {
-            supplier = this.supplier;
+            supplier = _supplier;
             return VSConstants.S_OK;
         }
 
@@ -199,17 +202,13 @@ namespace YetiVSI.PortSupplier
             return VSConstants.E_NOTIMPL;
         }
 
-        public int LaunchSuspended(
-            string exe, string ags, string dir, string env, uint stdInput, uint stdOutput,
-            uint stdError, out IDebugProcess2 process)
+        public int LaunchSuspended(string exe, string ags, string dir, string env, uint stdInput,
+                                   uint stdOutput, uint stdError, out IDebugProcess2 process)
         {
             process = null;
             return VSConstants.E_NOTIMPL;
         }
 
-        public int ResumeProcess(IDebugProcess2 process)
-        {
-            return VSConstants.E_NOTIMPL;
-        }
+        public int ResumeProcess(IDebugProcess2 process) => VSConstants.E_NOTIMPL;
     }
 }

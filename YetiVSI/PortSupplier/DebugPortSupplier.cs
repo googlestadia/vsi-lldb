@@ -34,16 +34,15 @@ namespace YetiVSI.PortSupplier
     [Guid("79a01686-eae4-4d57-9ffd-78ea68d131e9")]
     public class DebugPortSupplier : IDebugPortSupplier2, IDebugPortSupplierDescription2
     {
-        readonly DebugPort.Factory debugPortFactory;
-        readonly GameletClient.Factory gameletClientFactory;
-        readonly IExtensionOptions options;
-        readonly IDialogUtil dialogUtil;
-        readonly IMetrics metrics;
-        readonly CancelableTask.Factory cancelableTaskFactory;
-        readonly ICloudRunner cloudRunner;
-        readonly string developerAccount;
+        readonly DebugPort.Factory _debugPortFactory;
+        readonly GameletClient.Factory _gameletClientFactory;
+        readonly IDialogUtil _dialogUtil;
+        readonly IMetrics _metrics;
+        readonly CancelableTask.Factory _cancelableTaskFactory;
+        readonly ICloudRunner _cloudRunner;
+        readonly string _developerAccount;
 
-        List<IDebugPort2> ports = new List<IDebugPort2>();
+        List<IDebugPort2> _ports = new List<IDebugPort2>();
 
         // Creates a DebugPortSupplier.  This will be invoked by Visual Studio based on this class
         // Guid being in the registry.
@@ -51,8 +50,9 @@ namespace YetiVSI.PortSupplier
         {
             // Factory creation for the PortSupplier entry point.
             var serviceManager = new ServiceManager();
-            options = ((YetiVSIService)serviceManager.RequireGlobalService(
-                    typeof(YetiVSIService))).Options;
+            IExtensionOptions options =
+                ((YetiVSIService)serviceManager.RequireGlobalService(typeof(YetiVSIService)))
+                    .Options;
             var taskContext = serviceManager.GetJoinableTaskContext();
             var debugPropertyFactory = new DebugProperty.Factory();
             var debugProgramFactory = new DebugProgram.Factory(debugPropertyFactory, options);
@@ -65,23 +65,24 @@ namespace YetiVSI.PortSupplier
             var accountOptionLoader = new VsiAccountOptionLoader(options);
             var credentialManager =
                 new CredentialManager(credentialConfigFactory, accountOptionLoader);
-            developerAccount = credentialManager.LoadAccount();
-            dialogUtil = new DialogUtil();
+            _developerAccount = credentialManager.LoadAccount();
+            _dialogUtil = new DialogUtil();
             var progressDialogFactory = new ProgressDialog.Factory();
-            cancelableTaskFactory = new CancelableTask.Factory(taskContext, progressDialogFactory);
+            _cancelableTaskFactory = new CancelableTask.Factory(taskContext, progressDialogFactory);
             var cloudConnection = new CloudConnection();
             // NOTE: this CloudRunner is re-used for all subsequent Attach to Process windows.
-            cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager,
-                cloudConnection, new GgpSDKUtil());
+            _cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager, cloudConnection,
+                                           new GgpSDKUtil());
             var sshKeyLoader = new SshKeyLoader(managedProcessFactory);
             var sshKnownHostsWriter = new SshKnownHostsWriter();
-            gameletClientFactory = new GameletClient.Factory();
-            var sshManager = new SshManager(gameletClientFactory, cloudRunner, sshKeyLoader,
-                sshKnownHostsWriter, new RemoteCommand(managedProcessFactory));
-            metrics = (IMetrics)serviceManager.RequireGlobalService(typeof(SMetrics));
-            debugPortFactory = new DebugPort.Factory(debugProcessFactory, processListRequestFactory,
-                                                     cancelableTaskFactory, dialogUtil, sshManager,
-                                                     metrics, developerAccount);
+            _gameletClientFactory = new GameletClient.Factory();
+            var sshManager =
+                new SshManager(_gameletClientFactory, _cloudRunner, sshKeyLoader,
+                               sshKnownHostsWriter, new RemoteCommand(managedProcessFactory));
+            _metrics = (IMetrics)serviceManager.RequireGlobalService(typeof(SMetrics));
+            _debugPortFactory = new DebugPort.Factory(
+                debugProcessFactory, processListRequestFactory, _cancelableTaskFactory, _dialogUtil,
+                sshManager, _metrics, _developerAccount);
         }
 
         // Creates a DebugPortSupplier with specific factories.  Used by tests.
@@ -91,33 +92,31 @@ namespace YetiVSI.PortSupplier
                                  CancelableTask.Factory cancelableTaskFactory, IMetrics metrics,
                                  ICloudRunner cloudRunner, string developerAccount)
         {
-            this.debugPortFactory = debugPortFactory;
-            this.gameletClientFactory = gameletClientFactory;
-            this.options = options;
-            this.dialogUtil = dialogUtil;
-            this.cancelableTaskFactory = cancelableTaskFactory;
-            this.metrics = metrics;
-            this.cloudRunner = cloudRunner;
-            this.developerAccount = developerAccount;
+            _debugPortFactory = debugPortFactory;
+            _gameletClientFactory = gameletClientFactory;
+            _dialogUtil = dialogUtil;
+            _cancelableTaskFactory = cancelableTaskFactory;
+            _metrics = metrics;
+            _cloudRunner = cloudRunner;
+            _developerAccount = developerAccount;
         }
 
         public int AddPort(IDebugPortRequest2 request, out IDebugPort2 port)
         {
-            var debugSessionMetrics = new DebugSessionMetrics(metrics);
+            var debugSessionMetrics = new DebugSessionMetrics(_metrics);
             debugSessionMetrics.UseNewDebugSessionId();
             var actionRecorder = new ActionRecorder(debugSessionMetrics);
 
             port = null;
 
-            string gameletIdOrName;
-            if (request.GetPortName(out gameletIdOrName) != VSConstants.S_OK)
+            if (request.GetPortName(out string gameletIdOrName) != VSConstants.S_OK)
             {
                 return VSConstants.E_FAIL;
             }
 
             var action = actionRecorder.CreateToolAction(ActionType.GameletGet);
-            var gameletClient = gameletClientFactory.Create(cloudRunner.Intercept(action));
-            var gameletTask = cancelableTaskFactory.Create(
+            var gameletClient = _gameletClientFactory.Create(_cloudRunner.Intercept(action));
+            var gameletTask = _cancelableTaskFactory.Create(
                 "Querying instance...",
                 async () => await gameletClient.LoadByNameOrIdAsync(gameletIdOrName));
             try
@@ -127,30 +126,28 @@ namespace YetiVSI.PortSupplier
             catch (CloudException e)
             {
                 Trace.WriteLine(e.ToString());
-                dialogUtil.ShowError(e.Message);
+                _dialogUtil.ShowError(e.Message);
                 return VSConstants.S_OK;
             }
-            var debugPort = debugPortFactory.Create(gameletTask.Result, this,
-                debugSessionMetrics.DebugSessionId);
-            ports.Add(debugPort);
+
+            var debugPort = _debugPortFactory.Create(gameletTask.Result, this,
+                                                     debugSessionMetrics.DebugSessionId);
+            _ports.Add(debugPort);
             port = debugPort;
             return VSConstants.S_OK;
         }
 
-        public int CanAddPort()
-        {
-            return VSConstants.S_OK;
-        }
+        public int CanAddPort() => VSConstants.S_OK;
 
         public int EnumPorts(out IEnumDebugPorts2 portsEnum)
         {
-            var debugSessionMetrics = new DebugSessionMetrics(metrics);
+            var debugSessionMetrics = new DebugSessionMetrics(_metrics);
             debugSessionMetrics.UseNewDebugSessionId();
             var actionRecorder = new ActionRecorder(debugSessionMetrics);
 
             var action = actionRecorder.CreateToolAction(ActionType.GameletsList);
-            var gameletClient = gameletClientFactory.Create(cloudRunner.Intercept(action));
-            var gameletsTask = cancelableTaskFactory.Create(
+            var gameletClient = _gameletClientFactory.Create(_cloudRunner.Intercept(action));
+            var gameletsTask = _cancelableTaskFactory.Create(
                 "Querying instances...", () => gameletClient.ListGameletsAsync(onlyOwned: false));
             try
             {
@@ -159,46 +156,47 @@ namespace YetiVSI.PortSupplier
                 // show reserved instances first
                 gamelets.Sort((g1, g2) =>
                 {
-                    if (g1.ReserverEmail != developerAccount &&
-                        g2.ReserverEmail != developerAccount)
+                    if (g1.ReserverEmail != _developerAccount &&
+                        g2.ReserverEmail != _developerAccount)
                     {
                         return string.CompareOrdinal(g2.ReserverEmail, g1.ReserverEmail);
                     }
 
-                    if (g1.ReserverEmail == developerAccount &&
-                        g2.ReserverEmail == developerAccount)
+                    if (g1.ReserverEmail == _developerAccount &&
+                        g2.ReserverEmail == _developerAccount)
                     {
                         return string.CompareOrdinal(g2.DisplayName, g1.DisplayName);
                     }
 
-                    return g1.ReserverEmail == developerAccount ? 1 : -1;
+                    return g1.ReserverEmail == _developerAccount ? 1 : -1;
                 });
-                ports = gamelets
-                            .Select(gamelet => debugPortFactory.Create(
-                                        gamelet, this, debugSessionMetrics.DebugSessionId))
-                            .ToList();
+                _ports = gamelets
+                             .Select(gamelet => _debugPortFactory.Create(
+                                         gamelet, this, debugSessionMetrics.DebugSessionId))
+                             .ToList();
             }
             catch (CloudException e)
             {
                 Trace.WriteLine(e.ToString());
-                dialogUtil.ShowError(e.Message);
-                ports.Clear();
+                _dialogUtil.ShowError(e.Message);
+                _ports.Clear();
             }
-            portsEnum = new PortsEnum(ports.ToArray());
+
+            portsEnum = new PortsEnum(_ports.ToArray());
             return VSConstants.S_OK;
         }
 
         public int GetPort(ref Guid portGuid, out IDebugPort2 resultPort)
         {
-            foreach (var port in ports)
+            foreach (IDebugPort2 port in _ports)
             {
-                Guid guid;
-                if (port.GetPortId(out guid) == VSConstants.S_OK && guid == portGuid)
+                if (port.GetPortId(out Guid guid) == VSConstants.S_OK && guid == portGuid)
                 {
                     resultPort = port;
                     return VSConstants.S_OK;
                 }
             }
+
             resultPort = null;
             return DebugEngine.AD7Constants.E_PORTSUPPLIER_NO_PORT;
         }
@@ -215,16 +213,12 @@ namespace YetiVSI.PortSupplier
             return VSConstants.S_OK;
         }
 
-        public int RemovePort(IDebugPort2 port)
-        {
-            return VSConstants.E_NOTIMPL;
-        }
+        public int RemovePort(IDebugPort2 port) => VSConstants.E_NOTIMPL;
 
-        public int GetDescription(
-            enum_PORT_SUPPLIER_DESCRIPTION_FLAGS[] flags, out string text)
+        public int GetDescription(enum_PORT_SUPPLIER_DESCRIPTION_FLAGS[] flags, out string text)
         {
-            text = "The Stadia transport lets you select an instance from the Qualifier " + 
-                "drop-down menu and remotely attach to an existing process on that instance";
+            text = "The Stadia transport lets you select an instance from the Qualifier " +
+                   "drop-down menu and remotely attach to an existing process on that instance";
             return VSConstants.S_OK;
         }
     }
