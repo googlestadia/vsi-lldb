@@ -33,115 +33,130 @@ namespace YetiVSI.Test.PortSupplier
     [TestFixture]
     class DebugPortTests
     {
-        const string TEST_GAMELET_IP = "1.2.3.4";
-        const string TEST_GAMELET_TARGET = TEST_GAMELET_IP + ":44722";
-        const string TEST_GAMELET_ID = "gameletid";
-        const string TEST_GAMELET_NAME = "gamelet name";
-        const string TEST_DEBUG_SESSION_ID = "abc123";
+        const string _reserverAccount = "reserver@test.com";
+        const string _testGameletIp = "1.2.3.4";
+        const string _testGameletTarget = _testGameletIp + ":44722";
+        const string _testGameletId = "gameletid";
+        const string _testGameletName = "gamelet name";
+        const string _testDebugSessionId = "abc123";
 
-        DebugProcess.Factory processFactory;
-        IProcessListRequest processListRequest;
-        IDialogUtil dialogUtil;
-        ISshManager sshManager;
-        IMetrics metrics;
+        DebugProcess.Factory _processFactory;
+        IProcessListRequest _processListRequest;
+        IDialogUtil _dialogUtil;
+        ISshManager _sshManager;
+        IMetrics _metrics;
 
-        DebugPort.Factory portFactory;
-        IDebugPortSupplier2 portSupplier;
+        DebugPort.Factory _portFactory;
+        IDebugPortSupplier2 _portSupplier;
 
         [SetUp]
         public void SetUp()
         {
-            processFactory = Substitute.For<DebugProcess.Factory>();
-            dialogUtil = Substitute.For<IDialogUtil>();
-            sshManager = Substitute.For<ISshManager>();
+            _processFactory = Substitute.For<DebugProcess.Factory>();
+            _dialogUtil = Substitute.For<IDialogUtil>();
+            _sshManager = Substitute.For<ISshManager>();
 
-            processListRequest = Substitute.For<IProcessListRequest>();
+            _processListRequest = Substitute.For<IProcessListRequest>();
             var processListRequestFactory = Substitute.For<ProcessListRequest.Factory>();
-            processListRequestFactory.Create().Returns(processListRequest);
+            processListRequestFactory.Create().Returns(_processListRequest);
 
             var cancelableTaskFactory =
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
 
-            metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IMetrics>();
 
-            portFactory = new DebugPort.Factory(processFactory, processListRequestFactory,
-                                                cancelableTaskFactory, dialogUtil, sshManager,
-                                                metrics);
-            portSupplier = Substitute.For<IDebugPortSupplier2>();
+            _portFactory = new DebugPort.Factory(_processFactory, processListRequestFactory,
+                                                 cancelableTaskFactory, _dialogUtil, _sshManager,
+                                                 _metrics, _reserverAccount);
+            _portSupplier = Substitute.For<IDebugPortSupplier2>();
         }
 
         [Test]
         public void GetPortRequest()
         {
-            var port = portFactory.Create(new Gamelet(), portSupplier, TEST_DEBUG_SESSION_ID);
+            var port = _portFactory.Create(new Gamelet(), _portSupplier, _testDebugSessionId);
 
-            IDebugPortRequest2 request;
-            Assert.AreEqual(AD7Constants.E_PORT_NO_REQUEST, port.GetPortRequest(out request));
+            Assert.AreEqual(AD7Constants.E_PORT_NO_REQUEST,
+                            port.GetPortRequest(out IDebugPortRequest2 request));
             Assert.IsNull(request);
         }
 
         [Test]
         public void GetPortSupplier()
         {
-            var port = portFactory.Create(new Gamelet(), this.portSupplier, TEST_DEBUG_SESSION_ID);
+            var port = _portFactory.Create(new Gamelet(), this._portSupplier, _testDebugSessionId);
 
-            IDebugPortSupplier2 portSupplier;
-            Assert.AreEqual(VSConstants.S_OK, port.GetPortSupplier(out portSupplier));
-            Assert.AreEqual(this.portSupplier, portSupplier);
+            Assert.AreEqual(VSConstants.S_OK,
+                            port.GetPortSupplier(out IDebugPortSupplier2 portSupplier));
+            Assert.AreEqual(this._portSupplier, portSupplier);
         }
 
         [Test]
         public void GetPortNameById()
         {
-            var port = portFactory.Create(new Gamelet {Id = TEST_GAMELET_ID, DisplayName = ""},
-                                          portSupplier, TEST_DEBUG_SESSION_ID);
+            var port = _portFactory.Create(new Gamelet { Id = _testGameletId, DisplayName = "",
+                                                         ReserverEmail = _reserverAccount },
+                                           _portSupplier, _testDebugSessionId);
 
-            string name;
-            Assert.AreEqual(VSConstants.S_OK, port.GetPortName(out name));
-            Assert.AreEqual(TEST_GAMELET_ID, name);
+            Assert.AreEqual(VSConstants.S_OK, port.GetPortName(out string name));
+            Assert.AreEqual(_testGameletId, name);
         }
 
         [Test]
-        public void GetPortNameByName()
+        public void GetPortNameByNameForReserver()
         {
-            var port = portFactory.Create(
-                new Gamelet {Id = TEST_GAMELET_ID, DisplayName = TEST_GAMELET_NAME}, portSupplier,
-                TEST_DEBUG_SESSION_ID);
+            var port = _portFactory.Create(new Gamelet { Id = _testGameletId,
+                                                         DisplayName = _testGameletName,
+                                                         ReserverEmail = _reserverAccount },
+                                           _portSupplier, _testDebugSessionId);
 
-            string name;
-            Assert.AreEqual(VSConstants.S_OK, port.GetPortName(out name));
+            Assert.AreEqual(VSConstants.S_OK, port.GetPortName(out string name));
             Assert.AreEqual("gamelet name [gameletid]", name);
+        }
+
+        [Test]
+        public void GetPortNameForNonReserver()
+        {
+            var port = _portFactory.Create(
+                new Gamelet { Id = _testGameletId, DisplayName = _testGameletName,
+                              ReserverEmail = "anotherReserver@test.com" },
+                _portSupplier, _testDebugSessionId);
+
+            Assert.AreEqual(VSConstants.S_OK, port.GetPortName(out string name));
+            Assert.AreEqual("Reserver: anotherReserver@test.com; Instance: gamelet name", name);
         }
 
         [Test]
         public void GetDebugSessionId()
         {
-            var port = portFactory.Create(new Gamelet(), portSupplier, TEST_DEBUG_SESSION_ID);
+            var port = _portFactory.Create(new Gamelet(), _portSupplier, _testDebugSessionId);
 
-            Assert.AreEqual(TEST_DEBUG_SESSION_ID, ((DebugPort) port).DebugSessionId);
+            Assert.AreEqual(_testDebugSessionId, ((DebugPort)port).DebugSessionId);
         }
 
         [Test]
         public void EnumProcesses()
         {
-            var gamelet = new Gamelet {Id = TEST_GAMELET_ID, IpAddr = TEST_GAMELET_IP};
-            var port = portFactory.Create(gamelet, portSupplier, TEST_DEBUG_SESSION_ID);
+            var gamelet = new Gamelet { Id = _testGameletId, IpAddr = _testGameletIp };
+            var port = _portFactory.Create(gamelet, _portSupplier, _testDebugSessionId);
 
-            sshManager.EnableSshAsync(gamelet, Arg.Any<IAction>()).Returns(Task.FromResult(true));
+            _sshManager.EnableSshAsync(gamelet, Arg.Any<IAction>()).Returns(Task.FromResult(true));
 
             var entry1 = new ProcessListEntry {Pid = 101, Title = "title1", Command = "command 1"};
             var entry2 = new ProcessListEntry {Pid = 102, Title = "title2", Command = "command 2"};
-            processListRequest.GetBySshAsync(new SshTarget(TEST_GAMELET_TARGET)).Returns(
-                new List<ProcessListEntry>() {entry1, entry2});
+            _processListRequest.GetBySshAsync(new SshTarget(_testGameletTarget))
+                .Returns(new List<ProcessListEntry>() { entry1, entry2 });
 
             var process1 = Substitute.For<IDebugProcess2>();
-            processFactory.Create(port, entry1.Pid, entry1.Title, entry1.Command).Returns(process1);
+            _processFactory.Create(port, entry1.Pid, entry1.Title, entry1.Command)
+                .Returns(process1);
 
             var process2 = Substitute.For<IDebugProcess2>();
-            processFactory.Create(port, entry2.Pid, entry2.Title, entry2.Command).Returns(process2);
+            _processFactory.Create(port, entry2.Pid, entry2.Title, entry2.Command)
+                .Returns(process2);
 
-            IEnumDebugProcesses2 processesEnum;
-            Assert.AreEqual(VSConstants.S_OK, port.EnumProcesses(out processesEnum));
+            Assert.AreEqual(VSConstants.S_OK,
+                            port.EnumProcesses(out IEnumDebugProcesses2 processesEnum));
 
             var processes = new IDebugProcess2[2];
             uint numFetched = 0;
@@ -159,23 +174,22 @@ namespace YetiVSI.Test.PortSupplier
         [Test]
         public void EnumProcessesError()
         {
-            var gamelet = new Gamelet {Id = TEST_GAMELET_ID, IpAddr = TEST_GAMELET_IP};
-            var port = portFactory.Create(gamelet, portSupplier, TEST_DEBUG_SESSION_ID);
+            var gamelet = new Gamelet { Id = _testGameletId, IpAddr = _testGameletIp };
+            var port = _portFactory.Create(gamelet, _portSupplier, _testDebugSessionId);
 
-            sshManager.EnableSshAsync(gamelet, Arg.Any<IAction>()).Returns(Task.FromResult(true));
+            _sshManager.EnableSshAsync(gamelet, Arg.Any<IAction>()).Returns(Task.FromResult(true));
 
-            processListRequest.When(x => x.GetBySshAsync(new SshTarget(TEST_GAMELET_TARGET)))
+            _processListRequest.When(x => x.GetBySshAsync(new SshTarget(_testGameletTarget)))
                 .Do(x => { throw new ProcessException("test exception"); });
 
-            IEnumDebugProcesses2 processesEnum;
-            Assert.AreEqual(VSConstants.S_OK, port.EnumProcesses(out processesEnum));
+            Assert.AreEqual(VSConstants.S_OK,
+                            port.EnumProcesses(out IEnumDebugProcesses2 processesEnum));
 
-            uint count = 0;
-            Assert.AreEqual(VSConstants.S_OK, processesEnum.GetCount(out count));
+            Assert.AreEqual(VSConstants.S_OK, processesEnum.GetCount(out uint count));
             Assert.AreEqual(0, count);
 
-            dialogUtil.Received().ShowError(Arg.Is<string>(x => x.Contains("test exception")),
-                                            Arg.Any<string>());
+            _dialogUtil.Received().ShowError(Arg.Is<string>(x => x.Contains("test exception")),
+                                             Arg.Any<string>());
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
                                  DeveloperEventStatus.Types.Code.Success);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiProcessList,
@@ -185,33 +199,31 @@ namespace YetiVSI.Test.PortSupplier
         [Test]
         public void EnableSshError()
         {
-            var gamelet = new Gamelet {Id = TEST_GAMELET_ID, IpAddr = TEST_GAMELET_IP};
-            var port = portFactory.Create(gamelet, portSupplier, TEST_DEBUG_SESSION_ID);
+            var gamelet = new Gamelet { Id = _testGameletId, IpAddr = _testGameletIp };
+            var port = _portFactory.Create(gamelet, _portSupplier, _testDebugSessionId);
 
-            sshManager.When(x => x.EnableSshAsync(gamelet, Arg.Any<IAction>()))
-                .Do(x => { throw new SshKeyException("test exception"); });
+            _sshManager.When(x => x.EnableSshAsync(gamelet, Arg.Any<IAction>())).Do(x => {
+                throw new SshKeyException("test exception");
+            });
 
-            IEnumDebugProcesses2 processesEnum;
-            Assert.AreEqual(VSConstants.S_OK, port.EnumProcesses(out processesEnum));
+            Assert.AreEqual(VSConstants.S_OK,
+                            port.EnumProcesses(out IEnumDebugProcesses2 processesEnum));
 
-            uint count = 0;
-            Assert.AreEqual(VSConstants.S_OK, processesEnum.GetCount(out count));
+            Assert.AreEqual(VSConstants.S_OK, processesEnum.GetCount(out uint count));
             Assert.AreEqual(0, count);
 
-            dialogUtil.Received().ShowError(Arg.Is<string>(x => x.Contains("test exception")),
-                                            Arg.Any<string>());
+            _dialogUtil.Received().ShowError(Arg.Is<string>(x => x.Contains("test exception")),
+                                             Arg.Any<string>());
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
                                  DeveloperEventStatus.Types.Code.InternalError);
         }
 
-        private void AssertMetricRecorded(DeveloperEventType.Types.Type type,
-                                          DeveloperEventStatus.Types.Code status)
+        void AssertMetricRecorded(DeveloperEventType.Types.Type type,
+                                  DeveloperEventStatus.Types.Code status)
         {
-            metrics.Received()
-                .RecordEvent(
-                    type,
-                    Arg.Is<DeveloperLogEvent>(p => p.StatusCode == status &&
-                                                  p.DebugSessionIdStr == TEST_DEBUG_SESSION_ID));
+            _metrics.Received().RecordEvent(
+                type, Arg.Is<DeveloperLogEvent>(p => p.StatusCode == status &&
+                                                     p.DebugSessionIdStr == _testDebugSessionId));
         }
     }
 }

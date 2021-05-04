@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using GgpGrpc.Models;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
@@ -40,6 +41,7 @@ namespace YetiVSI.PortSupplier
         readonly IMetrics metrics;
         readonly CancelableTask.Factory cancelableTaskFactory;
         readonly ICloudRunner cloudRunner;
+        readonly string developerAccount;
 
         List<IDebugPort2> ports = new List<IDebugPort2>();
 
@@ -63,6 +65,7 @@ namespace YetiVSI.PortSupplier
             var accountOptionLoader = new VsiAccountOptionLoader(options);
             var credentialManager =
                 new CredentialManager(credentialConfigFactory, accountOptionLoader);
+            developerAccount = credentialManager.LoadAccount();
             dialogUtil = new DialogUtil();
             var progressDialogFactory = new ProgressDialog.Factory();
             cancelableTaskFactory = new CancelableTask.Factory(taskContext, progressDialogFactory);
@@ -76,17 +79,17 @@ namespace YetiVSI.PortSupplier
             var sshManager = new SshManager(gameletClientFactory, cloudRunner, sshKeyLoader,
                 sshKnownHostsWriter, new RemoteCommand(managedProcessFactory));
             metrics = (IMetrics)serviceManager.RequireGlobalService(typeof(SMetrics));
-            debugPortFactory = new DebugPort.Factory(
-                debugProcessFactory, processListRequestFactory, cancelableTaskFactory,
-                dialogUtil, sshManager, metrics);
+            debugPortFactory = new DebugPort.Factory(debugProcessFactory, processListRequestFactory,
+                                                     cancelableTaskFactory, dialogUtil, sshManager,
+                                                     metrics, developerAccount);
         }
 
         // Creates a DebugPortSupplier with specific factories.  Used by tests.
-        public DebugPortSupplier(
-            DebugPort.Factory debugPortFactory,
-            GameletClient.Factory gameletClientFactory, IExtensionOptions options,
-            IDialogUtil dialogUtil, CancelableTask.Factory cancelableTaskFactory, IMetrics metrics,
-            ICloudRunner cloudRunner)
+        public DebugPortSupplier(DebugPort.Factory debugPortFactory,
+                                 GameletClient.Factory gameletClientFactory,
+                                 IExtensionOptions options, IDialogUtil dialogUtil,
+                                 CancelableTask.Factory cancelableTaskFactory, IMetrics metrics,
+                                 ICloudRunner cloudRunner, string developerAccount)
         {
             this.debugPortFactory = debugPortFactory;
             this.gameletClientFactory = gameletClientFactory;
@@ -95,6 +98,7 @@ namespace YetiVSI.PortSupplier
             this.cancelableTaskFactory = cancelableTaskFactory;
             this.metrics = metrics;
             this.cloudRunner = cloudRunner;
+            this.developerAccount = developerAccount;
         }
 
         public int AddPort(IDebugPortRequest2 request, out IDebugPort2 port)
@@ -146,15 +150,33 @@ namespace YetiVSI.PortSupplier
 
             var action = actionRecorder.CreateToolAction(ActionType.GameletsList);
             var gameletClient = gameletClientFactory.Create(cloudRunner.Intercept(action));
-            var gameletsTask = cancelableTaskFactory
-                .Create("Querying instances...", gameletClient.ListGameletsAsync);
+            var gameletsTask = cancelableTaskFactory.Create(
+                "Querying instances...", () => gameletClient.ListGameletsAsync(onlyOwned: false));
             try
             {
                 gameletsTask.RunAndRecord(action);
-                ports = gameletsTask.Result
-                    .Select(gamelet => debugPortFactory.Create(gamelet, this,
-                        debugSessionMetrics.DebugSessionId))
-                    .ToList();
+                List<Gamelet> gamelets = gameletsTask.Result;
+                // show reserved instances first
+                gamelets.Sort((g1, g2) =>
+                {
+                    if (g1.ReserverEmail != developerAccount &&
+                        g2.ReserverEmail != developerAccount)
+                    {
+                        return string.CompareOrdinal(g2.ReserverEmail, g1.ReserverEmail);
+                    }
+
+                    if (g1.ReserverEmail == developerAccount &&
+                        g2.ReserverEmail == developerAccount)
+                    {
+                        return string.CompareOrdinal(g2.DisplayName, g1.DisplayName);
+                    }
+
+                    return g1.ReserverEmail == developerAccount ? 1 : -1;
+                });
+                ports = gamelets
+                            .Select(gamelet => debugPortFactory.Create(
+                                        gamelet, this, debugSessionMetrics.DebugSessionId))
+                            .ToList();
             }
             catch (CloudException e)
             {

@@ -207,12 +207,13 @@ namespace YetiVSI.Test.DebugEngine
             var sshManager = Substitute.For<ISshManager>();
             var processListRequest = Substitute.For<IProcessListRequest>();
             var processListRequestFactory = Substitute.For<ProcessListRequest.Factory>();
+            string reserverAccount = "reserver@test.com";
             processListRequestFactory.Create().Returns(processListRequest);
             CancelableTask.Factory cancelableTaskFactory =
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
-            var portFactory =
-                new DebugPort.Factory(processFactory, processListRequestFactory,
-                                      cancelableTaskFactory, dialogUtil, sshManager, _metrics);
+            var portFactory = new DebugPort.Factory(processFactory, processListRequestFactory,
+                                                    cancelableTaskFactory, dialogUtil, sshManager,
+                                                    _metrics, reserverAccount);
             return portFactory.Create(gamelet, null, "290");
         }
 

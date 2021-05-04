@@ -78,7 +78,8 @@ namespace YetiVSI.Test.MediumTestsSupport
         public Task<Gamelet> GetGameletByNameAsync(string instanceName) =>
             Task.FromResult(_instances.Find(i => i.Name == instanceName));
 
-        public Task<List<Gamelet>> ListGameletsAsync() => Task.FromResult(_instances);
+        public Task<List<Gamelet>> ListGameletsAsync(bool onlyOwned = false) =>
+            Task.FromResult(_instances);
 
         public Task EnableSshAsync(string gameletId, string publicKey) => Task.CompletedTask;
 

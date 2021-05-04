@@ -39,15 +39,15 @@ namespace YetiVSI.PortSupplier
             readonly IDialogUtil dialogUtil;
             readonly ISshManager sshManager;
             readonly IMetrics metrics;
+            readonly string developerAccount;
 
             // For test substitution.
             public Factory() { }
 
             public Factory(DebugProcess.Factory debugProcessFactory,
-                ProcessListRequest.Factory processListRequestFactory,
-                CancelableTask.Factory cancelableTaskFactory,
-                IDialogUtil dialogUtil, ISshManager sshManager,
-                IMetrics metrics)
+                           ProcessListRequest.Factory processListRequestFactory,
+                           CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
+                           ISshManager sshManager, IMetrics metrics, string developerAccount)
             {
                 this.debugProcessFactory = debugProcessFactory;
                 this.processListRequestFactory = processListRequestFactory;
@@ -55,14 +55,15 @@ namespace YetiVSI.PortSupplier
                 this.dialogUtil = dialogUtil;
                 this.sshManager = sshManager;
                 this.metrics = metrics;
+                this.developerAccount = developerAccount;
             }
 
             public virtual IDebugPort2 Create(Gamelet gamelet, IDebugPortSupplier2 supplier,
                 string debugSessionId)
             {
-                return new DebugPort(
-                    debugProcessFactory, processListRequestFactory, cancelableTaskFactory,
-                    dialogUtil, sshManager, metrics, gamelet, supplier, debugSessionId);
+                return new DebugPort(debugProcessFactory, processListRequestFactory,
+                                     cancelableTaskFactory, dialogUtil, sshManager, metrics,
+                                     gamelet, supplier, debugSessionId, developerAccount);
             }
         }
 
@@ -74,27 +75,26 @@ namespace YetiVSI.PortSupplier
         readonly ActionRecorder actionRecorder;
         readonly Guid guid;
         readonly IDebugPortSupplier2 supplier;
+        readonly string developerAccount;
         readonly DebugSessionMetrics debugSessionMetrics;
 
 
-        public Gamelet Gamelet { get; private set; }
+        public Gamelet Gamelet { get; }
 
         public string DebugSessionId => debugSessionMetrics.DebugSessionId;
 
-        private DebugPort(
-            DebugProcess.Factory debugProcessFactory,
-            ProcessListRequest.Factory processListRequestFactory,
-            CancelableTask.Factory cancelableTaskFactory,
-            IDialogUtil dialogUtil,
-            ISshManager sshManager,
-            IMetrics metrics,
-            Gamelet gamelet, IDebugPortSupplier2 supplier, string debugSessionId)
+        DebugPort(DebugProcess.Factory debugProcessFactory,
+                  ProcessListRequest.Factory processListRequestFactory,
+                  CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
+                  ISshManager sshManager, IMetrics metrics, Gamelet gamelet,
+                  IDebugPortSupplier2 supplier, string debugSessionId, string developerAccount)
         {
             this.debugProcessFactory = debugProcessFactory;
             this.processListRequestFactory = processListRequestFactory;
             this.dialogUtil = dialogUtil;
             guid = Guid.NewGuid();
             this.supplier = supplier;
+            this.developerAccount = developerAccount;
             this.cancelableTaskFactory = cancelableTaskFactory;
             this.sshManager = sshManager;
             debugSessionMetrics = new DebugSessionMetrics(metrics);
@@ -133,14 +133,23 @@ namespace YetiVSI.PortSupplier
 
         public int GetPortName(out string name)
         {
-            if (String.IsNullOrEmpty(Gamelet.DisplayName))
+            if (developerAccount != Gamelet.ReserverEmail)
             {
-                name = Gamelet.Id;
+                string reserver = string.IsNullOrEmpty(Gamelet.ReserverName)
+                    ? Gamelet.ReserverEmail
+                    : Gamelet.ReserverName;
+                string instance = string.IsNullOrEmpty(Gamelet.DisplayName)
+                    ? Gamelet.Id
+                    : Gamelet.DisplayName;
+                name = $"Reserver: {reserver}; Instance: {instance}";
             }
             else
             {
-                name = Gamelet.DisplayName + " [" + Gamelet.Id + "]";
+                name = string.IsNullOrEmpty(Gamelet.DisplayName)
+                    ? Gamelet.Id
+                    : Gamelet.DisplayName + " [" + Gamelet.Id + "]";
             }
+
             return VSConstants.S_OK;
         }
 
