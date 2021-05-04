@@ -15,7 +15,6 @@
 using Debugger.RemoteBreakpointRpc;
 using Debugger.Common;
 using Grpc.Core;
-using LldbApi;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,11 +25,11 @@ namespace DebuggerGrpcServer
     class RemoteBreakpointRpcServiceImpl :
         RemoteBreakpointRpcService.RemoteBreakpointRpcServiceBase
     {
-        readonly ConcurrentDictionary<long, RemoteTarget> targetStore;
+        readonly ConcurrentDictionary<long, RemoteTarget> _targetStore;
 
         public RemoteBreakpointRpcServiceImpl(ConcurrentDictionary<long, RemoteTarget> targetStore)
         {
-            this.targetStore = targetStore;
+            _targetStore = targetStore;
         }
 
         #region RemoteBreakpointRpcService.RemoteBreakpointRpcServiceBase
@@ -38,7 +37,7 @@ namespace DebuggerGrpcServer
         public override Task<SetEnabledResponse> SetEnabled(SetEnabledRequest request,
             ServerCallContext context)
         {
-            var breakpoint = GetBreakpoint(targetStore, request.Breakpoint);
+            var breakpoint = GetBreakpoint(_targetStore, request.Breakpoint);
             breakpoint.SetEnabled(request.Enabled);
             return Task.FromResult(new SetEnabledResponse { });
         }
@@ -46,7 +45,7 @@ namespace DebuggerGrpcServer
         public override Task<GetNumLocationsResponse> GetNumLocations(
             GetNumLocationsRequest request, ServerCallContext context)
         {
-            var breakpoint = GetBreakpoint(targetStore, request.Breakpoint);
+            var breakpoint = GetBreakpoint(_targetStore, request.Breakpoint);
             var result = breakpoint.GetNumLocations();
             return Task.FromResult(new GetNumLocationsResponse { Result = result });
         }
@@ -54,7 +53,7 @@ namespace DebuggerGrpcServer
         public override Task<GetLocationAtIndexResponse> GetLocationAtIndex(
             GetLocationAtIndexRequest request, ServerCallContext context)
         {
-            var breakpoint = GetBreakpoint(targetStore, request.Breakpoint);
+            var breakpoint = GetBreakpoint(_targetStore, request.Breakpoint);
             var location = breakpoint.GetLocationAtIndex(request.Index);
             var response = new GetLocationAtIndexResponse();
             response.Result = new GrpcSbBreakpointLocation
@@ -68,7 +67,7 @@ namespace DebuggerGrpcServer
         public override Task<GetHitCountResponse> GetHitCount(
             GetHitCountRequest request, ServerCallContext context)
         {
-            var breakpoint = GetBreakpoint(targetStore, request.Breakpoint);
+            var breakpoint = GetBreakpoint(_targetStore, request.Breakpoint);
             var result = breakpoint.GetHitCount();
             return Task.FromResult(new GetHitCountResponse { Result = result });
         }
@@ -76,7 +75,7 @@ namespace DebuggerGrpcServer
         public override Task<SetIgnoreCountResponse> SetIgnoreCount(
             SetIgnoreCountRequest request, ServerCallContext context)
         {
-            var breakpoint = GetBreakpoint(targetStore, request.Breakpoint);
+            var breakpoint = GetBreakpoint(_targetStore, request.Breakpoint);
             breakpoint.SetIgnoreCount(request.IgnoreCount);
             return Task.FromResult(new SetIgnoreCountResponse { });
         }
@@ -84,7 +83,7 @@ namespace DebuggerGrpcServer
         public override Task<SetOneShotResponse> SetOneShot(
             SetOneShotRequest request, ServerCallContext context)
         {
-            var breakpoint = GetBreakpoint(targetStore, request.Breakpoint);
+            var breakpoint = GetBreakpoint(_targetStore, request.Breakpoint);
             breakpoint.SetOneShot(request.IsOneShot);
             return Task.FromResult(new SetOneShotResponse { });
         }
@@ -92,7 +91,7 @@ namespace DebuggerGrpcServer
         public override Task<SetConditionResponse> SetCondition(
             SetConditionRequest request, ServerCallContext context)
         {
-            var breakpoint = GetBreakpoint(targetStore, request.Breakpoint);
+            var breakpoint = GetBreakpoint(_targetStore, request.Breakpoint);
             breakpoint.SetCondition(request.Condition);
             return Task.FromResult(new SetConditionResponse {});
         }
@@ -100,7 +99,7 @@ namespace DebuggerGrpcServer
         public override Task<SetCommandLineCommandsResponse> SetCommandLineCommands(
             SetCommandLineCommandsRequest request, ServerCallContext context)
         {
-            var breakpoint = GetBreakpoint(targetStore, request.Breakpoint);
+            var breakpoint = GetBreakpoint(_targetStore, request.Breakpoint);
             breakpoint.SetCommandLineCommands(request.Commands.ToList());
             return Task.FromResult(new SetCommandLineCommandsResponse {});
         }

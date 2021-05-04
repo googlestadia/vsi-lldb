@@ -38,7 +38,7 @@ service RemoteBreakpointRpcService {
   rpc SetCondition(SetConditionRequest) returns (SetConditionResponse) {
   }
   rpc SetCommandLineCommands(SetCommandLineCommandsRequest)
-      returns (SetCommandLineCommandsResponse) {
+    returns (SetCommandLineCommandsResponse) {
   }
 }
 

@@ -13,8 +13,11 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Debugger.Common;
 using DebuggerApi;
+using BreakpointEventType = DebuggerApi.BreakpointEventType;
 
 namespace DebuggerGrpcClient
 {
@@ -74,8 +77,26 @@ namespace DebuggerGrpcClient
             return grpcSbEvent.HasProcessResumed;
         }
 
-        public string GetDataFlavor() => grpcSbEvent.DataFlavor;
+        public bool IsBreakpointEvent => grpcSbEvent.IsBreakpointEvent;
+
+        public IEventBreakpointData BreakpointData => IsBreakpointEvent
+            ? new EventBreakpointData(grpcSbEvent.BreakpointData)
+            : null;
 
         #endregion
+    }
+
+    public class EventBreakpointData : IEventBreakpointData
+    {
+        readonly GrpcEventBreakpointData _data;
+
+        internal EventBreakpointData(GrpcEventBreakpointData data)
+        {
+            _data = data;
+        }
+
+        public BreakpointEventType EventType => (BreakpointEventType) _data.EventType;
+
+        public int BreakpointId => _data.BreakpointId;
     }
 }

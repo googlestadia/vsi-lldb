@@ -47,7 +47,5 @@ namespace LldbApi
 
         // Returns true if the process has resumed running after stop.
         bool GetProcessRestarted();
-
-        string GetDataFlavor();
     }
 }

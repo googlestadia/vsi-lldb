@@ -25,18 +25,23 @@ namespace DebuggerGrpcServer
     // Server implementation of the SBTarget RPC.
     public class SbListenerRpcServiceImpl : SbListenerRpcService.SbListenerRpcServiceBase
     {
-        readonly ConcurrentDictionary<long, SbListener> listenerStore;
-        readonly LLDBListenerFactory listenerFactory;
+        readonly ConcurrentDictionary<long, SbListener> _listenerStore;
+        readonly LLDBListenerFactory _listenerFactory;
+        readonly LLDBBreakpointApi _breakpointApi;
 
-        public SbListenerRpcServiceImpl(ConcurrentDictionary<long, SbListener> listenerStore)
-            : this(listenerStore, new LLDBListenerFactory()) {}
+        public SbListenerRpcServiceImpl(ConcurrentDictionary<long, SbListener> listenerStore) :
+            this(listenerStore, new LLDBListenerFactory(), new LLDBBreakpointApi())
+        {
+        }
 
         // Constructor that can be used by tests to pass in mock objects.
         public SbListenerRpcServiceImpl(ConcurrentDictionary<long, SbListener> listenerStore,
-            LLDBListenerFactory listenerFactory)
+                                        LLDBListenerFactory listenerFactory,
+                                        LLDBBreakpointApi breakpointApi)
         {
-            this.listenerStore = listenerStore;
-            this.listenerFactory = listenerFactory;
+            _listenerStore = listenerStore;
+            _listenerFactory = listenerFactory;
+            _breakpointApi = breakpointApi;
         }
 
         #region SbListenerRpcService.SbTargetRpcServiceBase
@@ -44,8 +49,8 @@ namespace DebuggerGrpcServer
         public override Task<CreateResponse> Create(CreateRequest request,
             ServerCallContext context)
         {
-            var listener = listenerFactory.Create(request.Name);
-            if (!listenerStore.TryAdd(listener.GetId(), listener))
+            var listener = _listenerFactory.Create(request.Name);
+            if (!_listenerStore.TryAdd(listener.GetId(), listener))
             {
                 ErrorUtils.ThrowError(
                     StatusCode.Internal, "Could not add listener to store: " + listener.GetId());
@@ -59,7 +64,7 @@ namespace DebuggerGrpcServer
             ServerCallContext context)
         {
             SbListener listener;
-            if (!listenerStore.TryGetValue(request.Listener.Id, out listener))
+            if (!_listenerStore.TryGetValue(request.Listener.Id, out listener))
             {
                 ErrorUtils.ThrowError(
                     StatusCode.Internal,
@@ -78,11 +83,21 @@ namespace DebuggerGrpcServer
                 {
                     Type = (uint)evnt.GetEventType(),
                     Description = evnt.GetDescription(),
-                    HasProcessResumed = evnt.GetProcessRestarted()
+                    HasProcessResumed = evnt.GetProcessRestarted(),
+                    IsBreakpointEvent = _breakpointApi.EventIsBreakpointEvent(evnt)
                 };
                 if ((evnt.GetEventType() & EventType.STATE_CHANGED) != 0)
                 {
                     response.Event.StateType = StateTypeToProto(evnt.GetStateType());
+                }
+
+                if (response.Event.IsBreakpointEvent)
+                {
+                    response.Event.BreakpointData = new GrpcEventBreakpointData
+                    {
+                        EventType = (uint)_breakpointApi.GetBreakpointEventTypeFromEvent(evnt),
+                        BreakpointId = _breakpointApi.GetBreakpointFromEvent(evnt).GetId(),
+                    };
                 }
             }
             return Task.FromResult(response);

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace LldbApi
 {
     // Naming is intentionally camel case to match proto generated code and support
@@ -128,6 +130,30 @@ namespace LldbApi
         AbsoluteAddress, // Dummy section for symbols with absolute
                          // address
         Other
+    }
+
+    /// <summary>
+    /// Breakpoint event type.
+    /// </summary>
+    [Flags]
+    public enum BreakpointEventType
+    {
+        InvalidType = 1 << 0,
+        Added = 1 << 1,
+        Removed = 1 << 2,
+        /// <summary>
+        /// Locations added doesn't get sent when the breakpoint is created.
+        /// </summary>
+        LocationsAdded = 1 << 3,
+        LocationsRemoved = 1 << 4,
+        LocationsResolved = 1 << 5,
+        Enabled = 1 << 6,
+        Disabled = 1 << 7,
+        CommandChanged = 1 << 8,
+        ConditionChanged = 1 << 9,
+        IgnoreChanged = 1 << 10,
+        ThreadChanged = 1 << 11,
+        AutoContinueChanged = 1 << 12
     }
 
     // LLDB defines and constants

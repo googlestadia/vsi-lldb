@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,31 +16,19 @@
 
 #pragma once
 
-#include "lldb/API/SBEvent.h"
-
-#include "ManagedUniquePtr.h"
-
 namespace YetiVSI {
 namespace DebugEngine {
 
 using namespace LldbApi;
 
-// Interface for a debugger event.
-private
-ref class LLDBEvent sealed : SbEvent {
+public
+ref class LLDBBreakpointApi sealed {
  public:
-  LLDBEvent(lldb::SBEvent);
-  virtual ~LLDBEvent(){};
-
-  virtual EventType GetEventType();
-  virtual System::String ^ GetDescription();
-  virtual StateType GetStateType();
-  virtual bool GetProcessRestarted();
-  // Get the underlying lldb object.
-  lldb::SBEvent GetNativeObject();
-
- private:
-  ManagedUniquePtr<lldb::SBEvent> ^ event_;
+  LLDBBreakpointApi(){}
+  virtual ~LLDBBreakpointApi(){}
+  BreakpointEventType GetBreakpointEventTypeFromEvent(SbEvent^ sbEvent);
+  SbBreakpoint^ GetBreakpointFromEvent(SbEvent^ sbEvent);
+  bool EventIsBreakpointEvent(SbEvent^ sbEvent);
 };
 
 }  // namespace DebugEngine

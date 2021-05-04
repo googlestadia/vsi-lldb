@@ -24,6 +24,8 @@ LLDBEvent::LLDBEvent(lldb::SBEvent event) {
   event_ = MakeUniquePtr<lldb::SBEvent>(event);
 }
 
+lldb::SBEvent LLDBEvent::GetNativeObject() { return *(*event_).Get(); }
+
 EventType LLDBEvent::GetEventType() {
   uint32_t type = event_->GetType();
   EventType result;
@@ -46,11 +48,6 @@ System::String ^ LLDBEvent::GetDescription() {
     return gcnew System::String(description.GetData());
   }
   return gcnew System::String("");
-}
-
-System::String ^ LLDBEvent::GetDataFlavor() {
-  auto dataFlavor = event_->GetDataFlavor();
-  return gcnew System::String(dataFlavor);
 }
 
 StateType LLDBEvent::GetStateType() {

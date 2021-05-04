@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 
 namespace DebuggerApi
 {
@@ -35,6 +36,24 @@ namespace DebuggerApi
         STRUCTURED_DATA = (1 << 5),
     };
 
+    [Flags]
+    public enum BreakpointEventType
+    {
+        INVALID_TYPE = 1 << 0,
+        ADDED = 1 << 1,
+        REMOVED = 1 << 2,
+        LOCATIONS_ADDED = 1 << 3,
+        LOCATIONS_REMOVED = 1 << 4,
+        LOCATIONS_RESOLVED = 1 << 5,
+        ENABLED = 1 << 6,
+        DISABLED = 1 << 7,
+        COMMAND_CHANGED = 1 << 8,
+        CONDITION_CHANGED = 1 << 9,
+        IGNORE_CHANGED = 1 << 10,
+        THREAD_CHANGED = 1 << 11,
+        AUTO_CONTINUE_CHANGED = 1 << 12
+    }
+
     // Interface mirrors the SBEvent API as closely as possible.
     public interface SbEvent
     {
@@ -51,6 +70,15 @@ namespace DebuggerApi
         // Returns true if the process has resumed running after stop.
         bool GetProcessRestarted();
 
-        string GetDataFlavor();
+        bool IsBreakpointEvent { get; }
+
+        IEventBreakpointData BreakpointData { get; }
+    }
+
+    public interface IEventBreakpointData
+    {
+        BreakpointEventType EventType { get; }
+
+        int BreakpointId { get; }
     }
 }

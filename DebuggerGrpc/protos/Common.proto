@@ -245,7 +245,13 @@ message GrpcSbEvent {
   }
   StateType state_type = 3;
   bool hasProcessResumed = 4;
-  string dataFlavor = 5;
+  bool isBreakpointEvent = 5;
+  GrpcEventBreakpointData breakpointData = 6;
+}
+
+message GrpcEventBreakpointData {
+  uint32 eventType = 1;
+  int32 breakpointId = 2;
 }
 
 message GrpcSbAddress {
