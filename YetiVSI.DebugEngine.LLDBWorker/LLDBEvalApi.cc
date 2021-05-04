@@ -35,19 +35,26 @@ SbValue ^
   std::string expr = msclr::interop::marshal_as<std::string>(expression);
   lldb::SBFrame sbFrame = safe_cast<LLDBStackFrame ^>(frame)->GetNativeObject();
 
+  // "Frame" expression evaluations are coming from the Immediate Window and the
+  // Watch Window. These expressions are typically interactive (i.e. typed by
+  // the user directly) and therefore side effects to the target process (e.g.
+  // modifying the value of a variable) are expected to work.
+  lldb_eval::Options opts;
+  opts.allow_side_effects = true;
+
   lldb::SBError error;
   lldb::SBValue value =
-    lldb_eval::EvaluateExpression(sbFrame, expr.c_str(), error);
+      lldb_eval::EvaluateExpression(sbFrame, expr.c_str(), opts, error);
 
   return gcnew LLDBValue(value, error);
 }
 
 SbValue ^
-    LldbEval::EvaluateExpression(
-        SbValue ^ value, System::String ^ expression,
-        IDictionary<System::String ^, SbValue ^> ^ contextVars) {
+    LldbEval::EvaluateExpression(SbValue ^ value, System::String ^ expression,
+                                 IDictionary<System::String ^, SbValue ^> ^
+                                     contextVars) {
   std::string expr = msclr::interop::marshal_as<std::string>(expression);
-  lldb::SBValue sbValue = safe_cast<LLDBValue^>(value)->GetNativeObject();
+  lldb::SBValue sbValue = safe_cast<LLDBValue ^>(value)->GetNativeObject();
 
   // Convert `IDictionary` to `std::vector`.
   msclr::interop::marshal_context context;
@@ -58,14 +65,20 @@ SbValue ^
     vars.push_back({name, value});
   }
 
-  lldb_eval::ContextVariableList var_list{vars.data(), vars.size()};
+  // "Value" expression evaluations are coming from NatVis engine. These
+  // expressions are defined in NatVis scripts and supposed to be idempotent.
+  // Thus side effects to the target process are not allowed.
+  lldb_eval::Options opts;
+  opts.allow_side_effects = false;
+  opts.context_vars = {vars.data(), vars.size()};
 
   lldb::SBError error;
   lldb::SBValue result =
-    lldb_eval::EvaluateExpression(sbValue, expr.c_str(), var_list, error);
+      lldb_eval::EvaluateExpression(sbValue, expr.c_str(), opts, error);
 
   return gcnew LLDBValue(result, error);
 }
 
 }  // namespace DebugEngine
 }  // namespace YetiVSI
+
