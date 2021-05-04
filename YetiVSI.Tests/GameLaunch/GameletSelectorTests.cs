@@ -253,6 +253,31 @@ namespace YetiVSI.Test.GameLaunch
                                      : DeveloperEventStatus.Types.Code.Cancelled);
         }
 
+        [Test]
+        public void GameLaunchExistsForAccountOnNonDevGamelet()
+        {
+            var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
+            _gameletSelectionWindow.Run().Returns(_gamelet2);
+            SetupGetGameletApi(_gamelet2, GameletState.Reserved);
+            SetupGetGameletApi(_gamelet1, GameletState.InUse);
+            SetupGetCurrentGameLaunch(null, "non/dev/gamelet");
+            SetupStopGameLaunchDialog(true);
+            SetupDeleteGameLaunch(_gamelet1.Name, GameLaunchState.GameLaunchEnded, true);
+
+            bool result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
+                gamelets, null, _devAccount, out Gamelet gamelet);
+
+            Assert.That(result, Is.EqualTo(true));
+            Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchDeleteExisting,
+                                 DeveloperEventStatus.Types.Code.Success);
+
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchGetExisting,
+                                 DeveloperEventStatus.Types.Code.Success);
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchStopPrompt,
+                                 DeveloperEventStatus.Types.Code.Success);
+        }
+
         [TestCase(true, TestName = "YesStop")]
         [TestCase(false, TestName = "NoStop")]
         public void GameLaunchExistsOnGamelet(bool confirmStop)
