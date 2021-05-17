@@ -40,121 +40,114 @@ namespace YetiVSI.CoreAttach
     // A window showing a list of crash dumps that the user can attach to.
     public partial class CoreAttachWindow : DialogWindow
     {
-        readonly IServiceProvider serviceProvider;
-
-        readonly JoinableTaskContext taskContext;
-        readonly CancelableTask.Factory cancelableTaskFactory;
-        readonly ManagedProcess.Factory managedProcessFactory;
-        readonly GameletSelectionWindow.Factory gameletSelectionWindowFactory;
-        readonly ICoreListRequest coreListRequest;
-        readonly SdkConfig.Factory sdkConfigFactory;
-        readonly IExtensionOptions options;
-        readonly ICloudRunner cloudRunner;
-        readonly GameletClient.Factory gameletClientFactory;
-        readonly IRemoteCommand remoteCommand;
-        readonly IRemoteFile remoteFile;
-        readonly ISshManager sshManager;
-        readonly IDialogUtil dialogUtil;
-        readonly ActionRecorder actionRecorder;
-        readonly DebugSessionMetrics debugSessionMetrics;
-        readonly ServiceManager serviceManager;
-        readonly DebugEngine.DebugEngine.Params.Factory paramsFactory;
-        Gamelet gamelet;
+        readonly JoinableTaskContext _taskContext;
+        readonly CancelableTask.Factory _cancelableTaskFactory;
+        readonly GameletSelectionWindow.Factory _gameletSelectionWindowFactory;
+        readonly ICoreListRequest _coreListRequest;
+        readonly ICloudRunner _cloudRunner;
+        readonly GameletClient.Factory _gameletClientFactory;
+        readonly IRemoteFile _remoteFile;
+        readonly ISshManager _sshManager;
+        readonly IDialogUtil _dialogUtil;
+        readonly ActionRecorder _actionRecorder;
+        readonly DebugSessionMetrics _debugSessionMetrics;
+        readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
+        Gamelet _instance;
 
         public CoreAttachWindow(IServiceProvider serviceProvider)
         {
-            serviceManager = new ServiceManager();
-            taskContext = serviceManager.GetJoinableTaskContext();
+            var serviceManager = new ServiceManager();
+            _taskContext = serviceManager.GetJoinableTaskContext();
 
-            this.serviceProvider = serviceProvider;
-            dialogUtil = new DialogUtil();
-            options = ((YetiVSIService)serviceManager.RequireGlobalService(
-                    typeof(YetiVSIService))).Options;
-            managedProcessFactory = new ManagedProcess.Factory();
+            _dialogUtil = new DialogUtil();
+            IExtensionOptions options =
+                ((YetiVSIService) serviceManager.RequireGlobalService(typeof(YetiVSIService)))
+                .Options;
+            var managedProcessFactory = new ManagedProcess.Factory();
             var progressDialogFactory = new ProgressDialog.Factory();
-            cancelableTaskFactory = new CancelableTask.Factory(taskContext, progressDialogFactory);
-            coreListRequest = new CoreListRequest.Factory().Create();
+            _cancelableTaskFactory =
+                new CancelableTask.Factory(_taskContext, progressDialogFactory);
+            _coreListRequest = new CoreListRequest.Factory().Create();
             var jsonUtil = new JsonUtil();
             var credentialConfigFactory = new CredentialConfig.Factory(jsonUtil);
             var accountOptionLoader = new VsiAccountOptionLoader(options);
             var credentialManager =
                 new CredentialManager(credentialConfigFactory, accountOptionLoader);
-            remoteCommand = new RemoteCommand(managedProcessFactory);
+            IRemoteCommand remoteCommand = new RemoteCommand(managedProcessFactory);
             var socketSender = new LocalSocketSender();
-            remoteFile = new RemoteFile(managedProcessFactory,
-                transportSessionFactory:null,
-                socketSender:socketSender,
-                fileSystem:new FileSystem());
+            _remoteFile = new RemoteFile(managedProcessFactory, transportSessionFactory: null,
+                                         socketSender: socketSender, fileSystem: new FileSystem());
             var cloudConnection = new CloudConnection();
-            sdkConfigFactory = new SdkConfig.Factory(jsonUtil);
+            var sdkConfigFactory = new SdkConfig.Factory(jsonUtil);
             // NOTE: the lifetime of this CloudRunner is limited to the current CoreAttachWindow.
-            cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager, cloudConnection,
-                                          new GgpSDKUtil());
-            gameletClientFactory = new GameletClient.Factory();
+            _cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager, cloudConnection,
+                                           new GgpSDKUtil());
+            _gameletClientFactory = new GameletClient.Factory();
             var sshKeyLoader = new SshKeyLoader(managedProcessFactory);
             var sshKnownHostsWriter = new SshKnownHostsWriter();
-            sshManager = new SshManager(gameletClientFactory, cloudRunner, sshKeyLoader,
-                sshKnownHostsWriter, remoteCommand);
-            debugSessionMetrics = new DebugSessionMetrics(
+            _sshManager = new SshManager(_gameletClientFactory, _cloudRunner, sshKeyLoader,
+                                         sshKnownHostsWriter, remoteCommand);
+            _debugSessionMetrics = new DebugSessionMetrics(
                 serviceProvider.GetService(typeof(SMetrics)) as IMetrics);
-            debugSessionMetrics.UseNewDebugSessionId();
-            actionRecorder = new ActionRecorder(debugSessionMetrics);
+            _debugSessionMetrics.UseNewDebugSessionId();
+            _actionRecorder = new ActionRecorder(_debugSessionMetrics);
 
             InitializeComponent();
-            gameletSelectionWindowFactory = new GameletSelectionWindow.Factory();
-            paramsFactory = new DebugEngine.DebugEngine.Params.Factory(jsonUtil);
+            _gameletSelectionWindowFactory = new GameletSelectionWindow.Factory();
+            _paramsFactory = new DebugEngine.DebugEngine.Params.Factory(jsonUtil);
         }
 
         // Select a gamelet. If there are more than one gamelets reserved, a dialog would pop up
         // letting the user pick one.
-        public void SelectGamelet()
+        public void SelectInstance()
         {
-            List<Gamelet> gamelets;
+            List<Gamelet> instances;
             try
             {
-                var action = actionRecorder.CreateToolAction(ActionType.GameletsList);
-                var gameletClient = gameletClientFactory.Create(cloudRunner.Intercept(action));
-                var queryTask = cancelableTaskFactory
-                    .Create("Querying instances...",
-                        async () => await gameletClient.ListGameletsAsync());
+                var action = _actionRecorder.CreateToolAction(ActionType.GameletsList);
+                var gameletClient = _gameletClientFactory.Create(_cloudRunner.Intercept(action));
+                var queryTask = _cancelableTaskFactory.Create(
+                    "Querying instances...", async () => await gameletClient.ListGameletsAsync());
                 if (!queryTask.RunAndRecord(action))
                 {
                     return;
                 }
-                gamelets = queryTask.Result;
+
+                instances = queryTask.Result;
             }
             catch (CloudException e)
             {
                 Trace.Write("An exception was thrown while querying instances." +
-                    Environment.NewLine + e.ToString());
-                gameletMessageTextBox.Text = ErrorStrings.FailedToRetrieveGamelets(e.Message);
+                            Environment.NewLine + e);
+                GameletMessageTextBox.Text = ErrorStrings.FailedToRetrieveGamelets(e.Message);
                 return;
             }
-            switch (gamelets.Count)
+
+            switch (instances.Count)
             {
                 case 0:
-                    gamelet = null;
-                    gameletMessageTextBox.Text = ErrorStrings.NoGameletsFound;
+                    _instance = null;
+                    GameletMessageTextBox.Text = ErrorStrings.NoGameletsFound;
                     return;
                 case 1:
-                    gamelet = gamelets[0];
+                    _instance = instances[0];
                     break;
                 default:
-                    gamelet = gameletSelectionWindowFactory.Create(gamelets).Run();
-                    if (gamelet == null)
+                    _instance = _gameletSelectionWindowFactory.Create(instances).Run();
+                    if (_instance == null)
                     {
                         return;
                     }
+
                     break;
             }
+
             try
             {
-                var action = actionRecorder.CreateToolAction(ActionType.GameletEnableSsh);
-                var enableSshTask = cancelableTaskFactory.Create(TaskMessages.EnablingSSH,
-                    async _ =>
-                    {
-                        await sshManager.EnableSshAsync(gamelet, action);
-                    });
+                var action = _actionRecorder.CreateToolAction(ActionType.GameletEnableSsh);
+                var enableSshTask = _cancelableTaskFactory.Create(
+                    TaskMessages.EnablingSSH,
+                    async _ => { await _sshManager.EnableSshAsync(_instance, action); });
                 if (!enableSshTask.RunAndRecord(action))
                 {
                     return;
@@ -162,37 +155,40 @@ namespace YetiVSI.CoreAttach
             }
             catch (Exception e) when (e is CloudException || e is SshKeyException)
             {
-                Trace.Write("An exception was thrown while enabling ssh." +
-                    Environment.NewLine + e.ToString());
-                gameletMessageTextBox.Text = ErrorStrings.FailedToEnableSsh(e.Message);
+                Trace.Write("An exception was thrown while enabling ssh." + Environment.NewLine +
+                            e);
+                GameletMessageTextBox.Text = ErrorStrings.FailedToEnableSsh(e.Message);
                 return;
             }
-            gameletLabel.Content = "Instance: " + gamelet.Id;
+
+            GameletLabel.Content = "Instance: " + _instance.Id;
             RefreshCoreList();
         }
 
-        private void RefreshCoreList()
+        void RefreshCoreList()
         {
-            if (gamelet == null)
+            if (_instance == null)
             {
                 return;
             }
+
             Cursor = System.Windows.Input.Cursors.Wait;
             try
             {
                 var queryTaskTitle = "Querying instance crash dumps...";
-                var queryTask = cancelableTaskFactory.Create(queryTaskTitle,
-                        async () => await coreListRequest.GetCoreListAsync(new SshTarget(gamelet)));
+                var queryTask = _cancelableTaskFactory.Create(
+                    queryTaskTitle,
+                    async () => await _coreListRequest.GetCoreListAsync(new SshTarget(_instance)));
 
                 // Ignore cancelation, and accept the empty result.
-                queryTask.RunAndRecord(actionRecorder, ActionType.CrashDumpList);
-                coreList.ItemsSource = queryTask.Result;
+                queryTask.RunAndRecord(_actionRecorder, ActionType.CrashDumpList);
+                CoreList.ItemsSource = queryTask.Result;
             }
             catch (ProcessException e)
             {
-                Trace.WriteLine("Unable to query instance crash dumps: " + e.ToString());
-                gameletMessageTextBox.Text = ErrorStrings.ErrorQueryingCoreFiles(e.Message);
-                coreList.ItemsSource = new List<CoreListEntry>();
+                Trace.WriteLine($"Unable to query instance crash dumps: {e}");
+                GameletMessageTextBox.Text = ErrorStrings.ErrorQueryingCoreFiles(e.Message);
+                CoreList.ItemsSource = new List<CoreListEntry>();
             }
             finally
             {
@@ -200,65 +196,69 @@ namespace YetiVSI.CoreAttach
             }
         }
 
-        private void coreListSelectionChanged(object sender, SelectionChangedEventArgs e)
+        void CoreListSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            attachButton.IsEnabled = coreList.SelectedItem != null;
+            AttachButton.IsEnabled = CoreList.SelectedItem != null;
         }
 
-        private void refreshClick(object sender, RoutedEventArgs e)
+        void RefreshClick(object sender, RoutedEventArgs e)
         {
             RefreshCoreList();
         }
 
-        private void cancelClick(object sender, RoutedEventArgs e)
+        void CancelClick(object sender, RoutedEventArgs e)
         {
             Close();
         }
 
-        private void attachClick(object sender, RoutedEventArgs e)
+        void AttachClick(object sender, RoutedEventArgs e)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            _taskContext.ThrowIfNotOnMainThread();
 
             // Figure out core file path
             CoreListEntry? coreListEntry = null;
-            if (tabControl.SelectedContent == gameletGroupBox)
+            if (TabControl.SelectedContent == GameletGroupBox)
             {
-                coreListEntry = (CoreListEntry?)coreList.SelectedItem;
+                coreListEntry = (CoreListEntry?) CoreList.SelectedItem;
                 if (coreListEntry == null)
                 {
-                    dialogUtil.ShowError(ErrorStrings.NoCoreFileSelected);
+                    _dialogUtil.ShowError(ErrorStrings.NoCoreFileSelected);
                     return;
                 }
             }
+
             string coreFilePath = null;
             bool deleteAfter = false;
-            if (tabControl.SelectedContent == localGroupBox)
+            if (TabControl.SelectedContent == LocalGroupBox)
             {
-                coreFilePath = localCorePathBox.Text;
+                coreFilePath = LocalCorePathBox.Text;
             }
-            else if (tabControl.SelectedContent == gameletGroupBox)
+            else if (TabControl.SelectedContent == GameletGroupBox)
             {
                 var tempPath = Path.GetTempPath();
                 try
                 {
-                    cancelableTaskFactory
+                    _cancelableTaskFactory
                         .Create(TaskMessages.DownloadingCoreFile,
-                            async task => await remoteFile.GetAsync(new SshTarget(gamelet),
-                                "/usr/local/cloudcast/core/" + coreListEntry?.Name, tempPath,
-                                task))
-                        .RunAndRecord(actionRecorder, ActionType.CrashDumpDownload);
+                                async task => await _remoteFile.GetAsync(new SshTarget(_instance),
+                                                                         "/usr/local/cloudcast/core/" +
+                                                                         coreListEntry?.Name,
+                                                                         tempPath, task))
+                        .RunAndRecord(_actionRecorder, ActionType.CrashDumpDownload);
                 }
                 catch (ProcessException ex)
                 {
                     Trace.WriteLine($"Failed to download core file.{Environment.NewLine}" +
-                        $"{ex.ToString()}");
-                    dialogUtil.ShowError(ErrorStrings.FailedToDownloadCore(ex.Message),
-                        ex.ToString());
+                                    $"{ex}");
+                    _dialogUtil.ShowError(ErrorStrings.FailedToDownloadCore(ex.Message),
+                                          ex.ToString());
                     return;
                 }
+
                 coreFilePath = Path.Combine(tempPath, coreListEntry?.Name);
                 deleteAfter = true;
             }
+
             if (string.IsNullOrEmpty(coreFilePath))
             {
                 ShowMessage(ErrorStrings.FailedToRetrieveCoreFilePath);
@@ -267,7 +267,7 @@ namespace YetiVSI.CoreAttach
 
             // Check if we have a debugger (should always be the case).
             var vsDebugger =
-                (IVsDebugger4)ServiceProvider.GlobalProvider.GetService(typeof(IVsDebugger));
+                (IVsDebugger4) ServiceProvider.GlobalProvider.GetService(typeof(IVsDebugger));
             if (vsDebugger == null)
             {
                 ShowMessage(ErrorStrings.FailedToStartDebugger);
@@ -276,38 +276,37 @@ namespace YetiVSI.CoreAttach
 
             try
             {
-                actionRecorder.RecordToolAction(ActionType.CrashDumpAttach,
-                    delegate
-                    {
-                        taskContext.ThrowIfNotOnMainThread();
+                _actionRecorder.RecordToolAction(ActionType.CrashDumpAttach, delegate
+                {
+                    _taskContext.ThrowIfNotOnMainThread();
 
-                        VsDebugTargetInfo4[] debugTargets = new VsDebugTargetInfo4[1];
-                        debugTargets[0].dlo = (uint)DEBUG_LAUNCH_OPERATION.DLO_CreateProcess;
+                    VsDebugTargetInfo4[] debugTargets = new VsDebugTargetInfo4[1];
+                    debugTargets[0].dlo = (uint) DEBUG_LAUNCH_OPERATION.DLO_CreateProcess;
 
-                        // LaunchDebugTargets4() throws an exception if |bstrExe| and |bstrCurDir|
-                        // are empty. Use core path and temp directory as placeholders.
-                        debugTargets[0].bstrExe = coreFilePath;
-                        debugTargets[0].bstrCurDir = Path.GetTempPath();
-                        var parameters = paramsFactory.Create();
-                        parameters.CoreFilePath = coreFilePath;
-                        parameters.DebugSessionId = debugSessionMetrics.DebugSessionId;
-                        parameters.DeleteCoreFile = deleteAfter;
-                        debugTargets[0].bstrOptions = paramsFactory.Serialize(parameters);
-                        debugTargets[0].guidLaunchDebugEngine = YetiConstants.DebugEngineGuid;
-                        VsDebugTargetProcessInfo[] processInfo =
-                            new VsDebugTargetProcessInfo[debugTargets.Length];
-                        vsDebugger.LaunchDebugTargets4(1, debugTargets, processInfo);
-                    });
+                    // LaunchDebugTargets4() throws an exception if |bstrExe| and |bstrCurDir|
+                    // are empty. Use core path and temp directory as placeholders.
+                    debugTargets[0].bstrExe = coreFilePath;
+                    debugTargets[0].bstrCurDir = Path.GetTempPath();
+                    var parameters = _paramsFactory.Create();
+                    parameters.CoreFilePath = coreFilePath;
+                    parameters.DebugSessionId = _debugSessionMetrics.DebugSessionId;
+                    parameters.DeleteCoreFile = deleteAfter;
+                    debugTargets[0].bstrOptions = _paramsFactory.Serialize(parameters);
+                    debugTargets[0].guidLaunchDebugEngine = YetiConstants.DebugEngineGuid;
+                    VsDebugTargetProcessInfo[] processInfo =
+                        new VsDebugTargetProcessInfo[debugTargets.Length];
+                    vsDebugger.LaunchDebugTargets4(1, debugTargets, processInfo);
+                });
             }
             catch (COMException except)
             {
-                Trace.WriteLine($"Failed to start debugger: {except.ToString()}");
+                Trace.WriteLine($"Failed to start debugger: {except}");
 
                 // Both DebugEngine and Visual Studio already show error dialogs if DebugEngine
                 // has to abort while it's attaching, no need to show another dialog in that case.
                 if (except.ErrorCode != VSConstants.E_ABORT)
                 {
-                    dialogUtil.ShowError(ErrorStrings.FailedToStartDebugger, except.ToString());
+                    _dialogUtil.ShowError(ErrorStrings.FailedToStartDebugger, except.ToString());
                 }
             }
             finally
@@ -316,17 +315,17 @@ namespace YetiVSI.CoreAttach
             }
         }
 
-        private void browseClick(object sender, RoutedEventArgs e)
+        void BrowseClick(object sender, RoutedEventArgs e)
         {
             var openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "Core files (*.core, *.dmp)|*.core; *.dmp|All files (*.*)|*.*";
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                localCorePathBox.Text = openFileDialog.FileName;
+                LocalCorePathBox.Text = openFileDialog.FileName;
             }
         }
 
-        private void tabSelected(object sender, SelectionChangedEventArgs e)
+        void TabSelected(object sender, SelectionChangedEventArgs e)
         {
             // |e| has the newly selected tab while |tabControl.SelectedContent| has the
             // previously selected content.
@@ -334,42 +333,44 @@ namespace YetiVSI.CoreAttach
             {
                 return;
             }
-            gameletMessageTextBox.Text = "";
-            localMessageTextBox.Text = "";
-            if (e.AddedItems[0] == gameletTab)
+
+            GameletMessageTextBox.Text = "";
+            LocalMessageTextBox.Text = "";
+            if (e.AddedItems[0] == GameletTab)
             {
                 RefreshCoreList();
             }
-            if (e.AddedItems[0] == localTab)
+
+            if (e.AddedItems[0] == LocalTab)
             {
-                attachButton.IsEnabled = File.Exists(localCorePathBox.Text);
+                AttachButton.IsEnabled = File.Exists(LocalCorePathBox.Text);
             }
         }
 
-        private void localCorePathBox_TextChanged(object sender, TextChangedEventArgs e)
+        void localCorePathBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            attachButton.IsEnabled = File.Exists(localCorePathBox.Text);
-            if (!string.IsNullOrEmpty(localCorePathBox.Text) && !File.Exists(localCorePathBox.Text))
+            AttachButton.IsEnabled = File.Exists(LocalCorePathBox.Text);
+            if (!string.IsNullOrEmpty(LocalCorePathBox.Text) && !File.Exists(LocalCorePathBox.Text))
             {
-                localMessageTextBox.Text = ErrorStrings.CoreFileDoesNotExist;
+                LocalMessageTextBox.Text = ErrorStrings.CoreFileDoesNotExist;
             }
         }
 
-        private void ShowMessage(string message)
+        void ShowMessage(string message)
         {
-            if (tabControl.SelectedContent == localGroupBox)
+            if (TabControl.SelectedContent == LocalGroupBox)
             {
-                localMessageTextBox.Text = message;
+                LocalMessageTextBox.Text = message;
             }
             else
             {
-                gameletMessageTextBox.Text = message;
+                GameletMessageTextBox.Text = message;
             }
         }
 
-        private void gameletSelectClick(object sender, RoutedEventArgs e)
+        void InstanceSelectClick(object sender, RoutedEventArgs e)
         {
-            SelectGamelet();
+            SelectInstance();
         }
     }
 }
