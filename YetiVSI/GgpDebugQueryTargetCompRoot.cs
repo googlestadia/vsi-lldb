@@ -31,7 +31,7 @@ namespace YetiVSI
         protected readonly IDialogUtil _dialogUtil;
 
         CancelableTask.Factory _cancelableTaskFactory;
-        GameletSelectionWindow.Factory _gameletSelectionWindowFactory;
+        InstanceSelectionWindow.Factory _gameletSelectionWindowFactory;
         ApplicationClient.Factory _applicationClientFactory;
         GameletClient.Factory _gameletClientFactory;
         RemoteCommand _remoteCommand;
@@ -138,11 +138,11 @@ namespace YetiVSI
             return _cancelableTaskFactory;
         }
 
-        public virtual GameletSelectionWindow.Factory GetGameletSelectorWindowFactory()
+        public virtual InstanceSelectionWindow.Factory GetGameletSelectorWindowFactory()
         {
             if (_gameletSelectionWindowFactory == null)
             {
-                _gameletSelectionWindowFactory = new GameletSelectionWindow.Factory();
+                _gameletSelectionWindowFactory = new InstanceSelectionWindow.Factory();
             }
 
             return _gameletSelectionWindowFactory;

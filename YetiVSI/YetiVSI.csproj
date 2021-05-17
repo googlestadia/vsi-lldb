@@ -214,6 +214,9 @@
     <Compile Include="GameLaunch\LaunchUtils.cs" />
     <Compile Include="GameLaunch\VsiGameLaunch.cs" />
     <Compile Include="GameletMountChecker.cs" />
+    <Compile Include="ProjectInstanceSelectionWindow.xaml.cs">
+      <DependentUpon>ProjectInstanceSelectionWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="GgpDebugQueryTargetCompRoot.cs" />
     <Compile Include="IIncrementalProgress.cs" />
     <Compile Include="LoadSymbols\ISessionNotifier.cs" />
@@ -244,8 +247,8 @@
     <Compile Include="Metrics\ActionType.cs" />
     <Compile Include="Metrics\Timer.cs" />
     <Compile Include="DebuggerOptions\DebuggerOptionsCommand.cs" />
-    <Compile Include="GameletSelectionWindow.xaml.cs">
-      <DependentUpon>GameletSelectionWindow.xaml</DependentUpon>
+    <Compile Include="InstanceSelectionWindow.xaml.cs">
+      <DependentUpon>InstanceSelectionWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="DebugEngine\SignalMap.cs" />
     <Compile Include="PortSupplier\DebugPort.cs" />
@@ -591,7 +594,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="GameletSelectionWindow.xaml">
+    <Page Include="ProjectInstanceSelectionWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="InstanceSelectionWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

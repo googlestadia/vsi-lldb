@@ -43,7 +43,7 @@ namespace YetiVSI.Test.GameLaunch
 
         IMetrics _metrics;
         IDialogUtil _dialogUtil;
-        IGameletSelectionWindow _gameletSelectionWindow;
+        IInstanceSelectionWindow _instanceSelectionWindow;
         IGameletClient _gameletClient;
         ISshManager _sshManager;
         IGameLaunchBeHelper _gameLaunchBeHelper;
@@ -87,10 +87,10 @@ namespace YetiVSI.Test.GameLaunch
             var credentialManager = Substitute.For<ICredentialManager>();
             credentialManager.LoadAccount().Returns(_testAccount);
 
-            _gameletSelectionWindow = Substitute.For<IGameletSelectionWindow>();
-            var gameletSelectionWindowFactory = Substitute.For<GameletSelectionWindow.Factory>();
+            _instanceSelectionWindow = Substitute.For<IInstanceSelectionWindow>();
+            var gameletSelectionWindowFactory = Substitute.For<InstanceSelectionWindow.Factory>();
             gameletSelectionWindowFactory.Create(Arg.Any<List<Gamelet>>())
-                .Returns(_gameletSelectionWindow);
+                .Returns(_instanceSelectionWindow);
             _gameLaunchBeHelper = Substitute.For<IGameLaunchBeHelper>();
 
             var cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager,
@@ -127,7 +127,7 @@ namespace YetiVSI.Test.GameLaunch
         public void TestCanSelectFromMultipleGamelets()
         {
             var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
-            _gameletSelectionWindow.Run().Returns(_gamelet2);
+            _instanceSelectionWindow.Run().Returns(_gamelet2);
             SetupGameletClientApi(_gamelet2);
 
             var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
@@ -227,7 +227,7 @@ namespace YetiVSI.Test.GameLaunch
         public void GameLaunchExistsForAccount(bool confirmStop)
         {
             var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
-            _gameletSelectionWindow.Run().Returns(_gamelet2);
+            _instanceSelectionWindow.Run().Returns(_gamelet2);
             SetupGetGameletApi(_gamelet2, GameletState.Reserved);
             SetupGetGameletApi(_gamelet1, GameletState.InUse);
             SetupGetCurrentGameLaunch(null, _gamelet1.Name);
@@ -257,7 +257,7 @@ namespace YetiVSI.Test.GameLaunch
         public void GameLaunchExistsForAccountOnNonDevGamelet()
         {
             var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
-            _gameletSelectionWindow.Run().Returns(_gamelet2);
+            _instanceSelectionWindow.Run().Returns(_gamelet2);
             SetupGetGameletApi(_gamelet2, GameletState.Reserved);
             SetupGetGameletApi(_gamelet1, GameletState.InUse);
             SetupGetCurrentGameLaunch(null, "non/dev/gamelet");
@@ -283,7 +283,7 @@ namespace YetiVSI.Test.GameLaunch
         public void GameLaunchExistsOnGamelet(bool confirmStop)
         {
             var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
-            _gameletSelectionWindow.Run().Returns(_gamelet1);
+            _instanceSelectionWindow.Run().Returns(_gamelet1);
             SetupGetGameletApi(_gamelet2, GameletState.Reserved);
             SetupGetGameletApi(_gamelet1, GameletState.InUse, GameletState.InUse,
                                GameletState.Reserved);
@@ -313,7 +313,7 @@ namespace YetiVSI.Test.GameLaunch
         public void GameLaunchExistsForAnotherAccount()
         {
             var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
-            _gameletSelectionWindow.Run().Returns(_gamelet2);
+            _instanceSelectionWindow.Run().Returns(_gamelet2);
             SetupGetGameletApi(_gamelet2, GameletState.Reserved);
             SetupGetGameletApi(_gamelet1, GameletState.InUse);
             SetupGetCurrentGameLaunch(_testAccount, _gamelet1.Name);
@@ -333,7 +333,7 @@ namespace YetiVSI.Test.GameLaunch
         public void GameLaunchExistsOnGameletAndAccount()
         {
             var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
-            _gameletSelectionWindow.Run().Returns(_gamelet1);
+            _instanceSelectionWindow.Run().Returns(_gamelet1);
             SetupGetGameletApi(_gamelet2, GameletState.InUse, GameletState.InUse,
                                GameletState.Reserved);
             SetupGetGameletApi(_gamelet1, GameletState.InUse, GameletState.InUse,

@@ -42,7 +42,7 @@ namespace YetiVSI.Test.GameLaunch
 
         IMetrics _metrics;
         IDialogUtil _dialogUtil;
-        IGameletSelectionWindow _gameletSelectionWindow;
+        IInstanceSelectionWindow _instanceSelectionWindow;
         IGameletClient _gameletClient;
         ISshManager _sshManager;
 
@@ -85,10 +85,10 @@ namespace YetiVSI.Test.GameLaunch
             var credentialManager = Substitute.For<YetiCommon.ICredentialManager>();
             credentialManager.LoadAccount().Returns(_testAccount);
 
-            _gameletSelectionWindow = Substitute.For<IGameletSelectionWindow>();
-            var gameletSelectionWindowFactory = Substitute.For<GameletSelectionWindow.Factory>();
+            _instanceSelectionWindow = Substitute.For<IInstanceSelectionWindow>();
+            var gameletSelectionWindowFactory = Substitute.For<InstanceSelectionWindow.Factory>();
             gameletSelectionWindowFactory.Create(Arg.Any<List<Gamelet>>())
-                .Returns(_gameletSelectionWindow);
+                .Returns(_instanceSelectionWindow);
 
             var cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager,
                                               new CloudConnection(), new GgpSDKUtil());
@@ -125,7 +125,7 @@ namespace YetiVSI.Test.GameLaunch
         {
             var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
 
-            _gameletSelectionWindow.Run().Returns(_gamelet2);
+            _instanceSelectionWindow.Run().Returns(_gamelet2);
 
             Gamelet gamelet;
             var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,

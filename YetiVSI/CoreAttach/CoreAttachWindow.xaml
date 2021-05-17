@@ -3,10 +3,9 @@
                          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                         xmlns:local="clr-namespace:YetiVSI.CoreAttach"
                          mc:Ignorable="d"
                          xmlns:platformUi="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
-                         Title="Attach to Stadia Crash Dump" Height="350" Width="525"
+                         Title="Attach to Stadia Crash Dump" Height="500" Width="600"
                          WindowStartupLocation="CenterOwner">
     <DockPanel LastChildFill="true">
         <Label DockPanel.Dock="Top" x:Name="Label" Content="Select a crash dump to attach to." Margin="8" />
@@ -29,10 +28,11 @@
                             <TextBox x:Name="GameletMessageTextBox" DockPanel.Dock="Left" IsReadOnly="True"
                                      TextWrapping="Wrap" BorderThickness="0" />
                         </DockPanel>
-                        <Grid x:Name="GameletGrid" DockPanel.Dock="Top">
-                            <Label x:Name="GameletLabel" Content="Instance:" />
-                            <Button x:Name="GameletSelectButton" Content="_Select instance" HorizontalAlignment="Right"
-                                    Click="InstanceSelectClick" />
+                        <Label x:Name="InstanceLabel" Content="Instance:" DockPanel.Dock="Top"/>
+                        <Grid x:Name="InstanceGrid" DockPanel.Dock="Top">
+                            <Label x:Name="SelectInstanceLabel" Content="Select from Project Instances:" />
+                            <Button x:Name="InstanceSelectButton" Content="Select" HorizontalAlignment="Right"
+                                    Click="InstanceSelectClick" Width="80" />
                         </Grid>
                         <ListView x:Name="CoreList" SelectionMode="Single" SelectionChanged="CoreListSelectionChanged"
                                   Margin="8">

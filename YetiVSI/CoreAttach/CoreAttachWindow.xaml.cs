@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -42,7 +43,7 @@ namespace YetiVSI.CoreAttach
     {
         readonly JoinableTaskContext _taskContext;
         readonly CancelableTask.Factory _cancelableTaskFactory;
-        readonly GameletSelectionWindow.Factory _gameletSelectionWindowFactory;
+        readonly ProjectInstanceSelection.Factory _instanceSelectionWindowFactory;
         readonly ICoreListRequest _coreListRequest;
         readonly ICloudRunner _cloudRunner;
         readonly GameletClient.Factory _gameletClientFactory;
@@ -52,6 +53,7 @@ namespace YetiVSI.CoreAttach
         readonly ActionRecorder _actionRecorder;
         readonly DebugSessionMetrics _debugSessionMetrics;
         readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
+        readonly string _developerAccount;
         Gamelet _instance;
 
         public CoreAttachWindow(IServiceProvider serviceProvider)
@@ -73,6 +75,7 @@ namespace YetiVSI.CoreAttach
             var accountOptionLoader = new VsiAccountOptionLoader(options);
             var credentialManager =
                 new CredentialManager(credentialConfigFactory, accountOptionLoader);
+            _developerAccount = credentialManager.LoadAccount();
             IRemoteCommand remoteCommand = new RemoteCommand(managedProcessFactory);
             var socketSender = new LocalSocketSender();
             _remoteFile = new RemoteFile(managedProcessFactory, transportSessionFactory: null,
@@ -93,75 +96,56 @@ namespace YetiVSI.CoreAttach
             _actionRecorder = new ActionRecorder(_debugSessionMetrics);
 
             InitializeComponent();
-            _gameletSelectionWindowFactory = new GameletSelectionWindow.Factory();
+            _instanceSelectionWindowFactory = new ProjectInstanceSelection.Factory();
             _paramsFactory = new DebugEngine.DebugEngine.Params.Factory(jsonUtil);
+            SelectInstanceOnInit();
         }
 
-        // Select a gamelet. If there are more than one gamelets reserved, a dialog would pop up
-        // letting the user pick one.
-        public void SelectInstance()
+        void SelectInstanceOnInit()
         {
-            List<Gamelet> instances;
-            try
+            List<Gamelet> instances = ListInstances();
+            if (instances == null)
             {
-                var action = _actionRecorder.CreateToolAction(ActionType.GameletsList);
-                var gameletClient = _gameletClientFactory.Create(_cloudRunner.Intercept(action));
-                var queryTask = _cancelableTaskFactory.Create(
-                    "Querying instances...", async () => await gameletClient.ListGameletsAsync());
-                if (!queryTask.RunAndRecord(action))
-                {
-                    return;
-                }
-
-                instances = queryTask.Result;
-            }
-            catch (CloudException e)
-            {
-                Trace.Write("An exception was thrown while querying instances." +
-                            Environment.NewLine + e);
-                GameletMessageTextBox.Text = ErrorStrings.FailedToRetrieveGamelets(e.Message);
                 return;
             }
 
-            switch (instances.Count)
+            var ownedInstances = FilterOwnedInstances(instances);
+            SelectInstanceLabel.Content = $"Select from {instances.Count} Project Instances " +
+                $"({ownedInstances.Count} reserved):";
+            if (ownedInstances.Count == 1)
             {
-                case 0:
+                _instance = ownedInstances[0];
+                if (!EnableSsh())
+                {
                     _instance = null;
-                    GameletMessageTextBox.Text = ErrorStrings.NoGameletsFound;
-                    return;
-                case 1:
-                    _instance = instances[0];
-                    break;
-                default:
-                    _instance = _gameletSelectionWindowFactory.Create(instances).Run();
-                    if (_instance == null)
-                    {
-                        return;
-                    }
-
-                    break;
-            }
-
-            try
-            {
-                var action = _actionRecorder.CreateToolAction(ActionType.GameletEnableSsh);
-                var enableSshTask = _cancelableTaskFactory.Create(
-                    TaskMessages.EnablingSSH,
-                    async _ => { await _sshManager.EnableSshAsync(_instance, action); });
-                if (!enableSshTask.RunAndRecord(action))
-                {
                     return;
                 }
+                RefreshInstanceLabel();
             }
-            catch (Exception e) when (e is CloudException || e is SshKeyException)
+        }
+
+        void SelectInstance()
+        {
+            List<Gamelet> instances = ListInstances();
+            if (instances == null)
             {
-                Trace.Write("An exception was thrown while enabling ssh." + Environment.NewLine +
-                            e);
-                GameletMessageTextBox.Text = ErrorStrings.FailedToEnableSsh(e.Message);
                 return;
             }
 
-            GameletLabel.Content = "Instance: " + _instance.Id;
+            SortInstancesByReserver(instances);
+            _instance = _instanceSelectionWindowFactory.Create(instances).Run();
+            if (_instance == null)
+            {
+                return;
+            }
+
+            RefreshInstanceLabel();
+
+            if (!EnableSsh())
+            {
+                return;
+            }
+
             RefreshCoreList();
         }
 
@@ -193,6 +177,85 @@ namespace YetiVSI.CoreAttach
             finally
             {
                 Cursor = null;
+            }
+        }
+
+        List<Gamelet> ListInstances()
+        {
+            try
+            {
+                var action = _actionRecorder.CreateToolAction(ActionType.GameletsList);
+                var gameletClient = _gameletClientFactory.Create(_cloudRunner.Intercept(action));
+                var queryTask = _cancelableTaskFactory.Create(
+                    "Querying instances...",
+                    async () => await gameletClient.ListGameletsAsync(false));
+                if (!queryTask.RunAndRecord(action))
+                {
+                    return null;
+                }
+
+                return queryTask.Result;
+            }
+            catch (CloudException e)
+            {
+                Trace.Write("An exception was thrown while querying instances." +
+                            Environment.NewLine + e);
+                GameletMessageTextBox.Text = ErrorStrings.FailedToRetrieveGamelets(e.Message);
+                return null;
+            }
+        }
+
+        List<Gamelet> FilterOwnedInstances(List<Gamelet> instances) =>
+            instances.Where(i => i.ReserverEmail == _developerAccount).ToList();
+
+        void SortInstancesByReserver(List<Gamelet> instances)
+        {
+            instances.Sort((g1, g2) =>
+            {
+                if (g1.ReserverEmail != _developerAccount && g2.ReserverEmail != _developerAccount)
+                {
+                    return string.CompareOrdinal(g1.ReserverEmail, g2.ReserverEmail);
+                }
+
+                if (g1.ReserverEmail == _developerAccount && g2.ReserverEmail == _developerAccount)
+                {
+                    return string.CompareOrdinal(g1.DisplayName, g2.DisplayName);
+                }
+
+                return g1.ReserverEmail == _developerAccount ? -1 : 1;
+            });
+        }
+
+        bool EnableSsh()
+        {
+            try
+            {
+                var action = _actionRecorder.CreateToolAction(ActionType.GameletEnableSsh);
+                var enableSshTask = _cancelableTaskFactory.Create(
+                    TaskMessages.EnablingSSH,
+                    async _ => { await _sshManager.EnableSshAsync(_instance, action); });
+                if (!enableSshTask.RunAndRecord(action))
+                {
+                    return false;
+                }
+            }
+            catch (Exception e) when (e is CloudException || e is SshKeyException)
+            {
+                Trace.Write("An exception was thrown while enabling ssh." + Environment.NewLine +
+                            e);
+                GameletMessageTextBox.Text = ErrorStrings.FailedToEnableSsh(e.Message);
+                return false;
+            }
+
+            return true;
+        }
+        void RefreshInstanceLabel()
+        {
+            if (_instance != null)
+            {
+                InstanceLabel.Content = "Instance: " + (string.IsNullOrEmpty(_instance.DisplayName)
+                                                            ? _instance.Id
+                                                            : _instance.DisplayName);
             }
         }
 

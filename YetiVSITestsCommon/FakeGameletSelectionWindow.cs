@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using GgpGrpc.Models;
+using GgpGrpc.Models;
 using System.Collections.Generic;
 using YetiVSI;
 
@@ -20,21 +20,21 @@ namespace YetiVSITestsCommon
 {
     // Fake selection "window" that doesn't actually pop up a gamelet selection
     // window, but just picks the first gamelet. Useful for tests where UI is no.
-    public class FakeGameletSelectionWindow : IGameletSelectionWindow
+    public class FakeInstanceSelectionWindow : IInstanceSelectionWindow
     {
-        public class Factory : GameletSelectionWindow.Factory
+        public class Factory : InstanceSelectionWindow.Factory
         {
             public Factory()
             {
             }
 
-            public override IGameletSelectionWindow Create(List<Gamelet> gamelets) =>
-                new FakeGameletSelectionWindow(gamelets);
+            public override IInstanceSelectionWindow Create(List<Gamelet> gamelets) =>
+                new FakeInstanceSelectionWindow(gamelets);
         }
 
         readonly List<Gamelet> _gamelets;
 
-        public FakeGameletSelectionWindow(List<Gamelet> gamelets)
+        public FakeInstanceSelectionWindow(List<Gamelet> gamelets)
         {
             _gamelets = gamelets;
         }

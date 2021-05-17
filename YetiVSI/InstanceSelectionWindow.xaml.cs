@@ -13,7 +13,6 @@
 // limitations under the License.
 
 using GgpGrpc.Models;
-using Microsoft.VisualStudio.PlatformUI;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
@@ -22,34 +21,32 @@ using System.Windows.Data;
 
 namespace YetiVSI
 {
-    // Uses a window to allow users to choose from a list of gamelets.
-    public interface IGameletSelectionWindow
+    // Uses a window to allow users to choose from a list of instances.
+    public interface IInstanceSelectionWindow
     {
         // Displays the window and blocks until the user performs a selection. Returns the selected
-        // gamelet or null if they cancelled.
+        // instance or null if they cancelled.
         Gamelet Run();
     }
 
-    public partial class GameletSelectionWindow : DialogWindow, IGameletSelectionWindow
+    public partial class InstanceSelectionWindow : IInstanceSelectionWindow
     {
         public class Factory
         {
-            public virtual IGameletSelectionWindow Create(List<Gamelet> gamelets)
-            {
-                return new GameletSelectionWindow(gamelets);
-            }
+            public virtual IInstanceSelectionWindow Create(
+                List<Gamelet> instances) => new InstanceSelectionWindow(instances);
         }
 
-        Gamelet selected;
+        Gamelet _selected;
 
-        private GameletSelectionWindow(List<Gamelet> gamelets)
+        InstanceSelectionWindow(List<Gamelet> instances)
         {
             InitializeComponent();
-            gameletList.ItemsSource = gamelets;
-            gameletList.Focus();
+            InstanceList.ItemsSource = instances;
+            InstanceList.Focus();
 
             // Force sorting by the Name column (DisplayName property) in ascending order.
-            var dataView = CollectionViewSource.GetDefaultView(gameletList.ItemsSource);
+            var dataView = CollectionViewSource.GetDefaultView(InstanceList.ItemsSource);
             dataView.SortDescriptions.Add(
                 new SortDescription("DisplayName", ListSortDirection.Ascending));
         }
@@ -57,26 +54,26 @@ namespace YetiVSI
         public Gamelet Run()
         {
             ShowModal();
-            return selected;
+            return _selected;
         }
 
-        private void gameletListSelectionChanged(object sender, SelectionChangedEventArgs e)
+        void InstanceListSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            selectButton.IsEnabled = gameletList.SelectedItem != null;
+            SelectButton.IsEnabled = InstanceList.SelectedItem != null;
         }
 
-        private void cancelClick(object sender, RoutedEventArgs e)
+        void CancelClick(object sender, RoutedEventArgs e)
         {
             Cancel();
         }
 
-        private void selectClick(object sender, RoutedEventArgs e)
+        void SelectClick(object sender, RoutedEventArgs e)
         {
             TryAccept();
         }
 
-        private void gameletList_MouseDoubleClick(object sender,
-                                                  System.Windows.Input.MouseButtonEventArgs e)
+        void InstancesList_MouseDoubleClick(object sender,
+                                            System.Windows.Input.MouseButtonEventArgs e)
         {
             if (e.ChangedButton == System.Windows.Input.MouseButton.Left)
             {
@@ -85,7 +82,7 @@ namespace YetiVSI
             }
         }
 
-        private void DialogWindow_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+        void DialogWindow_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Enter)
             {
@@ -98,29 +95,26 @@ namespace YetiVSI
             }
         }
 
-        private bool TryAccept()
+        void TryAccept()
         {
-            selected = (gameletList.SelectedItem as Gamelet);
-            if (selected != null)
+            _selected = (InstanceList.SelectedItem as Gamelet);
+            if (_selected != null)
             {
                 Close();
-                return true;
             }
-
-            return false;
         }
 
-        private void Cancel()
+        void Cancel()
         {
-            selected = null;
+            _selected = null;
             Close();
         }
 
-        private void DialogWindow_Loaded(object sender, RoutedEventArgs e)
+        void DialogWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            if (gameletList.HasItems)
+            if (InstanceList.HasItems)
             {
-                gameletList.SelectedIndex = 0;
+                InstanceList.SelectedIndex = 0;
             }
         }
     }

@@ -37,7 +37,7 @@ namespace YetiVSI.GameLaunch
     {
         public const string ClearLogsCmd = "rm -f /var/game/stdout /var/game/stderr";
 
-        readonly GameletSelectionWindow.Factory _gameletSelectionWindowFactory;
+        readonly InstanceSelectionWindow.Factory _gameletSelectionWindowFactory;
         readonly IDialogUtil _dialogUtil;
         readonly CancelableTask.Factory _cancelableTaskFactory;
         readonly IGameletClientFactory _gameletClientFactory;
@@ -50,7 +50,7 @@ namespace YetiVSI.GameLaunch
         readonly ActionRecorder _actionRecorder;
 
         public GameletSelector(IDialogUtil dialogUtil, ICloudRunner runner,
-                               GameletSelectionWindow.Factory gameletSelectionWindowFactory,
+                               InstanceSelectionWindow.Factory gameletSelectionWindowFactory,
                                CancelableTask.Factory cancelableTaskFactory,
                                IGameletClientFactory gameletClientFactory, ISshManager sshManager,
                                IRemoteCommand remoteCommand, IGameLaunchBeHelper gameLaunchBeHelper,

@@ -1,0 +1,32 @@
+<platformUi:DialogWindow x:Class="YetiVSI.ProjectInstanceSelection"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        xmlns:platformUi="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+        Title="Select an Instance" Height="350" Width="525" WindowStartupLocation="CenterOwner" KeyUp="DialogWindow_KeyUp" Loaded="DialogWindow_Loaded">
+    <DockPanel LastChildFill="true">
+        <DockPanel DockPanel.Dock="Bottom" LastChildFill="false">
+            <Button DockPanel.Dock="Right" x:Name="CancelButton" Content="Cancel" Click="CancelClick"  Width="100" Margin="8" TabIndex="2"/>
+            <Button DockPanel.Dock="Right" x:Name="SelectButton" Content="Select" Click="SelectClick" IsEnabled="False" Width="100" Margin="8" TabIndex="1"/>
+        </DockPanel>
+
+        <GroupBox x:Name="InstanceGroupBox" Header="Project Instances" Margin="10">
+            <DockPanel LastChildFill="true">
+                <DockPanel DockPanel.Dock="Bottom">
+                    <Label x:Name="InstanceMessageLabel" DockPanel.Dock="Left"/>
+                </DockPanel>
+                <ListView x:Name="InstancesList" SelectionMode="Single" SelectionChanged="InstancesListSelectionChanged" Margin="8" IsTabStop="True" TabIndex="0" MouseDoubleClick="InstanceList_MouseDoubleClick">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Name" Width="Auto" DisplayMemberBinding="{Binding DisplayName}" />
+                            <GridViewColumn Header="Reserver" Width="Auto" DisplayMemberBinding="{Binding Reserver}" />
+                            <GridViewColumn Header="ID" Width="Auto" DisplayMemberBinding="{Binding Id}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </DockPanel>
+        </GroupBox>
+    </DockPanel>
+</platformUi:DialogWindow>
