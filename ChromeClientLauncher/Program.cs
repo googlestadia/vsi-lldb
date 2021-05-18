@@ -48,6 +48,12 @@ namespace ChromeClientLauncher
                 {
                     string launchName = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
                     string launchUrl;
+                    if (gameLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
+                    {
+                        // TODO: Notify developer that game has started.
+                        return;
+                    }
+
                     switch (gameLauncher.LaunchParams.Endpoint)
                     {
                         case StadiaEndpoint.TestClient:

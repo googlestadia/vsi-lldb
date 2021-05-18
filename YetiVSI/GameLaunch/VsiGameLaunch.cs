@@ -71,9 +71,11 @@ namespace YetiVSI.GameLaunch
 
     public interface IVsiGameLaunchFactory
     {
-        IVsiGameLaunch Create(string launchName);
+        IVsiGameLaunch Create(string launchName, bool isDeveloperResumeOfferEnabled);
 
-        IVsiGameLaunch Create(string launchName, int pollingTimeoutMs, int pollDelayMs);
+        IVsiGameLaunch Create(string launchName, bool isDeveloperResumeOfferEnabled,
+                              int pollingTimeoutMs, int pollingTimeoutResumeOfferMs,
+                              int pollDelayMs);
     }
 
     public class VsiGameLaunchFactory : IVsiGameLaunchFactory
@@ -96,13 +98,17 @@ namespace YetiVSI.GameLaunch
             _dialogUtil = dialogUtil;
         }
 
-        public IVsiGameLaunch Create(string launchName) => new VsiGameLaunch(
-            launchName, _gameletClient, _cancelableTaskFactory, _gameLaunchBeHelper,
-            _actionRecorder, _dialogUtil);
+        public IVsiGameLaunch Create(string launchName, bool isDeveloperResumeOfferEnabled) =>
+            new VsiGameLaunch(launchName, isDeveloperResumeOfferEnabled, _gameletClient,
+                              _cancelableTaskFactory, _gameLaunchBeHelper, _actionRecorder,
+                              _dialogUtil);
 
-        public IVsiGameLaunch Create(string launchName, int pollingTimeoutMs, int pollDelayMs) =>
-            new VsiGameLaunch(launchName, _gameletClient, _cancelableTaskFactory,
-                              _gameLaunchBeHelper, _actionRecorder, _dialogUtil, pollingTimeoutMs,
+        public IVsiGameLaunch Create(string launchName, bool isDeveloperResumeOfferEnabled,
+                                     int pollingTimeoutMs, int pollingTimeoutResumeOfferMs,
+                                     int pollDelayMs) =>
+            new VsiGameLaunch(launchName, isDeveloperResumeOfferEnabled, _gameletClient,
+                              _cancelableTaskFactory, _gameLaunchBeHelper, _actionRecorder,
+                              _dialogUtil, pollingTimeoutMs, pollingTimeoutResumeOfferMs,
                               pollDelayMs);
     }
 
@@ -114,21 +120,32 @@ namespace YetiVSI.GameLaunch
         readonly IGameLaunchBeHelper _gameLaunchBeHelper;
         readonly ActionRecorder _actionRecorder;
         readonly int _pollingTimeoutMs;
+        readonly int _pollingTimeoutResumeOfferMs;
         readonly int _pollDelayMs;
+        /// <summary>
+        /// If true, this launch can be picked up on any endpoint by the developer.
+        /// For this type of launches we need significantly larger timeout
+        /// while waiting for the client to connect.
+        /// </summary>
+        readonly bool _isDeveloperResumeOfferEnabled;
 
-        public VsiGameLaunch(string launchName, IGameletClient gameletClient,
+        public VsiGameLaunch(string launchName, bool isDeveloperResumeOfferEnabled,
+                             IGameletClient gameletClient,
                              CancelableTask.Factory cancelableTaskFactory,
                              IGameLaunchBeHelper gameLaunchBeHelper, ActionRecorder actionRecorder,
-                             IDialogUtil dialogUtil, int pollingTimeoutMs = 120000,
+                             IDialogUtil dialogUtil, int pollingTimeoutMs = 120 * 1000,
+                             int pollingTimeoutResumeOfferMs = 120 * 60 * 1000,
                              int pollDelayMs = 500)
         {
             LaunchName = launchName;
+            _isDeveloperResumeOfferEnabled = isDeveloperResumeOfferEnabled;
             _gameletClient = gameletClient;
             _cancelableTaskFactory = cancelableTaskFactory;
             _gameLaunchBeHelper = gameLaunchBeHelper;
             _actionRecorder = actionRecorder;
             _dialogUtil = dialogUtil;
             _pollingTimeoutMs = pollingTimeoutMs;
+            _pollingTimeoutResumeOfferMs = pollingTimeoutResumeOfferMs;
             _pollDelayMs = pollDelayMs;
         }
 
@@ -218,7 +235,9 @@ namespace YetiVSI.GameLaunch
         // ReadyToPlay and DelayedLaunch are transitioning states.
         async Task PollForLaunchStatusAsync(ICancelable task, IAction action)
         {
-            int maxPollCount = _pollingTimeoutMs / _pollDelayMs;
+            int maxPollCount = (_isDeveloperResumeOfferEnabled
+                ? _pollingTimeoutResumeOfferMs
+                : _pollingTimeoutMs) / _pollDelayMs;
             int currentPollCount = 0;
             var devEvent = new DeveloperLogEvent
             {

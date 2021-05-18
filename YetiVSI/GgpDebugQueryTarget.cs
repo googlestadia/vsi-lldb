@@ -200,7 +200,8 @@ namespace YetiVSI
                 if (launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
                 {
                     if (_gameLauncher.LaunchGameApiEnabled ||
-                        launchParams.Endpoint == StadiaEndpoint.PlayerEndpoint)
+                        launchParams.Endpoint == StadiaEndpoint.PlayerEndpoint ||
+                        launchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
                     {
                         IVsiGameLaunch launch = _gameLauncher.CreateLaunch(launchParams);
                         if (launch != null)

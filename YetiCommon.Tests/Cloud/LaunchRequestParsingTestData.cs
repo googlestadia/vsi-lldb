@@ -15,6 +15,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GgpGrpc.Models;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiCommon.Tests.Cloud
 {
@@ -37,7 +38,8 @@ namespace YetiCommon.Tests.Cloud
                 VulkanDriverVariant = "test_variant",
                 SurfaceEnforcementMode = SurfaceEnforcementSetting.Warn,
                 TestAccount = "some_test_account",
-                QueryParams = ""
+                QueryParams = "",
+                Endpoint = StadiaEndpoint.TestClient
             };
 
         public static LaunchGameRequest ValidRequest => new LaunchGameRequest
