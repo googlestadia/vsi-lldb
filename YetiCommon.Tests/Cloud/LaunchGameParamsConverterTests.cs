@@ -19,6 +19,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
 using YetiCommon.Cloud;
+using YetiVSI.ProjectSystem.Abstractions;
 using static YetiCommon.Tests.Cloud.LaunchRequestParsingTestData;
 
 namespace YetiCommon.Tests.Cloud
@@ -160,6 +161,7 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(request.StreamerFixedResolution, Is.EqualTo(VideoResolution.Unspecified));
             Assert.That(request.StreamerMaximumBandWidthKbps, Is.EqualTo(null));
             Assert.That(request.StreamerMinimumBandWidthKbps, Is.EqualTo(null));
+            Assert.That(request.EnableDeveloperResumeOffer, Is.EqualTo(false));
         }
 
         [Test]
@@ -329,6 +331,29 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(status.IsOk, Is.EqualTo(true));
             Assert.IsNotNull(request);
             Assert.That(request.CommandLineArguments, Is.EqualTo(expectedOutput));
+        }
+
+        [TestCase(StadiaEndpoint.AnyEndpoint, true, TestName = "AnyEndpoint")]
+        [TestCase(StadiaEndpoint.TestClient, false, TestName = "TestClient")]
+        [TestCase(StadiaEndpoint.PlayerEndpoint, false, TestName = "PlayerEndpoint")]
+        public void ToLaunchGameRequestEnableDeveloperResumeOffer(
+            StadiaEndpoint endpoint, bool enableOffer)
+        {
+            LaunchParams parameters = ValidParams;
+            parameters.Endpoint = endpoint;
+
+            // AnyEndpoint and PlayerEndpoint produce warnings
+            // when TestAccount or QueryParams are set. We want to receive OK parsing status,
+            // so we make sure those settings are empty.
+            parameters.TestAccount = "";
+            parameters.QueryParams = "";
+
+            ConfigStatus status =
+                _target.ToLaunchGameRequest(parameters, out LaunchGameRequest request);
+
+            Assert.That(status.IsOk, Is.EqualTo(true));
+            Assert.IsNotNull(request);
+            Assert.That(request.EnableDeveloperResumeOffer, Is.EqualTo(enableOffer));
         }
     }
 }

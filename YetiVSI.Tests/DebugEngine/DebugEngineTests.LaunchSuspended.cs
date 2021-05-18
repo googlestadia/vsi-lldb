@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio;
+using System;
+using System.Text;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using NSubstitute;
 using NUnit.Framework;
-using YetiVSI.DebugEngine;
+ using YetiCommon;
+ using YetiVSI.DebugEngine;
+ using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.Test.DebugEngine
 {
@@ -43,6 +47,25 @@ namespace YetiVSI.Test.DebugEngine
             var debugSessionLauncherFactory = Substitute.For<IDebugSessionLauncherFactory>();
             IGgpDebugEngine debugEngine = CreateGgpDebugEngine(debugSessionLauncherFactory);
             string options = null;
+            var debugPort = Substitute.For<IDebugPort2>();
+            int result = debugEngine.LaunchSuspended("", debugPort, _exePath, args, null, null,
+                                                     options, enum_LAUNCH_FLAGS.LAUNCH_DEBUG, 0, 0,
+                                                     0, null, out var _);
+            Assert.That(result, Is.EqualTo(VSConstants.S_OK));
+        }
+
+        [Test]
+        public void LaunchSuspendedWhenEndpointSetSucceeds(
+            [Values(StadiaEndpoint.AnyEndpoint, StadiaEndpoint.PlayerEndpoint,
+                    StadiaEndpoint.TestClient)]
+            StadiaEndpoint endpoint)
+        {
+            var debugSessionLauncherFactory = Substitute.For<IDebugSessionLauncherFactory>();
+            IGgpDebugEngine debugEngine = CreateGgpDebugEngine(debugSessionLauncherFactory);
+            string options = null;
+            var launchParams = new LaunchParams { Endpoint = endpoint };
+            string args = Convert.ToBase64String(
+                Encoding.UTF8.GetBytes(new JsonUtil().Serialize(launchParams)));
             var debugPort = Substitute.For<IDebugPort2>();
             int result = debugEngine.LaunchSuspended("", debugPort, _exePath, args, null, null,
                                                      options, enum_LAUNCH_FLAGS.LAUNCH_DEBUG, 0, 0,
