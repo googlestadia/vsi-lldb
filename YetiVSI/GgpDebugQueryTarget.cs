@@ -151,6 +151,17 @@ namespace YetiVSI
                         "Test Client in the Project Properties instead.");
                 }
 
+                // TODO: Enable launch on any endpoint for external accounts.
+                if (launchParams.Endpoint == StadiaEndpoint.AnyEndpoint &&
+                    launchParams.Account != null &&
+                    !launchParams.Account.EndsWith("@sparklingsunset.com") &&
+                    !launchParams.Account.EndsWith("@subtlesunset.com"))
+                {
+                    throw new NotImplementedException(
+                        "Launch on any player endpoint is not supported yet, please select " +
+                        "another endpoint in the Project Properties instead.");
+                }
+
                 bool launchGameApiEnabled =
                     _yetiVsiService.Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
                 IGameletSelector gameletSelector =
