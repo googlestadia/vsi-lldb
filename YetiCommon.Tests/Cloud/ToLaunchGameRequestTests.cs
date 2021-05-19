@@ -219,12 +219,11 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(request.StreamerMinimumBandWidthKbps, Is.EqualTo(23));
         }
 
-        [TestCase(StadiaEndpoint.PlayerEndpoint, TestName = "PlayerEndpoint")]
-        [TestCase(StadiaEndpoint.AnyEndpoint, TestName = "AnyEndpoint")]
-        public void ToLaunchGameRequestNotSupportedQueryParams(StadiaEndpoint endpoint)
+        [Test]
+        public void ToLaunchGameRequestPlayerEndpointNotSupportedQueryParams()
         {
             LaunchParams parameters = ValidParams;
-            parameters.Endpoint = endpoint;
+            parameters.Endpoint = StadiaEndpoint.PlayerEndpoint;
             parameters.QueryParams = "a=42&vars=valid=1";
 
             ConfigStatus status =
@@ -232,17 +231,16 @@ namespace YetiCommon.Tests.Cloud
 
             Assert.That(status.IsWarningLevel, Is.EqualTo(true));
             Assert.That(status.WarningMessage,
-                        Does.Contain("are not supported by Player Endpoint and deferred launch"));
+                        Does.Contain("are not supported by Player Endpoint"));
             Assert.That(status.WarningMessage, Does.Contain("a=42"));
             Assert.That(status.WarningMessage, Does.Not.Contain("vars=valid=1"));
         }
 
-        [TestCase(StadiaEndpoint.PlayerEndpoint, TestName = "PlayerEndpoint")]
-        [TestCase(StadiaEndpoint.AnyEndpoint, TestName = "AnyEndpoint")]
-        public void ToLaunchGameRequestNotSupportedTestAccounts(StadiaEndpoint endpoint)
+        [Test]
+        public void ToLaunchGameRequestPlayerEndpointNotSupportedTestAccounts()
         {
             LaunchParams parameters = ValidParams;
-            parameters.Endpoint = endpoint;
+            parameters.Endpoint = StadiaEndpoint.PlayerEndpoint;
             parameters.TestAccount = "a/b/c";
             parameters.TestAccountGamerName = "gamer#1234";
 
@@ -251,8 +249,7 @@ namespace YetiCommon.Tests.Cloud
 
             Assert.That(status.IsWarningLevel, Is.EqualTo(true));
             Assert.That(status.WarningMessage,
-                        Does.Contain("Test accounts are not supported for Player Endpoint" +
-                                     " and deferred launch"));
+                        Does.Contain("Test accounts are not supported for Player Endpoint"));
             Assert.That(status.WarningMessage, Does.Contain("gamer#1234"));
         }
     }

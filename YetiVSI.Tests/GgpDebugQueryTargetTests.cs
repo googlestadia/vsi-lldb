@@ -235,8 +235,7 @@ namespace YetiVSI.Test
                                              [Values(null, "optprintasserts")]
                                              string vulkanDriverVariant,
                                              [Values(StadiaEndpoint.PlayerEndpoint,
-                                                     StadiaEndpoint.TestClient,
-                                                     StadiaEndpoint.AnyEndpoint)]
+                                                     StadiaEndpoint.TestClient)]
                                              StadiaEndpoint endpoint)
         {
             _project.GetLaunchRenderDocAsync().Returns(renderdoc);

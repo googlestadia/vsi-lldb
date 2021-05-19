@@ -57,6 +57,9 @@ namespace YetiVSI.Test.GameLaunch
             _metrics = Substitute.For<IMetrics>();
             _actionRecorder = Substitute.For<ActionRecorder>(_metrics);
             _dialogUtil = Substitute.For<IDialogUtil>();
+            _target = new VsiGameLaunch(_launchName, _gameletClient, _cancelableTaskFactory,
+                                        _gameLaunchBeHelper, _actionRecorder, _dialogUtil, 1000,
+                                        100);
             _launcher = Substitute.For<IChromeClientsLauncher>();
             _params = new LaunchParams();
             _launcher.LaunchParams.Returns(_params);
@@ -65,7 +68,6 @@ namespace YetiVSI.Test.GameLaunch
         [Test]
         public void IdentifiersTest()
         {
-            _target = GetGameLaunch(false);
             Assert.That(_target.LaunchName, Is.EqualTo(_launchName));
             Assert.That(_target.LaunchId, Is.EqualTo(_launchId));
         }
@@ -73,7 +75,6 @@ namespace YetiVSI.Test.GameLaunch
         [Test]
         public void LaunchTestClientTest()
         {
-            _target = GetGameLaunch(false);
             const string url = "https://test";
             const string workingDir = "C:/dir";
             _params.Endpoint = StadiaEndpoint.TestClient;
@@ -89,7 +90,6 @@ namespace YetiVSI.Test.GameLaunch
         [Test]
         public void LaunchOnWebTest()
         {
-            _target = GetGameLaunch(false);
             const string url = "https://test";
             const string workingDir = "C:/dir";
             _params.Endpoint = StadiaEndpoint.PlayerEndpoint;
@@ -105,7 +105,6 @@ namespace YetiVSI.Test.GameLaunch
         [Test]
         public async Task GetLaunchStateAsyncTestAsync()
         {
-            _target = GetGameLaunch(false);
             var action = Substitute.For<IAction>();
             var gameLaunch = GetGameLaunch();
             _gameletClient.GetGameLaunchStateAsync(_launchName, action)
@@ -124,7 +123,6 @@ namespace YetiVSI.Test.GameLaunch
         [TestCase(null, false, TestName = "GameNotEnded")]
         public async Task WaitForGameLaunchEndedAndRecordTestAsync(EndReason? reason, bool throws)
         {
-            _target = GetGameLaunch(false);
             var action = Substitute.For<IAction>();
             DeveloperLogEvent devEvent = SetupUpdateEvent(action);
             action.RecordAsync(Arg.Any<Task>()).Returns(callInfo => callInfo.Arg<Task>());
@@ -153,19 +151,15 @@ namespace YetiVSI.Test.GameLaunch
         [TestCase(new[] { GameLaunchState.IncompleteLaunch, GameLaunchState.RunningGame },
                   new[] { 4, 1 }, true, TestName = "RunningAfterIncomplete")]
         [TestCase(new[] { GameLaunchState.ReadyToPlay, GameLaunchState.RunningGame },
-                  new[] { 3, 1 }, true, TestName = "RunningAfterLaunching")]
+                  new[] { 9, 1 }, true, TestName = "RunningAfterLaunching")]
         [TestCase(new[] { GameLaunchState.IncompleteLaunch, GameLaunchState.GameLaunchEnded },
-                  new[] { 3, 1 }, false, EndReason.GameShutdownBySystem,
+                  new[] { 7, 1 }, false, EndReason.GameShutdownBySystem,
                   TestName = "EndAfterIncomplete")]
         [TestCase(new[] { GameLaunchState.IncompleteLaunch, GameLaunchState.RunningGame },
-                  new[] { 7, 1 }, false, TestName = "RunningTimeout")]
-        [TestCase(new[] { GameLaunchState.IncompleteLaunch, GameLaunchState.RunningGame },
-                  new[] { 7, 1 }, true, null, true, TestName = "NoTimeOutWithDeferred")]
+                  new[] { 100, 1 }, false, TestName = "RunningTimeout")]
         public void WaitUntilGameLaunchedTest(GameLaunchState[] launchStates, int[] stateRepeat,
-                                              bool launchResult, EndReason? endReason = null,
-                                              bool isDevResumeOfferEnabled = false)
+                                              bool launchResult, EndReason? endReason = null)
         {
-            _target = GetGameLaunch(isDevResumeOfferEnabled);
             Func<ICancelable, Task> currentTask = null;
             var action = Substitute.For<IAction>();
             DeveloperLogEvent devEvent = SetupUpdateEvent(action);
@@ -186,10 +180,12 @@ namespace YetiVSI.Test.GameLaunch
             List<GameLaunchState> statusSequence = launchStates
                 .Select((state, i) => Enumerable.Repeat(state, stateRepeat[i]))
                 .SelectMany(states => states).ToList();
-            Task<GgpGrpc.Models.GameLaunch>[] launches = statusSequence.Select(
-                (state, i) => Task.FromResult(GetGameLaunch(state, i == statusSequence.Count - 1
-                                                                ? endReason
-                                                                : null))).ToArray();
+            Task<GgpGrpc.Models.GameLaunch>[] launches = statusSequence
+                .Select((state, i) =>
+                            Task.FromResult(
+                                GetGameLaunch(
+                                    state, i == statusSequence.Count - 1 ? endReason : null)))
+                .ToArray();
             _gameletClient.GetGameLaunchStateAsync(_launchName, action)
                 .Returns(launches[0], launches.Skip(1).ToArray());
 
@@ -200,7 +196,6 @@ namespace YetiVSI.Test.GameLaunch
             {
                 _dialogUtil.Received(1).ShowError(Arg.Any<string>());
             }
-
             Assert.That(devEvent.GameLaunchData.LaunchId, Is.EqualTo(_launchId));
             Assert.That(devEvent.GameLaunchData.EndReason, Is.EqualTo((int?) endReason));
             action.Received(1).Record(Arg.Any<Func<bool>>());
@@ -226,9 +221,5 @@ namespace YetiVSI.Test.GameLaunch
             });
             return devEvent;
         }
-
-        VsiGameLaunch GetGameLaunch(bool isDeveloperResumeOfferEnabled) => new VsiGameLaunch(
-            _launchName, isDeveloperResumeOfferEnabled, _gameletClient, _cancelableTaskFactory,
-            _gameLaunchBeHelper, _actionRecorder, _dialogUtil, 500, 1000, 100);
     }
 }

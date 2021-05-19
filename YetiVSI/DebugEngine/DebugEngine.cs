@@ -949,8 +949,7 @@ namespace YetiVSI.DebugEngine
                 _renderDocEnabled = chromeLauncher.LaunchParams.RenderDoc;
 
                 if (_gameLauncher.LaunchGameApiEnabled ||
-                    chromeLauncher.LaunchParams.Endpoint == StadiaEndpoint.PlayerEndpoint ||
-                    chromeLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
+                    chromeLauncher.LaunchParams.Endpoint == StadiaEndpoint.PlayerEndpoint)
                 {
                     LaunchGame(chromeLauncher);
                     if (_vsiGameLaunch == null)
@@ -984,14 +983,6 @@ namespace YetiVSI.DebugEngine
         void LaunchGame(IChromeClientsLauncher chromeClientsLauncher)
         {
             _vsiGameLaunch = _gameLauncher.CreateLaunch(chromeClientsLauncher.LaunchParams);
-
-            if (chromeClientsLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
-            {
-                // Developer will open an endpoint and pick up the launch by themselves.
-                // VSI doesn't need to open Chrome window.
-                return;
-            }
-
             _vsiGameLaunch?.LaunchInChrome(chromeClientsLauncher, _workingDirectory);
         }
 

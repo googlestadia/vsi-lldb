@@ -63,8 +63,7 @@ namespace YetiCommon.Cloud
                 EnvironmentVariables(parameters, out IDictionary<string, string> envVariables));
             status = status.Merge(CommandLineArguments(parameters, out string[] cmdArgs));
 
-            if ((parameters.Endpoint == StadiaEndpoint.PlayerEndpoint ||
-                    parameters.Endpoint == StadiaEndpoint.AnyEndpoint) &&
+            if (parameters.Endpoint == StadiaEndpoint.PlayerEndpoint &&
                 !string.IsNullOrEmpty(parameters.TestAccount))
             {
                 status.AppendWarning(
@@ -81,8 +80,7 @@ namespace YetiCommon.Cloud
                 CommandLineArguments = cmdArgs,
                 EnvironmentVariablePairs = envVariables,
                 SurfaceEnforcementMode = parameters.SurfaceEnforcementMode,
-                Debug = parameters.Debug,
-                EnableDeveloperResumeOffer = parameters.Endpoint == StadiaEndpoint.AnyEndpoint
+                Debug = parameters.Debug
             };
 
             status = status.Merge(
@@ -92,8 +90,7 @@ namespace YetiCommon.Cloud
                 _queryParametersParser.GetFinalQueryString(parametersDict, out string queryString));
             parameters.QueryParams = queryString;
 
-            if ((parameters.Endpoint == StadiaEndpoint.PlayerEndpoint ||
-                    parameters.Endpoint == StadiaEndpoint.AnyEndpoint) &&
+            if (parameters.Endpoint == StadiaEndpoint.PlayerEndpoint &&
                 !string.IsNullOrEmpty(queryString))
             {
                 status.AppendWarning(ErrorStrings.QueryParamsNotSupported(queryString));

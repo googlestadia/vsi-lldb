@@ -70,10 +70,6 @@ namespace YetiVSI.ProjectSystem.Abstractions
         /// Player endpoint.
         /// </summary>
         PlayerEndpoint,
-        /// <summary>
-        /// The launch can be picked up on any endpoint.
-        /// </summary>
-        AnyEndpoint
     }
 
     /// <summary>

@@ -187,9 +187,7 @@ namespace YetiVSI.GameLaunch
             LaunchGameResponse response =
                 await _gameletClient.LaunchGameAsync(launchRequest, action);
 
-            IVsiGameLaunch vsiLaunch =
-                _vsiLaunchFactory.Create(response.GameLaunchName,
-                                         launchRequest.EnableDeveloperResumeOffer);
+            IVsiGameLaunch vsiLaunch = _vsiLaunchFactory.Create(response.GameLaunchName);
             devEvent.GameLaunchData.LaunchId = vsiLaunch.LaunchId;
             action.UpdateEvent(devEvent);
             parsingState.CompressMessages();
