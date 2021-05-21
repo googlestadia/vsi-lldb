@@ -61,27 +61,12 @@ namespace YetiVSI.ProjectSystem
         {
             var deployOnLaunchString = await userProperties.GetEvaluatedPropertyValueAsync(
                 ProjectPropertyName.GgpDeployOnLaunch);
-            DeployOnLaunchSetting deployOnLaunch;
-            if (Enum.TryParse(deployOnLaunchString, true, out deployOnLaunch))
+            if (Enum.TryParse(deployOnLaunchString, true, out DeployOnLaunchSetting deployOnLaunch))
             {
                 return deployOnLaunch;
             }
-            else
-            {
-                return DeployOnLaunchSetting.TRUE;
-            }
-        }
 
-        public async Task<DeployCompressionSetting> GetDeployCompressionAsync()
-        {
-            string deployCompressionString = await userProperties.GetEvaluatedPropertyValueAsync(
-                ProjectPropertyName.GgpDeployCompression);
-            DeployCompressionSetting deployCompression;
-            if (!Enum.TryParse(deployCompressionString, true, out deployCompression))
-            {
-                return DeployCompressionSetting.Compressed;
-            }
-            return deployCompression;
+            return DeployOnLaunchSetting.DELTA;
         }
 
         public async Task<SurfaceEnforcementSetting> GetSurfaceEnforcementAsync()

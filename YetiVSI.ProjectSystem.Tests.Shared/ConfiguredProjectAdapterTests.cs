@@ -196,22 +196,7 @@ namespace YetiVSI.ProjectSystem.Tests
 
             var configuredProject = CreateConfiguredProject(projectValues, projectPath);
             IAsyncProject project = new ConfiguredProjectAdapter(configuredProject);
-            Assert.AreEqual(DeployOnLaunchSetting.TRUE, await project.GetDeployOnLaunchAsync());
-        }
-
-        [TestCase(DeployCompressionSetting.Uncompressed)]
-        [TestCase(DeployCompressionSetting.Compressed)]
-        public async Task GetGgpDeployCompressionAsync(DeployCompressionSetting compression)
-        {
-            var projectPath = @"C:\GGP_project_path\";
-            var projectValues = new ProjectValues
-            {
-                GgpDeployCompression = compression.ToString("g").ToLower()
-            };
-
-            var configuredProject = CreateConfiguredProject(projectValues, projectPath);
-            IAsyncProject project = new ConfiguredProjectAdapter(configuredProject);
-            Assert.AreEqual(compression, await project.GetDeployCompressionAsync());
+            Assert.AreEqual(DeployOnLaunchSetting.DELTA, await project.GetDeployOnLaunchAsync());
         }
 
         [TestCase(SurfaceEnforcementSetting.Off)]
@@ -388,22 +373,7 @@ namespace YetiVSI.ProjectSystem.Tests
             var configuredProject = CreateConfiguredProject(projectValues, projectPath);
 
             var project = new ConfiguredProjectAdapter(configuredProject);
-            Assert.AreEqual(DeployOnLaunchSetting.TRUE, await project.GetDeployOnLaunchAsync());
-        }
-
-        [Test]
-        public async Task CreateConfiguredProjectInvalidDeployCompresisonAsync()
-        {
-            var projectPath = @"C:\Yeti_project_path\";
-            var projectValues = new ProjectValues
-            {
-                GgpDeployCompression = "invalid_setting",
-            };
-            var configuredProject = CreateConfiguredProject(projectValues, projectPath);
-
-            var project = new ConfiguredProjectAdapter(configuredProject);
-            Assert.AreEqual(DeployCompressionSetting.Compressed,
-                await project.GetDeployCompressionAsync());
+            Assert.AreEqual(DeployOnLaunchSetting.DELTA, await project.GetDeployOnLaunchAsync());
         }
 
         [Test]

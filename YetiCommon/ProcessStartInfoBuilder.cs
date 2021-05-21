@@ -74,63 +74,6 @@ namespace YetiCommon
         }
 
         /// <summary>
-        /// Returns ProcessStartInfo for forwarding a local port to a remote gamelet using SSH,
-        /// and running a command.
-        /// </summary>
-        public static ProcessStartInfo BuildForSshPortForwardAndCommand(
-            IEnumerable<PortForwardEntry> ports, SshTarget target, string command)
-        {
-            var portsArgument = string.Join(" ",
-                ports.Select(e => $"-L{e.LocalPort}:localhost:{e.RemotePort}"));
-            return new ProcessStartInfo()
-            {
-                FileName = Path.Combine(SDKUtil.GetSshPath(), YetiConstants.SshWinExecutable),
-                Arguments =
-                    $"-tt -i \"{SDKUtil.GetSshKeyFilePath()}\" -F NUL " +
-                    $"-oStrictHostKeyChecking=yes " +
-                    $"-oUserKnownHostsFile=\"\"\"{SDKUtil.GetSshKnownHostsFilePath()}\"\"\" " +
-                    $"{portsArgument} cloudcast@{target.IpAddress} -p {target.Port} " +
-                    $"-- \"{command}\"",
-            };
-        }
-
-        /// <summary>
-        /// Returns ProcessStartInfo for transferring a file to a remote gamelet, under the
-        /// specified path, using scp.
-        /// </summary>
-        public static ProcessStartInfo BuildForScpPut(string file, SshTarget target,
-            string remotePath)
-        {
-            return new ProcessStartInfo
-            {
-                FileName = Path.Combine(SDKUtil.GetSshPath(), YetiConstants.ScpWinExecutable),
-                // Note that remote file names must be escaped twice, once for local command
-                // parsing and once for remote shell parsing. Linux file systems also allow double
-                // quotes in file names, so those params must be escaped, where as the Windows
-                // paths can simply be quoted.
-                Arguments = string.Format(
-                    "-T -i \"{0}\" -F NUL -P {1} " +
-                    "-oStrictHostKeyChecking=yes -oUserKnownHostsFile=\"\"\"{2}\"\"\" " +
-                    "{3} cloudcast@{4}:{5}",
-                    SDKUtil.GetSshKeyFilePath(), target.Port, SDKUtil.GetSshKnownHostsFilePath(),
-                    ProcessUtil.QuoteArgument(file), target.IpAddress,
-                    ProcessUtil.QuoteArgument($"'{remotePath}'")),
-            };
-        }
-
-        /// <summary>
-        /// Returns ProcessStartInfo for compressiong {file} and outputting the result to stdout.
-        /// </summary>
-        public static ProcessStartInfo BuildForCompress(string file)
-        {
-            return new ProcessStartInfo
-            {
-                FileName = YetiConstants.PigzWinExecutablePath,
-                Arguments = $"-k --fast --stdout {ProcessUtil.QuoteArgument(file)}",
-            };
-        }
-
-        /// <summary>
         /// Returns ProcessStartInfo for transferring a file from a remote gamelet using scp.
         /// </summary>
         public static ProcessStartInfo BuildForScpGet(

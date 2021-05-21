@@ -77,9 +77,7 @@ namespace YetiVSI.CoreAttach
                 new CredentialManager(credentialConfigFactory, accountOptionLoader);
             _developerAccount = credentialManager.LoadAccount();
             IRemoteCommand remoteCommand = new RemoteCommand(managedProcessFactory);
-            var socketSender = new LocalSocketSender();
-            _remoteFile = new RemoteFile(managedProcessFactory, transportSessionFactory: null,
-                                         socketSender: socketSender, fileSystem: new FileSystem());
+            _remoteFile = new RemoteFile(managedProcessFactory);
             var cloudConnection = new CloudConnection();
             var sdkConfigFactory = new SdkConfig.Factory(jsonUtil);
             // NOTE: the lifetime of this CloudRunner is limited to the current CoreAttachWindow.

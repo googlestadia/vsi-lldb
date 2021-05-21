@@ -198,7 +198,7 @@ namespace YetiVSI
                     TaskMessages.DeployingExecutable, async task =>
                     {
                         await _remoteDeploy.DeployGameExecutableAsync(
-                            project, gamelet, task, action);
+                            project, new SshTarget(gamelet), task, action);
                         task.Progress.Report(TaskMessages.CustomDeployCommand);
                         await _remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
                     }).RunAndRecord(action);

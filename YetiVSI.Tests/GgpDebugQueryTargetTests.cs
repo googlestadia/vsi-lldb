@@ -26,6 +26,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.Cloud;
+using YetiCommon.SSH;
 using YetiVSI.DebugEngine;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
@@ -221,7 +222,7 @@ namespace YetiVSI.Test
             Assert.AreEqual(launchParams.QueryParams, _customQueryParams);
 
             await _remoteDeploy.Received().DeployGameExecutableAsync(
-                _project, gamelets[0], Arg.Any<ICancelable>(), Arg.Any<IAction>());
+                _project, new SshTarget(gamelets[0]), Arg.Any<ICancelable>(), Arg.Any<IAction>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.Success);
@@ -286,7 +287,8 @@ namespace YetiVSI.Test
             Assert.That(launchName, Is.EqualTo(_gameLaunch.LaunchName));
 
             await _remoteDeploy.Received()
-                .DeployGameExecutableAsync(_project, gamelets[0], Arg.Any<ICancelable>(),
+                .DeployGameExecutableAsync(_project, new SshTarget(gamelets[0]),
+                                           Arg.Any<ICancelable>(),
                                            Arg.Any<IAction>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
@@ -356,7 +358,8 @@ namespace YetiVSI.Test
             });
 
             _remoteDeploy
-                .DeployGameExecutableAsync(_project, gamelets[0], Arg.Any<ICancelable>(),
+                .DeployGameExecutableAsync(_project, new SshTarget(gamelets[0]),
+                                           Arg.Any<ICancelable>(),
                                            Arg.Any<IAction>())
                 .Returns(x => throw new DeployException("deploy exception",
                                                         new ProcessException("ssh failed")));
@@ -449,7 +452,7 @@ namespace YetiVSI.Test
             Assert.AreEqual(launchParams.QueryParams, _customQueryParams);
 
             await _remoteDeploy.Received().DeployGameExecutableAsync(
-                _project, gamelets[0], Arg.Any<ICancelable>(), Arg.Any<IAction>());
+                _project, new SshTarget(gamelets[0]), Arg.Any<ICancelable>(), Arg.Any<IAction>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.Success);

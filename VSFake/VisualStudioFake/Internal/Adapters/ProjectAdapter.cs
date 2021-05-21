@@ -168,7 +168,7 @@ namespace Google.VisualStudioFake.Internal
             if (!Enum.TryParse(deployOnLaunchString, true,
                                out DeployOnLaunchSetting deployOnLaunch))
             {
-                deployOnLaunch = DeployOnLaunchSetting.TRUE;
+                deployOnLaunch = DeployOnLaunchSetting.DELTA;
             }
 
             return Task.FromResult(deployOnLaunch);
@@ -176,18 +176,6 @@ namespace Google.VisualStudioFake.Internal
 
         public void SetDeployOnLaunch(DeployOnLaunchSetting deployOnLaunch) =>
             SetStringProperty(ProjectPropertyName.GgpDeployOnLaunch, deployOnLaunch.ToString());
-
-        public Task<DeployCompressionSetting> GetDeployCompressionAsync()
-        {
-            string deployCompressionString =
-                _project.GetPropertyValue(ProjectPropertyName.GgpDeployCompression);
-            DeployCompressionSetting deployCompression;
-            if (!Enum.TryParse(deployCompressionString, true, out deployCompression))
-            {
-                deployCompression = DeployCompressionSetting.Compressed;
-            }
-            return Task.FromResult(deployCompression);
-        }
 
         public Task<SurfaceEnforcementSetting> GetSurfaceEnforcementAsync()
         {

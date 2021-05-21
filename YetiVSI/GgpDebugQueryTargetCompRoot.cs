@@ -17,7 +17,6 @@ using System.IO.Abstractions;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
-using YetiVSI.DebugEngine;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
@@ -68,14 +67,9 @@ namespace YetiVSI
             var testAccountClientFactory = GetTestAccountClientFactory();
             var managedProcessFactory = new ManagedProcess.Factory();
             var remoteCommand = GetRemoteCommand(managedProcessFactory);
-            var socketSender = new LocalSocketSender();
-            var transportSessionFactory =
-                new LldbTransportSession.Factory(new MemoryMappedFileFactory());
-            var remoteFile = new RemoteFile(managedProcessFactory, transportSessionFactory,
-                                            socketSender, fileSystem);
+            var remoteFile = new RemoteFile(managedProcessFactory);
             var remoteDeploy = new RemoteDeploy(remoteCommand, remoteFile, managedProcessFactory,
-                                                fileSystem,
-                                                new ElfFileUtil(managedProcessFactory));
+                                                fileSystem);
             var metrics = _serviceManager.GetGlobalService(typeof(SMetrics)) as IMetrics;
             var sdkVersion = GetSdkVersion();
             var sshManager = GetSshManager(managedProcessFactory, cloudRunner);

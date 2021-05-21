@@ -25,36 +25,17 @@ namespace YetiVSI.ProjectSystem.Abstractions
     public enum DeployOnLaunchSetting
     {
         /// <summary>
+        /// Deploy the executable delta.
+        /// </summary>
+        DELTA,
+        /// <summary>
         /// Never deploy the executable.
         /// </summary>
         FALSE,
         /// <summary>
-        /// Deploy the executable if it is different from the remote copy.
-        /// </summary>
-        TRUE,
-        /// <summary>
         /// Always deploy the executable.
         /// </summary>
-        ALWAYS,
-        /// <summary>
-        /// Deploy the executable delta.
-        /// </summary>
-        DELTA,
-    }
-
-    /// <summary>
-    /// Specifies whether to use compression for deploy.
-    /// </summary>
-    public enum DeployCompressionSetting
-    {
-        /// <summary>
-        /// Do not compress.
-        /// </summary>
-        Uncompressed,
-        /// <summary>
-        /// Compress with parallel gzip.
-        /// </summary>
-        Compressed,
+        ALWAYS
     }
 
     /// <summary>
@@ -130,11 +111,6 @@ namespace YetiVSI.ProjectSystem.Abstractions
         /// Get true when the exe should be deployed on launch.
         /// </summary>
         Task<DeployOnLaunchSetting> GetDeployOnLaunchAsync();
-
-        /// <summary>
-        /// Get the compression setting for game executable deployment.
-        /// </summary>
-        Task<DeployCompressionSetting> GetDeployCompressionAsync();
 
         /// <summary>
         /// Get instance surface enforcement mode (off/warn/block).

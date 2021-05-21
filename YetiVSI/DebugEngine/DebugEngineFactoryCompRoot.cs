@@ -394,11 +394,9 @@ namespace YetiVSI.DebugEngine
                                                 GetDialogUtil(), vsiLaunchFactory);
 
             var remoteCommand = new RemoteCommand(processFactory);
-            var socketSender = new LocalSocketSender();
-            var remoteFile = new RemoteFile(processFactory, transportSessionFactory, socketSender,
-                                            GetFileSystem());
+            var remoteFile = new RemoteFile(processFactory);
             var remoteDeploy = new RemoteDeploy(remoteCommand, remoteFile, processFactory,
-                                                GetFileSystem(), binaryFileUtil);
+                                                GetFileSystem());
             bool deployLldbServer = IsInternalEngine();
             IDebugEngineFactory factory = new DebugEngine.Factory(
                 GetJoinableTaskContext(), serviceManager, GetDebugSessionMetrics(), yetiTransport,

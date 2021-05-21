@@ -40,13 +40,9 @@ namespace YetiCommon
         public static readonly string SshKeygenWinExecutable = "ssh-keygen.exe";
         public static readonly string SshWinExecutable = "ssh.exe";
         public static readonly string ScpWinExecutable = "scp.exe";
-        public static readonly string PigzExecutable = "pigz.exe";
         public static readonly string ObjDumpWinExecutable = "llvm-objdump.exe";
         public static readonly string ObjDumpLinuxExecutable = "objdump";
         public static readonly string LldbServerLinuxExecutable = "lldb-server";
-
-        public static readonly string XDeltaLinuxExecutable = "xdelta3";
-        public static readonly string XDeltaWinExecutable = "xdelta3.exe";
 
         public static readonly string YetiTitle = "Stadia";
 
@@ -68,23 +64,7 @@ namespace YetiCommon
         public static readonly string DeveloperMountingPoint = "/mnt/developer";
         public static readonly string PackageMountingPoint = "/mnt/package";
         public static readonly string GameAssetsMountingPoint = "/srv/game/assets";
-
-        public static readonly string BinarySignatureSuffix = ".ggp.sig";
-        public static readonly string PreviousExecutableSuffix = ".ggp.prev";
-        public static readonly string RestoredFromDeltaExecutableSuffix = ".ggp.restored";
-        public static readonly string ExecutableDeltaSuffix = ".ggp.delta";
         public static readonly string LldbDir = Path.Combine(RootDir, "LLDB");
-        public static readonly string PigzDir = Path.Combine(RootDir, "pigz");
-        public static readonly string XDeltaDir = Path.Combine(RootDir, "XDelta");
-        public static readonly string XDeltaWinDir = Path.Combine(XDeltaDir, "Windows");
-        public static readonly string XDeltaLinuxDir = Path.Combine(XDeltaDir, "Linux");
-
-        public static readonly string XDeltaLinuxExecutablePath =
-            Path.Combine(XDeltaLinuxDir, XDeltaLinuxExecutable);
-        public static readonly string XDeltaWinExecutablePath =
-            Path.Combine(XDeltaWinDir, XDeltaWinExecutable);
-
-        public static readonly string PigzWinExecutablePath = Path.Combine(PigzDir, PigzExecutable);
 
 #if INTERNAL_BUILD
         public static readonly string LldbServerLinuxPath = RemoteToolsBinDir;

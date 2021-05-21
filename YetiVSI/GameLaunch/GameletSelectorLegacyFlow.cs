@@ -397,12 +397,10 @@ namespace YetiVSI.GameLaunch
             {
                 case DeployOnLaunchSetting.FALSE:
                     return "No";
-                case DeployOnLaunchSetting.TRUE:
-                    return "Yes - when changed";
-                case DeployOnLaunchSetting.ALWAYS:
-                    return "Yes - always";
                 case DeployOnLaunchSetting.DELTA:
                     return "Yes - binary diff";
+                case DeployOnLaunchSetting.ALWAYS:
+                    return "Yes - always";
             }
 
             return "";

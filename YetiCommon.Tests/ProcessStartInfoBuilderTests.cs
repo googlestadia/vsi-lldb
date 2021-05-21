@@ -73,57 +73,6 @@ namespace YetiCommon.Tests
         }
 
         [Test]
-        public void BuildForSshPortForwardAndCommand()
-        {
-            var ports = new List<ProcessStartInfoBuilder.PortForwardEntry>()
-            {
-                new ProcessStartInfoBuilder.PortForwardEntry()
-                {
-                    LocalPort = 123,
-                    RemotePort = 234,
-                },
-            };
-            var startInfo =
-                ProcessStartInfoBuilder.BuildForSshPortForwardAndCommand(
-                    ports, new SshTarget("1.2.3.4:56"), "cmd");
-            Assert.AreEqual(GetSshPath(), startInfo.FileName);
-            StringAssert.Contains("-tt", startInfo.Arguments);
-            StringAssert.Contains("-L123:localhost:234", startInfo.Arguments);
-            StringAssert.Contains("cloudcast@1.2.3.4 -p 56", startInfo.Arguments);
-            StringAssert.Contains(
-                $"-oUserKnownHostsFile=\"\"\"{GetKnownHostsPath()}\"\"\"", startInfo.Arguments);
-            StringAssert.Contains("-- \"cmd\"", startInfo.Arguments);
-        }
-
-        [Test]
-        public void BuildForScpPut()
-        {
-            var startInfo = ProcessStartInfoBuilder.BuildForScpPut(
-                "path/to/file", new SshTarget("1.2.3.4:56"), "/mnt/developer/");
-            Assert.AreEqual(GetScpPath(), startInfo.FileName);
-            Assert.True(startInfo.Arguments.Contains("-T"));
-            Assert.True(startInfo.Arguments.Contains("-P 56"));
-            Assert.True(startInfo.Arguments.Contains(
-                "\"path/to/file\" cloudcast@1.2.3.4:\"'/mnt/developer/'\""));
-            Assert.True(startInfo.Arguments.Contains(
-                $"-oUserKnownHostsFile=\"\"\"{GetKnownHostsPath()}\"\"\""));
-        }
-
-        [Test]
-        public void BuildForScpPut_PathEndsInBackslash()
-        {
-            var startInfo = ProcessStartInfoBuilder.BuildForScpPut(
-                "path\\to\\file\\", new SshTarget("1.2.3.4:56"), "/mnt/developer/");
-            Assert.AreEqual(GetScpPath(), startInfo.FileName);
-            Assert.True(startInfo.Arguments.Contains("-T"));
-            Assert.True(startInfo.Arguments.Contains("-P 56"));
-            Assert.True(startInfo.Arguments.Contains(
-                "\"path\\to\\file\\\\\" cloudcast@1.2.3.4:\"'/mnt/developer/'\""));
-            Assert.True(startInfo.Arguments.Contains(
-                $"-oUserKnownHostsFile=\"\"\"{GetKnownHostsPath()}\"\"\""));
-        }
-
-        [Test]
         public void BuildForScpGet()
         {
             var startInfo = ProcessStartInfoBuilder.BuildForScpGet(
@@ -165,27 +114,18 @@ namespace YetiCommon.Tests
                 $"-oUserKnownHostsFile=\"\"\"{GetKnownHostsPath()}\"\"\""));
         }
 
-        [Test]
-        public void BuildForCompress()
-        {
-            var startInfo = ProcessStartInfoBuilder.BuildForCompress(
-                "C:\\a\\b c.elf");
-            StringAssert.Contains(YetiConstants.PigzExecutable, startInfo.FileName);
-            StringAssert.Contains("-k --fast --stdout", startInfo.Arguments);
-            StringAssert.Contains("\"C:\\a\\b c.elf\"", startInfo.Arguments);
-        }
 
-        private string GetSshPath()
+        string GetSshPath()
         {
             return Path.Combine(SDKUtil.GetSshPath(), YetiConstants.SshWinExecutable);
         }
 
-        private string GetScpPath()
+        string GetScpPath()
         {
             return Path.Combine(SDKUtil.GetSshPath(), YetiConstants.ScpWinExecutable);
         }
 
-        private string GetKnownHostsPath()
+        string GetKnownHostsPath()
         {
             return Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
