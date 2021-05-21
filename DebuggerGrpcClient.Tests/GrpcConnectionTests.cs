@@ -24,7 +24,7 @@ using YetiCommon;
 namespace DebuggerGrpcClient.Tests
 {
     [TestFixture]
-    [Timeout(5000)]
+    [Timeout(15000)]
     class GrpcConnectionTests
     {
         readonly Status rpcStatus = new Status(StatusCode.Aborted, "test error");

@@ -28,7 +28,7 @@ namespace DebuggerGrpcClientServer.Tests
     /// Close-to-the-metal test of client-server communication.
     /// </summary>
     [TestFixture]
-    [Timeout(5000)]
+    [Timeout(15000)]
     class BasicClientServerTests : BaseIntegrationTests
     {
         TestRpcService.TestRpcServiceClient client;
