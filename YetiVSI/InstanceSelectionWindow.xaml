@@ -21,6 +21,7 @@
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="Name" Width="Auto" DisplayMemberBinding="{Binding DisplayName}" />
+                            <GridViewColumn Header="State" Width="Auto" DisplayMemberBinding="{Binding State}" />
                             <GridViewColumn Header="ID" Width="Auto" DisplayMemberBinding="{Binding Id}" />
                             <GridViewColumn Header="IP Address" Width="Auto" DisplayMemberBinding="{Binding IpAddr}" />
                         </GridView>
