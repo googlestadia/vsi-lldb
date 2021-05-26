@@ -9004,6 +9004,178 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(children[1].DisplayName, Is.EqualTo("{Test: 1}}"));
             Assert.That(children[2].DisplayName, Is.EqualTo("{Test: 2} {}"));
         }
+
+        [Test]
+        public async Task CustomListItemsMaxItemsPerViewDefaultAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""Range"">
+    <Expand HideRawView=""true"">
+      <CustomListItems>
+        <Variable Name=""index"" InitialValue=""0"" />
+        <Loop Condition=""index &lt; 100"">
+          <Item>index</Item>
+          <Exec>index += 1</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var list = RemoteValueFakeUtil.CreateClass("Range", "myRange", "myValue");
+
+            RemoteValue index_var = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", index_var);
+            list.AddValueFromExpression("index", index_var);
+
+            for (int i = 0; i < 100; i++)
+            {
+                list.AddValueFromExpression(
+                    "index < 100",
+                    RemoteValueFakeUtil.CreateSimpleBool("tmp", true));
+                list.AddValueFromExpression(
+                    "index",
+                    RemoteValueFakeUtil.CreateSimpleInt("tmp", i));
+                list.AddValueFromExpression(
+                    "index += 1",
+                    RemoteValueFakeUtil.CreateSimpleInt("tmp", i+1));
+            }
+            list.AddValueFromExpression(
+                "index < 100",
+                RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
+
+            var varInfo = CreateVarInfo(list);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            Assert.That(children.Length, Is.EqualTo(21));
+
+            for (int i = 0; i < children.Length-1; i++)
+            {
+                Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
+            }
+            Assert.That(children[children.Length-1].DisplayName, Is.EqualTo("[More]"));
+
+            // Check that only the requested number of elements was evaluated.
+            Assert.That(list.ExpressionValues["index"].Count, Is.EqualTo(79));
+            Assert.That(list.ExpressionValues["index < 100"].Count, Is.EqualTo(80));
+            Assert.That(list.ExpressionValues["index += 1"].Count, Is.EqualTo(80));
+        }
+
+        [Test]
+        public async Task CustomListItemsMaxItemsPerViewAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""Range"">
+    <Expand HideRawView=""true"">
+      <CustomListItems MaxItemsPerView=""5"">
+        <Variable Name=""index"" InitialValue=""0"" />
+        <Loop Condition=""index &lt; 100"">
+          <Item>index</Item>
+          <Exec>index += 1</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var list = RemoteValueFakeUtil.CreateClass("Range", "myRange", "myValue");
+
+            RemoteValue index_var = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", index_var);
+            list.AddValueFromExpression("index", index_var);
+
+            for (int i = 0; i < 100; i++)
+            {
+                list.AddValueFromExpression(
+                    "index < 100",
+                    RemoteValueFakeUtil.CreateSimpleBool("tmp", true));
+                list.AddValueFromExpression(
+                    "index",
+                    RemoteValueFakeUtil.CreateSimpleInt("tmp", i));
+                list.AddValueFromExpression(
+                    "index += 1",
+                    RemoteValueFakeUtil.CreateSimpleInt("tmp", i + 1));
+            }
+            list.AddValueFromExpression(
+                "index < 100",
+                RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
+
+            var varInfo = CreateVarInfo(list);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            Assert.That(children.Length, Is.EqualTo(6));
+
+            for (int i = 0; i < children.Length - 1; i++)
+            {
+                Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
+            }
+            Assert.That(children[children.Length - 1].DisplayName, Is.EqualTo("[More]"));
+
+            // Check that only the requested number of elements was evaluated.
+            Assert.That(list.ExpressionValues["index"].Count, Is.EqualTo(94));
+            Assert.That(list.ExpressionValues["index < 100"].Count, Is.EqualTo(95));
+            Assert.That(list.ExpressionValues["index += 1"].Count, Is.EqualTo(95));
+        }
+
+        [Test]
+        public async Task CustomListItemsMaxItemsPerViewNotEnoughItemsAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""Range"">
+    <Expand HideRawView=""true"">
+      <CustomListItems MaxItemsPerView=""5"">
+        <Variable Name=""index"" InitialValue=""0"" />
+        <Loop Condition=""index &lt; 2"">
+          <Item>index</Item>
+          <Exec>index += 1</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var list = RemoteValueFakeUtil.CreateClass("Range", "myRange", "myValue");
+
+            RemoteValue index_var = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", index_var);
+            list.AddValueFromExpression("index", index_var);
+
+            for (int i = 0; i < 2; i++)
+            {
+                list.AddValueFromExpression(
+                    "index < 2",
+                    RemoteValueFakeUtil.CreateSimpleBool("tmp", true));
+                list.AddValueFromExpression(
+                    "index",
+                    RemoteValueFakeUtil.CreateSimpleInt("tmp", i));
+                list.AddValueFromExpression(
+                    "index += 1",
+                    RemoteValueFakeUtil.CreateSimpleInt("tmp", i + 1));
+            }
+            list.AddValueFromExpression(
+                "index < 2",
+                RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
+
+            var varInfo = CreateVarInfo(list);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            Assert.That(children.Length, Is.EqualTo(2));
+
+            for (int i = 0; i < children.Length; i++)
+            {
+                Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
+            }
+        }
+
         #endregion
 
         #region VisualizerType

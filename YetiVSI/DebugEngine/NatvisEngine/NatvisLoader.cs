@@ -240,10 +240,13 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             catch (InvalidOperationException ex)
             {
                 // Handles invalid XML errors.
+                // Don't allow natvis failures to stop debugging.
+                var reason = ex.InnerException != null
+                                 ? $"{ex.Message}: {ex.InnerException.Message}"
+                                 : $"{ex.Message}";
 
-                // don't allow natvis failures to stop debugging
                 TraceWriteLine(NatvisLoggingLevel.ERROR,
-                               $"Failed to load Natvis text. Reason: {ex.Message}" +
+                               $"Failed to load Natvis text. Reason: {reason}" +
                                $"{Environment.NewLine}Stacktrace:{ex.StackTrace}");
             }
             catch (Exception ex)

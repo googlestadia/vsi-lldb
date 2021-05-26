@@ -67,6 +67,8 @@ namespace YetiVSI.Test.TestSupport
             clone = this;
         }
 
+        public Dictionary<string, Queue<RemoteValue>> ExpressionValues => expressionValues;
+
         public Debugger.Common.GrpcSbValue GrpcValue => null;
 
         public void SetAddressOf(RemoteValue addressOf)

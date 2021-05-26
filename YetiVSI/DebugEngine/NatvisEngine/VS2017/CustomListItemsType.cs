@@ -41,6 +41,10 @@
         [System.Xml.Serialization.XmlAttributeAttribute("ExcludeView")]
         public string ExcludeView { get; set; }
 
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute("MaxItemsPerView")]
+        public uint MaxItemsPerView { get; set; }
+
         [System.Xml.Serialization.XmlElementAttribute("Loop", typeof(LoopType))]
         [System.Xml.Serialization.XmlElementAttribute("If", typeof(IfType))]
         [System.Xml.Serialization.XmlElementAttribute("Elseif", typeof(ElseifType))]

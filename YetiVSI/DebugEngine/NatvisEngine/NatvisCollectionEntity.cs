@@ -116,12 +116,22 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                             _treeItemsFactory.Create(variable, natvisScope, treeItems)));
                     }
                     else if (item is CustomListItemsType customListItems &&
-                        _natvisExperimentsEnabled())
+                             _natvisExperimentsEnabled())
                     {
+                        // Use "MaxItemsPerView" attribute to limit the number of items per view.
+                        // If not defined (default value is 0), use the "default" limit to avoid
+                        // huge lists.
+                        // TODO: Consider removing the default limit if the rendering performance
+                        // is no longer an issue.
+                        // The default limit in Visual Studio (Code) is 5000 -- see docs for
+                        // MaxItemsPerViewType at https://code.visualstudio.com/docs/cpp/natvis.
+                        int maxItemsPerView = customListItems.MaxItemsPerView > 0
+                                                  ? (int)customListItems.MaxItemsPerView
+                                                  : _maxChildrenPerRangeCustomListItems;
+
                         children.Add(RangedNatvisEntityDecorator.First(
-                            _maxChildrenPerRangeCustomListItems,
-                            _customListItemsFactory.Create(variable, natvisScope,
-                                                           customListItems)));
+                            maxItemsPerView, _customListItemsFactory.Create(variable, natvisScope,
+                                                                            customListItems)));
                     }
                     else
                     {
@@ -133,10 +143,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return new NatvisCollectionEntity(children, variable, expandType.HideRawView);
             }
 
-            public INatvisEntity CreateFromChildrenList(IList<INatvisEntity> children,
-                                                        IVariableInformation variable,
-                                                        bool hideRawView) =>
-                new NatvisCollectionEntity(children, variable, hideRawView);
+            public INatvisEntity CreateFromChildrenList(
+                IList<INatvisEntity> children, IVariableInformation variable,
+                bool hideRawView) => new NatvisCollectionEntity(children, variable, hideRawView);
         }
 
         readonly IList<INatvisEntity> _expandableChildren;
@@ -151,7 +160,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             _variable = variable;
             _hideRawView = hideRawView;
         }
-
 
         public async Task<int> CountChildrenAsync()
         {
