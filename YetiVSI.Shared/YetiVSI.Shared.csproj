@@ -11,7 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Grpc.Core">
-      <Version>2.34.0</Version>
+      <Version>2.38.0</Version>
     </PackageReference>
   </ItemGroup>
 </Project>
