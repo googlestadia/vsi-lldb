@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Threading.Tasks;
 using YetiCommon;
@@ -90,6 +92,16 @@ namespace YetiVSI
         public async Task SyncAsync(SshTarget target, string localPath, string remotePath,
                                     ICancelable task, bool force = false)
         {
+            if (string.IsNullOrWhiteSpace(localPath))
+            {
+                throw new ArgumentNullException(nameof(localPath), "Local path should be specified when running ggp_rsync");
+            }
+
+            if (string.IsNullOrWhiteSpace(remotePath))
+            {
+                throw new ArgumentNullException(nameof(remotePath), "Remote path should be specified when running ggp_rsync");
+            }
+
             var processManager = ProcessManager.CreateForCancelableTask(task);
             var startInfo = BuildForGgpSync(target, localPath, remotePath, force);
             using (var process = _remoteProcessFactory.Create(startInfo, int.MaxValue))
@@ -99,19 +111,18 @@ namespace YetiVSI
                 process.OutputDataReceived += (sender, args) => {
                     task.ThrowIfCancellationRequested();
 
-                    if (args.Text == null)
+                    if (string.IsNullOrWhiteSpace(args.Text))
                     {
                         return;
                     }
 
                     string data = args.Text.Trim();
-
                     task.Progress.Report(data);
                 };
 
                 process.ErrorDataReceived += (sender, args) => {
                     task.ThrowIfCancellationRequested();
-                    if (args.Text == null)
+                    if (string.IsNullOrWhiteSpace(args.Text))
                     {
                         return;
                     }
@@ -122,6 +133,9 @@ namespace YetiVSI
 
                 await process.RunToExitWithSuccessAsync();
             }
+
+            // Notify client if operation was cancelled.
+            task.ThrowIfCancellationRequested();
         }
 
         ProcessStartInfo BuildForGgpSync(SshTarget target, string localPath, string remotePath,

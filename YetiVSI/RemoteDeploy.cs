@@ -116,8 +116,8 @@ namespace YetiVSI
         public async Task DeployLldbServerAsync(SshTarget target, Metrics.IAction action)
         {
             DataRecorder record = new DataRecorder(action, DataRecorder.File.LLDB_SERVER);
-
             record.SetCopyAttempted(true);
+
             string localLldbServerPath = GetLldbServerPath();
             string remotePath = Path.Combine(YetiConstants.LldbServerLinuxPath,
                                              YetiConstants.LldbServerLinuxExecutable);
@@ -140,6 +140,9 @@ namespace YetiVSI
             catch (ProcessException exception)
             {
                 record.CopyBinary(stopwatch.ElapsedMilliseconds, exception);
+                throw new DeployException(
+                    ErrorStrings.FailedToDeployExecutable(exception.Message),
+                    exception);
             }
         }
 

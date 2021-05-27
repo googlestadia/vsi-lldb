@@ -16,323 +16,327 @@ using GgpGrpc.Models;
 using NSubstitute;
 using NUnit.Framework;
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
-using System.IO.Abstractions.TestingHelpers;
 
 namespace YetiVSI.Test
 {
     [TestFixture]
     class RemoteFileTests
     {
+        const string _ipAddress = "152.10.0.16";
+        const string _localPath = @"d:\src\sample\bin\game.exe";
+        const string _remotePath = @"/mnt/developer";
 
+        readonly List<string> _ggpRsyncOutput = new List<string>
+        {
+            "1 file(s) and 0 folder(s) found",
+            "1 file(s) and 0 folder(s) found ",
+            "     1 file(s) and 0 folder(s) are not present on the gamelet and will be copied.",
+
+            "   1% TOT 01:26 ETA",
+            "   2% TOT 01:37 ETA",
+            "   3% TOT 01:54 ETA",
+            "   3% TOT 02:09 ETA",
+            "  10% TOT 01:37 ETA",
+            "  11% TOT 01:31 ETA",
+            "  37% TOT 01:23 ETA",
+            "  37% TOT 01:23 ETA"
+        };
+
+        ManagedProcess.Factory _managedProcessFactory;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _managedProcessFactory = Substitute.For<ManagedProcess.Factory>();
+        }
+
+        [TestCase("edge/e-europe-west3-b/ab5679f0", 44722)]
+        [TestCase("devkit/e-europe-west3-b/ab5679f0", 22)]
+        public async Task SyncUsesCorrectArgumentsForDeployAlwaysAsync(string instanceId, int port)
+        {
+            bool force = true;
+            var process = Substitute.For<IProcess>();
+            _managedProcessFactory
+                .Create(Arg.Is<ProcessStartInfo>(x => HasArgumentsAsExpected(x, port, force)),
+                        Arg.Any<int>()).Returns(process);
+            var remoteFile = new RemoteFile(_managedProcessFactory);
+            var task = Substitute.For<ICancelable>();
+
+            await remoteFile.SyncAsync(
+                GetSshTarget(instanceId), _localPath, _remotePath, task, force);
+            await process.Received(1).RunToExitWithSuccessAsync();
+        }
+
+
+        [TestCase("edge/e-europe-west3-b/ab5679f0", 44722)]
+        [TestCase("devkit/e-europe-west3-b/ab5679f0", 22)]
+        public async Task SyncUsesCorrectArgumentsForDeployDeltasAsync(string instanceId, int port)
+        {
+            bool force = false;
+            var process = Substitute.For<IProcess>();
+            _managedProcessFactory
+                .Create(Arg.Is<ProcessStartInfo>(x => HasArgumentsAsExpected(x, port, force)),
+                        Arg.Any<int>()).Returns(process);
+            var remoteFile = new RemoteFile(_managedProcessFactory);
+            var task = Substitute.For<ICancelable>();
+
+            await remoteFile.SyncAsync(
+                GetSshTarget(instanceId), _localPath, _remotePath, task, force);
+            await process.Received(1).RunToExitWithSuccessAsync();
+        }
+
+        [Test]
+        public async Task GetCallsCorrectBinaryAndOpensShellAsync()
+        {
+            var process = Substitute.For<IProcess>();
+            _managedProcessFactory
+                .CreateVisible(
+                    Arg.Is<ProcessStartInfo>(x => UsesScpWinExecutable(x)), Arg.Any<int>())
+                .Returns(process);
+            var remoteFile = new RemoteFile(_managedProcessFactory);
+            var task = Substitute.For<ICancelable>();
+
+            await remoteFile.GetAsync(GetSshTarget(""),  _localPath, _remotePath, task);
+            await process.Received(1).RunToExitWithSuccessAsync();
+        }
+
+        [Test]
+        public async Task SyncCallsCorrectBinaryAsync()
+        {
+            var process = Substitute.For<IProcess>();
+            _managedProcessFactory
+                .Create(Arg.Is<ProcessStartInfo>(x => UsesGgpRsync(x)), Arg.Any<int>())
+                .Returns(process);
+            var remoteFile = new RemoteFile(_managedProcessFactory);
+            var task = Substitute.For<ICancelable>();
+
+            await remoteFile.SyncAsync(GetSshTarget(""), _localPath, _remotePath, task);
+            await process.Received(1).RunToExitWithSuccessAsync();
+        }
+
+        [Test]
+        public void SyncThrowsWhenLocalPathNotPopulated([Values("", " ", null)] string localPath)
+        {
+            var remoteFile = new RemoteFile(_managedProcessFactory);
+            var result = Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await remoteFile.SyncAsync(null, localPath, _remotePath, null));
+            var message = "Local path should be specified when running ggp_rsync\r\n" +
+                          "Parameter name: localPath";
+            Assert.That(result.Message, Is.EqualTo(message));
+        }
+
+        [Test]
+        public void SyncThrowsWhenRemotePathNotPopulated([Values("", " ", null)] string remotePath)
+        {
+            var remoteFile = new RemoteFile(_managedProcessFactory);
+            var result = Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await remoteFile.SyncAsync(null, _localPath, remotePath, null));
+            var message = "Remote path should be specified when running ggp_rsync\r\n" +
+                          "Parameter name: remotePath";
+            Assert.That(result.Message, Is.EqualTo(message));
+        }
+
+        [Test]
+        public async Task ProcessOutputIsPropagatedIntoProgressDialogAsync()
+        {
+            var task = Substitute.For<ICancelable>();
+            RemoteFile remoteFile = PrepareRemoteFileInstanceWithOutput(task, _ggpRsyncOutput);
+            await remoteFile.SyncAsync(GetSshTarget(""), _localPath, _remotePath, task);
+
+            var uniqueTrimmedOutputMessages = _ggpRsyncOutput.GroupBy(x => x.Trim())
+                .ToDictionary(x => x.Key, x => x.Count());
+
+            // Validate that the process output got propagated into _task.Progress.
+            // The only processing is the message trimming (see above).
+            Assert.Multiple(() =>
+            {
+                foreach (var keyValue in uniqueTrimmedOutputMessages)
+                {
+                    task.Progress.Received(keyValue.Value).Report(keyValue.Key);
+                }
+            });
+        }
+
+        [Test]
+        public void ProcessOutputIsPropagatedIntoProgressDialogAndCancelledWhenRequested()
+        {
+            string singleLine = "Initial output from ggp rsync";
+            var task = Substitute.For<ICancelable>();
+            RemoteFile remoteFile = PrepareRemoteFileInstanceCanceledAfterFirstOutput(task,
+                                                                                      singleLine);
+
+            // Validate that only one line is propagated into _task.Progress and after that
+            // the OperationCanceledException is raised
+            // (process raises event -> cancels the task -> raises event)
+            Assert.Multiple(() =>
+            {
+                Assert.ThrowsAsync<OperationCanceledException>(
+                    async () =>
+                        await remoteFile.SyncAsync(GetSshTarget(""), _localPath,
+                                                   _remotePath, task));
+                task.Progress.Received(1).Report(singleLine);
+            });
+        }
+
+        [Test]
+        public void ProcessErrorCausesProcessException()
+        {
+            string errorMessage = "remote command returned exit code 128";
+            var task = Substitute.For<ICancelable>();
+            RemoteFile remoteFile = PrepareRemoteFileInstanceWithError(task, errorMessage);
+
+            // Validate that only one line is propagated into _task.Progress and after that
+            // the OperationCanceledException is raised (process raises event ->
+            // cancels the task -> raises event)
+            Assert.Multiple(() =>
+            {
+                var exception = Assert.ThrowsAsync<ProcessException>(
+                    async () =>
+                        await remoteFile.SyncAsync(GetSshTarget(""), _localPath,
+                                                   _remotePath, task));
+                Assert.That(exception.Message, Is.EqualTo(errorMessage));
+                task.Progress.Received(0).Report(Arg.Any<string>());
+            });
+        }
+
+        /// <summary>
+        /// Returns a RemoteFile, which calls the process sequentially raising
+        /// OutputDataReceived events with the prepared content (output).
+        /// </summary>
+        /// <param name="task">Cancelable operation to associate with
+        /// (responsible for the progressbar and cancellation handling).</param>
+        /// <param name="output">Lines `produced` by the mock process.</param>
+        /// <returns>Pre-configured RemoteFile.</returns>
+        RemoteFile PrepareRemoteFileInstanceWithOutput(ICancelable task, List<string> output)
+        {
+            var process = new TestProcess(task, output);
+            _managedProcessFactory.Create(Arg.Any<ProcessStartInfo>(), Arg.Any<int>())
+                .Returns(process);
+            return new RemoteFile(_managedProcessFactory);
+        }
+
+        /// <summary>
+        /// Returns a RemoteFile, which calls the process raising OutputDataReceived
+        /// event once and sets the underlying task into `Canceled` state.
+        /// </summary>
+        /// <param name="task">Cancelable operation to associate with
+        /// (responsible for the progressbar and cancellation handling).</param>
+        /// <param name="singleLine">Line `produced` by the mock process before being
+        /// cancelled.</param>
+        /// <returns>Pre-configured RemoteFile.</returns>
+        RemoteFile PrepareRemoteFileInstanceCanceledAfterFirstOutput(ICancelable task,
+                                                                     string singleLine)
+        {
+            var process = new TestProcess(task, new List<string>() {singleLine},
+                                          cancels:true);
+
+            _managedProcessFactory.Create(Arg.Any<ProcessStartInfo>(), Arg.Any<int>())
+                .Returns(process);
+            return new RemoteFile(_managedProcessFactory);
+        }
+
+        /// <summary>
+        /// Returns a RemoteFile, which calls the process raising ErrorDataReceived.
+        /// </summary>
+        /// <param name="task">Cancelable operation to associate with
+        /// (responsible for the progressbar and cancellation handling).</param>
+        /// <param name="error">Error message.</param>
+        /// <returns>Pre-configured RemoteFile.</returns>
+        RemoteFile PrepareRemoteFileInstanceWithError(ICancelable task, string error)
+        {
+            var process = new TestProcess(task, errorMessage: error);
+            _managedProcessFactory.Create(Arg.Any<ProcessStartInfo>(), Arg.Any<int>())
+                .Returns(process);
+            return new RemoteFile(_managedProcessFactory);
+        }
+
+        bool HasArgumentsAsExpected(ProcessStartInfo processStartInfo, int port, bool force) =>
+            processStartInfo.Arguments.Equals(
+                force
+                ? $"--port {port} --ip {_ipAddress} --compress --whole-file --checksum" +
+                  $" \"{_localPath}\" \"{_remotePath}\""
+                : $"--port {port} --ip {_ipAddress} --compress " +
+                  $" \"{_localPath}\" \"{_remotePath}\"");
+
+        bool UsesGgpRsync(ProcessStartInfo processStartInfo) =>
+            processStartInfo.FileName.EndsWith("ggp_rsync.exe");
+
+        bool UsesScpWinExecutable(ProcessStartInfo processStartInfo) =>
+            processStartInfo.FileName.EndsWith(YetiConstants.ScpWinExecutable);
+
+        SshTarget GetSshTarget(string instanceId) =>
+            new SshTarget(new Gamelet { Id = instanceId, IpAddr = _ipAddress });
     }
 
+    public class TestProcess : IProcess
+    {
+        readonly List<string> _expectedOutput;
+        readonly string _errorMessage;
+        readonly bool _cancels;
+        readonly ICancelable _cancelable;
 
-    //[TestFixture]
-    //class RemoteFileTests
-    //{
-    //    const string _filePrefix = "YetiTransportSession";
+        public TestProcess(ICancelable cancelable, List<string> expectedOutput = null,
+                           string errorMessage = "", bool cancels = false)
+        {
+            _expectedOutput = expectedOutput;
+            _errorMessage = errorMessage;
+            _cancels = cancels;
+            _cancelable = cancelable;
+        }
 
-    //    const string _testGameletId = "gameletid";
-    //    const string _testGameletIP = "1.2.3.4";
-    //    const string _testTargetDir = "C:\\testtargetdir";
-    //    const string _testTargetFilename = "testtargetfilename";
-    //    const string _testTargetPath = _testTargetDir + "\\" + _testTargetFilename;
+        public Task<int> RunToExitAsync()
+        {
+            if (_expectedOutput != null)
+            {
+                foreach (string message in _expectedOutput)
+                {
+                    OutputDataReceived?.Invoke(null, new TextReceivedEventArgs(message));
+                    if (_cancels)
+                    {
+                        _cancelable.When(t => t.ThrowIfCancellationRequested())
+                            .Throw<OperationCanceledException>();
+                        break;
+                    }
+                }
+            }
 
-    //    readonly string _testRemoteTargetPath = Path.Combine(YetiConstants.RemoteDeployPath,
-    //                                                         _testTargetFilename);
+            if (_errorMessage != null)
+            {
+                ErrorDataReceived?.Invoke(null, new TextReceivedEventArgs(_errorMessage));
+            }
 
-    //    const string _testHash = "202cb962ac59075b964b07152d234b70";
+            return Task.FromResult(0);
+        }
 
-    //    string[] _uncompressOutput = new string[]
-    //    {
-    //        "Listening on [0.0.0.0] (family 0, port 12345)",
-    //        "Connection from [127.0.0.1] port 12345 [tcp/*] accepted (family 2, sport 55010),",
-    //        _testHash + " *-"
-    //    };
+        public void Dispose()
+        {
+            OnExit?.Invoke(null, new EventArgs());
+        }
 
-    //    string[] _uncompressOutputBadHash = new string[]
-    //    {
-    //        "Listening on [0.0.0.0] (family 0, port 12345)",
-    //        "Connection from [127.0.0.1] port 12345 [tcp/*] accepted (family 2, sport 55010),",
-    //        "badhash *-"
-    //    };
+        public int Id { get; }
+        public string ProcessName { get; }
+        public int ExitCode { get; }
+        public ProcessStartInfo StartInfo { get; }
+        public event TextReceivedEventHandler OutputDataReceived;
+        public event TextReceivedEventHandler ErrorDataReceived;
+        public StreamReader StandardOutput { get; }
+        public event EventHandler OnExit;
+        public void Start(bool standardOutputReadLine = true)
+        {
+            throw new NotImplementedException();
+        }
 
-    //    string[] _uncompressOutputNoListen = new string[]
-    //    {
-    //        "some error"
-    //    };
+        public void Kill() => throw new NotImplementedException();
 
-    //    Gamelet _gamelet = new Gamelet {Id = _testGameletId, IpAddr = _testGameletIP};
-    //    SshTarget _target;
-    //    ManagedProcess.Factory _managedProcessFactory;
-    //    RemoteFile _remoteFile;
-    //    IProcess _compressProcess;
-    //    IProcess _uncompressProcess;
+        public Task<int> WaitForExitAsync() => throw new NotImplementedException();
 
-    //    YetiVSI.DebugEngine.LldbTransportSession.Factory _transportSessionFactory;
-    //    ILocalSocketSender _socketSender;
-    //    MemoryMappedFileFactory _memoryMappedFileFactory;
-    //    MemoryStream _compressedStream;
-    //    IIncrementalProgress _progress;
-    //    ICancelable _deployTask;
-    //    readonly string _fileContent = "123";
-
-    //    [SetUp]
-    //    public void SetUp()
-    //    {
-    //        _compressedStream = new MemoryStream();
-    //        StreamReader compressedOutput = new StreamReader(_compressedStream);
-
-    //        _target = new SshTarget(_gamelet);
-    //        _managedProcessFactory = Substitute.For<ManagedProcess.Factory>();
-    //        _socketSender = Substitute.For<ILocalSocketSender>();
-    //        _memoryMappedFileFactory = Substitute.For<MemoryMappedFileFactory>();
-    //        _transportSessionFactory =
-    //            new YetiVSI.DebugEngine.LldbTransportSession.Factory(_memoryMappedFileFactory);
-
-    //        var fileSystem = new MockFileSystem();
-    //        var fileData = new MockFileData(_fileContent);
-    //        fileSystem.AddFile(_testTargetPath, fileData);
-
-    //        _remoteFile = new RemoteFile(_managedProcessFactory, _transportSessionFactory,
-    //                                     _socketSender, fileSystem);
-    //        _compressProcess = Substitute.For<IProcess>();
-    //        _uncompressProcess = Substitute.For<IProcess>();
-
-    //        // Setup the uncompress process/ssh-tunnel.
-    //        SetProcessOutput(_uncompressProcess, _uncompressOutput);
-    //        _managedProcessFactory
-    //            .Create(
-    //                Arg.Is<ProcessStartInfo>(
-    //                    x => x.FileName.Contains(YetiConstants.SshWinExecutable)), int.MaxValue)
-    //            .Returns(_uncompressProcess);
-
-    //        // Setup the compress process.
-    //        _compressProcess.StandardOutput.Returns(compressedOutput);
-    //        _compressProcess.WaitForExitAsync().Returns(0);
-    //        _managedProcessFactory
-    //            .Create(
-    //                Arg.Is<ProcessStartInfo>(
-    //                    x => x.FileName.Contains(YetiConstants.PigzExecutable)), int.MaxValue)
-    //            .Returns(_compressProcess);
-
-    //        _progress = Substitute.For<IIncrementalProgress>();
-    //        _deployTask = Substitute.For<ICancelable>();
-    //    }
-
-    //    void SetProcessOutput(IProcess process, string[] output)
-    //    {
-    //        Action<NSubstitute.Core.CallInfo> sendEvents = x =>
-    //        {
-    //            foreach (var s in output)
-    //            {
-    //                process.OutputDataReceived +=
-    //                    Raise.Event<TextReceivedEventHandler>(this, new TextReceivedEventArgs(s));
-    //            }
-    //        };
-    //        process.When(x => x.Start(true)).Do(sendEvents);
-    //        process.When(x => x.RunToExitAsync()).Do(sendEvents);
-    //    }
-
-    //    [Test]
-    //    public async Task PutUncompressedAsync()
-    //    {
-    //        var transferredDataSize = await _remoteFile.PutAsync(
-    //            _target, _testTargetPath, _testRemoteTargetPath, DeployCompression.Uncompressed,
-    //            _progress, _deployTask);
-
-    //        Assert.AreEqual(_fileContent.Length, transferredDataSize);
-    //    }
-
-    //    [Test]
-    //    public async Task PutUncompressedUncancellableAsync()
-    //    {
-    //        var transferredDataSize = await _remoteFile.PutAsync(
-    //            _target, _testTargetPath, _testRemoteTargetPath, DeployCompression.Uncompressed,
-    //            _progress, new NothingToCancel());
-
-    //        Assert.AreEqual(_fileContent.Length, transferredDataSize);
-    //    }
-
-    //    [Test]
-    //    public async Task PutCompressedCommandAsync()
-    //    {
-    //        // Check that we send the right command to the remote server.
-    //        string sshArguments = "";
-
-    //        const long compressedSize = 10;
-    //        int expectedPort = WorkstationPorts.REMOTE_DEPLOY_AND_LLDB_GDB_SERVERS[0];
-
-    //        _socketSender.SendAsync(Arg.Any<Stream>(), expectedPort, _progress, _deployTask)
-    //            .Returns(compressedSize);
-
-    //        // Record the arguments to ssh.
-    //        _managedProcessFactory
-    //            .Create(
-    //                Arg.Is<ProcessStartInfo>(
-    //                    x => x.FileName.Contains(YetiConstants.SshWinExecutable)), int.MaxValue)
-    //            .Returns(_uncompressProcess)
-    //            .AndDoes(x => sshArguments = ((ProcessStartInfo) x[0]).Arguments);
-
-    //        var transferredDataSize = await _remoteFile.PutAsync(
-    //            _target, _testTargetPath, _testRemoteTargetPath, DeployCompression.Compressed,
-    //            _progress, _deployTask);
-
-    //        string expectedCommand = $"nc -vlp {expectedPort} | " + $"gzip -d --stdout | " +
-    //            $"tee '{_testRemoteTargetPath}' | " + $"md5sum -b";
-    //        StringAssert.EndsWith($"-- \"{expectedCommand}\"", sshArguments);
-
-    //        Assert.AreEqual(compressedSize, transferredDataSize);
-    //    }
-
-    //    [Test]
-    //    public async Task PutCompressedAsync()
-    //    {
-    //        // Check that the tunneled socket receives the compressed stream.
-
-    //        await _remoteFile.PutAsync(_target, _testTargetPath, _testRemoteTargetPath,
-    //                                   DeployCompression.Compressed, _progress, _deployTask);
-
-    //        // Check the compressor received the right file name.
-    //        _managedProcessFactory.Received()
-    //            .Create(
-    //                Arg.Is<ProcessStartInfo>(
-    //                    x => x.FileName.Contains(YetiConstants.PigzExecutable) &&
-    //                        x.Arguments.Contains(_testTargetPath)), int.MaxValue);
-
-    //        // Check that all processes were requested to finish.
-    //        await _compressProcess.Received().WaitForExitAsync();
-    //        await _uncompressProcess.Received().WaitForExitAsync();
-
-    //        var port = WorkstationPorts.REMOTE_DEPLOY_AND_LLDB_GDB_SERVERS[0];
-    //        // Check that socket received the compressed stream.
-    //        await _socketSender.Received().SendAsync(Arg.Is(_compressedStream),
-    //                                                 Arg.Is(port), Arg.Is(_progress),
-    //                                                 Arg.Is(_deployTask));
-    //    }
-
-    //    [Test]
-    //    public void PutCompressedHashMismatch()
-    //    {
-    //        // Check that file hash mismatch throws an exception.
-
-    //        // Set the output sent by the uncompress process to contain a different hash.
-    //        _uncompressOutputBadHash.CopyTo(_uncompressOutput, 0);
-
-    //        Assert.ThrowsAsync<CompressedCopyException>(
-    //            () => _remoteFile.PutAsync(_target, _testTargetPath, _testRemoteTargetPath,
-    //                                       DeployCompression.Compressed, _progress, _deployTask));
-    //    }
-
-    //    [Test]
-    //    public async Task PutCompressedHashUncompressDoesNotListenAsync()
-    //    {
-    //        // Check that after unexpected output from the uncompress process, the process is
-    //        // killed (without waiting for process exit).
-
-    //        _uncompressOutputNoListen.CopyTo(_uncompressOutput, 0);
-
-    //        Assert.ThrowsAsync<CompressedCopyException>(
-    //            () => _remoteFile.PutAsync(_target, _testTargetPath, _testRemoteTargetPath,
-    //                                       DeployCompression.Compressed, _progress, _deployTask));
-
-    //        await _uncompressProcess.DidNotReceiveWithAnyArgs().RunToExitAsync();
-    //        await _uncompressProcess.DidNotReceiveWithAnyArgs().WaitForExitAsync();
-
-    //        _uncompressProcess.Received().Kill();
-    //    }
-
-    //    [Test]
-    //    public void PutCompressedAsyncFileHashThrows()
-    //    {
-    //        var mockFileSystem = Substitute.For<System.IO.Abstractions.IFileSystem>();
-    //        var mockFile = Substitute.For<System.IO.Abstractions.IFileStreamFactory>();
-    //        mockFileSystem.FileStream.Returns(mockFile);
-    //        mockFile.Create(Arg.Any<string>(), FileMode.Open, FileAccess.Read).Returns(x => {
-    //            throw new System.IO.IOException();
-    //        });
-
-    //        var remoteFile = new RemoteFile(_managedProcessFactory, _transportSessionFactory,
-    //                                        _socketSender, mockFileSystem);
-
-    //        // Check that the tunneled socket receives the compressed stream.
-    //        Assert.ThrowsAsync<CompressedCopyException>(
-    //            () => remoteFile.PutAsync(_target, _testTargetPath, _testRemoteTargetPath,
-    //                                      DeployCompression.Compressed, _progress, _deployTask));
-    //    }
-
-    //    [Test]
-    //    public async Task PutCompressedDifferentPortAsync()
-    //    {
-    //        // Check that we correctly choose the port for the transfer.
-
-    //        _memoryMappedFileFactory.CreateNew(_filePrefix + 0, Arg.Any<long>())
-    //            .Returns(x => { throw new System.IO.IOException(); });
-
-    //        await _remoteFile.PutAsync(_target, _testTargetPath, _testRemoteTargetPath,
-    //                                   DeployCompression.Compressed, _progress, _deployTask);
-
-    //        var port = WorkstationPorts.REMOTE_DEPLOY_AND_LLDB_GDB_SERVERS[1];
-    //        // Check that socket received the compressed stream.
-    //        await _socketSender.Received().SendAsync(Arg.Is(_compressedStream),
-    //                                                 Arg.Is(port), Arg.Is(_progress),
-    //                                                 Arg.Is(_deployTask));
-    //    }
-
-    //    [Test]
-    //    public void PutCompressedOutOfPorts()
-    //    {
-    //        // If we overflow the maximum number of sessions, we should fail.
-
-    //        _memoryMappedFileFactory.CreateNew(Arg.Any<string>(), Arg.Any<long>())
-    //            .Returns(x => { throw new System.IO.IOException(); });
-
-    //        Assert.ThrowsAsync<CompressedCopyException>(
-    //            () => _remoteFile.PutAsync(_target, _testTargetPath, _testRemoteTargetPath,
-    //                                       DeployCompression.Compressed, _progress, _deployTask));
-    //    }
-
-    //    [Test]
-    //    public void PutCompressedSocketError()
-    //    {
-    //        // Check that socket error during transfer causes the copying to fail.
-    //        _socketSender
-    //            .SendAsync(Arg.Is(_compressedStream), Arg.Any<int>(), Arg.Is(_progress),
-    //                       Arg.Is(_deployTask))
-    //            .Returns<Task<long>>(x => throw new System.Net.Sockets.SocketException());
-
-    //        Assert.ThrowsAsync<CompressedCopyException>(
-    //            () => _remoteFile.PutAsync(_target, _testTargetPath, _testRemoteTargetPath,
-    //                                       DeployCompression.Compressed, _progress, _deployTask));
-    //    }
-
-    //    [Test]
-    //    public void PutCompressedSshProcessFails()
-    //    {
-    //        // Check that a failure of the ssh process causes the copying to fail.
-
-    //        _uncompressProcess.WaitForExitAsync().Returns(Task.FromResult(1));
-
-    //        Assert.ThrowsAsync<CompressedCopyException>(
-    //            () => _remoteFile.PutAsync(_target, _testTargetPath, _testRemoteTargetPath,
-    //                                       DeployCompression.Compressed, _progress, _deployTask));
-    //    }
-
-    //    [Test]
-    //    public void PutCompressedCompressProcessFails()
-    //    {
-    //        // Check that a failure of the compress process causes the copying to fail.
-
-    //        _compressProcess.WaitForExitAsync().Returns(Task.FromResult(1));
-
-    //        Assert.ThrowsAsync<ProcessExecutionException>(
-    //            () => _remoteFile.PutAsync(_target, _testTargetPath, _testRemoteTargetPath,
-    //                                       DeployCompression.Compressed, _progress, _deployTask));
-    //    }
-    //}
+        public bool WaitForExit(TimeSpan timeout) => throw new NotImplementedException();
+    }
 }
