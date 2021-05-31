@@ -106,6 +106,27 @@ namespace YetiVSI.DebugEngine
             }
         }
 
+        class BreakpointCondition
+        {
+            public BreakpointCondition(BP_REQUEST_INFO requestInfo)
+            {
+                bool variableConditionIsSet =
+                    (requestInfo.dwFields & enum_BPREQI_FIELDS.BPREQI_CONDITION) != 0;
+                VariableCondition = variableConditionIsSet
+                    ? requestInfo.bpCondition
+                    : (BP_CONDITION?) null;
+                bool passCountIsSet =
+                    (requestInfo.dwFields & enum_BPREQI_FIELDS.BPREQI_PASSCOUNT) != 0;
+                PassCount = passCountIsSet
+                    ? requestInfo.bpPassCount
+                    : (BP_PASSCOUNT?) null;
+            }
+
+            public BP_CONDITION? VariableCondition { get; set; }
+
+            public BP_PASSCOUNT? PassCount { get; set; }
+        }
+
         const string _breakpointNotSupported = "Breakpoint type is not supported.";
         const string _breakpointNotSet = "Unable to bind breakpoint.";
         const string _breakpointLocationNotSet =
@@ -142,6 +163,7 @@ namespace YetiVSI.DebugEngine
         readonly IDebugProgram2 _program;
 
         readonly Dictionary<int, IBoundBreakpoint> _boundBreakpoints;
+        readonly BreakpointCondition _breakpointCondition;
         DebugBreakpointError _breakpointError;
         bool _enabled;
         bool _deleted;
@@ -177,6 +199,7 @@ namespace YetiVSI.DebugEngine
 
             _enabled = false;
             _deleted = false;
+            _breakpointCondition = new BreakpointCondition(_requestInfo);
         }
 
         // Verifies the type of breakpoint that is being created is supported.
@@ -398,14 +421,14 @@ namespace YetiVSI.DebugEngine
                         _debugBoundBreakpointFactory.Create(Self, remoteLocation, _program,
                                                             _requestInfo.guidLanguage);
                     boundBreakpoint.Enable(Convert.ToInt32(_enabled));
-                    if ((_requestInfo.dwFields & enum_BPREQI_FIELDS.BPREQI_CONDITION) != 0)
+                    if (_breakpointCondition.VariableCondition.HasValue)
                     {
-                        boundBreakpoint.SetCondition(_requestInfo.bpCondition);
+                        boundBreakpoint.SetCondition(_breakpointCondition.VariableCondition.Value);
                     }
 
-                    if ((_requestInfo.dwFields & enum_BPREQI_FIELDS.BPREQI_PASSCOUNT) != 0)
+                    if (_breakpointCondition.PassCount.HasValue)
                     {
-                        boundBreakpoint.SetPassCount(_requestInfo.bpPassCount);
+                        boundBreakpoint.SetPassCount(_breakpointCondition.PassCount.Value);
                     }
 
                     _boundBreakpoints.Add(remoteLocation.GetId(), boundBreakpoint);
@@ -555,15 +578,29 @@ namespace YetiVSI.DebugEngine
             return VSConstants.S_OK;
         }
 
-        // We don't need to do anything here because SDM calls SetCondition on all bound
-        // breakpoints.
-        public int SetCondition(BP_CONDITION breakpointCondition) => VSConstants.S_OK;
+        public int SetCondition(BP_CONDITION breakpointCondition)
+        {
+            if (_deleted)
+            {
+                return AD7Constants.E_BP_DELETED;
+            }
 
-        // We don't need to do anything here because SDM calls SetPassCount on all bound
-        // breakpoints.
-        public int SetPassCount(BP_PASSCOUNT breakpointPassCount) => _deleted
-                                                                         ? AD7Constants.E_BP_DELETED
-                                                                         : VSConstants.S_OK;
+            _breakpointCondition.VariableCondition = breakpointCondition;
+
+            return VSConstants.S_OK;
+        }
+
+        public int SetPassCount(BP_PASSCOUNT breakpointPassCount)
+        {
+            if (_deleted)
+            {
+                return AD7Constants.E_BP_DELETED;
+            }
+
+            _breakpointCondition.PassCount = breakpointPassCount;
+
+            return VSConstants.S_OK;
+        }
 
         public int Virtualize(int virtualize) => VSConstants.E_NOTIMPL;
 
