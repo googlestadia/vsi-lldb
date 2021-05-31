@@ -474,6 +474,14 @@ namespace YetiVSI
                             $"\tPATH={(startInfo.Environment["PATH"])}" + Environment.NewLine +
                             $"\tPYTHONPATH={(startInfo.Environment["PYTHONPATH"])}");
 
+            // Use the directory with the binary as working directory. Normally it doesn't matter,
+            // because the server doesn't load any files via relative paths and the dependent DLLs
+            // are available via PATH and PYTHONPATH. However when debugging or just running the
+            // extension from Visual Studio the working directory is set to the output build
+            // directory. The working directory has precedence for loading DLLs, so liblldb.dll is
+            // picked up from the build output directory, NOT the deployed extension.
+            startInfo.WorkingDirectory = Path.GetDirectoryName(startInfo.FileName);
+
             // Uncomment to enable GRPC debug logging for DebuggerGrpcServer.exe.
             // This is currently very verbose, and you will most likely want to restrict logging to
             // a subset.
