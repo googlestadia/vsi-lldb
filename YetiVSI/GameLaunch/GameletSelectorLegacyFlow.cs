@@ -398,7 +398,7 @@ namespace YetiVSI.GameLaunch
                 case DeployOnLaunchSetting.FALSE:
                     return "No";
                 case DeployOnLaunchSetting.DELTA:
-                    return "Yes - binary diff";
+                    return "Yes - incremental";
                 case DeployOnLaunchSetting.ALWAYS:
                     return "Yes - always";
             }

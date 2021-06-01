@@ -184,19 +184,22 @@ namespace YetiVSI.ProjectSystem.Tests
             Assert.AreEqual(projectValues.GgpCustomDeployOnLaunch,
                 await project.GetCustomDeployOnLaunchAsync());
         }
-
-        [Test]
-        public async Task GetGgpDeployOnLaunchAsync()
+        
+        [TestCase("delta", DeployOnLaunchSetting.DELTA)]
+        [TestCase("false", DeployOnLaunchSetting.FALSE)]
+        [TestCase("always", DeployOnLaunchSetting.ALWAYS)]
+        public async Task GetGgpDeployOnLaunchAsync(string stringValue,
+                                                    DeployOnLaunchSetting enumValue)
         {
             var projectPath = @"C:\GGP_project_path\";
             var projectValues = new ProjectValues
             {
-                GgpDeployOnLaunch = "true",
+                GgpDeployOnLaunch = stringValue,
             };
 
             var configuredProject = CreateConfiguredProject(projectValues, projectPath);
             IAsyncProject project = new ConfiguredProjectAdapter(configuredProject);
-            Assert.AreEqual(DeployOnLaunchSetting.DELTA, await project.GetDeployOnLaunchAsync());
+            Assert.AreEqual(enumValue, await project.GetDeployOnLaunchAsync());
         }
 
         [TestCase(SurfaceEnforcementSetting.Off)]
@@ -425,7 +428,6 @@ namespace YetiVSI.ProjectSystem.Tests
             public string GgpGameletEnvironmentVariables { get; set; } = "";
             public string GgpApplication { get; set; } = "";
             public string GgpDeployOnLaunch { get; set; } = "";
-            public string GgpDeployCompression { get; set; } = "";
             public string GgpSurfaceEnforcementMode { get; set; } = "";
             public string GgpCustomDeployOnLaunch { get; set; } = "";
             public string GgpLaunchRenderDoc { get; set; } = "";
@@ -469,8 +471,6 @@ namespace YetiVSI.ProjectSystem.Tests
                 .Returns(projectValues.GgpApplication);
             userProperties.GetEvaluatedPropertyValueAsync("GgpDeployOnLaunch")
                 .Returns(projectValues.GgpDeployOnLaunch);
-            userProperties.GetEvaluatedPropertyValueAsync("GgpDeployCompression")
-                .Returns(projectValues.GgpDeployCompression);
             userProperties.GetEvaluatedPropertyValueAsync("GgpSurfaceEnforcementMode")
                 .Returns(projectValues.GgpSurfaceEnforcementMode);
             userProperties.GetEvaluatedPropertyValueAsync("GgpCustomDeployOnLaunch")
