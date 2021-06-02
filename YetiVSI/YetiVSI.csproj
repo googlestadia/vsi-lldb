@@ -686,41 +686,12 @@
     </GetVsixSourceItemsDependsOn>
     <GetVsixSourceItemsDependsOn>
       $(GetVsixSourceItemsDependsOn);
-      AddXDeltaVSIXContentFiles;
-      AddPigzVSIXContentFiles;
       AddNewtonsoftJsonVSIXContentFiles
     </GetVsixSourceItemsDependsOn>
   </PropertyGroup>
   <!-- Security check that DeployPythonAndToolchainDependencies is never set to False in Jenkins builds -->
   <Target Name="EnsureDeployPythonAndToolchainDependencies" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(JenkinsBuildRoot)' != '' AND !$(DeployPythonAndToolchainDependencies)" Text="DeployPythonAndToolchainDependencies should never be set to False in production builds!" />
-  </Target>
-  <Target Name="AddXDeltaVSIXContentFiles" Condition="$(IsInternalBuild)">
-    <ItemGroup>
-      <XDeltaLinuxFile Include="$(XDeltaDir)linux\bin\xdelta3" />
-      <XDeltaWindowsFile Include="$(XDeltaDir)windows\xdelta3.exe" />
-    </ItemGroup>
-    <Error Condition="!Exists('@(XDeltaLinuxFile)')" Text="Could not find @(XDeltaLinuxFile)." />
-    <Error Condition="!Exists('@(XDeltaWindowsFile)')" Text="Could not find @(XDeltaWindowsFile)." />
-    <ItemGroup>
-      <VSIXSourceItem Include="@(XDeltaLinuxFile)">
-        <VSIXSubPath>XDelta\Linux</VSIXSubPath>
-      </VSIXSourceItem>
-      <VSIXSourceItem Include="@(XDeltaWindowsFile)">
-        <VSIXSubPath>XDelta\Windows</VSIXSubPath>
-      </VSIXSourceItem>
-    </ItemGroup>
-  </Target>
-  <Target Name="AddPigzVSIXContentFiles" Condition="$(IsInternalBuild)">
-    <ItemGroup>
-      <PigzExeFile Include="$(PigzDir)pigz.exe" />
-    </ItemGroup>
-    <Error Condition="!Exists('@(PigzExeFile)')" Text="Could not find @(PigzExeFile)." />
-    <ItemGroup>
-      <VSIXSourceItem Include="@(PigzExeFile)">
-        <VSIXSubPath>pigz</VSIXSubPath>
-      </VSIXSourceItem>
-    </ItemGroup>
   </Target>
   <Target Name="AddPythonAndToolchainVSIXContentFiles">
     <ItemGroup>
