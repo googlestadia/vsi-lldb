@@ -137,7 +137,7 @@ namespace DebuggerGrpcServer
             var function = functionStore.GetObject(request.Function.Id);
             return Task.FromResult(new GetNameResponse
             {
-                Name = function.GetName(),
+                Name = function?.GetName() ?? "",
             });
         }
 

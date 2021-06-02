@@ -82,12 +82,35 @@ namespace YetiVSI.Test.DebugEngine
             _mockTarget.ResolveLoadAddress(newAddress).Returns(address);
             _documentContextFactory.Create(address.GetLineEntry()).Returns(documentContext);
             _codeContextFactory
-                .Create(newAddress, "", documentContext, Guid.Empty)
+                .Create(newAddress, Arg.Any<Lazy<string>>(), documentContext, Guid.Empty)
                 .Returns(newCodeContext);
 
             Assert.AreEqual(VSConstants.S_OK, _disassemblyStream.GetCodeContext(
                                                   newAddress, out IDebugCodeContext2 codeContext));
             Assert.AreEqual(newCodeContext, codeContext);
+        }
+
+        [Test]
+        public void GetCodeContextFunctionNameResolution()
+        {
+            _disassemblyStream =
+                (DebugDisassemblyStream) new DebugDisassemblyStream.Factory(
+                    new DebugCodeContext.Factory(new DebugMemoryContext.Factory()),
+                    _documentContextFactory).Create(_testScope, _mockCodeContext, _mockTarget);
+
+            const ulong newAddress = 0x123456789a;
+
+            var address = Substitute.For<SbAddress>();
+
+            _mockTarget.ResolveLoadAddress(newAddress).Returns(address);
+            address.GetFunction().GetName().Returns("funcName");
+
+            Assert.That(
+                _disassemblyStream.GetCodeContext(newAddress, out IDebugCodeContext2 codeContext),
+                Is.EqualTo(VSConstants.S_OK));
+
+            Assert.That(codeContext.GetName(out string name), Is.EqualTo(VSConstants.S_OK));
+            Assert.That(name, Is.EqualTo("funcName"));
         }
 
         [Test]
@@ -97,7 +120,8 @@ namespace YetiVSI.Test.DebugEngine
             var newCodeContext = Substitute.For<IDebugCodeContext2>();
 
             _mockTarget.ResolveLoadAddress(_testAddress).Returns(address);
-            _codeContextFactory.Create(_testAddress, "", null, Guid.Empty).Returns(newCodeContext);
+            _codeContextFactory.Create(_testAddress, Arg.Any<Lazy<string>>(), null, Guid.Empty)
+                .Returns(newCodeContext);
 
             int getCodeContextResult =
                 _disassemblyStream.GetCodeContext(_testAddress, out IDebugCodeContext2 codeContext);

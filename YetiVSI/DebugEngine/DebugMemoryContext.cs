@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using System.Diagnostics;
@@ -25,7 +26,7 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory : SimpleDecoratorSelf<Factory>
         {
-            private readonly Factory _debugMemoryContextFactory;
+            readonly Factory _debugMemoryContextFactory;
 
             public Factory()
             {
@@ -33,31 +34,31 @@ namespace YetiVSI.DebugEngine
 
             public Factory(Factory debugMemoryContextFactory)
             {
-                this._debugMemoryContextFactory = debugMemoryContextFactory;
+                _debugMemoryContextFactory = debugMemoryContextFactory;
             }
 
-            public virtual IDebugMemoryContext2 Create(ulong address, string filename)
+            public virtual IDebugMemoryContext2 Create(ulong address, Lazy<string> filename)
             {
                 var factory = _debugMemoryContextFactory ?? Self;
                 return new DebugMemoryContext(factory, address, filename);
             }
         }
 
-        protected readonly string _filename;
+        protected readonly Lazy<string> _filename;
         protected readonly ulong _address;
         readonly string _addressAsHexString;
         readonly Factory _factory;
 
-        protected DebugMemoryContext(Factory factory, ulong address, string filename)
+        protected DebugMemoryContext(Factory factory, ulong address, Lazy<string> filename)
         {
             _addressAsHexString = $"0x{address:x16}";
 
-            _filename = string.IsNullOrWhiteSpace(filename) ? _addressAsHexString : filename;
+            _filename = filename;
             _address = address;
             _factory = factory;
         }
 
-#region IDebugMemoryContext2 functions
+        #region IDebugMemoryContext2 functions
 
         public int Add(ulong count, out IDebugMemoryContext2 newMemoryContext)
         {
@@ -113,9 +114,9 @@ namespace YetiVSI.DebugEngine
                     }
                     break;
                 case enum_CONTEXT_COMPARE.CONTEXT_SAME_FUNCTION:
-                    string otherName = null;
-                    memoryContexts[i].GetName(out otherName);
-                    if (_address == otherAddress || _filename == otherName)
+                    memoryContexts[i].GetName(out string otherName);
+                    GetName(out string thisName);
+                    if (_address == otherAddress || thisName == otherName)
                     {
                         matchIndex = i;
                     }
@@ -155,9 +156,11 @@ namespace YetiVSI.DebugEngine
                 info.bstrModuleUrl = "";
                 info.dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL;
             }
+
             if ((enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION & fields) != 0)
             {
-                info.bstrFunction = _filename;
+                GetName(out string functionName);
+                info.bstrFunction = functionName;
                 info.dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
             }
             // TODO: implement more info fields if we determine they are needed
@@ -167,10 +170,14 @@ namespace YetiVSI.DebugEngine
 
         public int GetName(out string name)
         {
-            name = _filename;
-            return name != null
-                ? VSConstants.S_OK
-                : VSConstants.E_FAIL;
+            name = _filename?.Value;
+
+            if (string.IsNullOrEmpty(name))
+            {
+                name = _addressAsHexString;
+            }
+
+            return VSConstants.S_OK;
         }
 #endregion
     }

@@ -20,55 +20,71 @@ namespace YetiVSI.DebugEngine
 {
     public class DebugCodeContext : DebugMemoryContext, IDebugCodeContext2
     {
-        public new class Factory { readonly DebugMemoryContext.Factory _debugMemoryContextFactory;
-
-        [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
-        protected Factory()
+        public new class Factory
         {
+            readonly DebugMemoryContext.Factory _debugMemoryContextFactory;
+
+            [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
+            protected Factory()
+            {
+            }
+
+            public Factory(DebugMemoryContext.Factory debugMemoryContextFactory)
+            {
+                _debugMemoryContextFactory = debugMemoryContextFactory;
+            }
+
+            public virtual IDebugCodeContext2 Create(ulong address, Lazy<string> name,
+                                                     IDebugDocumentContext2 documentContext,
+                                                     Guid languageGuid) =>
+                new DebugCodeContext(_debugMemoryContextFactory, address, name, documentContext,
+                                     languageGuid);
+
+            public virtual IDebugCodeContext2 Create(ulong address, string name,
+                                                     IDebugDocumentContext2 documentContext,
+                                                     Guid languageGuid)
+            {
+                var lazyName = new Lazy<string>(() => string.IsNullOrWhiteSpace(name)
+                                                    ? $"0x{address:x16}"
+                                                    : name);
+                return new DebugCodeContext(_debugMemoryContextFactory, address, lazyName,
+                                            documentContext, languageGuid);
+            }
         }
 
-        public Factory(DebugMemoryContext.Factory debugMemoryContextFactory)
+        readonly IDebugDocumentContext2 _documentContext;
+        readonly Guid _languageGuid;
+
+        // Creates a code context (ie PC)
+        DebugCodeContext(DebugMemoryContext.Factory debugMemoryContextFactory, ulong address,
+                         Lazy<string> name, IDebugDocumentContext2 documentContext,
+                         Guid languageGuid) : base(debugMemoryContextFactory, address, name)
         {
-            _debugMemoryContextFactory = debugMemoryContextFactory;
+            _documentContext = documentContext;
+            _languageGuid = languageGuid;
         }
 
-        public virtual IDebugCodeContext2 Create(
-            ulong address, string name, IDebugDocumentContext2 documentContext,
-            Guid languageGuid) => new DebugCodeContext(_debugMemoryContextFactory, address, name,
-                                                       documentContext, languageGuid);
-    }
+        #region IDebugCodeContext2 functions
 
-    readonly IDebugDocumentContext2 _documentContext;
-    readonly Guid _languageGuid;
-
-    // Creates a code context (ie PC)
-    DebugCodeContext(DebugMemoryContext.Factory debugMemoryContextFactory, ulong address,
-                     string name, IDebugDocumentContext2 documentContext, Guid languageGuid)
-        : base(debugMemoryContextFactory, address, name)
-    {
-        _documentContext = documentContext;
-        _languageGuid = languageGuid;
-    }
-
-#region IDebugCodeContext2 functions
-
-    public int GetDocumentContext(out IDebugDocumentContext2 documentContext)
-    {
-        documentContext = _documentContext;
-        return documentContext != null ? VSConstants.S_OK : VSConstants.S_FALSE;
-    }
-
-    public int GetLanguageInfo(ref string language, ref Guid languageGuid)
-    {
-        if (languageGuid == Guid.Empty)
+        public int GetDocumentContext(out IDebugDocumentContext2 documentContext)
         {
-            languageGuid = _languageGuid;
-            language = AD7Constants.GetLanguageByGuid(languageGuid);
+            documentContext = _documentContext;
+            return documentContext != null
+                ? VSConstants.S_OK
+                : VSConstants.S_FALSE;
         }
 
-        return VSConstants.S_OK;
-    }
+        public int GetLanguageInfo(ref string language, ref Guid languageGuid)
+        {
+            if (languageGuid == Guid.Empty)
+            {
+                languageGuid = _languageGuid;
+                language = AD7Constants.GetLanguageByGuid(languageGuid);
+            }
 
-#endregion
-}
+            return VSConstants.S_OK;
+        }
+
+        #endregion
+    }
 }

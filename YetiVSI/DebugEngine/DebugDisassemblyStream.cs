@@ -110,9 +110,13 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
-            codeContext =
-                _codeContextFactory.Create(codeLocationId, _codeContextName, documentContext,
-                                           Guid.Empty);
+            string AddressToFuncName() =>
+                _target.ResolveLoadAddress(codeLocationId)?.GetFunction()?.GetName() ??
+                _codeContextName;
+
+            codeContext = _codeContextFactory.Create(codeLocationId,
+                                                     new Lazy<string>(AddressToFuncName),
+                                                     documentContext, Guid.Empty);
             return VSConstants.S_OK;
         }
 

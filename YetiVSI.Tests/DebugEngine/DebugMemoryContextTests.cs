@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using NSubstitute;
@@ -26,7 +27,7 @@ namespace YetiVSI.Test.DebugEngine
     {
         const ulong TEST_PC = 0x123456789abcdef0;
         const string TEST_PC_STR = "0x123456789abcdef0";
-        const string TEST_NAME = "frame name";
+        Lazy<string> TEST_NAME = new Lazy<string>(() => "frame name");
 
         DebugMemoryContext.Factory mockMemoryContextFactory;
 
@@ -46,7 +47,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             string name;
             Assert.AreEqual(VSConstants.S_OK, memoryContext.GetName(out name));
-            Assert.AreEqual(TEST_NAME, name);
+            Assert.AreEqual(TEST_NAME.Value, name);
         }
 
         [Test]
@@ -75,7 +76,7 @@ namespace YetiVSI.Test.DebugEngine
             Assert.AreEqual(VSConstants.S_OK,
                 memoryContext.GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION, contextInfo));
             Assert.AreEqual(enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION, contextInfo[0].dwFields);
-            Assert.AreEqual(TEST_NAME, contextInfo[0].bstrFunction);
+            Assert.AreEqual(TEST_NAME.Value, contextInfo[0].bstrFunction);
         }
 
         [Test]
@@ -90,7 +91,7 @@ namespace YetiVSI.Test.DebugEngine
                 enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS | enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
                 contextInfo[0].dwFields);
             Assert.AreEqual(TEST_PC_STR, contextInfo[0].bstrAddress);
-            Assert.AreEqual(TEST_NAME, contextInfo[0].bstrFunction);
+            Assert.AreEqual(TEST_NAME.Value, contextInfo[0].bstrFunction);
         }
 
         [Test]
