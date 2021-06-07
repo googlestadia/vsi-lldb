@@ -181,8 +181,9 @@ message GrpcSbThread {
 message GrpcSbFrame {
   int64 id = 1;
   string functionName = 2;
-  uint64 programCounter = 3;
-  GrpcLineEntryInfo lineEntry = 4;
+  string functionNameWithSignature = 3;
+  uint64 programCounter = 4;
+  GrpcLineEntryInfo lineEntry = 5;
 }
 
 message GrpcSbFunction {

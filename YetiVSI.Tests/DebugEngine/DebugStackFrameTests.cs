@@ -60,6 +60,7 @@ namespace YetiVSI.Test.DebugEngine
             mockDebuggerStackFrame.GetLineEntry().Returns(lineEntry);
             mockDebuggerStackFrame.GetPC().Returns(TEST_PC);
             mockDebuggerStackFrame.GetFunctionName().Returns(NAME);
+            mockDebuggerStackFrame.GetFunctionNameWithSignature().Returns(NAME);
 
             mockCodeContextFactory = Substitute.For<DebugCodeContext.Factory>();
             mockExpressionFactory = Substitute.For<DebugExpression.Factory>();
@@ -102,8 +103,8 @@ namespace YetiVSI.Test.DebugEngine
                 .Create(TEST_PC, NAME, mockDocumentContext, Guid.Empty)
                 .Returns(mockCodeContext);
 
-            IDebugCodeContext2 codeContext;
-            Assert.AreEqual(VSConstants.S_OK, stackFrame.GetCodeContext(out codeContext));
+            Assert.AreEqual(VSConstants.S_OK,
+                            stackFrame.GetCodeContext(out IDebugCodeContext2 codeContext));
             Assert.AreEqual(codeContext, mockCodeContext);
         }
 

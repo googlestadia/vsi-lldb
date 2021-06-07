@@ -35,13 +35,15 @@ namespace YetiVSI.DebugEngine
         IDecoratorSelf<IDebugStackFrame>
     {
         [InteropBoundary]
-        int EnumPropertiesImpl(enum_DEBUGPROP_INFO_FLAGS dwFields, uint nRadix,
-            Guid guidFilter, uint dwTimeout, out uint pcelt,
-            out IEnumDebugPropertyInfo2 ppEnum);
+        int EnumPropertiesImpl(enum_DEBUGPROP_INFO_FLAGS dwFields, uint nRadix, Guid guidFilter,
+                               uint dwTimeout, out uint pcelt, out IEnumDebugPropertyInfo2 ppEnum);
 
         [InteropBoundary]
-        int GetPropertyProviderImpl( uint dwFields, uint nRadix, Guid guidFilter, uint dwTimeout,
-            out IAsyncDebugPropertyInfoProvider ppPropertiesProvider);
+        int GetPropertyProviderImpl(uint dwFields, uint nRadix, Guid guidFilter, uint dwTimeout,
+                                    out IAsyncDebugPropertyInfoProvider ppPropertiesProvider);
+
+        [InteropBoundary]
+        int GetNameWithSignature(out string name);
     }
 
     public interface IDebugStackFrameAsync : IDebugStackFrame, IDebugStackFrame157
@@ -72,18 +74,16 @@ namespace YetiVSI.DebugEngine
         Lazy<IDebugCodeContext2> codeContext;
 
         protected BaseDebugStackFrame(DebugDocumentContext.Factory debugDocumentContextFactory,
-            IChildrenProviderFactory childrenProviderFactory,
-            DebugCodeContext.Factory debugCodeContextFactory,
-            CreateDebugExpressionDelegate createExpressionDelegate,
-            IVariableInformationFactory varInfoFactory,
-            IVariableInformationEnumFactory varInfoEnumFactory,
-            AD7FrameInfoCreator ad7FrameInfoCreator,
-            IRegisterSetsBuilder registerSetsBuilder,
-            IDebugEngineHandler debugEngineHandler,
-            RemoteFrame frame,
-            IDebugThread2 thread,
-            IGgpDebugProgram debugProgram,
-            ITaskExecutor taskExecutor)
+                                      IChildrenProviderFactory childrenProviderFactory,
+                                      DebugCodeContext.Factory debugCodeContextFactory,
+                                      CreateDebugExpressionDelegate createExpressionDelegate,
+                                      IVariableInformationFactory varInfoFactory,
+                                      IVariableInformationEnumFactory varInfoEnumFactory,
+                                      AD7FrameInfoCreator ad7FrameInfoCreator,
+                                      IRegisterSetsBuilder registerSetsBuilder,
+                                      IDebugEngineHandler debugEngineHandler, RemoteFrame frame,
+                                      IDebugThread2 thread, IGgpDebugProgram debugProgram,
+                                      ITaskExecutor taskExecutor)
         {
             this.debugDocumentContextFactory = debugDocumentContextFactory;
             this._childrenProviderFactory = childrenProviderFactory;
@@ -103,12 +103,12 @@ namespace YetiVSI.DebugEngine
             codeContext = new Lazy<IDebugCodeContext2>(() => CreateCodeContext());
         }
 
-        public int EnumPropertiesImpl(enum_DEBUGPROP_INFO_FLAGS fields, uint radix,
-            Guid guidFilter, uint timeout, out uint count,
-            out IEnumDebugPropertyInfo2 propertyEnum)
+        public int EnumPropertiesImpl(enum_DEBUGPROP_INFO_FLAGS fields, uint radix, Guid guidFilter,
+                                      uint timeout, out uint count,
+                                      out IEnumDebugPropertyInfo2 propertyEnum)
         {
             var frameVariablesProvider = new FrameVariablesProvider(registerSetsBuilder, lldbFrame,
-                varInfoFactory);
+                                                                    varInfoFactory);
 
             ICollection<IVariableInformation> varInfos = frameVariablesProvider.Get(guidFilter);
             if (varInfos == null)
@@ -120,8 +120,7 @@ namespace YetiVSI.DebugEngine
 
             count = (uint) varInfos.Count;
             var childrenAdapter = new ListChildAdapter.Factory().Create(varInfos.ToList());
-            var childrenProvider =
-                _childrenProviderFactory.Create(childrenAdapter, fields, radix);
+            var childrenProvider = _childrenProviderFactory.Create(childrenAdapter, fields, radix);
 
             propertyEnum = varInfoEnumFactory.Create(childrenProvider);
             return VSConstants.S_OK;
@@ -138,19 +137,21 @@ namespace YetiVSI.DebugEngine
         /// info.
         /// </remarks>
         public int EnumProperties(enum_DEBUGPROP_INFO_FLAGS dwFields, uint nRadix,
-            ref Guid guidFilter, uint dwTimeout, out uint pcelt,
-            out IEnumDebugPropertyInfo2 ppEnum)
+                                  ref Guid guidFilter, uint dwTimeout, out uint pcelt,
+                                  out IEnumDebugPropertyInfo2 ppEnum)
         {
             // Converts |guidFilter| to a non ref type arg so that Castle DynamicProxy doesn't fail
             // to assign values back to it.  See (internal) for more info.
             return Self.EnumPropertiesImpl(dwFields, nRadix, guidFilter, dwTimeout, out pcelt,
-                out ppEnum);
+                                           out ppEnum);
         }
 
         public int GetCodeContext(out IDebugCodeContext2 codeContext)
         {
             codeContext = this.codeContext.Value;
-            return codeContext != null ? VSConstants.S_OK : VSConstants.E_FAIL;
+            return codeContext != null
+                ? VSConstants.S_OK
+                : VSConstants.E_FAIL;
         }
 
         public int GetDebugProperty(out IDebugProperty2 property)
@@ -162,7 +163,9 @@ namespace YetiVSI.DebugEngine
         public int GetDocumentContext(out IDebugDocumentContext2 documentContext)
         {
             documentContext = this.documentContext.Value;
-            return documentContext != null ? VSConstants.S_OK : VSConstants.E_FAIL;
+            return documentContext != null
+                ? VSConstants.S_OK
+                : VSConstants.E_FAIL;
         }
 
         public int GetExpressionContext(out IDebugExpressionContext2 expressionContext)
@@ -175,12 +178,13 @@ namespace YetiVSI.DebugEngine
         // fields specifies what should be included in the output FRAMEINFO.
         public int GetInfo(enum_FRAMEINFO_FLAGS fields, uint radix, FRAMEINFO[] frameInfo)
         {
-            var info = lldbFrame.GetInfo((FrameInfoFlags)fields);
+            var info = lldbFrame.GetInfo((FrameInfoFlags) fields);
             if (info.HasValue)
             {
                 frameInfo[0] = ad7FrameInfoCreator.Create(Self, info.Value, debugProgram);
                 return VSConstants.S_OK;
             }
+
             return VSConstants.E_FAIL;
         }
 
@@ -195,6 +199,12 @@ namespace YetiVSI.DebugEngine
             return VSConstants.S_OK;
         }
 
+        public int GetNameWithSignature(out string name)
+        {
+            name = lldbFrame.GetFunctionNameWithSignature();
+            return VSConstants.S_OK;
+        }
+
         public int GetPhysicalStackRange(out ulong addressMin, out ulong addressMax)
         {
             addressMin = 0;
@@ -206,6 +216,7 @@ namespace YetiVSI.DebugEngine
                 addressMax = addressRange.addressMax;
                 return VSConstants.S_OK;
             }
+
             return VSConstants.E_FAIL;
         }
 
@@ -220,24 +231,25 @@ namespace YetiVSI.DebugEngine
         #region IDebugExpressionContext2 functions
 
         public int ParseText(string text, enum_PARSEFLAGS flags, uint radix,
-            out IDebugExpression2 expr, out string strError, out uint error)
+                             out IDebugExpression2 expr, out string strError, out uint error)
         {
             strError = "";
             error = 0;
-            expr = createExpressionDelegate.Invoke(
-                lldbFrame, text, debugEngineHandler, debugProgram, thread);
+            expr = createExpressionDelegate.Invoke(lldbFrame, text, debugEngineHandler,
+                                                   debugProgram, thread);
             return VSConstants.S_OK;
         }
 
         #endregion
 
         public int GetPropertyProviderImpl(uint dwFields, uint nRadix, Guid guidFilter,
-            uint dwTimeout, out IAsyncDebugPropertyInfoProvider ppPropertiesProvider)
+                                           uint dwTimeout,
+                                           out IAsyncDebugPropertyInfoProvider ppPropertiesProvider)
         {
             ppPropertiesProvider = new AsyncDebugRootPropertyInfoProvider(
                 new FrameVariablesProvider(registerSetsBuilder, lldbFrame, varInfoFactory),
-                _taskExecutor, _childrenProviderFactory,
-                (enum_DEBUGPROP_INFO_FLAGS)dwFields, nRadix, guidFilter);
+                _taskExecutor, _childrenProviderFactory, (enum_DEBUGPROP_INFO_FLAGS) dwFields,
+                nRadix, guidFilter);
 
             return VSConstants.S_OK;
         }
@@ -245,14 +257,17 @@ namespace YetiVSI.DebugEngine
         IDebugDocumentContext2 CreateDocumentContext()
         {
             LineEntryInfo lineEntry = lldbFrame.GetLineEntry();
-            return lineEntry != null ? debugDocumentContextFactory.Create(lineEntry) : null;
+            return lineEntry != null
+                ? debugDocumentContextFactory.Create(lineEntry)
+                : null;
         }
 
         IDebugCodeContext2 CreateCodeContext()
         {
             // Supply the program counter as the code context address.
-            return debugCodeContextFactory.Create(
-                lldbFrame.GetPC(), lldbFrame.GetFunctionName(), documentContext.Value, Guid.Empty);
+            return debugCodeContextFactory.Create(lldbFrame.GetPC(),
+                                                  lldbFrame.GetFunctionNameWithSignature(),
+                                                  documentContext.Value, Guid.Empty);
         }
     }
 
@@ -270,17 +285,18 @@ namespace YetiVSI.DebugEngine
             readonly ITaskExecutor taskExecutor;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
-            protected Factory() { }
+            protected Factory()
+            {
+            }
 
-            public Factory(
-                DebugDocumentContext.Factory debugDocumentContextFactory,
-                IChildrenProviderFactory childrenProviderFactory,
-                DebugCodeContext.Factory debugCodeContextFactory,
-                CreateDebugExpressionDelegate createExpressionDelegate,
-                IVariableInformationFactory varInfoFactory,
-                IVariableInformationEnumFactory varInfoEnumFactory,
-                RegisterSetsBuilder.Factory registerSetsBuilderFactory,
-                ITaskExecutor taskExecutor)
+            public Factory(DebugDocumentContext.Factory debugDocumentContextFactory,
+                           IChildrenProviderFactory childrenProviderFactory,
+                           DebugCodeContext.Factory debugCodeContextFactory,
+                           CreateDebugExpressionDelegate createExpressionDelegate,
+                           IVariableInformationFactory varInfoFactory,
+                           IVariableInformationEnumFactory varInfoEnumFactory,
+                           RegisterSetsBuilder.Factory registerSetsBuilderFactory,
+                           ITaskExecutor taskExecutor)
             {
                 this.debugDocumentContextFactory = debugDocumentContextFactory;
                 this.childrenProviderFactory = childrenProviderFactory;
@@ -303,28 +319,31 @@ namespace YetiVSI.DebugEngine
                                     frame, thread, debugProgram, taskExecutor);
         }
 
-        public DebugStackFrame(
-            DebugDocumentContext.Factory debugDocumentContextFactory,
-            IChildrenProviderFactory childrenProviderFactory,
-            DebugCodeContext.Factory debugCodeContextFactory,
-            CreateDebugExpressionDelegate createExpressionDelegate,
-            IVariableInformationFactory varInfoFactory,
-            IVariableInformationEnumFactory varInfoEnumFactory,
-            AD7FrameInfoCreator ad7FrameInfoCreator,
-            IRegisterSetsBuilder registerSetsBuilder,
-            IDebugEngineHandler debugEngineHandler,
-            RemoteFrame frame,
-            IDebugThread2 thread,
-            IGgpDebugProgram debugProgram,
-            ITaskExecutor taskExecutor) : base(debugDocumentContextFactory,
-               childrenProviderFactory, debugCodeContextFactory, createExpressionDelegate,
-               varInfoFactory, varInfoEnumFactory, ad7FrameInfoCreator, registerSetsBuilder,
-               debugEngineHandler, frame, thread, debugProgram, taskExecutor)
+        public DebugStackFrame(DebugDocumentContext.Factory debugDocumentContextFactory,
+                               IChildrenProviderFactory childrenProviderFactory,
+                               DebugCodeContext.Factory debugCodeContextFactory,
+                               CreateDebugExpressionDelegate createExpressionDelegate,
+                               IVariableInformationFactory varInfoFactory,
+                               IVariableInformationEnumFactory varInfoEnumFactory,
+                               AD7FrameInfoCreator ad7FrameInfoCreator,
+                               IRegisterSetsBuilder registerSetsBuilder,
+                               IDebugEngineHandler debugEngineHandler, RemoteFrame frame,
+                               IDebugThread2 thread, IGgpDebugProgram debugProgram,
+                               ITaskExecutor taskExecutor) : base(debugDocumentContextFactory,
+                                                                  childrenProviderFactory,
+                                                                  debugCodeContextFactory,
+                                                                  createExpressionDelegate,
+                                                                  varInfoFactory,
+                                                                  varInfoEnumFactory,
+                                                                  ad7FrameInfoCreator,
+                                                                  registerSetsBuilder,
+                                                                  debugEngineHandler, frame, thread,
+                                                                  debugProgram, taskExecutor)
         {
         }
     }
 
-    public class DebugStackFrameAsync: BaseDebugStackFrame, IDebugStackFrameAsync
+    public class DebugStackFrameAsync : BaseDebugStackFrame, IDebugStackFrameAsync
     {
         public class Factory
         {
@@ -338,17 +357,18 @@ namespace YetiVSI.DebugEngine
             readonly ITaskExecutor taskExecutor;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
-            protected Factory() { }
+            protected Factory()
+            {
+            }
 
-            public Factory(
-                DebugDocumentContext.Factory debugDocumentContextFactory,
-                IChildrenProviderFactory childrenProviderFactory,
-                DebugCodeContext.Factory debugCodeContextFactory,
-                CreateDebugExpressionDelegate createExpressionDelegate,
-                IVariableInformationFactory varInfoFactory,
-                IVariableInformationEnumFactory varInfoEnumFactory,
-                RegisterSetsBuilder.Factory registerSetsBuilderFactory,
-                ITaskExecutor taskExecutor)
+            public Factory(DebugDocumentContext.Factory debugDocumentContextFactory,
+                           IChildrenProviderFactory childrenProviderFactory,
+                           DebugCodeContext.Factory debugCodeContextFactory,
+                           CreateDebugExpressionDelegate createExpressionDelegate,
+                           IVariableInformationFactory varInfoFactory,
+                           IVariableInformationEnumFactory varInfoEnumFactory,
+                           RegisterSetsBuilder.Factory registerSetsBuilderFactory,
+                           ITaskExecutor taskExecutor)
             {
                 this.debugDocumentContextFactory = debugDocumentContextFactory;
                 this.childrenProviderFactory = childrenProviderFactory;
@@ -364,8 +384,7 @@ namespace YetiVSI.DebugEngine
                                                         RemoteFrame frame, IDebugThread thread,
                                                         IDebugEngineHandler debugEngineHandler,
                                                         IGgpDebugProgram debugProgram) =>
-                new DebugStackFrameAsync(debugDocumentContextFactory,
-                                         childrenProviderFactory,
+                new DebugStackFrameAsync(debugDocumentContextFactory, childrenProviderFactory,
                                          debugCodeContextFactory, createExpressionDelegate,
                                          varInfoFactory, varInfoEnumFactory, ad7FrameInfoCreator,
                                          registerSetsBuilderFactory.Create(frame),
@@ -373,33 +392,36 @@ namespace YetiVSI.DebugEngine
                                          taskExecutor);
         }
 
-        DebugStackFrameAsync(
-            DebugDocumentContext.Factory debugDocumentContextFactory,
-            IChildrenProviderFactory childrenProviderFactory,
-            DebugCodeContext.Factory debugCodeContextFactory,
-            CreateDebugExpressionDelegate createExpressionDelegate,
-            IVariableInformationFactory varInfoFactory,
-            IVariableInformationEnumFactory varInfoEnumFactory,
-            AD7FrameInfoCreator ad7FrameInfoCreator,
-            IRegisterSetsBuilder registerSetsBuilder,
-            IDebugEngineHandler debugEngineHandler,
-            RemoteFrame frame,
-            IDebugThread2 thread,
-            IGgpDebugProgram debugProgram,
-            ITaskExecutor taskExecutor) : base (debugDocumentContextFactory,
-               childrenProviderFactory, debugCodeContextFactory, createExpressionDelegate,
-               varInfoFactory, varInfoEnumFactory, ad7FrameInfoCreator, registerSetsBuilder,
-               debugEngineHandler, frame, thread, debugProgram, taskExecutor)
+        DebugStackFrameAsync(DebugDocumentContext.Factory debugDocumentContextFactory,
+                             IChildrenProviderFactory childrenProviderFactory,
+                             DebugCodeContext.Factory debugCodeContextFactory,
+                             CreateDebugExpressionDelegate createExpressionDelegate,
+                             IVariableInformationFactory varInfoFactory,
+                             IVariableInformationEnumFactory varInfoEnumFactory,
+                             AD7FrameInfoCreator ad7FrameInfoCreator,
+                             IRegisterSetsBuilder registerSetsBuilder,
+                             IDebugEngineHandler debugEngineHandler, RemoteFrame frame,
+                             IDebugThread2 thread, IGgpDebugProgram debugProgram,
+                             ITaskExecutor taskExecutor) : base(debugDocumentContextFactory,
+                                                                childrenProviderFactory,
+                                                                debugCodeContextFactory,
+                                                                createExpressionDelegate,
+                                                                varInfoFactory, varInfoEnumFactory,
+                                                                ad7FrameInfoCreator,
+                                                                registerSetsBuilder,
+                                                                debugEngineHandler, frame, thread,
+                                                                debugProgram, taskExecutor)
         {
         }
 
         public int GetPropertyProvider(uint dwFields, uint nRadix, ref Guid guidFilter,
-            uint dwTimeout, out IAsyncDebugPropertyInfoProvider ppPropertiesProvider)
+                                       uint dwTimeout,
+                                       out IAsyncDebugPropertyInfoProvider ppPropertiesProvider)
         {
             // Converts |guidFilter| to a non ref type arg so that Castle DynamicProxy doesn't fail
             // to assign values back to it. Same as for DebugStackFrame.EnumProperties.
-            return Self.GetPropertyProviderImpl(
-                dwFields, nRadix, guidFilter, dwTimeout, out ppPropertiesProvider);
+            return Self.GetPropertyProviderImpl(dwFields, nRadix, guidFilter, dwTimeout,
+                                                out ppPropertiesProvider);
         }
     }
 }

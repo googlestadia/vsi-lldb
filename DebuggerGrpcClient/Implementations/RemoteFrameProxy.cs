@@ -177,6 +177,7 @@ namespace DebuggerGrpcClient
                     return valueFactory.Create(connection, response.Value);
                 }
             }
+
             return null;
         }
 
@@ -197,15 +198,12 @@ namespace DebuggerGrpcClient
             return null;
         }
 
-        public string GetFunctionName()
-        {
-            return grpcSbFrame.FunctionName;
-        }
+        public string GetFunctionName() => grpcSbFrame.FunctionName;
 
-        public LineEntryInfo GetLineEntry()
-        {
-            return FrameInfoUtils.CreateLineEntryInfo(grpcSbFrame.LineEntry);
-        }
+        public string GetFunctionNameWithSignature() => grpcSbFrame.FunctionNameWithSignature;
+
+        public LineEntryInfo GetLineEntry() =>
+            FrameInfoUtils.CreateLineEntryInfo(grpcSbFrame.LineEntry);
 
         public SbModule GetModule()
         {

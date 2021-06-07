@@ -29,6 +29,12 @@ namespace DebuggerGrpcServer
         string GetFunctionName();
 
         /// <summary>
+        /// Returns the name of the current function, if it can be determined, and pre-processes it
+        /// (strips args, leading ::).
+        ///</summary>
+        string GetFunctionNameWithSignature();
+
+        /// <summary>
         /// Returns the function object that this frame represents.
         ///</summary>
         SbFunction GetFunction();

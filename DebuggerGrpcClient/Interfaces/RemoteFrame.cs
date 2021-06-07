@@ -24,9 +24,16 @@ namespace DebuggerApi
     public interface RemoteFrame
     {
         /// <summary>
-        /// Returns the name of the current function, if it can be determined.
+        /// Returns the name of the current function, if it can be determined, and pre-processes it
+        /// (strips args, leading ::).
         ///</summary>
         string GetFunctionName();
+
+        /// <summary>
+        /// Returns the name of the current function, if it can be determined. Does not strip
+        /// arguments, or leading ::.
+        ///</summary>
+        string GetFunctionNameWithSignature();
 
         /// <summary>
         /// Returns the function object that this frame represents.

@@ -242,6 +242,7 @@ namespace DebuggerGrpcServer
                 {
                     Id = frameStore.AddObject(frame),
                     FunctionName = frame.GetFunctionName() ?? "",
+                    FunctionNameWithSignature = frame.GetFunctionNameWithSignature() ?? "",
                     ProgramCounter = frame.GetPC(),
                     LineEntry = GrpcFactoryUtils.CreateGrpcLineEntryInfo(frame.GetLineEntry())
                 };

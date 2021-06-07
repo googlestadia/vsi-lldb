@@ -76,9 +76,12 @@ namespace DebuggerGrpcServer
         public RemoteValue FindValue(string varName, LldbApi.ValueType value_type) =>
             _valueFactory.Create(_sbFrame.FindValue(varName, value_type));
 
+
         public SbFunction GetFunction() => _sbFrame.GetFunction();
 
         public string GetFunctionName() => PreprocessFunctionName(_sbFrame.GetFunctionName());
+
+        public string GetFunctionNameWithSignature() => _sbFrame.GetFunctionName();
 
         public SbLineEntry GetLineEntry() => _sbFrame.GetLineEntry();
 
@@ -212,7 +215,7 @@ namespace DebuggerGrpcServer
                         info.FuncName = platformFileSpec.GetFilename() + "!";
                     }
                 }
-                info.FuncName += PreprocessFunctionName(_sbFrame.GetFunctionName());
+                info.FuncName += GetFunctionName();
                 if ((fields & FrameInfoFlags.FIF_FUNCNAME_ARGS) != 0)
                 {
                     info.FuncName += "(";

@@ -25,8 +25,10 @@ using YetiVSI.DebugEngine.Interfaces;
 namespace YetiVSI.DebugEngine
 {
     public delegate IDebugThread CreateDebugThreadDelegate(AD7FrameInfoCreator ad7FrameInfoCreator,
-        StackFramesProvider.StackFrameCreator stackFrameCreator, RemoteThread lldbThread,
-        IGgpDebugProgram debugProgram);
+                                                           StackFramesProvider.StackFrameCreator
+                                                               stackFrameCreator,
+                                                           RemoteThread lldbThread,
+                                                           IGgpDebugProgram debugProgram);
 
     public interface IDebugThread : IDebugThread2, IDecoratorSelf<IDebugThread>
     {
@@ -50,63 +52,71 @@ namespace YetiVSI.DebugEngine
         protected readonly StackFramesProvider _stackFramesProvider;
 
         protected BaseDebugThread(ITaskExecutor taskExecutor, FrameEnumFactory frameEnumFactory,
-            StackFramesProvider stackFramesProvider, RemoteThread lldbThread)
+                                  StackFramesProvider stackFramesProvider, RemoteThread lldbThread)
         {
             _frameEnumFactory = frameEnumFactory;
             _remoteThread = lldbThread;
             _name = lldbThread.GetName();
-            _id = (uint)lldbThread.GetThreadId();
+            _id = (uint) lldbThread.GetThreadId();
             _taskExecutor = taskExecutor;
             _stackFramesProvider = stackFramesProvider;
         }
 
-        public RemoteThread GetRemoteThread()
-        {
-            return _remoteThread;
-        }
+        public RemoteThread GetRemoteThread() => _remoteThread;
 
         #region IDebugThread2 functions
 
         public int CanSetNextStatement(IDebugStackFrame2 stackFrameOrigin,
-            IDebugCodeContext2 codeContextDestination)
+                                       IDebugCodeContext2 codeContextDestination)
         {
-            IDebugThread2 threadOrigin;
-            stackFrameOrigin.GetThread(out threadOrigin);
-            uint threadIdOrigin;
+            stackFrameOrigin.GetThread(out IDebugThread2 threadOrigin);
             if (threadOrigin == null)
             {
                 return VSConstants.E_FAIL;
             }
-            threadOrigin.GetThreadId(out threadIdOrigin);
+
+            threadOrigin.GetThreadId(out uint threadIdOrigin);
             if (threadIdOrigin != _id)
             {
                 return VSConstants.S_FALSE;
             }
+
             var contextInfosDestination = new CONTEXT_INFO[1];
-            var result = codeContextDestination.GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS |
-                enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION, contextInfosDestination);
+            int result = codeContextDestination.GetInfo(
+                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS | enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
+                contextInfosDestination);
             if (result != VSConstants.S_OK)
             {
                 return result;
             }
+
             string functionNameOrigin;
-            ulong addressPc;
             if (!DebugEngineUtil.GetAddressFromString(contextInfosDestination[0].bstrAddress,
-                out addressPc))
+                                                      out ulong addressPc))
             {
                 return VSConstants.E_FAIL;
             }
-            stackFrameOrigin.GetName(out functionNameOrigin);
+
+            if (stackFrameOrigin is IDebugStackFrame stackFrameOriginCast)
+            {
+                stackFrameOriginCast.GetNameWithSignature(out functionNameOrigin);
+            }
+            else
+            {
+                stackFrameOrigin.GetName(out functionNameOrigin);
+            }
+
             if (addressPc != _remoteThread.GetFrameAtIndex(0).GetPC() &&
                 contextInfosDestination[0].bstrFunction != functionNameOrigin)
             {
                 return VSConstants.S_FALSE;
             }
+
             return VSConstants.S_OK;
         }
 
         public virtual int EnumFrameInfo(enum_FRAMEINFO_FLAGS fieldSpec, uint radix,
-            out IEnumDebugFrameInfo2 frameInfoEnum)
+                                         out IEnumDebugFrameInfo2 frameInfoEnum)
         {
             frameInfoEnum = _frameEnumFactory.Create(_stackFramesProvider, fieldSpec, Self);
             return VSConstants.S_OK;
@@ -133,34 +143,39 @@ namespace YetiVSI.DebugEngine
         // Retreives requested information about this thread.
         // fields specifies what information should be included in the output THREADPROPERTIES.
         public int GetThreadProperties(enum_THREADPROPERTY_FIELDS fields,
-            THREADPROPERTIES[] threadProperties)
+                                       THREADPROPERTIES[] threadProperties)
         {
-            THREADPROPERTIES properties = new THREADPROPERTIES();
+            var properties = new THREADPROPERTIES();
             if ((enum_THREADPROPERTY_FIELDS.TPF_ID & fields) != 0)
             {
                 properties.dwThreadId = _id;
                 properties.dwFields |= enum_THREADPROPERTY_FIELDS.TPF_ID;
             }
+
             if ((enum_THREADPROPERTY_FIELDS.TPF_SUSPENDCOUNT & fields) != 0)
             {
                 // TODO: add info to properties
                 properties.dwFields |= enum_THREADPROPERTY_FIELDS.TPF_SUSPENDCOUNT;
             }
+
             if ((enum_THREADPROPERTY_FIELDS.TPF_STATE & fields) != 0)
             {
                 // TODO: add info to properties
                 properties.dwFields |= enum_THREADPROPERTY_FIELDS.TPF_STATE;
             }
+
             if ((enum_THREADPROPERTY_FIELDS.TPF_PRIORITY & fields) != 0)
             {
                 // TODO: add info to properties
                 properties.dwFields |= enum_THREADPROPERTY_FIELDS.TPF_PRIORITY;
             }
+
             if ((enum_THREADPROPERTY_FIELDS.TPF_NAME & fields) != 0)
             {
                 properties.bstrName = _name;
                 properties.dwFields |= enum_THREADPROPERTY_FIELDS.TPF_NAME;
             }
+
             if ((enum_THREADPROPERTY_FIELDS.TPF_LOCATION & fields) != 0)
             {
                 var frame = _remoteThread.GetFrameAtIndex(0);
@@ -170,6 +185,7 @@ namespace YetiVSI.DebugEngine
                     properties.dwFields |= enum_THREADPROPERTY_FIELDS.TPF_LOCATION;
                 }
             }
+
             threadProperties[0] = properties;
             return VSConstants.S_OK;
         }
@@ -182,20 +198,20 @@ namespace YetiVSI.DebugEngine
 
         public int SetNextStatement(IDebugStackFrame2 stackFrame, IDebugCodeContext2 codeContext)
         {
-            var result = CanSetNextStatement(stackFrame, codeContext);
+            int result = CanSetNextStatement(stackFrame, codeContext);
             if (result != VSConstants.S_OK)
             {
                 return VSConstants.E_FAIL;
             }
+
             uint line;
             string filePath;
-            IDebugDocumentContext2 documentContext;
-            codeContext.GetDocumentContext(out documentContext);
+            codeContext.GetDocumentContext(out IDebugDocumentContext2 documentContext);
             if (documentContext != null)
             {
                 documentContext.GetName(enum_GETNAME_TYPE.GN_FILENAME, out filePath);
-                TEXT_POSITION[] beginPosition = new TEXT_POSITION[1];
-                TEXT_POSITION[] endPosition = new TEXT_POSITION[1];
+                var beginPosition = new TEXT_POSITION[1];
+                var endPosition = new TEXT_POSITION[1];
                 documentContext.GetStatementRange(beginPosition, endPosition);
                 line = beginPosition[0].dwLine + 1;
                 Trace.WriteLine($"Settings next statement to {filePath} line {line}.");
@@ -206,41 +222,46 @@ namespace YetiVSI.DebugEngine
                 if (process == null)
                 {
                     Trace.WriteLine("Error: Failed to obtain process." +
-                        " Unable to set next statement");
+                                    " Unable to set next statement");
                     return VSConstants.E_FAIL;
                 }
+
                 var target = process.GetTarget();
                 if (target == null)
                 {
                     Trace.WriteLine("Error: Failed to obtain target." +
-                        " Unable to set next statement");
+                                    " Unable to set next statement");
                     return VSConstants.E_FAIL;
                 }
+
                 var address = target.ResolveLoadAddress(codeContext.GetAddress());
                 if (address == null)
                 {
                     Trace.WriteLine("Error: Failed to obtain address." +
-                        " Unable to set next statement");
+                                    " Unable to set next statement");
                     return VSConstants.E_FAIL;
                 }
+
                 var lineEntry = address.GetLineEntry();
                 if (lineEntry == null)
                 {
                     Trace.WriteLine("Error: Failed to obtain line entry." +
-                        " Unable to set next statement");
+                                    " Unable to set next statement");
                     return VSConstants.E_FAIL;
                 }
+
                 filePath = Path.Combine(lineEntry.Directory, lineEntry.FileName);
                 line = lineEntry.Line;
-                Trace.WriteLine(
-                    $"Settings next statement to {address} at {filePath} line {line}");
+                Trace.WriteLine($"Settings next statement to {address} at {filePath} line {line}");
             }
-            var error = _remoteThread.JumpToLine(filePath, line);
+
+            SbError error = _remoteThread.JumpToLine(filePath, line);
             if (error.Fail())
             {
                 Trace.WriteLine(error.GetCString());
                 return VSConstants.E_FAIL;
             }
+
             return VSConstants.S_OK;
         }
 
@@ -253,7 +274,7 @@ namespace YetiVSI.DebugEngine
         #region Uncalled IDebugThread2 functions
 
         public int GetLogicalThread(IDebugStackFrame2 stackFrame,
-           out IDebugLogicalThread2 logicalThread)
+                                    out IDebugLogicalThread2 logicalThread)
         {
             logicalThread = null;
             return VSConstants.E_NOTIMPL;
@@ -269,7 +290,7 @@ namespace YetiVSI.DebugEngine
         #endregion
     }
 
-    public class DebugThread: BaseDebugThread, IDebugThread
+    public class DebugThread : BaseDebugThread
     {
         public class Factory
         {
@@ -277,7 +298,9 @@ namespace YetiVSI.DebugEngine
             readonly ITaskExecutor _taskExecutor;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
-            protected Factory() { }
+            protected Factory()
+            {
+            }
 
             public Factory(FrameEnumFactory frameEnumFactory, ITaskExecutor taskExecutor)
             {
@@ -286,15 +309,13 @@ namespace YetiVSI.DebugEngine
             }
 
             public virtual IDebugThread Create(AD7FrameInfoCreator ad7FrameInfoCreator,
-                StackFramesProvider.StackFrameCreator stackFrameCreator, RemoteThread lldbThread,
-                IGgpDebugProgram debugProgram)
-            {
-                return new DebugThread(_taskExecutor, _frameEnumFactory,
-                                       new StackFramesProvider(lldbThread, stackFrameCreator,
-                                                               debugProgram, ad7FrameInfoCreator,
-                                                               debugProgram),
-                                       lldbThread);
-            }
+                                               StackFramesProvider.StackFrameCreator
+                                                   stackFrameCreator, RemoteThread lldbThread,
+                                               IGgpDebugProgram debugProgram) =>
+                new DebugThread(_taskExecutor, _frameEnumFactory,
+                                new StackFramesProvider(lldbThread, stackFrameCreator, debugProgram,
+                                                        ad7FrameInfoCreator, debugProgram),
+                                lldbThread);
 
             /// <summary>
             /// Creator for unit tests.
@@ -302,17 +323,14 @@ namespace YetiVSI.DebugEngine
             /// <param name="stackFramesProvider"></param>
             /// <param name="lldbThread"></param>
             /// <returns></returns>
-            public virtual IDebugThread CreateForTesting(
-                StackFramesProvider stackFramesProvider, RemoteThread lldbThread)
-            {
-                return new DebugThread(_taskExecutor, _frameEnumFactory, stackFramesProvider,
-                    lldbThread);
-            }
+            public virtual IDebugThread CreateForTesting(StackFramesProvider stackFramesProvider,
+                                                         RemoteThread lldbThread) =>
+                new DebugThread(_taskExecutor, _frameEnumFactory, stackFramesProvider, lldbThread);
         }
 
         DebugThread(ITaskExecutor taskExecutor, FrameEnumFactory frameEnumFactory,
-            StackFramesProvider stackFramesProvider, RemoteThread lldbThread)
-            : base(taskExecutor, frameEnumFactory, stackFramesProvider, lldbThread)
+                    StackFramesProvider stackFramesProvider, RemoteThread lldbThread) : base(
+            taskExecutor, frameEnumFactory, stackFramesProvider, lldbThread)
         {
         }
     }
@@ -325,7 +343,9 @@ namespace YetiVSI.DebugEngine
             readonly ITaskExecutor _taskExecutor;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
-            protected Factory() { }
+            protected Factory()
+            {
+            }
 
             public Factory(FrameEnumFactory frameEnumFactory, ITaskExecutor taskExecutor)
             {
@@ -334,15 +354,13 @@ namespace YetiVSI.DebugEngine
             }
 
             public virtual IDebugThreadAsync Create(AD7FrameInfoCreator ad7FrameInfoCreator,
-                StackFramesProvider.StackFrameCreator stackFrameCreator, RemoteThread lldbThread,
-                IGgpDebugProgram debugProgram)
-            {
-                return new DebugThreadAsync(
-                    _taskExecutor, _frameEnumFactory,
-                    new StackFramesProvider(lldbThread, stackFrameCreator, debugProgram,
-                                            ad7FrameInfoCreator, debugProgram),
-                    lldbThread);
-            }
+                                                    StackFramesProvider.StackFrameCreator
+                                                        stackFrameCreator, RemoteThread lldbThread,
+                                                    IGgpDebugProgram debugProgram) =>
+                new DebugThreadAsync(_taskExecutor, _frameEnumFactory,
+                                     new StackFramesProvider(
+                                         lldbThread, stackFrameCreator, debugProgram,
+                                         ad7FrameInfoCreator, debugProgram), lldbThread);
 
             /// <summary>
             /// Creator for unit tests.
@@ -351,25 +369,23 @@ namespace YetiVSI.DebugEngine
             /// <param name="lldbThread"></param>
             /// <returns></returns>
             public virtual IDebugThreadAsync CreateForTesting(
-                StackFramesProvider stackFramesProvider, RemoteThread lldbThread)
-            {
-                return new DebugThreadAsync(_taskExecutor, _frameEnumFactory, stackFramesProvider,
-                    lldbThread);
-            }
+                StackFramesProvider stackFramesProvider, RemoteThread lldbThread) =>
+                new DebugThreadAsync(_taskExecutor, _frameEnumFactory, stackFramesProvider,
+                                     lldbThread);
         }
 
         DebugThreadAsync(ITaskExecutor taskExecutor, FrameEnumFactory frameEnumFactory,
-            StackFramesProvider stackFramesProvider, RemoteThread lldbThread)
-            : base(taskExecutor, frameEnumFactory, stackFramesProvider, lldbThread)
+                         StackFramesProvider stackFramesProvider, RemoteThread lldbThread) : base(
+            taskExecutor, frameEnumFactory, stackFramesProvider, lldbThread)
         {
         }
 
         public int GetAllFramesAsync(enum_FRAMEINFO_FLAGS dwFlags, uint dwFlagsEx, uint radix,
-            IAsyncDebugGetFramesCompletionHandler pCompletionHandler,
-            out IAsyncDebugEngineOperation ppDebugOperation)
+                                     IAsyncDebugGetFramesCompletionHandler pCompletionHandler,
+                                     out IAsyncDebugEngineOperation ppDebugOperation)
         {
             ppDebugOperation = new AsyncGetStackFramesOperation(Self, _stackFramesProvider, dwFlags,
-                pCompletionHandler, _taskExecutor);
+                                                                pCompletionHandler, _taskExecutor);
             return VSConstants.S_OK;
         }
     }
