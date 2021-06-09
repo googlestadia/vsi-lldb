@@ -58,6 +58,8 @@ namespace YetiCommon
         public static readonly string RootDir =
             Path.GetDirectoryName(typeof(YetiConstants).Assembly.Location);
 
+        public static readonly string RemoteLlvmObjDumpPath =
+            "/usr/local/cloudcast/bin/llvm-objdump";
         public static readonly string RemoteToolsBinDir = "/opt/developer/tools/bin/";
         public static readonly string RemoteDeployPath = "/mnt/developer/";
 

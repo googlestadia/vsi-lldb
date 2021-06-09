@@ -214,8 +214,7 @@ namespace DebuggerGrpcClient
         static string CreateSetLibrarySearchPathCommand(string path)
             => $"settings append target.exec-search-paths \"{path}\"";
 
-        static string[] DefaultLLDBSettings =
-        {
+        static string[] DefaultLLDBSettings = {
             // Do not auto apply fixits because they could cause unintended
             // side-effects. For example, a fixit on function name 'f' is
             // a call to function f, i.e. 'f()'.
@@ -229,6 +228,11 @@ namespace DebuggerGrpcClient
             // Set gdb-remote packet timeout to 5s so that big messages
             // have enough time to get through on slower networks.
             "settings set plugin.process.gdb-remote.packet-timeout 5",
+            // Enable the dynamic loader plugin for debugging Wine.
+            "settings set plugin.process.wine-dyld.use-wine-dynamic-loader true",
+            // Set the correct path to llvm-objdump on the target.
+            "settings set plugin.process.wine-dyld.remote-objdump-path \"" +
+                YetiCommon.YetiConstants.RemoteLlvmObjDumpPath + "\"",
         };
 
         public static string GetLLDBInitPath()
