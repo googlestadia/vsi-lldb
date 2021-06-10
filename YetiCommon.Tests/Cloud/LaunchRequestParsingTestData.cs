@@ -110,6 +110,7 @@ namespace YetiCommon.Tests.Cloud
                 { "enable_retroactive_frame_dump", "True" },
                 { "stream_profile_preset", "HIGH_VISUAL_QUALITY" },
                 { "pixel_density", "9876" },
+                { "network_model", "test - model"}
             };
 
         public static Dictionary<string, string> OtherQueryParams =>

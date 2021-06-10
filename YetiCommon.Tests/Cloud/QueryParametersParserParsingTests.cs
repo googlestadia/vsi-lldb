@@ -106,6 +106,7 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(launchRequest.EnableRetroactiveFrameDump, Is.EqualTo(true));
             Assert.That(launchRequest.StreamQualityPreset,
                         Is.EqualTo(StreamQualityPreset.HighVisualQuality));
+            Assert.That(launchRequest.NetworkModel, Is.EqualTo("test - model"));
         }
 
         #region CustomParse
