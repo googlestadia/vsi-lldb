@@ -92,9 +92,8 @@ namespace YetiVSI
             DeployOnLaunchSetting deploySetting = await GetDeployOnLaunchSettingAsync(project);
             if (deploySetting != DeployOnLaunchSetting.FALSE)
             {
-                record.SetCopyAttempted(true);
                 string localPath = await project.GetTargetPathAsync();
-                var force = deploySetting == DeployOnLaunchSetting.ALWAYS;
+                bool force = (deploySetting == DeployOnLaunchSetting.ALWAYS);
                 await DeployToTargetAsync(record, task, target, localPath,
                                           YetiConstants.RemoteDeployPath, force);
 
@@ -105,6 +104,7 @@ namespace YetiVSI
             else
             {
                 record.SetCopyAttempted(false);
+                record.SignatureCheckResult(BinarySignatureCheck.Types.Result.NoCopy);
             }
         }
 
@@ -133,8 +133,17 @@ namespace YetiVSI
             var stopwatch = Stopwatch.StartNew();
             try
             {
+                BinarySignatureCheck.Types.Result signatureCheck = force
+                    ? BinarySignatureCheck.Types.Result.AlwaysCopy
+                    : BinarySignatureCheck.Types.Result.YesCopy;
+
+                record.SetCopyAttempted(true);
                 record.BinarySize(FileUtil.GetFileSize(localPath, fileSystem));
+                record.SignatureCheckResult(signatureCheck);
+                record.DeploymentMode();
+
                 await remoteFile.SyncAsync(target, localPath, remotePath, task, force);
+
                 record.CopyBinary(stopwatch.ElapsedMilliseconds, DataRecorder.NoError);
             }
             catch (ProcessException exception)
@@ -303,6 +312,22 @@ namespace YetiVSI
             public void BinarySize(long bytes)
             {
                 RecordData(new CopyBinaryData { CopyBinaryBytes = bytes });
+            }
+
+            public void SignatureCheckResult(BinarySignatureCheck.Types.Result signatureCheck)
+            {
+                RecordData(new CopyBinaryData
+                {
+                    SignatureCheckResult = signatureCheck
+                });
+            }
+
+            public void DeploymentMode()
+            {
+                RecordData(new CopyBinaryData
+                {
+                    DeploymentMode = CopyBinaryType.Types.DeploymentMode.GgpRsync
+                });
             }
 
             void RecordData(CopyBinaryData copyBinaryData)

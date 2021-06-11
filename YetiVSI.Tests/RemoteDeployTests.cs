@@ -12,41 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Diagnostics;
 using GgpGrpc.Models;
 using NSubstitute;
 using NUnit.Framework;
+using System.Diagnostics;
+using System.IO.Abstractions.TestingHelpers;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
 using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Shared.Metrics;
-using System.IO.Abstractions.TestingHelpers;
 
 namespace YetiVSI.Test
 {
     [TestFixture]
     class RemoteDeployTests
     {
-        RemoteDeploy _remoteDeploy;
-        IRemoteFile _remoteFile;
-        IRemoteCommand _remoteCommand;
-        ManagedProcess.Factory _managedProcessFactory;
         readonly string _binaryName = "Player.so";
         readonly string _chmodFailed = "Error running chmod a+x";
         readonly string _rsyncFailed = "Error copying files with ggp_rsync";
-
-        [SetUp]
-        public void SetUp()
-        {
-            _remoteFile = Substitute.For<IRemoteFile>();
-            _remoteCommand = Substitute.For<IRemoteCommand>();
-            _managedProcessFactory = Substitute.For<ManagedProcess.Factory>();
-            
-            _remoteDeploy = new RemoteDeploy(_remoteCommand, _remoteFile, _managedProcessFactory,
-                                             new MockFileSystem());
-        }
 
         [Test]
         public async Task DeployGameExecutableDeploysBinaryAndSetsExecutableBitAsync(
@@ -56,16 +41,17 @@ namespace YetiVSI.Test
             string localPath = GetLocalPath();
             IAsyncProject project = GetProjectWithLocalPathAndDeployMode(localPath, value);
             (SshTarget target, IAction action, ICancelable cancelable) = GetDeploymentArguments();
+            (IRemoteFile file, IRemoteCommand command, IRemoteDeploy deploy, _) = GetTestObjects();
 
-            await _remoteDeploy.DeployGameExecutableAsync(project, target, cancelable, action);
+            await deploy.DeployGameExecutableAsync(project, target, cancelable, action);
 
             Assert.Multiple(async () =>
             {
-                await _remoteFile.Received(1).SyncAsync(target, localPath,
+                await file.Received(1).SyncAsync(target, localPath,
                                                         YetiConstants.RemoteDeployPath, cancelable,
                                                         Arg.Any<bool>());
 
-                await _remoteCommand.Received(1)
+                await command.Received(1)
                     .RunWithSuccessAsync(
                         target, $"chmod a+x {YetiConstants.RemoteDeployPath}{_binaryName}");
             });
@@ -79,8 +65,8 @@ namespace YetiVSI.Test
             string localPath = GetLocalPath();
             IAsyncProject project = GetProjectWithLocalPathAndDeployMode(localPath, value);
             (SshTarget target, IAction action, ICancelable cancelable) = GetDeploymentArguments();
-
-            await _remoteDeploy.DeployGameExecutableAsync(project, target, cancelable, action);
+            (_, _, IRemoteDeploy deploy, _) = GetTestObjects();
+            await deploy.DeployGameExecutableAsync(project, target, cancelable, action);
 
             Assert.Multiple(() =>
             {
@@ -101,15 +87,15 @@ namespace YetiVSI.Test
             string localPath = GetLocalPath();
             IAsyncProject project = GetProjectWithLocalPathAndDeployMode(localPath, value);
             (SshTarget target, IAction action, ICancelable cancelable) = GetDeploymentArguments();
-
-            _remoteFile
+            (IRemoteFile file, _, IRemoteDeploy deploy, _) = GetTestObjects();
+            file
                 .SyncAsync(Arg.Any<SshTarget>(), Arg.Any<string>(), Arg.Any<string>(),
                            Arg.Any<ICancelable>(), Arg.Any<bool>())
                 .Returns<Task>(_ => throw new ProcessException(_rsyncFailed));
 
             var error = Assert.ThrowsAsync<DeployException>(
                 async () =>
-                    await _remoteDeploy.DeployGameExecutableAsync(
+                    await deploy.DeployGameExecutableAsync(
                         project, target, cancelable, action));
             Assert.Multiple(() =>
             {
@@ -132,12 +118,12 @@ namespace YetiVSI.Test
             string localPath = GetLocalPath();
             IAsyncProject project = GetProjectWithLocalPathAndDeployMode(localPath, value);
             (SshTarget target, IAction action, ICancelable cancelable) = GetDeploymentArguments();
-
-            _remoteCommand.RunWithSuccessAsync(Arg.Any<SshTarget>(), Arg.Any<string>())
+            (_, IRemoteCommand command, IRemoteDeploy deploy, _) = GetTestObjects();
+            command.RunWithSuccessAsync(Arg.Any<SshTarget>(), Arg.Any<string>())
                 .Returns(_ => throw new ProcessException(_chmodFailed));
 
             var error = Assert.ThrowsAsync<DeployException>(
-                async () => await _remoteDeploy
+                async () => await deploy
                     .DeployGameExecutableAsync(project, target, cancelable, action));
             Assert.Multiple(() =>
             {
@@ -160,35 +146,101 @@ namespace YetiVSI.Test
             IAsyncProject project =
                 GetProjectWithLocalPathAndDeployMode(localPath, DeployOnLaunchSetting.FALSE);
             (SshTarget target, IAction action, ICancelable cancelable) = GetDeploymentArguments();
-
-            await _remoteDeploy.DeployGameExecutableAsync(project, target, cancelable, action);
+            (IRemoteFile file, IRemoteCommand command, IRemoteDeploy deploy, _) = GetTestObjects();
+            await deploy.DeployGameExecutableAsync(project, target, cancelable, action);
 
             Assert.Multiple(async () =>
             {
-                await _remoteFile.Received(0).SyncAsync(Arg.Any<SshTarget>(), Arg.Any<string>(),
+                await file.Received(0).SyncAsync(Arg.Any<SshTarget>(), Arg.Any<string>(),
                                                         Arg.Any<string>(), Arg.Any<ICancelable>());
 
-                await _remoteCommand.Received(0)
+                await command.Received(0)
                     .RunWithSuccessAsync(Arg.Any<SshTarget>(), Arg.Any<string>());
 
                 Assert.IsFalse(action.GetEvent().CopyExecutable.CopyAttempted);
             });
         }
 
+
+        [Test]
+        public async Task DeployGamePopulatesDeploymentModeAsync(
+            [Values(DeployOnLaunchSetting.DELTA, DeployOnLaunchSetting.ALWAYS)]
+            DeployOnLaunchSetting value, [Values] bool commandSucceeds)
+        {
+            string localPath = GetLocalPath();
+            IAsyncProject project = GetProjectWithLocalPathAndDeployMode(localPath, value);
+            (SshTarget target, IAction action, ICancelable cancelable) = GetDeploymentArguments();
+            (_, IRemoteCommand command, IRemoteDeploy deploy, _) = GetTestObjects();
+
+            if (!commandSucceeds)
+            {
+                command.RunWithSuccessAsync(Arg.Any<SshTarget>(), Arg.Any<string>())
+                    .Returns(_ => throw new ProcessException(_chmodFailed));
+            }
+
+            try
+            {
+                await deploy.DeployGameExecutableAsync(project, target, cancelable, action);
+            }
+            catch (DeployException)
+            {
+                Assert.IsFalse(commandSucceeds);
+            }
+
+            CopyBinaryData actionEvent = action.GetEvent().CopyExecutable;
+            Assert.That(actionEvent.DeploymentMode,
+                Is.EqualTo(CopyBinaryType.Types.DeploymentMode.GgpRsync));
+        }
+
+        [Test]
+        public async Task DeployGameSetToNeverDoesNotPopulateDeploymentModeAsync()
+        {
+            string localPath = GetLocalPath();
+            IAsyncProject project = GetProjectWithLocalPathAndDeployMode(localPath,
+                DeployOnLaunchSetting.FALSE);
+            (SshTarget target, IAction action, ICancelable cancelable) = GetDeploymentArguments();
+            (_, _, IRemoteDeploy deploy, _) = GetTestObjects();
+
+            await deploy.DeployGameExecutableAsync(project, target, cancelable, action);
+
+            CopyBinaryData actionEvent = action.GetEvent().CopyExecutable;
+            Assert.That(actionEvent.DeploymentMode, Is.Null);
+        }
+
+        [TestCase(DeployOnLaunchSetting.ALWAYS, BinarySignatureCheck.Types.Result.AlwaysCopy)]
+        [TestCase(DeployOnLaunchSetting.FALSE, BinarySignatureCheck.Types.Result.NoCopy)]
+        [TestCase(DeployOnLaunchSetting.DELTA, BinarySignatureCheck.Types.Result.YesCopy)]
+        public async Task DeployGamePopulatesSignatureCheckModeAsync(
+            DeployOnLaunchSetting deploySetting,
+            BinarySignatureCheck.Types.Result signatureCheck)
+        {
+            string localPath = GetLocalPath();
+            IAsyncProject project = GetProjectWithLocalPathAndDeployMode(localPath, deploySetting);
+            (SshTarget target, IAction action, ICancelable cancelable) = GetDeploymentArguments();
+            (_, _, IRemoteDeploy deploy, _) = GetTestObjects();
+
+            await deploy.DeployGameExecutableAsync(project, target, cancelable, action);
+
+            CopyBinaryData actionEvent = action.GetEvent().CopyExecutable;
+            Assert.That(actionEvent.SignatureCheckResult, Is.EqualTo(signatureCheck));
+        }
+
         [Test]
         public async Task DeployLldbServerDeploysBinaryAndSetsExecutableBitAsync()
         {
             string remotePath = YetiConstants.LldbServerLinuxPath;
-            string localPath = _remoteDeploy.GetLldbServerPath();
+            (IRemoteFile file, IRemoteCommand command, RemoteDeploy deploy, _) =
+                GetTestObjects();
+            string localPath = deploy.GetLldbServerPath();
             (SshTarget target, IAction action, ICancelable _) = GetDeploymentArguments();
 
-            await _remoteDeploy.DeployLldbServerAsync(target, action);
+            await deploy.DeployLldbServerAsync(target, action);
 
             Assert.Multiple(async () =>
             {
-                await _remoteFile.Received(1)
+                await file.Received(1)
                     .SyncAsync(target, localPath, remotePath, Arg.Any<ICancelable>());
-                await _remoteCommand.Received(1).RunWithSuccessAsync(
+                await command.Received(1).RunWithSuccessAsync(
                     target, $"chmod a+x {remotePath}{YetiConstants.LldbServerLinuxExecutable}");
             });
         }
@@ -197,8 +249,9 @@ namespace YetiVSI.Test
         public async Task DeployLldbServerPopulatesActionEventOnSuccessAsync()
         {
             (SshTarget target, IAction action, var _) = GetDeploymentArguments();
-
-            await _remoteDeploy.DeployLldbServerAsync(target, action);
+            (_, _, RemoteDeploy deploy, _) = GetTestObjects();
+            
+            await deploy.DeployLldbServerAsync(target, action);
 
             Assert.Multiple(() =>
             {
@@ -215,12 +268,12 @@ namespace YetiVSI.Test
         public void DeployLldbServerPopulatesActionEventOnFailureInSettingExecutableBit()
         {
             (SshTarget target, IAction action, var _) = GetDeploymentArguments();
-
-            _remoteCommand.RunWithSuccessAsync(Arg.Any<SshTarget>(), Arg.Any<string>())
+            (_, IRemoteCommand command, RemoteDeploy deploy, _) = GetTestObjects();
+            command.RunWithSuccessAsync(Arg.Any<SshTarget>(), Arg.Any<string>())
                 .Returns(_ => throw new ProcessException(_chmodFailed));
 
             var error = Assert.ThrowsAsync<DeployException>(
-                async () => await _remoteDeploy.DeployLldbServerAsync(target, action));
+                async () => await deploy.DeployLldbServerAsync(target, action));
 
             Assert.Multiple(() =>
             {
@@ -240,13 +293,14 @@ namespace YetiVSI.Test
         public void DeployLldbServerPopulatesActionEventOnFailureInDeployment()
         {
             (SshTarget target, IAction action, var _) = GetDeploymentArguments();
-            _remoteFile
+            (IRemoteFile file, _, RemoteDeploy deploy, _) = GetTestObjects();
+            file
                 .SyncAsync(Arg.Any<SshTarget>(), Arg.Any<string>(), Arg.Any<string>(),
                            Arg.Any<ICancelable>(), Arg.Any<bool>())
                 .Returns(_ => throw new ProcessException(_rsyncFailed));
 
             var error = Assert.ThrowsAsync<DeployException>(
-                async () => await _remoteDeploy.DeployLldbServerAsync(target, action));
+                async () => await deploy.DeployLldbServerAsync(target, action));
 
             Assert.Multiple(() =>
             {
@@ -267,11 +321,12 @@ namespace YetiVSI.Test
             string command = "ls '/mnt/developer'";
             string rootPath = @"c:\src\game\bin";
             (SshTarget _, IAction action, ICancelable _) = GetDeploymentArguments();
-            IProcess process = GetCustomDeployProcess();
+            (_, _, RemoteDeploy deploy, ManagedProcess.Factory factory) = GetTestObjects();
+            IProcess process = GetCustomDeployProcess(factory);
             IAsyncProject project = GetProject();
             var gamelet = new Gamelet();
 
-            await _remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
+            await deploy.ExecuteCustomCommandAsync(project, gamelet, action);
 
             Assert.Multiple(async () =>
             {
@@ -288,16 +343,30 @@ namespace YetiVSI.Test
                 return local;
             }
 
-            IProcess GetCustomDeployProcess()
+            IProcess GetCustomDeployProcess(ManagedProcess.Factory managedProcessFactory)
             {
                 var local = Substitute.For<IProcess>();
-                _managedProcessFactory.CreateVisible(
+                managedProcessFactory.CreateVisible(
                         Arg.Is<ProcessStartInfo>(x => x.FileName.EndsWith(YetiConstants.Command) &&
                                                      x.Arguments.Equals($"/C \"{command}\"") &&
                                                      x.WorkingDirectory == rootPath), int.MaxValue)
                     .Returns(local);
                 return local;
             }
+        }
+
+
+        public (IRemoteFile file, IRemoteCommand command, RemoteDeploy deploy,
+            ManagedProcess.Factory factory) GetTestObjects()
+        {
+            var remoteFile = Substitute.For<IRemoteFile>();
+            var remoteCommand = Substitute.For<IRemoteCommand>();
+            var managedProcessFactory = Substitute.For<ManagedProcess.Factory>();
+
+            var remoteDeploy = new RemoteDeploy(remoteCommand, remoteFile, managedProcessFactory,
+                                             new MockFileSystem());
+
+            return (remoteFile, remoteCommand, remoteDeploy, managedProcessFactory);
         }
 
         string GetLocalPath() => $@"c:\src\game\bin\{_binaryName}";

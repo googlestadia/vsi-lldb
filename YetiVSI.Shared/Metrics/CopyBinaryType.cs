@@ -20,10 +20,11 @@
         {
             public enum DeploymentMode
             {
-                UnknownDeploymentMode,
-                Uncompressed,
-                Compressed,
-                BinaryDiff,
+                UnknownDeploymentMode = 0,
+                Uncompressed = 1,
+                Compressed = 2,
+                BinaryDiff = 3,
+                GgpRsync = 4,
             }
         }
     }
