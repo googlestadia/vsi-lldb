@@ -149,16 +149,21 @@ namespace YetiCommon
             var portalUrl = SdkConfig.PartnerPortalUrlOrDefault;
             string chromeUrl = $"{portalUrl}/organizations/{SdkConfig.OrganizationId}/stream";
 
-            var queryParams = new List<QueryParam> {
+            var queryParams = new List<QueryParam>
+            {
                 QueryParam.Create("cmd", WebUtility.UrlEncode(LaunchParams.Cmd)),
-                QueryParam.Create(
-                    "application_name",
-                    Uri.EscapeDataString(LaunchParams.ApplicationName ?? string.Empty)),
+                QueryParam.Create("application_name",
+                                  Uri.EscapeDataString(
+                                      LaunchParams.ApplicationName ?? string.Empty)),
                 QueryParam.Create("gamelet_name",
                                   Uri.EscapeDataString(LaunchParams.GameletName ?? string.Empty)),
                 QueryParam.Create("test_account", LaunchParams.TestAccount),
                 QueryParam.Create("vars",
-                                  WebUtility.UrlEncode(LaunchParams.GameletEnvironmentVars)),
+                                  WebUtility.UrlEncode(
+                                      string.Join(
+                                          ";",
+                                          (LaunchParams.GameletEnvironmentVars ?? string.Empty)
+                                          .Split(';').Select(v => v.Trim())))),
                 QueryParam.Create("renderdoc", LaunchParams.RenderDoc.ToString().ToLower()),
                 QueryParam.Create("rgp", LaunchParams.Rgp.ToString().ToLower()),
                 QueryParam.Create("sdk_version", WebUtility.UrlEncode(LaunchParams.SdkVersion)),
