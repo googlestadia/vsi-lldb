@@ -293,8 +293,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             var breakpoint = Substitute.For<IPendingBreakpoint>();
             var boundLocations = Substitute.For<IEnumerable<IDebugBoundBreakpoint2>>();
-            var factory = new BoundBreakpointEnumFactory();
-            debugEngineHandler.OnBreakpointBound(breakpoint, boundLocations, factory, program);
+            debugEngineHandler.OnBreakpointBound(breakpoint, boundLocations, program);
             debugEngineHandler.Received(1).SendEvent(
                 Arg.Is<DebugEvent>(e => IsBreakpointBoundEvent(breakpoint, e)), program,
                 (IDebugThread2)null);

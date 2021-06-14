@@ -27,13 +27,10 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory
         {
-            readonly BoundBreakpointEnumFactory _boundBreakpointEnumFactory;
             readonly JoinableTaskContext _taskContext;
 
-            public Factory(BoundBreakpointEnumFactory boundBreakpointEnumFactory,
-                           JoinableTaskContext taskContext)
+            public Factory(JoinableTaskContext taskContext)
             {
-                _boundBreakpointEnumFactory = boundBreakpointEnumFactory;
                 _taskContext = taskContext;
             }
 
@@ -43,15 +40,13 @@ namespace YetiVSI.DebugEngine
                                                 LldbListenerSubscriber listenerSubscriber)
             {
                 return new LldbEventManager(debugEngineHandler, breakpointManager,
-                                            _boundBreakpointEnumFactory, program, process,
-                                            listenerSubscriber, _taskContext);
+                                            program, process, listenerSubscriber, _taskContext);
             }
         }
 
         readonly IDebugEngineHandler _debugEngineHandler;
         readonly IBreakpointManager _lldbBreakpointManager;
         readonly IGgpDebugProgram _program;
-        readonly BoundBreakpointEnumFactory _boundBreakpointEnumFactory;
         readonly SbProcess _lldbProcess;
         readonly LldbListenerSubscriber _lldbListenerSubscriber;
         readonly JoinableTaskContext _taskContext;
@@ -61,13 +56,11 @@ namespace YetiVSI.DebugEngine
 
         LldbEventManager(IDebugEngineHandler debugEngineHandler,
                          IBreakpointManager breakpointManager,
-                         BoundBreakpointEnumFactory boundBreakpointEnumFactory,
                          IGgpDebugProgram program, SbProcess process,
                          LldbListenerSubscriber listenerSubscriber, JoinableTaskContext taskContext)
         {
             _debugEngineHandler = debugEngineHandler;
             _lldbBreakpointManager = breakpointManager;
-            _boundBreakpointEnumFactory = boundBreakpointEnumFactory;
             _program = program;
             _lldbProcess = process;
             _lldbListenerSubscriber = listenerSubscriber;
@@ -332,8 +325,7 @@ namespace YetiVSI.DebugEngine
             {
                 return null;
             }
-            return new BreakpointEvent(
-                _boundBreakpointEnumFactory.Create(boundBreakpoints.ToArray()));
+            return new BreakpointEvent(new BoundBreakpointEnum(boundBreakpoints.ToArray()));
         }
 
         /// <summary>
@@ -347,7 +339,7 @@ namespace YetiVSI.DebugEngine
                 return null;
             }
             IDebugBoundBreakpoint2[] boundBreakpoints = { watchpoint };
-            return new BreakpointEvent(_boundBreakpointEnumFactory.Create(boundBreakpoints));
+            return new BreakpointEvent(new BoundBreakpointEnum(boundBreakpoints));
         }
 
         /// <summary>

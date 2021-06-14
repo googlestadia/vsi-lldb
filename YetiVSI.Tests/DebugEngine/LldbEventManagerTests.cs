@@ -40,11 +40,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             _listener = Substitute.For<SbListener>();
             _listenerSubscriber = Substitute.For<LldbListenerSubscriber>(_listener);
-            _eventManager =
-                new LldbEventManager
-                    .Factory(new BoundBreakpointEnumFactory(), null)
-                    .Create(null, null, null,
-                            null, _listenerSubscriber);
+            _eventManager = new LldbEventManager.Factory(null).Create(null, null, null, null,
+                                                                      _listenerSubscriber);
         }
 
         [Test]
@@ -120,11 +117,9 @@ namespace YetiVSI.Test.DebugEngine
 
             var threadContext = new FakeMainThreadContext();
 
-            _eventManager =
-                new LldbEventManager
-                    .Factory(new BoundBreakpointEnumFactory(), threadContext.JoinableTaskContext)
-                    .Create(_mockDebugEngineHandler, _mockBreakpointManager, _mockProgram,
-                            _mockSbProcess, _mockListenerSubscriber);
+            _eventManager = new LldbEventManager.Factory(threadContext.JoinableTaskContext)
+                                .Create(_mockDebugEngineHandler, _mockBreakpointManager,
+                                        _mockProgram, _mockSbProcess, _mockListenerSubscriber);
 
             var lldbEventManager = _eventManager as LldbEventManager;
             lldbEventManager?.SubscribeToChanges();

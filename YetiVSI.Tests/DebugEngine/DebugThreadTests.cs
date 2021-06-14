@@ -472,14 +472,15 @@ namespace YetiVSI.Test.DebugEngine
             Assert.That(ppDebugOperation is AsyncGetStackFramesOperation);
         }
 
-        T CreateDebugThread<T>(RemoteThread thread) where T: IDebugThread
+        T CreateDebugThread<T>(RemoteThread thread)
+            where T : IDebugThread
         {
             bool isAsync = typeof(IDebugThreadAsync).IsAssignableFrom(typeof(T));
 
-            T debugThread = isAsync ? (T)new DebugThreadAsync.Factory(new FrameEnumFactory(),
-                taskExecutor).CreateForTesting(_stackFramesProvider, thread) :
-                (T)new DebugThread.Factory(new FrameEnumFactory(),
-                taskExecutor).CreateForTesting(_stackFramesProvider, thread);
+            T debugThread = isAsync ? (T)new DebugThreadAsync.Factory(taskExecutor)
+                                          .CreateForTesting(_stackFramesProvider, thread)
+                                    : (T)new DebugThread.Factory(taskExecutor)
+                                          .CreateForTesting(_stackFramesProvider, thread);
 
             return debugThread;
         }

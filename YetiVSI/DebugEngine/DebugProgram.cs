@@ -69,25 +69,15 @@ namespace YetiVSI.DebugEngine
             readonly DebugDocumentContext.Factory _documentContextFactory;
             readonly DebugCodeContext.Factory _codeContextFactory;
 
-            readonly ThreadEnumFactory _threadsEnumFactory;
-            readonly ModuleEnumFactory _moduleEnumFactory;
-            readonly CodeContextEnumFactory _codeContextEnumFactory;
-
             public Factory(JoinableTaskContext taskContext,
                 DebugDisassemblyStream.Factory debugDisassemblyStreamFactory,
                 DebugDocumentContext.Factory documentContextFactory,
-                DebugCodeContext.Factory codeContextFactory,
-                ThreadEnumFactory threadsEnumFactory,
-                ModuleEnumFactory moduleEnumFactory,
-                CodeContextEnumFactory codeContextEnumFactory)
+                DebugCodeContext.Factory codeContextFactory)
             {
                 _taskContext = taskContext;
                 _debugDisassemblyStreamFactory = debugDisassemblyStreamFactory;
                 _documentContextFactory = documentContextFactory;
                 _codeContextFactory = codeContextFactory;
-                _threadsEnumFactory = threadsEnumFactory;
-                _moduleEnumFactory = moduleEnumFactory;
-                _codeContextEnumFactory = codeContextEnumFactory;
             }
 
             public IGgpDebugProgram Create(IDebugEngineHandler debugEngineHandler,
@@ -98,8 +88,7 @@ namespace YetiVSI.DebugEngine
             {
                 return new DebugProgram(_taskContext, threadCreator,
                     _debugDisassemblyStreamFactory,
-                    _documentContextFactory, _codeContextFactory, _threadsEnumFactory,
-                    _moduleEnumFactory, _codeContextEnumFactory, debugEngineHandler, process,
+                    _documentContextFactory, _codeContextFactory, debugEngineHandler, process,
                     programId, lldbProcess, lldbTarget, debugModuleCache, isCoreAttach);
             }
         }
@@ -119,19 +108,12 @@ namespace YetiVSI.DebugEngine
         readonly DebugCodeContext.Factory _codeContextFactory;
         readonly IDebugModuleCache _debugModuleCache;
 
-        readonly ThreadEnumFactory _threadEnumFactory;
-        readonly ModuleEnumFactory _moduleEnumFactory;
-        readonly CodeContextEnumFactory _codeContextEnumFactory;
-
         DebugProgram(
             JoinableTaskContext taskContext,
             ThreadCreator threadCreator,
             DebugDisassemblyStream.Factory debugDisassemblyStreamFactory,
             DebugDocumentContext.Factory documentContextFactory,
             DebugCodeContext.Factory codeContextFactory,
-            ThreadEnumFactory threadEnumFactory,
-            ModuleEnumFactory moduleEnumFactory,
-            CodeContextEnumFactory codeContextEnumFactory,
             IDebugEngineHandler debugEngineHandler,
             IDebugProcess2 process,
             Guid programId,
@@ -152,9 +134,6 @@ namespace YetiVSI.DebugEngine
             _debugDisassemblyStreamFactory = debugDisassemblyStreamFactory;
             _documentContextFactory = documentContextFactory;
             _codeContextFactory = codeContextFactory;
-            _threadEnumFactory = threadEnumFactory;
-            _moduleEnumFactory = moduleEnumFactory;
-            _codeContextEnumFactory = codeContextEnumFactory;
             _debugModuleCache = debugModuleCache;
         }
 
@@ -289,7 +268,7 @@ namespace YetiVSI.DebugEngine
                 tempBreakpoint = null;
             }
 
-            contextsEnum = _codeContextEnumFactory.Create(codeContexts);
+            contextsEnum = new CodeContextEnum(codeContexts.ToArray());
             return VSConstants.S_OK;
         }
 
@@ -307,7 +286,7 @@ namespace YetiVSI.DebugEngine
             var sbModules = GetSbModules();
             _debugModuleCache.RemoveAllExcept(sbModules);
             var modules = sbModules.Select(m => _debugModuleCache.GetOrCreate(m, Self));
-            modulesEnum = _moduleEnumFactory.Create(modules);
+            modulesEnum = new ModulesEnum(modules.ToArray());
             return VSConstants.S_OK;
         }
 
@@ -322,7 +301,7 @@ namespace YetiVSI.DebugEngine
                 // EnumThreads call, that thread will be lost forever.
                 if (remoteThreads.Count == 0)
                 {
-                    threadsEnum = _threadEnumFactory.Create(_threadCache.Values);
+                    threadsEnum = new ThreadsEnum(_threadCache.Values.ToArray());
                     return VSConstants.S_OK;
                 }
 
@@ -344,7 +323,7 @@ namespace YetiVSI.DebugEngine
                         _threadCache.Remove(threadId);
                     }
                 }
-                threadsEnum = _threadEnumFactory.Create(_threadCache.Values);
+                threadsEnum = new ThreadsEnum(_threadCache.Values.ToArray());
             }
             return VSConstants.S_OK;
         }

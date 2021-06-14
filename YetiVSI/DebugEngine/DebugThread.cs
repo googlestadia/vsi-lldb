@@ -24,11 +24,10 @@ using YetiVSI.DebugEngine.Interfaces;
 
 namespace YetiVSI.DebugEngine
 {
-    public delegate IDebugThread CreateDebugThreadDelegate(AD7FrameInfoCreator ad7FrameInfoCreator,
-                                                           StackFramesProvider.StackFrameCreator
-                                                               stackFrameCreator,
-                                                           RemoteThread lldbThread,
-                                                           IGgpDebugProgram debugProgram);
+    public delegate IDebugThread CreateDebugThreadDelegate(
+        AD7FrameInfoCreator ad7FrameInfoCreator,
+        StackFramesProvider.StackFrameCreator stackFrameCreator, RemoteThread lldbThread,
+        IGgpDebugProgram debugProgram);
 
     public interface IDebugThread : IDebugThread2, IDecoratorSelf<IDebugThread>
     {
@@ -47,24 +46,22 @@ namespace YetiVSI.DebugEngine
         readonly uint _id;
         readonly RemoteThread _remoteThread;
 
-        protected readonly FrameEnumFactory _frameEnumFactory;
         protected readonly ITaskExecutor _taskExecutor;
         protected readonly StackFramesProvider _stackFramesProvider;
 
-        protected BaseDebugThread(ITaskExecutor taskExecutor, FrameEnumFactory frameEnumFactory,
+        protected BaseDebugThread(ITaskExecutor taskExecutor,
                                   StackFramesProvider stackFramesProvider, RemoteThread lldbThread)
         {
-            _frameEnumFactory = frameEnumFactory;
             _remoteThread = lldbThread;
             _name = lldbThread.GetName();
-            _id = (uint) lldbThread.GetThreadId();
+            _id = (uint)lldbThread.GetThreadId();
             _taskExecutor = taskExecutor;
             _stackFramesProvider = stackFramesProvider;
         }
 
         public RemoteThread GetRemoteThread() => _remoteThread;
 
-        #region IDebugThread2 functions
+#region IDebugThread2 functions
 
         public int CanSetNextStatement(IDebugStackFrame2 stackFrameOrigin,
                                        IDebugCodeContext2 codeContextDestination)
@@ -82,9 +79,9 @@ namespace YetiVSI.DebugEngine
             }
 
             var contextInfosDestination = new CONTEXT_INFO[1];
-            int result = codeContextDestination.GetInfo(
-                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS | enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
-                contextInfosDestination);
+            int result = codeContextDestination.GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS |
+                                                            enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
+                                                        contextInfosDestination);
             if (result != VSConstants.S_OK)
             {
                 return result;
@@ -118,7 +115,7 @@ namespace YetiVSI.DebugEngine
         public virtual int EnumFrameInfo(enum_FRAMEINFO_FLAGS fieldSpec, uint radix,
                                          out IEnumDebugFrameInfo2 frameInfoEnum)
         {
-            frameInfoEnum = _frameEnumFactory.Create(_stackFramesProvider, fieldSpec, Self);
+            frameInfoEnum = new FrameInfoEnum(_stackFramesProvider, fieldSpec, Self);
             return VSConstants.S_OK;
         }
 
@@ -271,7 +268,7 @@ namespace YetiVSI.DebugEngine
             return VSConstants.E_NOTIMPL;
         }
 
-        #region Uncalled IDebugThread2 functions
+#region Uncalled IDebugThread2 functions
 
         public int GetLogicalThread(IDebugStackFrame2 stackFrame,
                                     out IDebugLogicalThread2 logicalThread)
@@ -285,16 +282,15 @@ namespace YetiVSI.DebugEngine
             return VSConstants.E_NOTIMPL;
         }
 
-        #endregion
+#endregion
 
-        #endregion
+#endregion
     }
 
     public class DebugThread : BaseDebugThread
     {
         public class Factory
         {
-            readonly FrameEnumFactory _frameEnumFactory;
             readonly ITaskExecutor _taskExecutor;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
@@ -302,20 +298,21 @@ namespace YetiVSI.DebugEngine
             {
             }
 
-            public Factory(FrameEnumFactory frameEnumFactory, ITaskExecutor taskExecutor)
+            public Factory(ITaskExecutor taskExecutor)
             {
-                _frameEnumFactory = frameEnumFactory;
                 _taskExecutor = taskExecutor;
             }
 
-            public virtual IDebugThread Create(AD7FrameInfoCreator ad7FrameInfoCreator,
-                                               StackFramesProvider.StackFrameCreator
-                                                   stackFrameCreator, RemoteThread lldbThread,
-                                               IGgpDebugProgram debugProgram) =>
-                new DebugThread(_taskExecutor, _frameEnumFactory,
-                                new StackFramesProvider(lldbThread, stackFrameCreator, debugProgram,
-                                                        ad7FrameInfoCreator, debugProgram),
-                                lldbThread);
+            public virtual IDebugThread Create(
+                AD7FrameInfoCreator ad7FrameInfoCreator,
+                StackFramesProvider.StackFrameCreator stackFrameCreator, RemoteThread lldbThread,
+                IGgpDebugProgram debugProgram) => new DebugThread(_taskExecutor,
+                                                                  new StackFramesProvider(
+                                                                      lldbThread, stackFrameCreator,
+                                                                      debugProgram,
+                                                                      ad7FrameInfoCreator,
+                                                                      debugProgram),
+                                                                  lldbThread);
 
             /// <summary>
             /// Creator for unit tests.
@@ -323,14 +320,15 @@ namespace YetiVSI.DebugEngine
             /// <param name="stackFramesProvider"></param>
             /// <param name="lldbThread"></param>
             /// <returns></returns>
-            public virtual IDebugThread CreateForTesting(StackFramesProvider stackFramesProvider,
-                                                         RemoteThread lldbThread) =>
-                new DebugThread(_taskExecutor, _frameEnumFactory, stackFramesProvider, lldbThread);
+            public virtual IDebugThread CreateForTesting(
+                StackFramesProvider stackFramesProvider,
+                RemoteThread lldbThread) => new DebugThread(_taskExecutor, stackFramesProvider,
+                                                            lldbThread);
         }
 
-        DebugThread(ITaskExecutor taskExecutor, FrameEnumFactory frameEnumFactory,
-                    StackFramesProvider stackFramesProvider, RemoteThread lldbThread) : base(
-            taskExecutor, frameEnumFactory, stackFramesProvider, lldbThread)
+        DebugThread(ITaskExecutor taskExecutor, StackFramesProvider stackFramesProvider,
+                    RemoteThread lldbThread)
+            : base(taskExecutor, stackFramesProvider, lldbThread)
         {
         }
     }
@@ -339,7 +337,6 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory
         {
-            readonly FrameEnumFactory _frameEnumFactory;
             readonly ITaskExecutor _taskExecutor;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
@@ -347,20 +344,22 @@ namespace YetiVSI.DebugEngine
             {
             }
 
-            public Factory(FrameEnumFactory frameEnumFactory, ITaskExecutor taskExecutor)
+            public Factory(ITaskExecutor taskExecutor)
             {
-                _frameEnumFactory = frameEnumFactory;
                 _taskExecutor = taskExecutor;
             }
 
-            public virtual IDebugThreadAsync Create(AD7FrameInfoCreator ad7FrameInfoCreator,
-                                                    StackFramesProvider.StackFrameCreator
-                                                        stackFrameCreator, RemoteThread lldbThread,
-                                                    IGgpDebugProgram debugProgram) =>
-                new DebugThreadAsync(_taskExecutor, _frameEnumFactory,
-                                     new StackFramesProvider(
-                                         lldbThread, stackFrameCreator, debugProgram,
-                                         ad7FrameInfoCreator, debugProgram), lldbThread);
+            public virtual IDebugThreadAsync Create(
+                AD7FrameInfoCreator ad7FrameInfoCreator,
+                StackFramesProvider.StackFrameCreator stackFrameCreator, RemoteThread lldbThread,
+                IGgpDebugProgram debugProgram) => new DebugThreadAsync(_taskExecutor,
+                                                                       new StackFramesProvider(
+                                                                           lldbThread,
+                                                                           stackFrameCreator,
+                                                                           debugProgram,
+                                                                           ad7FrameInfoCreator,
+                                                                           debugProgram),
+                                                                       lldbThread);
 
             /// <summary>
             /// Creator for unit tests.
@@ -369,14 +368,14 @@ namespace YetiVSI.DebugEngine
             /// <param name="lldbThread"></param>
             /// <returns></returns>
             public virtual IDebugThreadAsync CreateForTesting(
-                StackFramesProvider stackFramesProvider, RemoteThread lldbThread) =>
-                new DebugThreadAsync(_taskExecutor, _frameEnumFactory, stackFramesProvider,
-                                     lldbThread);
+                StackFramesProvider stackFramesProvider,
+                RemoteThread lldbThread) => new DebugThreadAsync(_taskExecutor, stackFramesProvider,
+                                                                 lldbThread);
         }
 
-        DebugThreadAsync(ITaskExecutor taskExecutor, FrameEnumFactory frameEnumFactory,
-                         StackFramesProvider stackFramesProvider, RemoteThread lldbThread) : base(
-            taskExecutor, frameEnumFactory, stackFramesProvider, lldbThread)
+        DebugThreadAsync(ITaskExecutor taskExecutor, StackFramesProvider stackFramesProvider,
+                         RemoteThread lldbThread)
+            : base(taskExecutor, stackFramesProvider, lldbThread)
         {
         }
 

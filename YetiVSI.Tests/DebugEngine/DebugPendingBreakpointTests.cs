@@ -45,7 +45,7 @@ namespace YetiVSI.Test.DebugEngine
                       return VSConstants.S_OK;
                   });
 
-            pendingBreakpoint = new DebugPendingBreakpoint.Factory(taskContext, null, null, null)
+            pendingBreakpoint = new DebugPendingBreakpoint.Factory(taskContext, null)
                 .Create(null, null, mockBreakpointRequest, null);
             pendingBreakpoint.Delete();
         }
@@ -165,8 +165,7 @@ namespace YetiVSI.Test.DebugEngine
             mockBoundBreakpointFactory = Substitute.For<DebugBoundBreakpoint.Factory>();
 
             debugPendingBreakpointFactory = new DebugPendingBreakpoint.Factory(taskContext,
-                mockBoundBreakpointFactory, new BreakpointErrorEnumFactory(),
-                new BoundBreakpointEnumFactory());
+                mockBoundBreakpointFactory);
 
             pendingBreakpoint = debugPendingBreakpointFactory.Create(
                 mockBreakpointManager, mockProgram, mockBreakpointRequest, mockTarget,
@@ -759,8 +758,7 @@ namespace YetiVSI.Test.DebugEngine
             pendingBreakpoint.UpdateLocations();
 
             mockBreakpointManager.Received(1).EmitBreakpointBoundEvent(
-                pendingBreakpoint, Arg.Is<IEnumerable<IDebugBoundBreakpoint2>>(a => a.Count() == 2),
-                Arg.Any<BoundBreakpointEnumFactory>());
+                pendingBreakpoint, Arg.Is<IEnumerable<IDebugBoundBreakpoint2>>(a => a.Count() == 2));
             Assert.That(pendingBreakpoint.EnumBoundBreakpoints(out var boundBreakpoints),
                         Is.EqualTo(VSConstants.S_OK));
             Assert.That(boundBreakpoints.GetCount(out uint count), Is.EqualTo(VSConstants.S_OK));
@@ -771,8 +769,7 @@ namespace YetiVSI.Test.DebugEngine
             mockBreakpointManager.ClearReceivedCalls();
             pendingBreakpoint.UpdateLocations();
             mockBreakpointManager.DidNotReceive().EmitBreakpointBoundEvent(
-                pendingBreakpoint, Arg.Any<IEnumerable<IDebugBoundBreakpoint2>>(),
-                Arg.Any<BoundBreakpointEnumFactory>());
+                pendingBreakpoint, Arg.Any<IEnumerable<IDebugBoundBreakpoint2>>());
             Assert.That(pendingBreakpoint.EnumBoundBreakpoints(out boundBreakpoints),
                         Is.EqualTo(VSConstants.S_OK));
             Assert.That(boundBreakpoints.GetCount(out count), Is.EqualTo(VSConstants.S_OK));
@@ -792,8 +789,7 @@ namespace YetiVSI.Test.DebugEngine
             pendingBreakpoint.UpdateLocations();
 
             mockBreakpointManager.DidNotReceiveWithAnyArgs().EmitBreakpointBoundEvent(
-                Arg.Any<IPendingBreakpoint>(), Arg.Any<IEnumerable<IDebugBoundBreakpoint2>>(),
-                Arg.Any<BoundBreakpointEnumFactory>());
+                Arg.Any<IPendingBreakpoint>(), Arg.Any<IEnumerable<IDebugBoundBreakpoint2>>());
             mockBreakpointManager.Received(1)
                 .ReportBreakpointError(Arg.Any<DebugBreakpointError>());
             Assert.That(pendingBreakpoint.EnumBoundBreakpoints(out var boundBreakpoints),

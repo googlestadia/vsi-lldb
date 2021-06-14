@@ -65,8 +65,6 @@ namespace YetiVSI.DebugEngine
         {
             readonly JoinableTaskContext _taskContext;
             readonly DebugBoundBreakpoint.Factory _debugBoundBreakpointFactory;
-            readonly BreakpointErrorEnumFactory _breakpointErrorEnumFactory;
-            readonly BoundBreakpointEnumFactory _breakpointBoundEnumFactory;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
             protected Factory()
@@ -74,14 +72,10 @@ namespace YetiVSI.DebugEngine
             }
 
             public Factory(JoinableTaskContext taskContext,
-                           DebugBoundBreakpoint.Factory debugBoundBreakpointFactory,
-                           BreakpointErrorEnumFactory breakpointErrorEnumFactory,
-                           BoundBreakpointEnumFactory breakpointBoundEnumFactory)
+                           DebugBoundBreakpoint.Factory debugBoundBreakpointFactory)
             {
                 _taskContext = taskContext;
                 _debugBoundBreakpointFactory = debugBoundBreakpointFactory;
-                _breakpointErrorEnumFactory = breakpointErrorEnumFactory;
-                _breakpointBoundEnumFactory = breakpointBoundEnumFactory;
             }
 
             public virtual IPendingBreakpoint Create(IBreakpointManager breakpointManager,
@@ -100,9 +94,8 @@ namespace YetiVSI.DebugEngine
             {
                 _taskContext.ThrowIfNotOnMainThread();
                 return new DebugPendingBreakpoint(_taskContext, _debugBoundBreakpointFactory,
-                                                  _breakpointErrorEnumFactory,
-                                                  _breakpointBoundEnumFactory, breakpointManager,
-                                                  program, request, target, marshal);
+                                                  breakpointManager, program, request, target,
+                                                  marshal);
             }
         }
 
@@ -151,8 +144,6 @@ namespace YetiVSI.DebugEngine
                       @"\s*$");                             // spaces in the end
 
         readonly DebugBoundBreakpoint.Factory _debugBoundBreakpointFactory;
-        readonly BreakpointErrorEnumFactory _breakpointErrorEnumFactory;
-        readonly BoundBreakpointEnumFactory _breakpointBoundEnumFactory;
 
         readonly Marshal _marshal;
         readonly IDebugBreakpointRequest2 _request;
@@ -170,8 +161,6 @@ namespace YetiVSI.DebugEngine
 
         DebugPendingBreakpoint(JoinableTaskContext taskContext,
                                DebugBoundBreakpoint.Factory debugBoundBreakpointFactory,
-                               BreakpointErrorEnumFactory breakpointErrorEnumFactory,
-                               BoundBreakpointEnumFactory breakpointBoundEnumFactory,
                                IBreakpointManager breakpointManager, IDebugProgram2 program,
                                IDebugBreakpointRequest2 request, RemoteTarget target,
                                Marshal marshal)
@@ -179,8 +168,6 @@ namespace YetiVSI.DebugEngine
             taskContext.ThrowIfNotOnMainThread();
 
             _debugBoundBreakpointFactory = debugBoundBreakpointFactory;
-            _breakpointErrorEnumFactory = breakpointErrorEnumFactory;
-            _breakpointBoundEnumFactory = breakpointBoundEnumFactory;
             _breakpointManager = breakpointManager;
             _program = program;
             _request = request;
@@ -447,8 +434,7 @@ namespace YetiVSI.DebugEngine
 
             if (newLocations.Any())
             {
-                _breakpointManager.EmitBreakpointBoundEvent(
-                    Self, newLocations, _breakpointBoundEnumFactory);
+                _breakpointManager.EmitBreakpointBoundEvent(Self, newLocations);
             }
         }
 
@@ -469,7 +455,7 @@ namespace YetiVSI.DebugEngine
             var breakpointErrors = new IDebugErrorBreakpoint2[1];
             breakpointErrors[0] = new DebugBreakpointError(
                 Self, enum_BP_ERROR_TYPE.BPET_GENERAL_WARNING, _breakpointNotSupported);
-            errorBreakpointsEnum = _breakpointErrorEnumFactory.Create(breakpointErrors);
+            errorBreakpointsEnum = new BreakpointErrorEnum(breakpointErrors);
             return VSConstants.S_FALSE;
         }
 
@@ -521,7 +507,7 @@ namespace YetiVSI.DebugEngine
             }
 
             IBoundBreakpoint[] boundBreakpoints = _boundBreakpoints.Values.ToArray();
-            boundBreakpointsEnum = _breakpointBoundEnumFactory.Create(boundBreakpoints);
+            boundBreakpointsEnum = new BoundBreakpointEnum(boundBreakpoints);
             return VSConstants.S_OK;
         }
 
@@ -545,7 +531,7 @@ namespace YetiVSI.DebugEngine
                 breakpointErrors[0] = _breakpointError;
             }
 
-            errorBreakpointsEnum = _breakpointErrorEnumFactory.Create(breakpointErrors);
+            errorBreakpointsEnum = new BreakpointErrorEnum(breakpointErrors);
             return VSConstants.S_OK;
         }
 

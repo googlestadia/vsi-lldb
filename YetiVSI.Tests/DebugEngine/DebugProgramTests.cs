@@ -43,9 +43,6 @@ namespace YetiVSI.Test.DebugEngine
         RemoteTarget mockRemoteTarget;
         DebugDocumentContext.Factory mockDocumentContextFactory;
         DebugCodeContext.Factory mockCodeContextFactory;
-        ThreadEnumFactory threadEnumFactory;
-        ModuleEnumFactory moduleEnumFactory;
-        CodeContextEnumFactory codeContextEnumFactory;
         IDebugModuleCache mockDebugModuleCache;
         IDebugEngineHandler mockDebugEngineHandler;
         DebugProgram.ThreadCreator mockDebugThreadCreator;
@@ -67,14 +64,10 @@ namespace YetiVSI.Test.DebugEngine
             mockRemoteTarget = Substitute.For<RemoteTarget>();
             mockDocumentContextFactory = Substitute.For<DebugDocumentContext.Factory>();
             mockCodeContextFactory = Substitute.For<DebugCodeContext.Factory>();
-            threadEnumFactory = new ThreadEnumFactory();
-            moduleEnumFactory = new ModuleEnumFactory();
-            codeContextEnumFactory = new CodeContextEnumFactory();
 
             mockDebugModuleCache = Substitute.For<IDebugModuleCache>();
             program = new DebugProgram.Factory(taskContext, mockDebugDisassemblyStreamFactory,
-                    mockDocumentContextFactory, mockCodeContextFactory, threadEnumFactory,
-                    moduleEnumFactory, codeContextEnumFactory)
+                    mockDocumentContextFactory, mockCodeContextFactory)
                 .Create(mockDebugEngineHandler, mockDebugThreadCreator, mockProcess, guid,
                     mockSbProcess, mockRemoteTarget, mockDebugModuleCache, false);
         }
