@@ -213,12 +213,6 @@ namespace YetiVSI
         public static string FailedToDeployExecutable(string message) =>
             $"Failed to deploy executable to your instance.{Environment.NewLine}{message}";
 
-        public static string FailedToDeployExecutableMissingUploadDir(string uploadDir) =>
-            "Failed to deploy executable to your instance because the upload directory " +
-            $"'{uploadDir}' is missing on the instance. {Environment.NewLine}Ensure that " +
-            "your instance is a developer shape instance. For more information about instance " +
-            "shapes, see the document 'Choose the right instance'.";
-
         public static string FailedToSetExecutablePermissions(string message) =>
             $"Failed to set executable permissions.{Environment.NewLine}{message}";
 

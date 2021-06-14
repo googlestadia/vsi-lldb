@@ -14,7 +14,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Threading.Tasks;
 using YetiCommon;
@@ -22,26 +21,6 @@ using YetiCommon.SSH;
 
 namespace YetiVSI
 {
-    /// <summary>
-    /// Indicates errors when sending the compressed copy.
-    /// </summary>
-    public class CompressedCopyException : System.Exception
-    {
-        public CompressedCopyException(string message) : base(message)
-        {
-        }
-
-        public CompressedCopyException(string message, System.Exception e) : base(message, e)
-        {
-        }
-    }
-
-    public enum DeployCompression
-    {
-        Uncompressed,
-        Compressed,
-    }
-
     /// <summary>
     /// Performs file operations on a remote gamelet.
     /// </summary>
@@ -102,9 +81,9 @@ namespace YetiVSI
                 throw new ArgumentNullException(nameof(remotePath), "Remote path should be specified when running ggp_rsync");
             }
 
-            var processManager = ProcessManager.CreateForCancelableTask(task);
-            var startInfo = BuildForGgpSync(target, localPath, remotePath, force);
-            using (var process = _remoteProcessFactory.Create(startInfo, int.MaxValue))
+            ProcessManager processManager = ProcessManager.CreateForCancelableTask(task);
+            ProcessStartInfo startInfo = BuildForGgpSync(target, localPath, remotePath, force);
+            using (IProcess process = _remoteProcessFactory.Create(startInfo, int.MaxValue))
             {
 
                 processManager.AddProcess(process);
@@ -141,10 +120,10 @@ namespace YetiVSI
         ProcessStartInfo BuildForGgpSync(SshTarget target, string localPath, string remotePath,
                                          bool force)
         {
-            var tunnelSetup = $"--port {target.Port} --ip {target.IpAddress} --compress";
-            var quotedLocalPath = ProcessUtil.QuoteArgument(localPath);
-            var quotedRemotePath = ProcessUtil.QuoteArgument(remotePath);
-            var copyWholeFiles = force ? "--whole-file --checksum" : "";
+            string tunnelSetup = $"--port {target.Port} --ip {target.IpAddress} --compress";
+            string quotedLocalPath = ProcessUtil.QuoteArgument(localPath);
+            string quotedRemotePath = ProcessUtil.QuoteArgument(remotePath);
+            string copyWholeFiles = force ? "--whole-file --checksum" : "";
 
             return new ProcessStartInfo
             {
@@ -158,7 +137,7 @@ namespace YetiVSI
         {
             // TODO ((internal)) : Instead of showing the command window, we should find someway to
             // parse stdout, or use an SSH library, and update the dialog window progress bar.
-            using (var process = _remoteProcessFactory.CreateVisible(startInfo, int.MaxValue))
+            using (IProcess process = _remoteProcessFactory.CreateVisible(startInfo, int.MaxValue))
             {
                 processManager.AddProcess(process);
                 await process.RunToExitWithSuccessAsync();

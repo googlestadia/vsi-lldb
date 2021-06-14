@@ -218,7 +218,6 @@
       <DependentUpon>ProjectInstanceSelectionWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="GgpDebugQueryTargetCompRoot.cs" />
-    <Compile Include="IIncrementalProgress.cs" />
     <Compile Include="LoadSymbols\ISessionNotifier.cs" />
     <Compile Include="LoadSymbols\LoadSymbolsCommand.cs" />
     <Compile Include="LoadSymbols\SessionNotifierService.cs" />

@@ -28,10 +28,6 @@ namespace YetiVSI
     // Indicates an error that occurred while deploying files to the gamelet.
     public class DeployException : Exception, IUserVisibleError
     {
-        public DeployException(string message) : base(message)
-        {
-        }
-
         public DeployException(string message, Exception e) : base(message, e)
         {
         }
@@ -55,8 +51,9 @@ namespace YetiVSI
         /// wrapped into DeployException</exception>
         Task DeployGameExecutableAsync(IAsyncProject project, SshTarget target, ICancelable task,
                                        Metrics.IAction action);
-
-        // Executes custom commands provided to the project.
+        /// <summary>
+        /// Executes custom commands provided to the project.
+        /// </summary>
         Task ExecuteCustomCommandAsync(IAsyncProject project, Gamelet gamelet,
                                        Metrics.IAction action);
 
@@ -70,19 +67,19 @@ namespace YetiVSI
     {
         const string GgpInstanceIdName = "GGP_INSTANCE_ID";
 
-        readonly IRemoteCommand remoteCommand;
-        readonly IRemoteFile remoteFile;
-        readonly ManagedProcess.Factory managedProcessFactory;
-        readonly IFileSystem fileSystem;
+        readonly IRemoteCommand _remoteCommand;
+        readonly IRemoteFile _remoteFile;
+        readonly ManagedProcess.Factory _managedProcessFactory;
+        readonly IFileSystem _fileSystem;
 
         public RemoteDeploy(IRemoteCommand remoteCommand, IRemoteFile remoteFile,
                             ManagedProcess.Factory managedProcessFactory,
                             IFileSystem fileSystem)
         {
-            this.remoteCommand = remoteCommand;
-            this.remoteFile = remoteFile;
-            this.managedProcessFactory = managedProcessFactory;
-            this.fileSystem = fileSystem;
+            _remoteCommand = remoteCommand;
+            _remoteFile = remoteFile;
+            _managedProcessFactory = managedProcessFactory;
+            _fileSystem = fileSystem;
         }
 
         public async Task DeployGameExecutableAsync(IAsyncProject project, SshTarget target,
@@ -130,7 +127,7 @@ namespace YetiVSI
         async Task DeployToTargetAsync(DataRecorder record, ICancelable task, SshTarget target,
                                        string localPath, string remotePath, bool force = false)
         {
-            var stopwatch = Stopwatch.StartNew();
+            Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
                 BinarySignatureCheck.Types.Result signatureCheck = force
@@ -138,11 +135,11 @@ namespace YetiVSI
                     : BinarySignatureCheck.Types.Result.YesCopy;
 
                 record.SetCopyAttempted(true);
-                record.BinarySize(FileUtil.GetFileSize(localPath, fileSystem));
+                record.BinarySize(FileUtil.GetFileSize(localPath, _fileSystem));
                 record.SignatureCheckResult(signatureCheck);
                 record.DeploymentMode();
 
-                await remoteFile.SyncAsync(target, localPath, remotePath, task, force);
+                await _remoteFile.SyncAsync(target, localPath, remotePath, task, force);
 
                 record.CopyBinary(stopwatch.ElapsedMilliseconds, DataRecorder.NoError);
             }
@@ -180,8 +177,8 @@ namespace YetiVSI
             };
 
             startInfo.EnvironmentVariables[GgpInstanceIdName] = gamelet.Id;
-            var stopwatch = Stopwatch.StartNew();
-            using (IProcess process = managedProcessFactory.CreateVisible(startInfo, int.MaxValue))
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            using (IProcess process = _managedProcessFactory.CreateVisible(startInfo, int.MaxValue))
             {
                 try
                 {
@@ -203,7 +200,7 @@ namespace YetiVSI
         {
             try
             {
-                await remoteCommand.RunWithSuccessAsync(target, "chmod a+x " + remoteTargetPath);
+                await _remoteCommand.RunWithSuccessAsync(target, "chmod a+x " + remoteTargetPath);
                 record.Chmod(DataRecorder.NoError);
             }
             catch (ProcessException e)
@@ -249,7 +246,8 @@ namespace YetiVSI
         {
             // Used in place of an exception to indicate successful execution.
             public static ProcessException NoError = null;
-            File file;
+            readonly File _file;
+            readonly Metrics.IAction _action;
 
             public enum File
             {
@@ -257,12 +255,10 @@ namespace YetiVSI
                 LLDB_SERVER = 1,
             }
 
-            Metrics.IAction action;
-
             public DataRecorder(Metrics.IAction action, File file)
             {
-                this.action = action;
-                this.file = file;
+                _action = action;
+                _file = file;
             }
 
             public void SetCopyAttempted(bool attempted)
@@ -303,8 +299,8 @@ namespace YetiVSI
 
             public void Gamelet(Gamelet gamelet)
             {
-                action.UpdateEvent(new DeveloperLogEvent
-                { 
+                _action.UpdateEvent(new DeveloperLogEvent
+                {
                     GameletData = Metrics.GameletData.FromGamelet(gamelet)
                 });
             }
@@ -332,17 +328,17 @@ namespace YetiVSI
 
             void RecordData(CopyBinaryData copyBinaryData)
             {
-                switch (file)
+                switch (_file)
                 {
                     case File.GAME_EXECUTABLE:
-                        action.UpdateEvent(new DeveloperLogEvent
-                        { 
+                        _action.UpdateEvent(new DeveloperLogEvent
+                        {
                             CopyExecutable = copyBinaryData
                         });
                         break;
                     case File.LLDB_SERVER:
-                        action.UpdateEvent(new DeveloperLogEvent
-                        { 
+                        _action.UpdateEvent(new DeveloperLogEvent
+                        {
                             CopyLldbServer = copyBinaryData
                         });
                         break;
@@ -351,7 +347,7 @@ namespace YetiVSI
 
             void RecordCustomCommandData(CustomCommandData data)
             {
-                action.UpdateEvent(new DeveloperLogEvent { CustomCommand = data });
+                _action.UpdateEvent(new DeveloperLogEvent { CustomCommand = data });
             }
 
             static int ExitCodeFromError(Exception e)
