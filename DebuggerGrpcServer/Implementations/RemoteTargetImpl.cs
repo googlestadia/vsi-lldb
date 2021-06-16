@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace DebuggerGrpcServer
 {
@@ -37,6 +38,8 @@ namespace DebuggerGrpcServer
 
     class RemoteTargetImpl : RemoteTarget
     {
+        const ulong _pageSize = 4096;
+        const ulong _maxOpcodeSize = 15;
         readonly SbTarget _sbTarget;
         readonly RemoteBreakpointFactory _breakpointFactory;
 
@@ -101,87 +104,100 @@ namespace DebuggerGrpcServer
         {
             SbProcess process = _sbTarget.GetProcess();
             var instructions = new List<InstructionInfo>();
+            long lastPageChecked = -1;
             while (instructions.Count < count)
             {
-                SbMemoryRegionInfo memoryRegion = null;
-                SbError error = process.GetMemoryRegionInfo(address.GetLoadAddress(_sbTarget),
-                                                            out memoryRegion);
+                ulong currentAddress = address.GetLoadAddress(_sbTarget);
+                ulong currentPage = currentAddress / _pageSize;
 
-                if (error.Fail())
+                if (lastPageChecked != (long)currentPage)
                 {
-                    Trace.WriteLine("Unable to retrieve memory region info.");
-                    return new List<InstructionInfo>();
-                }
+                    SbError error = process.GetMemoryRegionInfo(
+                        currentAddress, out SbMemoryRegionInfo memoryRegion);
 
-                // If the address we are given is not mapped we should not try to disassemble it.
-                if (!memoryRegion.IsMapped())
-                {
-                    uint instructionsLeft = count - (uint)instructions.Count;
-
-                    ulong nextAddress = AddUnmappedInstructions(address, instructionsLeft,
-                                                                memoryRegion, instructions);
-
-                    address = _sbTarget.ResolveLoadAddress(nextAddress);
-
-                    // Continue in case we still need more instructions
-                    continue;
-                }
-
-                List<SbInstruction> sbInstructions =
-                    _sbTarget.ReadInstructions(address, count - (uint)instructions.Count, flavor);
-                foreach (SbInstruction sbInstruction in sbInstructions)
-                {
-                    SbAddress sbAddress = sbInstruction.GetAddress();
-                    if (sbAddress == null)
+                    if (error.Fail())
                     {
-                        // It should never happen that we cannot get an address for an instruction
-                        Trace.WriteLine("Unable to retrieve address.");
+                        Trace.WriteLine("Unable to retrieve memory region info.");
                         return new List<InstructionInfo>();
                     }
 
-                    ulong instructionAddress = sbAddress.GetLoadAddress(_sbTarget);
+                    lastPageChecked = (long)currentPage;
 
-                    SbSymbol symbol = sbAddress.GetSymbol();
-
-                    string symbolName = null;
-                    // Only set symbolName if it is the start of a function
-                    SbAddress startAddress = symbol?.GetStartAddress();
-                    if (startAddress != null &&
-                        startAddress.GetLoadAddress(_sbTarget) == instructionAddress)
+                    // If the address we are given is not mapped we should not try to disassemble
+                    // it.
+                    if (!memoryRegion.IsMapped())
                     {
-                        symbolName = symbol.GetName();
+                        uint instructionsLeft = count - (uint)instructions.Count;
+
+                        ulong nextAddress = AddUnmappedInstructions(address, instructionsLeft,
+                                                                    memoryRegion, instructions);
+
+                        address = _sbTarget.ResolveLoadAddress(nextAddress);
+
+                        // Continue in case we still need more instructions
+                        continue;
+                    }
+                }
+
+                ulong nextPage = currentPage + 1;
+                ulong endPageAddress = nextPage * _pageSize - 1;
+
+                ulong size = endPageAddress - currentAddress + 1;
+                var buffer = new byte[size];
+
+                ulong readSize = _sbTarget.GetProcess().ReadMemory(currentAddress, buffer, size,
+                                                                   out SbError readMemoryError);
+
+                if (readMemoryError.Fail() && readSize == 0)
+                {
+                    Trace.WriteLine("Unable to read mapped region");
+                    return new List<InstructionInfo>();
+                }
+
+                List<SbInstruction> sbInstructions =
+                    _sbTarget.GetInstructionsWithFlavor(address, buffer, readSize, flavor);
+
+                int missingInstructions = (int)count - instructions.Count;
+                foreach (SbInstruction sbInstruction in sbInstructions.Take(missingInstructions))
+                {
+                    var instruction = PrepareInstruction(sbInstruction);
+                    // Unexpected error occured, PrepareInstruction should write a log.
+                    if (instruction == null)
+                    {
+                        return  new List<InstructionInfo>();
                     }
 
-                    SbLineEntry lineEntry = sbAddress.GetLineEntry();
-                    LineEntryInfo lineEntryInfo = null;
-                    if (lineEntry != null)
-                    {
-                        lineEntryInfo = new LineEntryInfo {
-                            FileName = lineEntry.GetFileName(),
-                            Directory = lineEntry.GetDirectory(),
-                            Line = lineEntry.GetLine(),
-                            Column = lineEntry.GetColumn(),
-                        };
-                    }
-
-                    // Create a new instruction and fill in the values
-                    var instruction = new InstructionInfo {
-                        Address = instructionAddress,
-                        Operands = sbInstruction.GetOperands(_sbTarget),
-                        Comment = sbInstruction.GetComment(_sbTarget),
-                        Mnemonic = sbInstruction.GetMnemonic(_sbTarget),
-                        SymbolName = symbolName,
-                        LineEntry = lineEntryInfo,
-                    };
                     instructions.Add(instruction);
                 }
 
-                // If we haven't managed to retrieve all the instructions we wanted, add
-                // an invalid instruction and keep going from the next address.
+                // Let's check if there is an instruction that is split between two pages.
                 if (instructions.Count < count)
                 {
-                    ulong nextAddress =
-                        AddInvalidInstruction(address, sbInstructions, instructions);
+                    bool hasBoundaryInstruction = ReadInstructionOnPageBound(
+                        address, sbInstructions, instructions, endPageAddress, flavor,
+                        out InstructionInfo instruction, out ulong nextInstruction);
+                    if (hasBoundaryInstruction)
+                    {
+                        if (instruction == null)
+                        {
+                            return new List<InstructionInfo>();
+                        }
+
+                        instructions.Add(instruction);
+
+                        address = _sbTarget.ResolveLoadAddress(nextInstruction);
+                        if (instructions.Count < count)
+                        {
+                            continue;
+                        }
+                    }
+
+                }
+
+                if (instructions.Count < count)
+                {
+                    ulong nextAddress = AddInvalidInstruction(address, sbInstructions, instructions,
+                                                              endPageAddress + 1);
 
                     // Set the address to the next address after the invalid instruction
                     address = _sbTarget.ResolveLoadAddress(nextAddress);
@@ -244,7 +260,96 @@ namespace DebuggerGrpcServer
 
         #endregion
 
-#region RemoteTarget Helpers
+        #region RemoteTarget Helpers
+
+        /// <summary>
+        /// This method tries to figure out whether we have an instruction on the page boundary.
+        /// It tries to read one instruction right after the last used address if it is on the
+        /// current page. If it reads the instruction and its start and end addresses are on
+        /// different pages, this method will return true and initialize newInstruction and
+        /// nextInstruction parameters. Otherwise, the method returns false.
+        /// </summary>
+        bool ReadInstructionOnPageBound(SbAddress address, List<SbInstruction> sbInstructions,
+                                        List<InstructionInfo> instructions, ulong endPageAddress,
+                                        string flavor, out InstructionInfo newInstruction,
+                                        out ulong nextInstruction)
+        {
+            ulong nextInstructionAddress =
+                GetNextInstructionAddress(address, sbInstructions, instructions);
+
+            // Let's check if there is a possibility that the instruction is split between pages.
+            // Its address should still be on the current page, but it's end address, which we
+            // estimate using max possible instruction size, should be on the next page.
+            if (nextInstructionAddress <= endPageAddress &&
+                nextInstructionAddress + _maxOpcodeSize > endPageAddress)
+            {
+                var boundaryInstruction = _sbTarget.ReadInstructions(
+                    _sbTarget.ResolveLoadAddress(nextInstructionAddress), 1, flavor);
+                if (boundaryInstruction.Count == 1)
+                {
+                    ulong startAddress = boundaryInstruction[0].GetAddress()
+                        .GetLoadAddress(_sbTarget);
+                    ulong endAddress = startAddress + boundaryInstruction[0].GetByteSize() - 1;
+                    if (startAddress / _pageSize != endAddress / _pageSize)
+                    {
+                        newInstruction = PrepareInstruction(boundaryInstruction[0]);
+                        nextInstruction = endAddress + 1;
+                        return true;
+                    }
+                }
+            }
+
+            nextInstruction = 0;
+            newInstruction = null;
+            return false;
+        }
+
+        InstructionInfo PrepareInstruction(SbInstruction sbInstruction)
+        {
+            SbAddress sbAddress = sbInstruction.GetAddress();
+            if (sbAddress == null)
+            {
+                // It should never happen that we cannot get an address for an instruction
+                Trace.WriteLine("Unable to retrieve address.");
+                return null;
+            }
+
+            ulong instructionAddress = sbAddress.GetLoadAddress(_sbTarget);
+
+            SbSymbol symbol = sbAddress.GetSymbol();
+
+            string symbolName = null;
+            // Only set symbolName if it is the start of a function
+            SbAddress startAddress = symbol?.GetStartAddress();
+            if (startAddress != null &&
+                startAddress.GetLoadAddress(_sbTarget) == instructionAddress)
+            {
+                symbolName = symbol.GetName();
+            }
+
+            SbLineEntry lineEntry = sbAddress.GetLineEntry();
+            LineEntryInfo lineEntryInfo = null;
+            if (lineEntry != null)
+            {
+                lineEntryInfo = new LineEntryInfo
+                {
+                    FileName = lineEntry.GetFileName(),
+                    Directory = lineEntry.GetDirectory(),
+                    Line = lineEntry.GetLine(),
+                    Column = lineEntry.GetColumn(),
+                };
+            }
+
+            return new InstructionInfo
+            {
+                Address = instructionAddress,
+                Operands = sbInstruction.GetOperands(_sbTarget),
+                Comment = sbInstruction.GetComment(_sbTarget),
+                Mnemonic = sbInstruction.GetMnemonic(_sbTarget),
+                SymbolName = symbolName,
+                LineEntry = lineEntryInfo,
+            };
+        }
 
         /// <summary>
         /// Creates unknown/invalid instructions for an unmapped region.
@@ -264,7 +369,9 @@ namespace DebuggerGrpcServer
 
             for (ulong currentAddress = startAddress; currentAddress < endAddress; currentAddress++)
             {
-                instructions.Add(new InstructionInfo { Address = currentAddress, Operands = "??",
+                instructions.Add(new InstructionInfo
+                {
+                    Address = currentAddress, Operands = "??",
                                                        Mnemonic = "??" });
             }
 
@@ -273,46 +380,57 @@ namespace DebuggerGrpcServer
 
         /// <summary>
         /// Figures out the address of the next instruction and adds it as an invalid instruction
-        /// to |instructions|.
+        /// to |instructions| if the last instruction is not on the memory region boundary.
         /// </summary>
         /// <returns> The address after the invalid instruction. </returns>
         ulong AddInvalidInstruction(SbAddress address, List<SbInstruction> sbInstructions,
-                                    List<InstructionInfo> instructions)
+                                    List<InstructionInfo> instructions, ulong nextPage)
         {
-            ulong instructionAddress;
-            // Figure out what the address of the invalid instruction should be
+            ulong instructionAddress =
+                GetNextInstructionAddress(address, sbInstructions, instructions);
+
+            // Don't add invalid instruction if we stopped adding instructions because we
+            // reached the end of the page.
+            if (instructionAddress == nextPage)
+            {
+                return nextPage;
+            }
+
+            // Add the invalid instruction, we represent them with setting both the
+            // operands and mnemonic to question marks
+            instructions.Add(new InstructionInfo
+            {
+                Address = instructionAddress, Operands = "??",
+                Mnemonic = "??"
+            });
+
+            return instructionAddress + 1;
+        }
+
+        ulong GetNextInstructionAddress(SbAddress address, List<SbInstruction> sbInstructions,
+                                        List<InstructionInfo> instructions)
+        {
             if (sbInstructions.Count > 0)
             {
                 // The address of the next instruction should be the address
                 // of the last instruction + its byte size.
                 SbInstruction lastInstruction = sbInstructions[sbInstructions.Count - 1];
-                instructionAddress = lastInstruction.GetAddress().GetLoadAddress(_sbTarget) +
-                                     lastInstruction.GetByteSize();
+                return lastInstruction.GetAddress().GetLoadAddress(_sbTarget) +
+                    lastInstruction.GetByteSize();
             }
-            else
+
+            // If we haven't got any instructions yet we use the starting address
+            if (instructions.Count == 0)
             {
-                // If we haven't got any instructions yet we use the starting address
-                if (instructions.Count == 0)
-                {
-                    instructionAddress = address.GetLoadAddress(_sbTarget);
-                }
-                // If we got no new instructions and we already have some instructions,
-                // use the address of the last instruction + 1 since the last instruction
-                // must have been invalid and therefore the byte size is one.
-                else
-                {
-                    instructionAddress = instructions[instructions.Count - 1].Address + 1;
-                }
+                return address.GetLoadAddress(_sbTarget);
             }
+            // If we got no new instructions and we already have some instructions,
+            // use the address of the last instruction + 1 since the last instruction
+            // must have been invalid and therefore the byte size is one.
 
-            // Add the invalid instruction, we represent them with setting both the
-            // operands and mnemonic to question marks
-            instructions.Add(new InstructionInfo { Address = instructionAddress, Operands = "??",
-                                                   Mnemonic = "??" });
-
-            return instructionAddress + 1;
+            return instructions[instructions.Count - 1].Address + 1;
         }
 
-#endregion
+        #endregion
     }
 }

@@ -90,6 +90,12 @@ namespace LldbApi
         List<SbInstruction> ReadInstructions(SbAddress baseAddress, uint count, string flavor);
 
         /// <summary>
+        /// Returns a list of disassembled instructions.
+        /// </summary>
+        List<SbInstruction> GetInstructionsWithFlavor(SbAddress baseAddress, byte[] buffer,
+                                                      ulong size, string flavor);
+
+        /// <summary>
         /// Load a core dump file.
         /// </summary>
         SbProcess LoadCore(string coreFile);

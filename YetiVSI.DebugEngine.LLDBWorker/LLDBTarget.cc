@@ -149,7 +149,27 @@ System::Collections::Generic::List<SbInstruction ^> ^
   return list;
 }
 
-SbProcess ^ LLDBTarget::LoadCore(System::String ^ corePath) {
+System::Collections::Generic::List<SbInstruction^>^
+LLDBTarget::GetInstructionsWithFlavor(SbAddress^ baseAddress,
+                                      array<unsigned char>^ buffer,
+                                      unsigned long long size,
+                                      System::String^ flavor) {
+  auto lldbAddress = safe_cast<LLDBAddress^>(baseAddress)->GetNativeObject();
+  msclr::interop::marshal_context context;
+  auto flavorCStr = context.marshal_as<const char*>(flavor);
+  pin_ptr<byte> pinnedBytes = &buffer[0];
+  auto instructions = target_->GetInstructionsWithFlavor(
+      lldbAddress, flavorCStr, pinnedBytes, size);
+  uint32_t list_size = (uint32_t)instructions.GetSize();
+  auto list =
+      gcnew System::Collections::Generic::List<SbInstruction^>(list_size);
+  for (uint32_t i = 0; i < list_size; i++) {
+    list->Add(gcnew LLDBInstruction(instructions.GetInstructionAtIndex(i)));
+  }
+  return list;
+}
+
+SbProcess^ LLDBTarget::LoadCore(System::String^ corePath) {
   auto process = target_->LoadCore(
       msclr::interop::marshal_as<std::string>(corePath).c_str());
   if (!process.IsValid()) {

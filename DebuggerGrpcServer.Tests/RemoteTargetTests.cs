@@ -67,10 +67,10 @@ namespace DebuggerGrpcServer.Tests
         public void ReadFull()
         {
             uint numberInstructions = 20;
-            MockRead(numberInstructions, numberInstructions, mockAddress, mockMemoryRegion);
+            MockRead(numberInstructions, mockAddress, mockMemoryRegion);
 
             var instructions = remoteTarget.ReadInstructionInfos(mockAddress, numberInstructions,
-                "intel");
+                                                                 "intel");
             Assert.AreEqual(numberInstructions, instructions.Count);
             Assert.IsNull(instructions[0].SymbolName);
         }
@@ -87,12 +87,13 @@ namespace DebuggerGrpcServer.Tests
                 {
                     mockAddress = mockInvalidAddress;
                 }
+
                 ulong address = TEST_ADDRESS + i;
-                MockRead(0, instructionsToRead - i, mockInvalidAddress, mockMemoryRegion, address);
+                MockRead(0, mockInvalidAddress, mockMemoryRegion, address);
             }
 
-            var instructions = remoteTarget.ReadInstructionInfos(mockAddress, instructionsToRead,
-                "intel");
+            var instructions =
+                remoteTarget.ReadInstructionInfos(mockAddress, instructionsToRead, "intel");
             Assert.AreEqual(instructionsToRead, instructions.Count);
         }
 
@@ -102,14 +103,15 @@ namespace DebuggerGrpcServer.Tests
             uint numberInstructions = 10;
 
             // Create mock instructions without address
-            var mockInstructions = MockRead(numberInstructions, numberInstructions, mockAddress,
-                mockMemoryRegion, TEST_ADDRESS, true, false);
+            var mockInstructions = MockRead(numberInstructions, mockAddress, mockMemoryRegion,
+                                            TEST_ADDRESS, true, false);
+
             mockTarget
-                .ReadInstructions(mockAddress, numberInstructions, "intel")
-                .Returns(mockInstructions);
+                .GetInstructionsWithFlavor(mockAddress, Arg.Any<byte[]>(), Arg.Any<ulong>(),
+                                           "intel").Returns(mockInstructions);
 
             var instructions = remoteTarget.ReadInstructionInfos(mockAddress, numberInstructions,
-                "intel");
+                                                                 "intel");
             // Should break and return an empty list
             Assert.AreEqual(0, instructions.Count);
         }
@@ -119,8 +121,7 @@ namespace DebuggerGrpcServer.Tests
         {
             uint numberInstructions = 20;
             int symbolPos = 6;
-            var mockInstructions = MockRead(numberInstructions, numberInstructions, mockAddress,
-                mockMemoryRegion);
+            var mockInstructions = MockRead(numberInstructions, mockAddress, mockMemoryRegion);
 
             var mockSbAddress = mockInstructions[symbolPos].GetAddress();
             var mockSymbol = Substitute.For<SbSymbol>();
@@ -130,7 +131,7 @@ namespace DebuggerGrpcServer.Tests
             mockSbAddress.GetSymbol().Returns(mockSymbol);
 
             var instructions = remoteTarget.ReadInstructionInfos(mockAddress, numberInstructions,
-                "intel");
+                                                                 "intel");
             Assert.AreEqual(numberInstructions, instructions.Count);
             Assert.AreEqual(instructions[symbolPos].SymbolName, TEST_SYMBOL);
         }
@@ -140,9 +141,7 @@ namespace DebuggerGrpcServer.Tests
         {
             uint numberInstructions = 20;
             int symbolPos = 8;
-            var mockInstructions = MockRead(numberInstructions, numberInstructions, mockAddress,
-                mockMemoryRegion);
-
+            var mockInstructions = MockRead(numberInstructions, mockAddress, mockMemoryRegion);
 
             var mockSbAddress = mockInstructions[symbolPos].GetAddress();
             var mockSymbol = Substitute.For<SbSymbol>();
@@ -163,9 +162,7 @@ namespace DebuggerGrpcServer.Tests
         {
             uint numberInstructions = 20;
             int lineEntryPos = 9;
-            var mockInstructions = MockRead(numberInstructions, numberInstructions, mockAddress,
-                mockMemoryRegion);
-
+            var mockInstructions = MockRead(numberInstructions, mockAddress, mockMemoryRegion);
 
             var mockSbAddress = mockInstructions[lineEntryPos].GetAddress();
             var mockLineEntry = Substitute.For<SbLineEntry>();
@@ -176,7 +173,7 @@ namespace DebuggerGrpcServer.Tests
             mockSbAddress.GetLineEntry().Returns(mockLineEntry);
 
             var instructions = remoteTarget.ReadInstructionInfos(mockAddress, numberInstructions,
-                "intel");
+                                                                 "intel");
             Assert.AreEqual(numberInstructions, instructions.Count);
             Assert.AreEqual(instructions[lineEntryPos].LineEntry.FileName, TEST_FILENAME);
             Assert.AreEqual(instructions[lineEntryPos].LineEntry.Directory, TEST_DIRECTORY);
@@ -198,11 +195,11 @@ namespace DebuggerGrpcServer.Tests
             mockTarget.ResolveLoadAddress(TEST_ADDRESS + invalidPos + 1).Returns(mockAfterAddress);
 
             // Create valid instructions up to |invalidPos|
-            var mockBeforeInvalidInstructions = MockRead(invalidPos, numberInstructions,
-                mockBeforeAddress, mockMemoryRegion);
+            var mockBeforeInvalidInstructions =
+                MockRead(invalidPos, mockBeforeAddress, mockMemoryRegion);
 
-            var mockAfterInvalidInstructions = MockRead(numberInstructionsAfter,
-                numberInstructionsAfter, mockAfterAddress, mockMemoryRegion);
+            var mockAfterInvalidInstructions =
+                MockRead(numberInstructionsAfter, mockAfterAddress, mockMemoryRegion);
 
             var instructions = remoteTarget.ReadInstructionInfos(mockBeforeAddress,
                 numberInstructions, "intel");
@@ -217,15 +214,15 @@ namespace DebuggerGrpcServer.Tests
         public void ReadOutsideOfProcessMemory()
         {
             uint numberInstructions = 20;
-            MockRead(numberInstructions, numberInstructions, mockAddress, mockMemoryRegion,
-                TEST_ADDRESS, false);
+            MockRead(numberInstructions, mockAddress, mockMemoryRegion, TEST_ADDRESS, false);
 
             var instructions = remoteTarget.ReadInstructionInfos(mockAddress, numberInstructions,
                 "intel");
 
             // Make sure we did not try to disassemble
-            mockTarget.DidNotReceiveWithAnyArgs().ReadInstructions(
-                Substitute.For<SbAddress>(), 0, "");
+            mockTarget.DidNotReceiveWithAnyArgs()
+                .GetInstructionsWithFlavor(mockAddress, Arg.Any<byte[]>(), Arg.Any<ulong>(),
+                                           Arg.Any<string>());
             Assert.AreEqual(numberInstructions, instructions.Count);
         }
 
@@ -242,17 +239,19 @@ namespace DebuggerGrpcServer.Tests
             var mockFirstMemoryRegion = Substitute.For<SbMemoryRegionInfo>();
             var mockSecondMemoryRegion = Substitute.For<SbMemoryRegionInfo>();
 
-            ulong firstAddress = TEST_ADDRESS;
-            ulong secondAddress = firstAddress + instructionsToCreate + 1;
+            ulong secondAddressPage = 1;
+            ulong pageSize = 4096;
+            ulong secondAddress = secondAddressPage * pageSize;
+            ulong firstAddress = secondAddress - instructionsToCreate;
 
-            MockRead(instructionsToCreate, instructionsToRead, mockFirstAddress,
-                mockFirstMemoryRegion, firstAddress);
-            MockRead(0, 0, mockSecondAddress, mockSecondMemoryRegion, secondAddress, false);
+            MockRead(instructionsToCreate, mockFirstAddress, mockFirstMemoryRegion, firstAddress);
+            MockRead(0, mockSecondAddress, mockSecondMemoryRegion, secondAddress, false);
 
-            var instructions = remoteTarget.ReadInstructionInfos(mockFirstAddress,
-                instructionsToRead, "intel");
+            var instructions =
+                remoteTarget.ReadInstructionInfos(mockFirstAddress, instructionsToRead, "intel");
 
-            mockTarget.Received(1).ReadInstructions(mockFirstAddress, instructionsToRead, "intel");
+            mockTarget.Received(1).GetInstructionsWithFlavor(mockFirstAddress, Arg.Any<byte[]>(),
+                                                             secondAddress - firstAddress, "intel");
             Assert.AreEqual(instructionsToRead, instructions.Count);
             Assert.AreNotEqual("??", instructions[(int)instructionsToCreate - 1].Operands);
             Assert.AreEqual("??", instructions[(int)instructionsToCreate].Operands);
@@ -271,24 +270,153 @@ namespace DebuggerGrpcServer.Tests
             var mockFirstMemoryRegion = Substitute.For<SbMemoryRegionInfo>();
             var mockSecondMemoryRegion = Substitute.For<SbMemoryRegionInfo>();
 
-            ulong firstAddress = TEST_ADDRESS;
-            ulong secondAddress = firstAddress + instructionsToCreate;
+            ulong firstAddressPage = 1;
+            ulong pageSize = 4096;
+            ulong secondAddress = (firstAddressPage + 1) * pageSize;
+            ulong firstAddress = secondAddress - instructionsToCreate;
 
-            MockRead(instructionsToCreate, instructionsToRead,
-                mockFirstAddress, mockFirstMemoryRegion, firstAddress, false, true,
-                firstAddress + instructionsToCreate);
-            MockRead(instructionsToRead - instructionsToCreate,
-                instructionsToRead - instructionsToCreate,
-                mockSecondAddress, mockSecondMemoryRegion, secondAddress);
+            MockRead(instructionsToCreate, mockFirstAddress, mockFirstMemoryRegion, firstAddress,
+                     false, true, secondAddress);
+            MockRead(instructionsToRead - instructionsToCreate, mockSecondAddress,
+                     mockSecondMemoryRegion, secondAddress);
 
-            var instructions = remoteTarget.ReadInstructionInfos(mockFirstAddress,
-                instructionsToRead, "intel");
+            var instructions =
+                remoteTarget.ReadInstructionInfos(mockFirstAddress, instructionsToRead, "intel");
 
-            mockTarget.Received(1).ReadInstructions(mockSecondAddress,
-                instructionsToRead - instructionsToCreate, "intel");
+            mockTarget.Received(1).GetInstructionsWithFlavor(mockSecondAddress, Arg.Any<byte[]>(),
+                                                             pageSize, "intel");
             Assert.AreEqual(instructionsToRead, instructions.Count);
             Assert.AreEqual("??", instructions[(int)instructionsToCreate - 1].Operands);
             Assert.AreNotEqual("??", instructions[(int)instructionsToCreate].Operands);
+        }
+
+        [Test]
+        public void ReadSamePageTwiceOnlyCheckThatItIsMappedOnce()
+        {
+            const ulong firstAddressPage = 1;
+            const ulong pageSize = 4096;
+            const uint firstInstructionsCount = 3;
+            const uint secondInstructionsCount = 4;
+            const uint invalidInstructionCount = 1;
+            const uint totalInstructions = firstInstructionsCount + invalidInstructionCount +
+                secondInstructionsCount;
+
+            const ulong firstAddress = firstAddressPage * pageSize;
+            const ulong invalidInstructionAddress = firstAddress + firstInstructionsCount;
+            const ulong secondAddress = invalidInstructionAddress + invalidInstructionCount;
+
+            var mockFirstAddress = Substitute.For<SbAddress>();
+            var mockSecondAddress = Substitute.For<SbAddress>();
+
+            var mockFirstMemoryRegion = Substitute.For<SbMemoryRegionInfo>();
+            var mockSecondMemoryRegion = Substitute.For<SbMemoryRegionInfo>();
+
+            MockRead(firstInstructionsCount, mockFirstAddress, mockFirstMemoryRegion, firstAddress);
+            MockRead(secondInstructionsCount, mockSecondAddress, mockSecondMemoryRegion,
+                     secondAddress);
+
+            var instructions =
+                remoteTarget.ReadInstructionInfos(mockFirstAddress, totalInstructions, "intel");
+
+            var anyRegionInfo = Arg.Any<SbMemoryRegionInfo>();
+            mockProcess.Received(1).GetMemoryRegionInfo(firstAddress, out anyRegionInfo);
+            mockProcess.DidNotReceive().GetMemoryRegionInfo(secondAddress, out anyRegionInfo);
+            mockProcess.DidNotReceive()
+                .GetMemoryRegionInfo(invalidInstructionAddress, out anyRegionInfo);
+
+            mockTarget.Received(1).GetInstructionsWithFlavor(mockFirstAddress, Arg.Any<byte[]>(),
+                                                             pageSize, "intel");
+            mockTarget.Received(1).GetInstructionsWithFlavor(mockSecondAddress, Arg.Any<byte[]>(),
+                                                             pageSize - firstInstructionsCount -
+                                                             invalidInstructionCount, "intel");
+
+            Assert.That(instructions.Count, Is.EqualTo(totalInstructions));
+            Assert.That(instructions[(int) (invalidInstructionAddress - firstAddress)].Operands,
+                        Is.EqualTo("??"));
+            Assert.That(instructions[0].Operands, Is.Not.EqualTo("??"));
+            Assert.That(instructions[(int) (secondAddress - firstAddress)].Operands,
+                        Is.Not.EqualTo("??"));
+        }
+
+        [Test]
+        public void ReadWhenInstructionIsOnPageBoundary()
+        {
+            const ulong pageNumber = 1;
+            const ulong pageSize = 4096;
+            const uint firstInstructionsCount = 1;
+            const uint secondInstructionsCount = 1;
+            const uint boundaryInstructionSize = 3;
+            const uint totalInstructions = firstInstructionsCount + secondInstructionsCount + 1;
+
+            const ulong firstAddress = pageNumber * pageSize - 2;
+            const ulong boundaryInstructionAddress = firstAddress + firstInstructionsCount;
+            const ulong secondAddress = boundaryInstructionAddress + boundaryInstructionSize;
+
+            var mockFirstAddress = Substitute.For<SbAddress>();
+            var mockSecondAddress = Substitute.For<SbAddress>();
+
+            var mockBoundaryInstructionAddress = Substitute.For<SbAddress>();
+            mockTarget.ResolveLoadAddress(boundaryInstructionAddress)
+                .Returns(mockBoundaryInstructionAddress);
+            mockBoundaryInstructionAddress.GetLoadAddress(mockTarget)
+                .Returns(boundaryInstructionAddress);
+
+            var mockFirstMemoryRegion = Substitute.For<SbMemoryRegionInfo>();
+            var mockSecondMemoryRegion = Substitute.For<SbMemoryRegionInfo>();
+
+            MockRead(firstInstructionsCount, mockFirstAddress, mockFirstMemoryRegion, firstAddress);
+            MockRead(secondInstructionsCount, mockSecondAddress, mockSecondMemoryRegion,
+                     secondAddress);
+
+            var instruction = Substitute.For<SbInstruction>();
+            instruction.GetByteSize().Returns(boundaryInstructionSize);
+            instruction.GetAddress().Returns(mockBoundaryInstructionAddress);
+            mockTarget.ReadInstructions(mockBoundaryInstructionAddress, 1, "intel")
+                .Returns(new List<SbInstruction>() { instruction });
+
+            var instructions =
+                remoteTarget.ReadInstructionInfos(mockFirstAddress, totalInstructions, "intel");
+
+            mockTarget.Received(1).ReadInstructions(mockBoundaryInstructionAddress, 1, "intel");
+
+            mockTarget.Received(1).GetInstructionsWithFlavor(mockFirstAddress, Arg.Any<byte[]>(),
+                                                             Arg.Any<ulong>(), "intel");
+            mockTarget.Received(1).GetInstructionsWithFlavor(mockSecondAddress, Arg.Any<byte[]>(),
+                                                             Arg.Any<ulong>(), "intel");
+
+            Assert.That(instructions.Count, Is.EqualTo(totalInstructions));
+            Assert.That(instructions[0].Operands, Is.Not.EqualTo("??"));
+            Assert.That(instructions[1].Operands, Is.Not.EqualTo("??"));
+            Assert.That(instructions[2].Operands, Is.Not.EqualTo("??"));
+        }
+
+        [Test]
+        public void InvalidInstructionInsertedWhenNotOnBoundary()
+        {
+            const ulong pageNumber = 1;
+            const ulong pageSize = 4096;
+            const uint instructionsCount = 1;
+
+            const ulong address = pageNumber * pageSize;
+
+            var mockInstructionAddress = Substitute.For<SbAddress>();
+            var mockInstructionMemoryRegion = Substitute.For<SbMemoryRegionInfo>();
+
+            MockRead(instructionsCount, mockInstructionAddress, mockInstructionMemoryRegion,
+                     address);
+
+            var instructions =
+                remoteTarget.ReadInstructionInfos(mockInstructionAddress, 2, "intel");
+
+            mockTarget.DidNotReceive()
+                .ReadInstructions(Arg.Any<SbAddress>(), Arg.Any<uint>(), Arg.Any<string>());
+
+            mockTarget.Received(1)
+                .GetInstructionsWithFlavor(mockInstructionAddress, Arg.Any<byte[]>(),
+                                           Arg.Any<ulong>(), "intel");
+            Assert.That(instructions.Count, Is.EqualTo(2));
+            Assert.That(instructions[0].Operands, Is.Not.EqualTo("??"));
+            Assert.That(instructions[1].Operands, Is.EqualTo("??"));
         }
 
         [Test]
@@ -296,17 +424,18 @@ namespace DebuggerGrpcServer.Tests
         {
             uint numberInstructions = 20;
 
-            MockRead(numberInstructions, numberInstructions, mockAddress, mockMemoryRegion);
+            MockRead(numberInstructions, mockAddress, mockMemoryRegion);
 
             mockError.Fail().Returns(true);
 
             var instructions = remoteTarget.ReadInstructionInfos(mockAddress, numberInstructions,
-                "intel");
+                                                                 "intel");
 
             Assert.AreEqual(0, instructions.Count);
             mockMemoryRegion.DidNotReceive().IsMapped();
-            mockTarget.DidNotReceiveWithAnyArgs().ReadInstructions(mockAddress, numberInstructions,
-                "intel");
+            mockTarget.DidNotReceiveWithAnyArgs()
+                .GetInstructionsWithFlavor(mockAddress, Arg.Any<byte[]>(), Arg.Any<ulong>(),
+                                           Arg.Any<string>());
         }
 
         [Test]
@@ -408,8 +537,8 @@ namespace DebuggerGrpcServer.Tests
             Assert.AreEqual(null, testBreakpoint.breakpoint);
         }
 
-        private void MockFunctionData(uint startPosition, uint endPosition,
-            string directory, string fileName)
+        void MockFunctionData(uint startPosition, uint endPosition, string directory,
+                              string fileName)
         {
             SbBreakpointLocation location = mockBreakpoint.GetLocationAtIndex(0);
 
@@ -444,7 +573,7 @@ namespace DebuggerGrpcServer.Tests
         // Create default mocks, and return values for the lldb breakpoint and breakpoint locations
         // for a function breakpoint.  numBreakpointLocations specifies how many mock breakpoint
         // locations to return.
-        private void MockFunctionBreakpoint(int numBreakpointLocations)
+        void MockFunctionBreakpoint(int numBreakpointLocations)
         {
             List<SbBreakpointLocation> breakpointLocations =
                 CreateMockBreakpointLocations(numBreakpointLocations);
@@ -454,7 +583,7 @@ namespace DebuggerGrpcServer.Tests
         // Create default mocks, and return values for the lldb breakpoint and breakpoint locations
         // for a function breakpoint.  breakpointLocations is a list of mock breakpoint locations
         // that will be returned by the mock lldb breakpoint.
-        private void MockFunctionBreakpoint(List<SbBreakpointLocation> breakpointLocations)
+        void MockFunctionBreakpoint(List<SbBreakpointLocation> breakpointLocations)
         {
             for (uint i = 0; i < breakpointLocations.Count; i++)
             {
@@ -465,8 +594,7 @@ namespace DebuggerGrpcServer.Tests
             mockTarget.BreakpointCreateByName(TEST_FUNCTION_NAME).Returns(mockBreakpoint);
         }
 
-        private List<SbBreakpointLocation> CreateMockBreakpointLocations(
-            int numBreakpointLocations)
+        List<SbBreakpointLocation> CreateMockBreakpointLocations(int numBreakpointLocations)
         {
             List<SbBreakpointLocation> breakpointLocations =
                 new List<SbBreakpointLocation>(numBreakpointLocations);
@@ -479,15 +607,19 @@ namespace DebuggerGrpcServer.Tests
             return breakpointLocations;
         }
 
-        private List<SbInstruction> MockRead(uint instructionsToCreate, uint instructionsToRead,
-            SbAddress startSbAddress, SbMemoryRegionInfo memoryRegion,
-            ulong startAddress = TEST_ADDRESS, bool isMapped = true,
-            bool hasAddress = true, ulong regionEnd = ulong.MaxValue)
+        List<SbInstruction> MockRead(uint instructionsToCreate, SbAddress startSbAddress,
+                                     SbMemoryRegionInfo memoryRegion,
+                                     ulong startAddress = TEST_ADDRESS, bool isMapped = true,
+                                     bool hasAddress = true, ulong regionEnd = ulong.MaxValue)
         {
-            var instructions = CreateMockInstructions(instructionsToCreate, startAddress,
-                hasAddress);
+            var instructions =
+                CreateMockInstructions(instructionsToCreate, startAddress, hasAddress);
+
+            ulong currentPage = startAddress / 4096;
+            ulong bytesToRead = (currentPage + 1) * 4096 - startAddress;
+
             mockTarget
-                .ReadInstructions(startSbAddress, instructionsToRead, "intel")
+                .GetInstructionsWithFlavor(startSbAddress, Arg.Any<byte[]>(), bytesToRead, "intel")
                 .Returns(instructions);
 
             startSbAddress.GetLoadAddress(mockTarget).Returns(startAddress);
@@ -499,21 +631,30 @@ namespace DebuggerGrpcServer.Tests
                 memoryRegion.GetRegionEnd().Returns(regionEnd);
             }
 
-            SbMemoryRegionInfo memRegion;
-            mockProcess.GetMemoryRegionInfo(startAddress, out memRegion).Returns(
-                x =>
+            var anyRegion = Arg.Any<SbMemoryRegionInfo>();
+            mockProcess.GetMemoryRegionInfo(startAddress, out anyRegion).Returns(x =>
+            {
+                x[1] = memoryRegion;
+                return mockError;
+            });
+
+            var anyError = Arg.Any<SbError>();
+            mockProcess.ReadMemory(default, default, default, out anyError)
+                .ReturnsForAnyArgs((x =>
                 {
-                    x[1] = memoryRegion;
-                    return mockError;
-                });
+                    var bufferArg = (byte[])x[1];
+                    int length = bufferArg?.Length ?? 0;
+                    x[3] = mockError;
+                    return (ulong)length;
+                }));
 
             return instructions;
         }
 
-        private List<SbInstruction> CreateMockInstructions(uint count,
-            ulong startAddress = TEST_ADDRESS, bool hasAddress = true)
+        List<SbInstruction> CreateMockInstructions(uint count, ulong startAddress = TEST_ADDRESS,
+                                                   bool hasAddress = true)
         {
-            List<SbInstruction> instructions = new List<SbInstruction>();
+            var instructions = new List<SbInstruction>();
             for (uint i = 0; i < count; i++)
             {
                 SbAddress mockSbAddress = null;

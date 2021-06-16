@@ -53,6 +53,12 @@ ref class LLDBTarget sealed : SbTarget {
   virtual SbAddress ^ ResolveLoadAddress(uint64_t address);
   virtual System::Collections::Generic::List<SbInstruction ^> ^
       ReadInstructions(SbAddress ^ baseAddress, uint32_t count, System::String ^ flavor);
+
+  virtual System::Collections::Generic::List<SbInstruction^>^
+      GetInstructionsWithFlavor(SbAddress^ baseAddress,
+                                array<unsigned char>^ buffer,
+                                unsigned long long size,
+                                System::String^ flavor);
   virtual SbProcess ^ LoadCore(System::String ^ corePath);
   virtual SbModule ^ AddModule(System::String ^ path, System::String ^ triple,
     System::String ^ uuid);
@@ -64,7 +70,6 @@ ref class LLDBTarget sealed : SbTarget {
 
   // Get the underlying lldb object.
   lldb::SBTarget GetNativeObject();
-
  private:
   ManagedUniquePtr<lldb::SBTarget> ^ target_;
 };
