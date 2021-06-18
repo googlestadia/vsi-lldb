@@ -43,22 +43,17 @@ namespace YetiVSI.Metrics
     {
         public event EventHandler<TSummary> BatchSummaryReady;
 
-        readonly int _minimumBatchSeparationInMilliseconds;
         readonly IEventScheduler _scheduler;
-
         readonly object _currentBatchAndTimerLocker;
         IEventBatch<TParams, TSummary> _currentBatch;
-        readonly ITimer _timer;
 
-        public BatchEventAggregator(int minimumBatchSeparationInMilliseconds,
-                                    IEventSchedulerFactory schedulerFactory, ITimer timer)
+        public BatchEventAggregator(int intervalMs,
+                                    IEventSchedulerFactory schedulerFactory)
         {
-            _minimumBatchSeparationInMilliseconds = minimumBatchSeparationInMilliseconds;
-            _scheduler = schedulerFactory.Create(HandleBatchCheck);
+            _scheduler =
+                schedulerFactory.Create(HandleBatchCheck, intervalMs);
 
             _currentBatchAndTimerLocker = new object();
-            _currentBatch = new TBatch();
-            _timer = timer;
         }
 
         public void Add(TParams batchParams)
@@ -66,16 +61,20 @@ namespace YetiVSI.Metrics
             lock (_currentBatchAndTimerLocker)
             {
                 // These expressions are guarded by the lock so we don't have the following:
-                // 1 - ::HandleBatchCheck() verifies that timer.ElapsedMilliseconds >=
-                // MinimumBatchSeparationInMilliseconds.
-                // 2 - Add(.) gets called and inserts event E.
-                // 3 Previous ::HandleBatchCheck() call invokes the event BatchSummaryReady
+                // 1 - Add(.) gets called and inserts event E.
+                // 2 - Previous ::HandleBatchCheck() call invokes the event BatchSummaryReady
                 // with event E added.
                 // Additionally, IEventBatch::Add is not thread-safe currently.
+
+                // The scheduler is enabled and the batch is created when the first element of the
+                // current batch is added.
+                if (_currentBatch == null)
+                {
+                    _currentBatch = new TBatch();
+                    _scheduler.Enable();
+                }
                 _currentBatch.Add(batchParams);
-                _timer.Restart();
             }
-            _scheduler.Restart(_minimumBatchSeparationInMilliseconds);
         }
 
         void HandleBatchCheck()
@@ -83,14 +82,14 @@ namespace YetiVSI.Metrics
             IEventBatch<TParams, TSummary> finalizedBatch;
             lock (_currentBatchAndTimerLocker)
             {
-                if (_timer.ElapsedMilliseconds < _minimumBatchSeparationInMilliseconds)
+                // Validate that the batch has already been initialized and events have been added.
+                if (_currentBatch == null)
                 {
                     return;
                 }
-
                 finalizedBatch = _currentBatch;
-                _currentBatch = new TBatch();
-                _timer.Reset();
+                _currentBatch = null;
+                _scheduler.Disable();
             }
             BatchSummaryReady?.Invoke(this, finalizedBatch.GetSummary());
         }

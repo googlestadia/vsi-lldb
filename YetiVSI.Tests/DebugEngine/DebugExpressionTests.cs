@@ -64,14 +64,14 @@ namespace YetiVSI.Test.DebugEngine
             _metrics = Substitute.For<IMetrics>();
             var eventScheduler = new EventSchedulerFake();
             var eventSchedulerFactory = Substitute.For<IEventSchedulerFactory>();
-            eventSchedulerFactory.Create(Arg.Do<System.Action>(a => eventScheduler.Callback = a))
+            eventSchedulerFactory.Create(Arg.Do<System.Action>(a => eventScheduler.Callback = a),
+                                         Arg.Any<int>())
                 .Returns(eventScheduler);
-            var timer = new TimerFake();
             const int minimumBatchSeparationMilliseconds = 1;
             var batchEventAggregator =
                 new BatchEventAggregator<ExpressionEvaluationBatch, ExpressionEvaluationBatchParams,
                     ExpressionEvaluationBatchSummary>(minimumBatchSeparationMilliseconds,
-                                                      eventSchedulerFactory, timer);
+                                                      eventSchedulerFactory);
 
             _expressionEvaluationRecorder =
                 new ExpressionEvaluationRecorder(batchEventAggregator, _metrics);
@@ -158,9 +158,9 @@ namespace YetiVSI.Test.DebugEngine
                 RemoteValueFakeUtil.CreateClass("CustomType", "$17", "23");
 
             _mockDebuggerStackFrame.GetValueForVariablePath(expressionText)
-                .Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
             _mockDebuggerStackFrame.FindValue(expressionText, ValueType.VariableGlobal)
-                .Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
             _mockDebuggerStackFrame.EvaluateExpressionAsync(expressionText)
                 .Returns(expressionValueNode);
 
@@ -175,9 +175,9 @@ namespace YetiVSI.Test.DebugEngine
             _mockDebugEngineHandler.Received()
                 .SendEvent(debugEventVerifier, Arg.Is(_mockProgram), Arg.Is(_mockThread));
 
-            await _taskExecutor.ReceivedWithAnyArgs(1).SubmitAsync(
-                () => Task.CompletedTask, Arg.Any<CancellationToken>(), Arg.Any<string>(),
-                Arg.Any<Type>());
+            await _taskExecutor.ReceivedWithAnyArgs(1)
+                .SubmitAsync(() => Task.CompletedTask, Arg.Any<CancellationToken>(),
+                             Arg.Any<string>(), Arg.Any<Type>());
 
             Assert.AreEqual(VSConstants.S_OK, status);
         }
@@ -201,12 +201,12 @@ namespace YetiVSI.Test.DebugEngine
                     "23".Equals(GetValue(GetResult(e))));
 
             // This assumes that task executor stub works synchronously.
-            _mockDebugEngineHandler.Received().SendEvent(
-                debugEventVerifier, Arg.Is(_mockProgram), Arg.Is(_mockThread));
+            _mockDebugEngineHandler.Received()
+                .SendEvent(debugEventVerifier, Arg.Is(_mockProgram), Arg.Is(_mockThread));
 
-            await _taskExecutor.ReceivedWithAnyArgs(1).SubmitAsync(
-                () => Task.CompletedTask, Arg.Any<CancellationToken>(), Arg.Any<string>(),
-                Arg.Any<Type>());
+            await _taskExecutor.ReceivedWithAnyArgs(1)
+                .SubmitAsync(() => Task.CompletedTask, Arg.Any<CancellationToken>(),
+                             Arg.Any<string>(), Arg.Any<Type>());
 
             Assert.AreEqual(VSConstants.S_OK, status);
         }
@@ -216,7 +216,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             IDebugExpression expression = CreateExpression("$10");
 
-            _mockDebuggerStackFrame.FindValue("10", ValueType.Register).Returns((RemoteValue)null);
+            _mockDebuggerStackFrame.FindValue("10", ValueType.Register).Returns((RemoteValue) null);
 
             Assert.AreEqual(VSConstants.E_FAIL,
                             expression.EvaluateSync(0, 0, null, out IDebugProperty2 property));
@@ -229,10 +229,10 @@ namespace YetiVSI.Test.DebugEngine
             string testText = "myVar";
             IDebugExpression expression = CreateExpression(testText);
 
-            _mockDebuggerStackFrame.GetValueForVariablePath(testText).Returns((RemoteValue)null);
+            _mockDebuggerStackFrame.GetValueForVariablePath(testText).Returns((RemoteValue) null);
             _mockDebuggerStackFrame.FindValue(testText, ValueType.VariableGlobal)
-                .Returns((RemoteValue)null);
-            _mockDebuggerStackFrame.EvaluateExpressionAsync(testText).Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
+            _mockDebuggerStackFrame.EvaluateExpressionAsync(testText).Returns((RemoteValue) null);
 
             Assert.AreEqual(VSConstants.E_FAIL,
                             expression.EvaluateSync(0, 0, null, out IDebugProperty2 property));
@@ -249,7 +249,7 @@ namespace YetiVSI.Test.DebugEngine
             expressionValueNode.SetTypeInfo(new SbTypeStub("CustomType", TypeFlags.IS_CLASS));
 
             _mockDebuggerStackFrame.FindValue(expressionText, ValueType.VariableGlobal)
-                .Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
             _mockDebuggerStackFrame.EvaluateExpressionAsync(expressionText)
                 .Returns(expressionValueNode);
 
@@ -271,9 +271,9 @@ namespace YetiVSI.Test.DebugEngine
                 RemoteValueFakeUtil.CreateClass("CustomType", "$17", "23");
 
             _mockDebuggerStackFrame.GetValueForVariablePath(expressionText)
-                .Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
             _mockDebuggerStackFrame.FindValue(expressionText, ValueType.VariableGlobal)
-                .Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
             _mockDebuggerStackFrame.EvaluateExpressionAsync(expressionText)
                 .Returns(expressionValueNode);
 
@@ -311,10 +311,10 @@ namespace YetiVSI.Test.DebugEngine
             Assert.AreEqual("23", GetValue(property));
 
             // Make sure that a fallback to the LLDB happened.
-            await _mockDebuggerStackFrame.Received(1).EvaluateExpressionLldbEvalAsync(
-                Arg.Is(expressionText));
-            await _mockDebuggerStackFrame.Received(1).EvaluateExpressionAsync(
-                Arg.Is(expressionText));
+            await _mockDebuggerStackFrame.Received(1)
+                .EvaluateExpressionLldbEvalAsync(Arg.Is(expressionText));
+            await _mockDebuggerStackFrame.Received(1)
+                .EvaluateExpressionAsync(Arg.Is(expressionText));
         }
 
         [TestCase(LldbEvalErrorCode.InvalidNumericLiteral)]
@@ -335,10 +335,10 @@ namespace YetiVSI.Test.DebugEngine
                             expression.EvaluateSync(0, 0, null, out IDebugProperty2 property));
 
             // Make sure that a fallback to the LLDB didn't happen.
-            await _mockDebuggerStackFrame.Received(1).EvaluateExpressionLldbEvalAsync(
-                Arg.Is(expressionText));
-            await _mockDebuggerStackFrame.DidNotReceive().EvaluateExpressionAsync(
-                Arg.Any<string>());
+            await _mockDebuggerStackFrame.Received(1)
+                .EvaluateExpressionLldbEvalAsync(Arg.Is(expressionText));
+            await _mockDebuggerStackFrame.DidNotReceive()
+                .EvaluateExpressionAsync(Arg.Any<string>());
         }
 
         [TestCase(LldbEvalErrorCode.InvalidExpressionSyntax)]
@@ -362,10 +362,10 @@ namespace YetiVSI.Test.DebugEngine
                             expression.EvaluateSync(0, 0, null, out IDebugProperty2 property));
 
             // Make sure that a fallback to the LLDB didn't happen.
-            await _mockDebuggerStackFrame.Received(1).EvaluateExpressionLldbEvalAsync(
-                Arg.Is(expressionText));
-            await _mockDebuggerStackFrame.DidNotReceive().EvaluateExpressionAsync(
-                Arg.Any<string>());
+            await _mockDebuggerStackFrame.Received(1)
+                .EvaluateExpressionLldbEvalAsync(Arg.Is(expressionText));
+            await _mockDebuggerStackFrame.DidNotReceive()
+                .EvaluateExpressionAsync(Arg.Any<string>());
         }
 
         [Test]
@@ -397,10 +397,10 @@ namespace YetiVSI.Test.DebugEngine
                 RemoteValueFakeUtil.CreateClass("CustomType", "$17", "23");
 
             _mockDebuggerStackFrame.FindValue(expressionText, ValueType.VariableGlobal)
-                .Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
 
             _mockDebuggerStackFrame.GetValueForVariablePath(expressionText)
-                .Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
             _mockDebuggerStackFrame.FindValue(expressionText, ValueType.VariableGlobal)
                 .Returns(findValueValueNode);
 
@@ -443,11 +443,11 @@ namespace YetiVSI.Test.DebugEngine
             RemoteValueFake remoteValue = RemoteValueFakeUtil.CreateSimpleInt("myVar", 16);
 
             _mockDebuggerStackFrame.FindValue(testText, ValueType.VariableGlobal)
-                .Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
             _mockDebuggerStackFrame.GetValueForVariablePath(expressionText)
-                .Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
             _mockDebuggerStackFrame.FindValue(expressionText, ValueType.VariableGlobal)
-                .Returns((RemoteValue)null);
+                .Returns((RemoteValue) null);
             _mockDebuggerStackFrame.EvaluateExpressionAsync(expressionText).Returns(remoteValue);
 
             Assert.AreEqual(VSConstants.S_OK,

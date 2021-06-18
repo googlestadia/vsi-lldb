@@ -34,14 +34,13 @@ namespace YetiVSI.Test.Metrics
     [TestFixture]
     public class ExpressionEvaluationRecorderTests
     {
-        const int _minimumBatchSeparationMilliseconds = 1024;
+        const int _batchIntervalMs = 1024;
 
         BatchEventAggregator<ExpressionEvaluationBatch, ExpressionEvaluationBatchParams,
             ExpressionEvaluationBatchSummary> _batchEventAggregator;
 
         IMetrics _metrics;
         EventSchedulerFake _eventScheduler;
-        TimerFake _timer;
         ITimeSource _timeSource;
 
         // Object under test
@@ -53,14 +52,13 @@ namespace YetiVSI.Test.Metrics
             _metrics = Substitute.For<IMetrics>();
             _eventScheduler = new EventSchedulerFake();
             var eventSchedulerFactory = Substitute.For<IEventSchedulerFactory>();
-            eventSchedulerFactory.Create(Arg.Do<System.Action>(a => _eventScheduler.Callback = a))
+            eventSchedulerFactory
+                .Create(Arg.Do<System.Action>(a => _eventScheduler.Callback = a), Arg.Any<int>())
                 .Returns(_eventScheduler);
-            _timer = new TimerFake();
             _timeSource = new MonotonicTimeSource();
             _batchEventAggregator =
                 new BatchEventAggregator<ExpressionEvaluationBatch, ExpressionEvaluationBatchParams,
-                    ExpressionEvaluationBatchSummary>(_minimumBatchSeparationMilliseconds,
-                                                      eventSchedulerFactory, _timer);
+                    ExpressionEvaluationBatchSummary>(_batchIntervalMs, eventSchedulerFactory);
 
             _expressionEvaluationRecorder =
                 new ExpressionEvaluationRecorder(_batchEventAggregator, _metrics);
@@ -95,8 +93,7 @@ namespace YetiVSI.Test.Metrics
             ExpressionEvaluationBatchSummary batchSummary = null;
             _batchEventAggregator.BatchSummaryReady += (_, newSummary) => batchSummary = newSummary;
 
-            _timer.Increment(_minimumBatchSeparationMilliseconds);
-            _eventScheduler.Increment(_minimumBatchSeparationMilliseconds);
+            _eventScheduler.Increment(_batchIntervalMs);
 
             const ExpressionEvaluation.Types.Strategy strategyExpected =
                 ExpressionEvaluation.Types.Strategy.Lldb;
@@ -182,8 +179,7 @@ namespace YetiVSI.Test.Metrics
             ExpressionEvaluationBatchSummary batchSummary = null;
             _batchEventAggregator.BatchSummaryReady += (_, newSummary) => batchSummary = newSummary;
 
-            _timer.Increment(_minimumBatchSeparationMilliseconds);
-            _eventScheduler.Increment(_minimumBatchSeparationMilliseconds);
+            _eventScheduler.Increment(_batchIntervalMs);
 
             const ExpressionEvaluation.Types.Strategy strategyExpected =
                 ExpressionEvaluation.Types.Strategy.LldbEval;

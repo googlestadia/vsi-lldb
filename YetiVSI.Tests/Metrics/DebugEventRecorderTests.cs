@@ -24,10 +24,11 @@ namespace YetiVSI.Test.Metrics
     [TestFixture]
     public class DebugEventRecorderTests
     {
-        const int _timeout = 1024;
+        const int _batchIntervalMs = 1024;
 
         BatchEventAggregator<DebugEventBatch, DebugEventBatchParams, DebugEventBatchSummary>
             _batchEventAggregator;
+
         EventSchedulerFake _eventScheduler;
         IMetrics _metrics;
         TimerFake _timer;
@@ -40,13 +41,13 @@ namespace YetiVSI.Test.Metrics
         {
             _eventScheduler = new EventSchedulerFake();
             var eventSchedulerFactory = Substitute.For<IEventSchedulerFactory>();
-            eventSchedulerFactory.Create(
-                Arg.Do<System.Action>(a => _eventScheduler.Callback = a)).Returns(_eventScheduler);
+            eventSchedulerFactory.Create(Arg.Do<System.Action>(a => _eventScheduler.Callback = a),
+                                         _batchIntervalMs)
+                .Returns(_eventScheduler);
             _timer = new TimerFake();
             _batchEventAggregator =
                 new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,
-                    DebugEventBatchSummary
-                >(_timeout, eventSchedulerFactory, _timer);
+                    DebugEventBatchSummary>(_batchIntervalMs, eventSchedulerFactory);
             _metrics = Substitute.For<IMetrics>();
             _debugEventRecorder = new DebugEventRecorder(_batchEventAggregator, _metrics);
         }
@@ -63,22 +64,24 @@ namespace YetiVSI.Test.Metrics
             DebugEventBatchSummary batchSummary = null;
             _batchEventAggregator.BatchSummaryReady += (_, newSummary) => batchSummary = newSummary;
 
-            _timer.Increment(_timeout);
-            _eventScheduler.Increment(_timeout);
+            _timer.Increment(_batchIntervalMs);
+            _eventScheduler.Increment(_batchIntervalMs);
             CollectionAssert.AreEquivalent(
-                new[] { TestClass.MethodInfo1.GetProto(), TestClass.MethodInfo2.GetProto(),
-                    TestClass.MethodInfo3.GetProto() },
-                batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
-
-            _metrics.Received(1).RecordEvent(
-                DeveloperEventType.Types.Type.VsiDebugEventBatch,
-                new DeveloperLogEvent
+                new[]
                 {
-                    DebugEventBatch = batchSummary.Proto,
-                    StatusCode = DeveloperEventStatus.Types.Code.Success,
-                    LatencyMilliseconds = 56,
-                    LatencyType = DeveloperLogEvent.Types.LatencyType.LatencyTool
-                });
+                    TestClass.MethodInfo1.GetProto(), TestClass.MethodInfo2.GetProto(),
+                    TestClass.MethodInfo3.GetProto()
+                }, batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
+
+            _metrics.Received(1)
+                .RecordEvent(DeveloperEventType.Types.Type.VsiDebugEventBatch,
+                             new DeveloperLogEvent
+                             {
+                                 DebugEventBatch = batchSummary.Proto,
+                                 StatusCode = DeveloperEventStatus.Types.Code.Success,
+                                 LatencyMilliseconds = 56,
+                                 LatencyType = DeveloperLogEvent.Types.LatencyType.LatencyTool
+                             });
         }
     }
 }

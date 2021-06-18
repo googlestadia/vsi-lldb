@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.Threading;
-
 namespace YetiVSI.Metrics
 {
     /// <summary>
@@ -22,11 +20,16 @@ namespace YetiVSI.Metrics
     public interface IEventScheduler
     {
         /// <summary>
-        /// Restart (or start) the scheduler.
+        /// Enable the event scheduler with interval provided at the constructor. This method
+        /// should be invoked when a new batch is created.
         /// </summary>
-        /// <param name="timeout">The amount of time to delay before invoking the callback,
-        /// in milliseconds.</param>
-        void Restart(int timeout);
+        void Enable();
+
+        /// <summary>
+        /// Disable the event scheduler. This method should be invoked when the current batch is
+        /// ready and sent.
+        /// </summary>
+        void Disable();
     }
 
     /// <summary>
@@ -40,7 +43,7 @@ namespace YetiVSI.Metrics
         /// <remarks>
         /// The callback will be invoked on a thread pool thread.
         /// </remarks>
-        IEventScheduler Create(System.Action callback);
+        IEventScheduler Create(System.Action callback, int interval);
     }
 
     /// <summary>
@@ -50,16 +53,21 @@ namespace YetiVSI.Metrics
     {
         public class Factory : IEventSchedulerFactory
         {
-            public IEventScheduler Create(System.Action callback) => new EventScheduler(callback);
+            public IEventScheduler Create(System.Action callback, int interval) =>
+                new EventScheduler(callback, interval);
         }
 
-        private readonly System.Threading.Timer timer;
+        readonly System.Threading.Timer _timer;
+        readonly int _interval;
 
-        private EventScheduler(System.Action callback)
+        EventScheduler(System.Action callback, int interval)
         {
-            timer = new System.Threading.Timer(_ => callback?.Invoke());
+            _timer = new System.Threading.Timer(_ => callback?.Invoke());
+            _interval = interval;
         }
 
-        public void Restart(int timeout) => timer.Change(timeout, Timeout.Infinite);
+        public void Enable() => _timer.Change(_interval, _interval);
+
+        public void Disable() => _timer.Change(0, 0);
     }
 }

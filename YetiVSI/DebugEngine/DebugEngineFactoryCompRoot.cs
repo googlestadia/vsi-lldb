@@ -58,9 +58,8 @@ namespace YetiVSI.DebugEngine
 {
     public class DebugEngineFactoryCompRoot
     {
-        // Minimum interval without debug events we should wait before creating
-        // a new debug event batch.
-        const int _minimumDebugEventBatchSeparationInMillis = 1000;
+        // Interval in which batched events are sent.
+        const int _metricsEventsBatchIntervalMs = 3000;
 
         YetiVSIService _vsiService;
 
@@ -600,14 +599,11 @@ namespace YetiVSI.DebugEngine
             if (_expressionEvaluationRecorder == null)
             {
                 var schedulerFactory = new EventScheduler.Factory();
-                var timerFactory = new Timer.Factory();
-
-                ITimer timer = timerFactory.Create();
 
                 var expressionEvaluationEventAggregator =
                     new BatchEventAggregator<ExpressionEvaluationBatch,
                         ExpressionEvaluationBatchParams, ExpressionEvaluationBatchSummary>(
-                        _minimumDebugEventBatchSeparationInMillis, schedulerFactory, timer);
+                        _metricsEventsBatchIntervalMs, schedulerFactory);
 
                 _expressionEvaluationRecorder =
                     new ExpressionEvaluationRecorder(expressionEvaluationEventAggregator,
@@ -855,14 +851,10 @@ namespace YetiVSI.DebugEngine
         public virtual void SetupStepTimeMetrics(List<IInterceptor> apiAspects, IMetrics metrics)
         {
             var schedulerFactory = new EventScheduler.Factory();
-            var timerFactory = new Timer.Factory();
 
-            var timer = timerFactory.Create();
             var debugEventAggregator =
                 new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,
-                    DebugEventBatchSummary>(_minimumDebugEventBatchSeparationInMillis,
-                                            schedulerFactory,
-                                            timer);
+                    DebugEventBatchSummary>(_metricsEventsBatchIntervalMs, schedulerFactory);
             var debugEventRecorder = new DebugEventRecorder(debugEventAggregator, metrics);
 
             var timeSource = GetTimeSource();

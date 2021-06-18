@@ -41,9 +41,9 @@ namespace YetiVSI.Metrics
                 _firstInitialTimestampInMicro = batchParams.StartTimestampUs;
             }
 
-            _debugEvents.GetOrAddValue(batchParams.MethodInfo).Add(
-                new DebugEventInterval(batchParams.StartTimestampUs,
-                                       batchParams.EndTimestampUs));
+            _debugEvents.GetOrAddValue(batchParams.MethodInfo)
+                .Add(new DebugEventInterval(batchParams.StartTimestampUs,
+                                            batchParams.EndTimestampUs));
         }
 
         public DebugEventBatchSummary GetSummary() =>

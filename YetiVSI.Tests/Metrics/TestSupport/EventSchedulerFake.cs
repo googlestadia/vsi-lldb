@@ -18,30 +18,37 @@ namespace YetiVSI.Test.Metrics.TestSupport
 {
     class EventSchedulerFake : IEventScheduler
     {
-        bool running;
-        long ticks;
-        long timeout;
+        bool _running;
+        long _ticks;
+        long _timeout;
 
         public System.Action Callback { private get; set; }
+        public int Interval { private get; set; }
 
-        public void Restart(int timeout) {
-            this.timeout = timeout;
-            ticks = 0;
-            running = true;
+        public void Enable()
+        {
+            _timeout = Interval;
+            _ticks = 0;
+            _running = true;
         }
 
-        public void Increment(long tock)
+        public void Disable()
         {
-            if (!running)
+            _running = false;
+        }
+
+        public void Increment(long tick)
+        {
+            if (!_running)
             {
                 return;
             }
 
-            ticks += tock;
-            if (ticks >= timeout)
+            _ticks += tick;
+
+            if (_ticks >= _timeout)
             {
                 Callback();
-                running = false;
             }
         }
     }

@@ -24,10 +24,9 @@ namespace YetiVSI.Test.Metrics
     [TestFixture]
     public class BatchEventAggregatorTests
     {
-        const int _timeout = 1024;
+        const int _batchIntervalMs = 1026;
 
         EventSchedulerFake _eventScheduler;
-        TimerFake _timer;
         long _currentTimestamp;
 
         // Object under test
@@ -39,13 +38,13 @@ namespace YetiVSI.Test.Metrics
         {
             _eventScheduler = new EventSchedulerFake();
             var eventSchedulerFactory = Substitute.For<IEventSchedulerFactory>();
-            eventSchedulerFactory.Create(
-                Arg.Do<System.Action>(a => _eventScheduler.Callback = a)).Returns(_eventScheduler);
-            _timer = new TimerFake();
+            eventSchedulerFactory.Create(Arg.Do<System.Action>(a => _eventScheduler.Callback = a),
+                                         _eventScheduler.Interval = _batchIntervalMs)
+                .Returns(_eventScheduler);
             _currentTimestamp = 0;
             _batchEventAggregator =
                 new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,
-                    DebugEventBatchSummary>(_timeout, eventSchedulerFactory, _timer);
+                    DebugEventBatchSummary>(_batchIntervalMs, eventSchedulerFactory);
         }
 
         [Test]
@@ -55,18 +54,15 @@ namespace YetiVSI.Test.Metrics
             _batchEventAggregator.BatchSummaryReady += (_, newSummary) => batchSummary = newSummary;
 
             AddEvent(TestClass.MethodInfo1);
-            _timer.Increment(_timeout / 2);
-            _eventScheduler.Increment(_timeout);
+            _eventScheduler.Increment(_batchIntervalMs / 3);
             Assert.IsNull(batchSummary);
 
             AddEvent(TestClass.MethodInfo2);
-            _timer.Increment(_timeout / 2);
-            _eventScheduler.Increment(_timeout);
+            _eventScheduler.Increment(_batchIntervalMs / 3);
             Assert.IsNull(batchSummary);
 
             AddEvent(TestClass.MethodInfo3);
-            _timer.Increment(_timeout);
-            _eventScheduler.Increment(_timeout);
+            _eventScheduler.Increment(_batchIntervalMs / 3);
             Assert.NotNull(batchSummary);
             Assert.AreEqual(_currentTimestamp, batchSummary.LatencyInMicroseconds);
             CollectionAssert.AreEquivalent(
