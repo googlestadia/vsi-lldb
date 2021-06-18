@@ -34,6 +34,7 @@ namespace YetiCommon.Tests.Cloud
                 PoolId = "test_pool",
                 RenderDoc = true,
                 Rgp = false,
+                Dive = false,
                 SdkVersion = "1",
                 VulkanDriverVariant = "test_variant",
                 SurfaceEnforcementMode = SurfaceEnforcementSetting.Warn,
@@ -99,7 +100,8 @@ namespace YetiCommon.Tests.Cloud
                 { "cmd", "  some_bin arg2" },
                 { "vars", "ParamsVar=val" },
                 { "renderdoc", "false" },
-                { "rgp", "1" }
+                { "rgp", "1" },
+                { "dive", "1" }
             };
 
         public static Dictionary<string, string> ValidRequestQueryParams =>

@@ -27,11 +27,10 @@ namespace YetiCommon.Tests
         {
             var launchCommand = new ChromeClientLaunchCommandFormatter(new JsonUtil(), LauncherDir);
 
-            var launchParams = new LaunchParams()
-            {
+            var launchParams = new LaunchParams() {
                 ApplicationName = "theAppName",
                 ApplicationId = "theAppId",
-                GameletName= "gameletName",
+                GameletName = "gameletName",
                 Account = "test@example.com",
                 Cmd = "TestProject",
                 TestAccount = "testAccount",
@@ -39,6 +38,7 @@ namespace YetiCommon.Tests
                 SdkVersion = "sdkVersion",
                 SurfaceEnforcementMode = SurfaceEnforcementSetting.Block,
                 Rgp = true,
+                Dive = true,
                 RenderDoc = true,
                 Debug = true,
             };
@@ -62,6 +62,7 @@ namespace YetiCommon.Tests
                 Assert.That(parsedLaunchParams.SurfaceEnforcementMode,
                             Is.EqualTo(launchParams.SurfaceEnforcementMode));
                 Assert.That(parsedLaunchParams.Rgp, Is.EqualTo(launchParams.Rgp));
+                Assert.That(parsedLaunchParams.Dive, Is.EqualTo(launchParams.Dive));
                 Assert.That(parsedLaunchParams.RenderDoc, Is.EqualTo(launchParams.RenderDoc));
                 Assert.That(parsedLaunchParams.Debug, Is.EqualTo(launchParams.Debug));
             });

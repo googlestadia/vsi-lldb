@@ -99,6 +99,7 @@ namespace YetiCommon.Tests
             _launchParams.GameletEnvironmentVars = "var1=5";
             _launchParams.SdkVersion = "sdkVersion";
             _launchParams.Rgp = true;
+            _launchParams.Dive = true;
             _launchParams.RenderDoc = true;
             _launchParams.Debug = true;
             _launchParams.SurfaceEnforcementMode = SurfaceEnforcementSetting.Warn;
@@ -127,6 +128,7 @@ namespace YetiCommon.Tests
                 Assert.That(query["vars"], Is.EqualTo(_launchParams.GameletEnvironmentVars));
                 Assert.That(query["debug_mode"], Is.EqualTo("2"));
                 Assert.That(query["rgp"], Is.EqualTo("true"));
+                Assert.That(query["dive"], Is.EqualTo("true"));
                 Assert.That(query["renderdoc"], Is.EqualTo("true"));
                 Assert.That(query["surface_enforcement_mode"], Is.EqualTo("warn"));
                 Assert.That(query["sdk_version"], Is.EqualTo(_launchParams.SdkVersion));
@@ -158,11 +160,12 @@ namespace YetiCommon.Tests
                 $"https://console.ggp.google.com/organizations/{_sdkConfig.OrganizationId}/stream"));
 
             var query = parser.QueryParams;
-            Assert.That(query.Count, Is.EqualTo(6));
+            Assert.That(query.Count, Is.EqualTo(7));
             Assert.That(query["application_name"], Is.EqualTo(_launchParams.ApplicationName));
             Assert.That(query["gamelet_name"], Is.EqualTo(_launchParams.GameletName));
             Assert.That(query["debug_mode"], Is.EqualTo("2"));
             Assert.That(query["rgp"], Is.EqualTo("false"));
+            Assert.That(query["dive"], Is.EqualTo("false"));
             Assert.That(query["renderdoc"], Is.EqualTo("false"));
             Assert.That(query["surface_enforcement_mode"], Is.EqualTo("off"));
         }

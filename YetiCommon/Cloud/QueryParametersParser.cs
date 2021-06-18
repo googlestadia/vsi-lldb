@@ -99,8 +99,7 @@ namespace YetiCommon.Cloud
             internal bool IsIgnored => !SetRequestParam && !PassAsUrlParam;
         }
 
-        static readonly QueryParamMapping[] _queryParamsMappings =
-        {
+        static readonly QueryParamMapping[] _queryParamsMappings = {
             // List of query parameters, which should be removed from
             // the query and ignored in the request.
             QueryParamMapping.IgnoreParam("account"),
@@ -109,8 +108,7 @@ namespace YetiCommon.Cloud
             QueryParamMapping.IgnoreParam("gamelet_id"),
             QueryParamMapping.IgnoreParam("gamelet_name"),
             QueryParamMapping.IgnoreParam("package_id"),
-            QueryParamMapping.IgnoreParam("sdk_version"),
-            QueryParamMapping.IgnoreParam("headless"),
+            QueryParamMapping.IgnoreParam("sdk_version"), QueryParamMapping.IgnoreParam("headless"),
             QueryParamMapping.IgnoreParam("game_launch_name"),
             QueryParamMapping.IgnoreParam("test_account"),
             // Parameters, which are removed from the query string and
@@ -118,8 +116,8 @@ namespace YetiCommon.Cloud
             QueryParamMapping.RequestOnly("renderdoc",
                                           nameof(LaunchParams.RenderDoc),
                                           typeof(LaunchParams)),
-            QueryParamMapping.RequestOnly("rgp", nameof(LaunchParams.Rgp),
-                                          typeof(LaunchParams)),
+            QueryParamMapping.RequestOnly("rgp", nameof(LaunchParams.Rgp), typeof(LaunchParams)),
+            QueryParamMapping.RequestOnly("dive", nameof(LaunchParams.Dive), typeof(LaunchParams)),
             QueryParamMapping.RequestOnly("application_name",
                                           nameof(LaunchGameRequest.ApplicationName),
                                           typeof(LaunchGameRequest)),
@@ -176,11 +174,11 @@ namespace YetiCommon.Cloud
                                           typeof(LaunchGameRequest)),
             QueryParamMapping.RequestOnly("add_instance_compatibility_requirements",
                                           nameof(LaunchGameRequest
-                                                     .AddInstanceCompatibilityRequirements),
+                                              .AddInstanceCompatibilityRequirements),
                                           typeof(LaunchGameRequest)),
             QueryParamMapping.RequestOnly("remove_instance_compatibility_requirements",
                                           nameof(LaunchGameRequest
-                                                     .RemoveInstanceCompatibilityRequirements),
+                                              .RemoveInstanceCompatibilityRequirements),
                                           typeof(LaunchGameRequest)),
             QueryParamMapping.RequestOnly("package_name", nameof(LaunchGameRequest.PackageName),
                                           typeof(LaunchGameRequest)),
@@ -287,7 +285,7 @@ namespace YetiCommon.Cloud
         /// </item>
         /// <item>
         /// <description>
-        /// Other VSI settings(Rgp, RenderDoc, ...).
+        /// Other VSI settings(Rgp, Dive, RenderDoc, ...).
         /// </description>
         /// </item>
         /// <item>

@@ -87,8 +87,9 @@ namespace YetiVSI
             this.yetiVSIService = yetiVSIService;
         }
 
-        public void StartPreGame(LaunchOption launchOption, bool rgpEnabled, bool renderdocEnabled,
-                                 SshTarget target, out GrpcConnection grpcConnection,
+        public void StartPreGame(LaunchOption launchOption, bool rgpEnabled, bool diveEnabled,
+                                 bool renderdocEnabled, SshTarget target,
+                                 out GrpcConnection grpcConnection,
                                  out ITransportSession transportSession)
         {
             lock (thisLock)
@@ -101,7 +102,8 @@ namespace YetiVSI
                     throw new YetiDebugTransportException(ErrorStrings.FailedToStartTransport);
                 }
 
-                if (!LaunchPreGameProcesses(launchOption, rgpEnabled, renderdocEnabled, target))
+                if (!LaunchPreGameProcesses(launchOption, rgpEnabled, diveEnabled, renderdocEnabled,
+                                            target))
                 {
                     Stop(ExitReason.Unknown);
                     throw new YetiDebugTransportException(
@@ -201,12 +203,13 @@ namespace YetiVSI
         /// </summary>
         /// <param name="launchOption">How the game will be launched</param>
         /// <param name="rgpEnabled">Whether RPG is enabled</param>
+        /// <param name="diveEnabled">Whether Dive is enabled</param>
         /// <param name="renderdocEnabled">Whether Renderdoc is enabled</param>
         /// <param name="target">Remote instance</param>
         /// <returns>
         /// True if all processes launched successfully and false otherwise and we should abort.
         /// </returns>
-        bool LaunchPreGameProcesses(LaunchOption launchOption, bool rgpEnabled,
+        bool LaunchPreGameProcesses(LaunchOption launchOption, bool rgpEnabled, bool diveEnabled,
                                     bool renderdocEnabled, SshTarget target)
         {
             var processes = new List<ProcessStartData>();
@@ -227,6 +230,11 @@ namespace YetiVSI
                 if (rgpEnabled)
                 {
                     processes.Add(CreateRgpPortForwardingProcessStartData(target));
+                }
+
+                if (diveEnabled)
+                {
+                    processes.Add(CreateDivePortForwardingProcessStartData(target));
                 }
             }
 
@@ -334,6 +342,18 @@ namespace YetiVSI
             };
             var startInfo = ProcessStartInfoBuilder.BuildForSshPortForward(ports, target);
             return new ProcessStartData("rgp port forwarding", startInfo);
+        }
+
+        ProcessStartData CreateDivePortForwardingProcessStartData(SshTarget target)
+        {
+            var ports = new List<ProcessStartInfoBuilder.PortForwardEntry>() {
+                new ProcessStartInfoBuilder.PortForwardEntry {
+                    LocalPort = WorkstationPorts.DIVE_LOCAL,
+                    RemotePort = WorkstationPorts.DIVE_REMOTE,
+                }
+            };
+            var startInfo = ProcessStartInfoBuilder.BuildForSshPortForward(ports, target);
+            return new ProcessStartData("dive port forwarding", startInfo);
         }
 
         ProcessStartData CreateLldbServerProcessStartData(SshTarget target)

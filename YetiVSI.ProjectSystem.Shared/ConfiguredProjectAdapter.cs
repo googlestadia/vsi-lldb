@@ -108,8 +108,7 @@ namespace YetiVSI.ProjectSystem
         {
             var launchRenderDocString = await userProperties.GetEvaluatedPropertyValueAsync(
                 ProjectPropertyName.GgpLaunchRenderDoc);
-            bool launchRenderDoc;
-            bool.TryParse(launchRenderDocString, out launchRenderDoc);
+            bool.TryParse(launchRenderDocString, out bool launchRenderDoc);
             return launchRenderDoc;
         }
 
@@ -117,9 +116,16 @@ namespace YetiVSI.ProjectSystem
         {
             var launchRgpString = await userProperties.GetEvaluatedPropertyValueAsync(
                 ProjectPropertyName.GgpLaunchRgp);
-            bool launchRgp;
-            bool.TryParse(launchRgpString, out launchRgp);
+            bool.TryParse(launchRgpString, out bool launchRgp);
             return launchRgp;
+        }
+
+        public async Task<bool> GetLaunchDiveAsync()
+        {
+            var launchDiveString = await userProperties.GetEvaluatedPropertyValueAsync(
+                ProjectPropertyName.GgpLaunchDive);
+            bool.TryParse(launchDiveString, out bool launchDive);
+            return launchDive;
         }
 
         public async Task<string> GetVulkanDriverVariantAsync()

@@ -334,6 +334,7 @@ namespace YetiVSI.DebugEngine
         string _executableFileName;
         string _executableFullPath;
         bool _rgpEnabled;
+        bool _diveEnabled;
         bool _renderDocEnabled;
         string _workingDirectory;
         SshTarget _target;
@@ -615,9 +616,9 @@ namespace YetiVSI.DebugEngine
 
                     // Attempt to start the transport. Pass on to the transport if our attach reason
                     // indicates we need to launch the main debugged process ourselves.
-                    _yetiTransport.StartPreGame(_launchOption, _rgpEnabled, _renderDocEnabled,
-                                        _target, out GrpcConnection grpcConnection,
-                                        out ITransportSession transportSession);
+                    _yetiTransport.StartPreGame(
+                        _launchOption, _rgpEnabled, _diveEnabled, _renderDocEnabled, _target,
+                        out GrpcConnection grpcConnection, out ITransportSession transportSession);
 
                     SafeErrorUtil.SafelyLogError(
                         () => RecordParameters(startAction, _extensionOptions, _debuggerOptions),
@@ -961,6 +962,7 @@ namespace YetiVSI.DebugEngine
                 }
 
                 _rgpEnabled = chromeLauncher.LaunchParams.Rgp;
+                _diveEnabled = chromeLauncher.LaunchParams.Dive;
                 _renderDocEnabled = chromeLauncher.LaunchParams.RenderDoc;
 
                 if (_gameLauncher.LaunchGameApiEnabled ||

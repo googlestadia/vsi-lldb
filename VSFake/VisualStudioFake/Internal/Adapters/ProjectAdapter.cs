@@ -206,6 +206,12 @@ namespace Google.VisualStudioFake.Internal
         public void SetLaunchRgp(bool launchRgp) =>
             SetBoolProperty(ProjectPropertyName.GgpLaunchRgp, launchRgp);
 
+        public Task<bool> GetLaunchDiveAsync() =>
+            GetBoolPropertyAsync(ProjectPropertyName.GgpLaunchDive);
+
+        public void SetLaunchDive(bool launchDive) =>
+            SetBoolProperty(ProjectPropertyName.GgpLaunchDive, launchDive);
+
         public Task<string> GetExecutablePathAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.ExecutablePath);
 

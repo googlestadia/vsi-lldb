@@ -45,6 +45,7 @@ namespace YetiCommon.Tests.Cloud
             LaunchParams parameters = ValidParams;
             parameters.RenderDoc = false;
             parameters.Rgp = false;
+            parameters.Dive = false;
             parameters.VulkanDriverVariant = string.Empty;
 
             ConfigStatus status =
@@ -98,6 +99,7 @@ namespace YetiCommon.Tests.Cloud
             LaunchParams parameters = ValidParams;
             parameters.RenderDoc = true;
             parameters.Rgp = true;
+            parameters.Dive = true;
             parameters.GameletEnvironmentVars =
                 "RENDERDOC_TEMP=chrome/params/temp;RENDERDOC_DEBUG_LOG_FILE=chrome/params.log;" +
                 "GGP_DEV_VK_DRIVER_VARIANT=opt;GGP_VK_AMDVLK_USE_LLPC=0;Some_Var=12;other=9" +
@@ -128,6 +130,7 @@ namespace YetiCommon.Tests.Cloud
                             { "GGP_INTERNAL_LOAD_RGP", "1" },
                             { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
                             { "LD_PRELOAD", "librgpserver.so" },
+                            { "GGP_ENABLE_DIVE_CAPTURE_LAYER", "1" },
                             { "ENABLE_VK_LAYER_VULKAN_COLOR_TOOLS", "false" },
                             { "GGP_VK_AMDVLK_USE_LLPC", "0" },
                             { "ENABLE_GOOGLE_PIPELINE_DATA_EXPORT_LAYER", "1" },
@@ -169,6 +172,7 @@ namespace YetiCommon.Tests.Cloud
                             { "GGP_DEV_VK_DRIVER_VARIANT", "test_variant" },
                             { "GGP_INTERNAL_LOAD_RGP", "1" },
                             { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
+                            { "GGP_ENABLE_DIVE_CAPTURE_LAYER", "1" },
                             { "LD_PRELOAD", "librgpserver.so" }
                         }));
             Assert.That(request.SurfaceEnforcementMode, Is.EqualTo(SurfaceEnforcementSetting.Warn));

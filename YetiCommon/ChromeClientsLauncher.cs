@@ -146,8 +146,7 @@ namespace YetiCommon
             var portalUrl = SdkConfig.PartnerPortalUrlOrDefault;
             string chromeUrl = $"{portalUrl}/organizations/{SdkConfig.OrganizationId}/stream";
 
-            var queryParams = new List<QueryParam>
-            {
+            var queryParams = new List<QueryParam> {
                 QueryParam.Create("cmd", WebUtility.UrlEncode(LaunchParams.Cmd)),
                 QueryParam.Create("application_name",
                                   Uri.EscapeDataString(
@@ -158,11 +157,12 @@ namespace YetiCommon
                 QueryParam.Create("vars",
                                   WebUtility.UrlEncode(
                                       string.Join(
-                                          ";",
-                                          (LaunchParams.GameletEnvironmentVars ?? string.Empty)
-                                          .Split(';').Select(v => v.Trim())))),
+                                        ";",
+                                        (LaunchParams.GameletEnvironmentVars ?? string.Empty)
+                                        .Split(';').Select(v => v.Trim())))),
                 QueryParam.Create("renderdoc", LaunchParams.RenderDoc.ToString().ToLower()),
                 QueryParam.Create("rgp", LaunchParams.Rgp.ToString().ToLower()),
+                QueryParam.Create("dive", LaunchParams.Dive.ToString().ToLower()),
                 QueryParam.Create("sdk_version", WebUtility.UrlEncode(LaunchParams.SdkVersion)),
                 QueryParam.Create("vulkan_driver_variant", LaunchParams.VulkanDriverVariant),
                 QueryParam.Create("surface_enforcement_mode",
@@ -323,6 +323,8 @@ namespace YetiCommon
         public bool RenderDoc { get; set; }
 
         public bool Rgp { get; set; }
+
+        public bool Dive { get; set; }
 
         public string VulkanDriverVariant { get; set; }
 

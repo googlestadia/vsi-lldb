@@ -196,6 +196,32 @@ namespace YetiVSI.Test.GameLaunch
         }
 
         [Test]
+        public void LaunchDiveIsPropagatedToLaunchRequest()
+        {
+            var launches = new List<LaunchGameRequest>();
+            var gameletClientFactory =
+                new GameletClientStub.Factory().WithSampleInstance().WithLaunchRequestsTracker(
+                    launches);
+            IVSFake vsFake = CreateVsFakeAndLoadProject(gameletClientFactory);
+
+            (vsFake.ProjectAdapter as ProjectAdapter)?.SetLaunchDive(true);
+
+            _taskContext.RunOnMainThread(() => vsFake.LaunchSuspended());
+
+            Assert.That(launches.Count, Is.EqualTo(1));
+            Assert.That(
+                launches[0].EnvironmentVariablePairs,
+                Is.EqualTo(
+                    new Dictionary<string, string>
+                    {
+                        { "GGP_INTERNAL_LOAD_RGP", "1" },
+                        { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
+                        { "GGP_ENABLE_DIVE_CAPTURE_LAYER", "1" },
+                        { "LD_PRELOAD", "librgpserver.so" }
+                    }));
+        }
+
+        [Test]
         public void TestAccountIsPropagatedToLaunchRequest()
         {
             var launches = new List<LaunchGameRequest>();

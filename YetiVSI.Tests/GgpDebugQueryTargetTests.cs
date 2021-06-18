@@ -191,11 +191,13 @@ namespace YetiVSI.Test
         [Test]
         public async Task LaunchNoDebugLegacyFlowAsync([Values(false, true)] bool renderdoc,
                                                        [Values(false, true)] bool rgp,
+                                                       [Values(false, true)] bool dive,
                                                        [Values(null, "optprintasserts")]
                                                        string vulkanDriverVariant)
         {
             _project.GetLaunchRenderDocAsync().Returns(renderdoc);
             _project.GetLaunchRgpAsync().Returns(rgp);
+            _project.GetLaunchDiveAsync().Returns(dive);
             _project.GetVulkanDriverVariantAsync().Returns(vulkanDriverVariant);
             Gamelet gamelet = SetupReservedGamelet();
 
@@ -212,6 +214,7 @@ namespace YetiVSI.Test
             Assert.AreEqual(await _project.GetTargetFileNameAsync(), launchParams.Cmd);
             Assert.AreEqual(renderdoc, launchParams.RenderDoc);
             Assert.AreEqual(rgp, launchParams.Rgp);
+            Assert.AreEqual(dive, launchParams.Dive);
             Assert.AreEqual(_testApplicationName, launchParams.ApplicationName);
             Assert.AreEqual(_testGameletName, launchParams.GameletName);
             Assert.AreEqual(_testAccount, launchParams.Account);
@@ -232,6 +235,7 @@ namespace YetiVSI.Test
         [Test]
         public async Task LaunchNoDebugAsync([Values(false, true)] bool renderdoc,
                                              [Values(false, true)] bool rgp,
+                                             [Values(false, true)] bool dive,
                                              [Values(null, "optprintasserts")]
                                              string vulkanDriverVariant,
                                              [Values(StadiaEndpoint.PlayerEndpoint,
@@ -241,6 +245,7 @@ namespace YetiVSI.Test
         {
             _project.GetLaunchRenderDocAsync().Returns(renderdoc);
             _project.GetLaunchRgpAsync().Returns(rgp);
+            _project.GetLaunchDiveAsync().Returns(dive);
             _project.GetVulkanDriverVariantAsync().Returns(vulkanDriverVariant);
             _project.GetEndpointAsync().Returns(endpoint);
             Gamelet gamelet = SetupReservedGamelet();
@@ -288,6 +293,7 @@ namespace YetiVSI.Test
         {
             _project.GetLaunchRenderDocAsync().Returns(false);
             _project.GetLaunchRgpAsync().Returns(false);
+            _project.GetLaunchDiveAsync().Returns(false);
             _project.GetVulkanDriverVariantAsync().Returns("optprintasserts");
 
             SetupReservedGamelet();
@@ -347,11 +353,13 @@ namespace YetiVSI.Test
         [Test]
         public async Task LaunchDebugAsync([Values(false, true)] bool renderdoc,
                                            [Values(false, true)] bool rgp,
+                                           [Values(false, true)] bool dive,
                                            [Values(null, "optprintasserts")]
                                            string vulkanDriverVariant)
         {
             _project.GetLaunchRenderDocAsync().Returns(renderdoc);
             _project.GetLaunchRgpAsync().Returns(rgp);
+            _project.GetLaunchDiveAsync().Returns(dive);
             _project.GetVulkanDriverVariantAsync().Returns(vulkanDriverVariant);
             Gamelet gamelet = SetupReservedGamelet();
 
@@ -370,6 +378,7 @@ namespace YetiVSI.Test
             Assert.AreEqual(await _project.GetTargetFileNameAsync(), launchParams.Cmd);
             Assert.AreEqual(renderdoc, launchParams.RenderDoc);
             Assert.AreEqual(rgp, launchParams.Rgp);
+            Assert.AreEqual(dive, launchParams.Dive);
             Assert.AreEqual(_testApplicationName, launchParams.ApplicationName);
             Assert.AreEqual(_testGameletName, launchParams.GameletName);
             Assert.AreEqual(_testAccount, launchParams.Account);

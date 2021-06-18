@@ -60,7 +60,8 @@ namespace YetiCommon
         public const int GGP_RSYNC_FIRST = 44450;
         public const int GGP_RSYNC_LAST = 44459;
 
-        // Reserve ports 27300, 38920 for rgp and renderdoc.
+        // Reserve ports 19999, 27300, 38920 for rgp and renderdoc.
+        public const int DIVE_LOCAL = 19999;
         public const int RGP_LOCAL = 27300;
         public const int RENDERDOC_LOCAL = 38920;
 
@@ -81,7 +82,8 @@ namespace YetiCommon
         // These are ports used on the gamelet and are not blocked by the firewall.
 
 
-        // Reserve ports 27300, 38920 for rgp and renderdoc.
+        // Reserve ports 19999, 27300, 38920 for rgp and renderdoc.
+        public const int DIVE_REMOTE = 19999;
         public const int RGP_REMOTE = 27300;
         public const int RENDERDOC_REMOTE = 38920;
 

@@ -351,6 +351,19 @@ namespace YetiVSI.ProjectSystem.Tests
         }
 
         [Test]
+        public async Task GetGgpLaunchDiveAsync()
+        {
+            var projectPath = @"C:\GGP_project_path\";
+            var projectValues = new ProjectValues {
+                GgpLaunchDive = "true",
+            };
+
+            var configuredProject = CreateConfiguredProject(projectValues, projectPath);
+            IAsyncProject project = new ConfiguredProjectAdapter(configuredProject);
+            Assert.True(await project.GetLaunchDiveAsync());
+        }
+
+        [Test]
         public async Task GetGgpVulkanDriverVariantAsync()
         {
             var projectPath = @"C:\GGP_project_path\";
@@ -428,12 +441,25 @@ namespace YetiVSI.ProjectSystem.Tests
             var projectPath = @"C:\Yeti_project_path\";
             var projectValues = new ProjectValues
             {
-                GgpLaunchRgp = "invald_bool",
+                GgpLaunchRgp = "invalid_bool",
             };
             var configuredProject = CreateConfiguredProject(projectValues, projectPath);
 
             var project = new ConfiguredProjectAdapter(configuredProject);
             Assert.False(await project.GetLaunchRgpAsync());
+        }
+
+        [Test]
+        public async Task CreateConfiguredProjectInvalidLaunchDiveAsync()
+        {
+            var projectPath = @"C:\Yeti_project_path\";
+            var projectValues = new ProjectValues {
+                GgpLaunchDive = "invalid_bool",
+            };
+            var configuredProject = CreateConfiguredProject(projectValues, projectPath);
+
+            var project = new ConfiguredProjectAdapter(configuredProject);
+            Assert.False(await project.GetLaunchDiveAsync());
         }
 
         class ProjectValues
@@ -446,6 +472,7 @@ namespace YetiVSI.ProjectSystem.Tests
             public string GgpCustomDeployOnLaunch { get; set; } = "";
             public string GgpLaunchRenderDoc { get; set; } = "";
             public string GgpLaunchRgp { get; set; } = "";
+            public string GgpLaunchDive { get; set; } = "";
             public string GgpVulkanDriverVariant { get; set; } = "";
             public string GgpTestAccount { get; set; } = "";
             public string GgpExternalId { get; set; } = "";
@@ -494,6 +521,8 @@ namespace YetiVSI.ProjectSystem.Tests
                 .Returns(projectValues.GgpLaunchRenderDoc);
             userProperties.GetEvaluatedPropertyValueAsync("GgpLaunchRgp")
                 .Returns(projectValues.GgpLaunchRgp);
+            userProperties.GetEvaluatedPropertyValueAsync("GgpLaunchDive")
+                .Returns(projectValues.GgpLaunchDive);
             userProperties.GetEvaluatedPropertyValueAsync("GgpVulkanDriverVariant")
                 .Returns(projectValues.GgpVulkanDriverVariant);
             userProperties.GetEvaluatedPropertyValueAsync("GgpTestAccount")

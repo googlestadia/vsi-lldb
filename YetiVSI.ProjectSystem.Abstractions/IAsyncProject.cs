@@ -133,6 +133,11 @@ namespace YetiVSI.ProjectSystem.Abstractions
         Task<bool> GetLaunchRgpAsync();
 
         /// <summary>
+        /// Get true when the game should be launched with RGP.
+        /// </summary>
+        Task<bool> GetLaunchDiveAsync();
+
+        /// <summary>
         /// Get Vulkan driver variant to load on launch.
         /// </summary>
         Task<string> GetVulkanDriverVariantAsync();

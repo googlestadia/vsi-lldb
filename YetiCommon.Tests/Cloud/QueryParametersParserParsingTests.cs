@@ -46,6 +46,7 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(parameters.PoolId, Is.EqualTo("test_pool"));
             Assert.That(parameters.RenderDoc, Is.EqualTo(false));
             Assert.That(parameters.Rgp, Is.EqualTo(true));
+            Assert.That(parameters.Dive, Is.EqualTo(true));
             Assert.That(parameters.SdkVersion, Is.EqualTo("1"));
             Assert.That(parameters.VulkanDriverVariant, Is.EqualTo("test_variant"));
             Assert.That(parameters.SurfaceEnforcementMode,
@@ -310,6 +311,7 @@ namespace YetiCommon.Tests.Cloud
         [TestCase("renderdoc", false, nameof(LaunchParams.RenderDoc),
                   TestName = "RenderDoc")]
         [TestCase("rgp", false, nameof(LaunchParams.Rgp), TestName = "Rgp")]
+        [TestCase("dive", false, nameof(LaunchParams.Dive), TestName = "Dive")]
         [TestCase("debug_mode", true, nameof(LaunchGameRequest.Debug), TestName = "Debug")]
         [TestCase("start_forward_frame_dump", true, nameof(LaunchGameRequest.StartForwardFrameDump),
                   TestName = "StartForwardFrameDump")]

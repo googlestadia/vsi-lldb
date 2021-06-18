@@ -304,10 +304,14 @@ namespace YetiCommon.Cloud
                 flagEnvironmentVariables.Add("RENDERDOC_TEMP", "/mnt/developer/ggp");
                 flagEnvironmentVariables.Add("RENDERDOC_DEBUG_LOG_FILE", "/var/game/RDDebug.log");
             }
-            if (parameters.Rgp)
+            if (parameters.Rgp || parameters.Dive)
             {
                 flagEnvironmentVariables.Add("GGP_INTERNAL_LOAD_RGP", "1");
                 flagEnvironmentVariables.Add("RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log");
+            }
+            if (parameters.Dive)
+            {
+                flagEnvironmentVariables.Add("GGP_ENABLE_DIVE_CAPTURE_LAYER", "1");
             }
 
             foreach (string key in flagEnvironmentVariables.Keys)
@@ -320,7 +324,7 @@ namespace YetiCommon.Cloud
                 variables.Add(key, flagEnvironmentVariables[key]);
             }
 
-            if (parameters.Rgp)
+            if (parameters.Rgp || parameters.Dive)
             {
                 if (!variables.ContainsKey("LD_PRELOAD"))
                 {
@@ -330,7 +334,7 @@ namespace YetiCommon.Cloud
                     ? string.Empty
                     : ":") + "librgpserver.so";
             }
-            
+
             return status;
         }
     }

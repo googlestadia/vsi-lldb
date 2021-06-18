@@ -122,6 +122,7 @@ namespace YetiVSI
                     Cmd = gameletCommand,
                     RenderDoc = await project.GetLaunchRenderDocAsync(),
                     Rgp = await project.GetLaunchRgpAsync(),
+                    Dive = await project.GetLaunchDiveAsync(),
                     SurfaceEnforcementMode = await project.GetSurfaceEnforcementAsync(),
                     VulkanDriverVariant = await project.GetVulkanDriverVariantAsync(),
                     QueryParams = await project.GetQueryParamsAsync(),
