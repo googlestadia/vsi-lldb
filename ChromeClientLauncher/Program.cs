@@ -50,7 +50,6 @@ namespace ChromeClientLauncher
                     string launchUrl;
                     if (gameLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
                     {
-                        // TODO: Notify developer that game has started.
                         return;
                     }
 

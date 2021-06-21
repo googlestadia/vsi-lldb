@@ -108,8 +108,9 @@ namespace YetiVSI.Test
             var credentialManager = Substitute.For<YetiCommon.ICredentialManager>();
             credentialManager.LoadAccount().Returns(_testAccount);
 
+            var taskContext = new JoinableTaskContext();
             var cancelableTaskFactory =
-                FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
+                FakeCancelableTask.CreateFactory(taskContext, false);
 
             _applicationClient = Substitute.For<IApplicationClient>();
             var application = new Application
@@ -166,7 +167,7 @@ namespace YetiVSI.Test
                                                            _gameletSelectorFactory, cloudRunner,
                                                            _sdkVersion, _launchCommandFormatter,
                                                            _paramsFactory, _yetiVsiService,
-                                                           _gameLauncher);
+                                                           _gameLauncher, taskContext);
         }
 
         [Test]
@@ -278,13 +279,20 @@ namespace YetiVSI.Test
             Assert.That(launchSettings[0].Executable,
                         Is.EqualTo(Environment.SystemDirectory + "\\cmd.exe"));
 
-            _launchCommandFormatter.Parse(launchSettings[0].Arguments,
-                                          out LaunchParams launchParams,
-                                          out string launchName);
-            Assert.That(launchParams.Account, Is.EqualTo(_testAccount));
-            Assert.That(launchParams.SdkVersion, Is.EqualTo(_sdkVersionString));
-            Assert.That(launchParams.Endpoint, Is.EqualTo(endpoint));
-            Assert.That(launchName, Is.EqualTo(_gameLaunch.LaunchName));
+            if (endpoint == StadiaEndpoint.AnyEndpoint)
+            {
+                Assert.That(launchSettings[0].Arguments, Contains.Substring("exit"));
+            }
+            else
+            {
+                _launchCommandFormatter.Parse(launchSettings[0].Arguments,
+                                              out LaunchParams launchParams,
+                                              out string launchName);
+                Assert.That(launchParams.Account, Is.EqualTo(_testAccount));
+                Assert.That(launchParams.SdkVersion, Is.EqualTo(_sdkVersionString));
+                Assert.That(launchParams.Endpoint, Is.EqualTo(endpoint));
+                Assert.That(launchName, Is.EqualTo(_gameLaunch.LaunchName));
+            }
 
             await _remoteDeploy.Received()
                 .DeployGameExecutableAsync(_project, new SshTarget(gamelets[0]),

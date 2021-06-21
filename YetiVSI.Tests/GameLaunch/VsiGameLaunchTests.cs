@@ -177,12 +177,27 @@ namespace YetiVSI.Test.GameLaunch
                     () => currentTask(new NothingToCancel()));
                 return true;
             });
-            _cancelableTaskFactory.Create(
-                TaskMessages.LaunchingGame, Arg.Any<Func<ICancelable, Task>>()).Returns(callInfo =>
+            if (isDevResumeOfferEnabled)
             {
-                currentTask = callInfo.Arg<Func<ICancelable, Task>>();
-                return cancelable;
-            });
+                _cancelableTaskFactory.Create(
+                TaskMessages.LaunchingDeferredGame, TaskMessages.LaunchingDeferredGameTitle,
+                Arg.Any<Func<ICancelable, Task>>())
+                    .Returns(callInfo =>
+                    {
+                        currentTask = callInfo.Arg<Func<ICancelable, Task>>();
+                        return cancelable;
+                    });
+            }
+            else
+            {
+                _cancelableTaskFactory.Create(
+                TaskMessages.LaunchingGame, Arg.Any<Func<ICancelable, Task>>()).Returns(callInfo =>
+                {
+                    currentTask = callInfo.Arg<Func<ICancelable, Task>>();
+                    return cancelable;
+                });
+            }
+            
             List<GameLaunchState> statusSequence = launchStates
                 .Select((state, i) => Enumerable.Repeat(state, stateRepeat[i]))
                 .SelectMany(states => states).ToList();

@@ -210,9 +210,19 @@ namespace YetiVSI.GameLaunch
         public bool WaitUntilGameLaunched()
         {
             IAction action = _actionRecorder.CreateToolAction(ActionType.GameLaunchWaitForStart);
-            ICancelableTask pollForLaunchStatusTask = _cancelableTaskFactory.Create(
-                TaskMessages.LaunchingGame,
-                async task => await PollForLaunchStatusAsync(task, action));
+            ICancelableTask pollForLaunchStatusTask;
+            if (_isDeveloperResumeOfferEnabled)
+            {
+                pollForLaunchStatusTask = _cancelableTaskFactory.Create(
+                    TaskMessages.LaunchingDeferredGame, TaskMessages.LaunchingDeferredGameTitle,
+                    async task => await PollForLaunchStatusAsync(task, action));
+            }
+            else
+            {
+                pollForLaunchStatusTask = _cancelableTaskFactory.Create(TaskMessages.LaunchingGame,
+                    async task => await PollForLaunchStatusAsync(task, action));
+            }
+
             try
             {
                 if (!pollForLaunchStatusTask.RunAndRecord(action))

@@ -132,5 +132,11 @@ namespace YetiVSITestsCommon
                 StackTrace = new StackTrace(1, true).ToString()
             });
         }
+
+        public void ShowMessage(string message, string caption)
+        {
+            RecordMessage(message, null, MessageType.Info);
+            Trace.WriteLine(message);
+        }
     }
 }

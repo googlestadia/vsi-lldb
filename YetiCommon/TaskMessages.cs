@@ -27,6 +27,11 @@ namespace YetiCommon
         public const string ClearingInstanceLogs = "Clearing instance logs...";
         public const string AttachingToProcess = "Attaching to the process...";
         public const string LaunchingGame = "Launching the game...";
+        public const string LaunchingDeferredGameTitle = "Start playing";
+        public const string LaunchingDeferredGame = "Your run has started on all player" +
+            " endpoints. A prompt to play will appear on endpoints where you’re signed in. " +
+            "You can switch endpoints at any time using these prompts, " +
+            "and they’ll persist on all other endpoints unless you dismiss them.";
         public const string LookingForTheCurrentLaunch = "Looking for the current launch...";
         public const string DeployingExecutable = "Deploying executable...";
         public const string CustomDeployCommand = "Running custom deploy command...";
@@ -39,6 +44,10 @@ namespace YetiCommon
             double sentMByte = sentBytes / _bytesPerMByte;
             return $"Deployed {sentMByte:F1} MB.";
         }
+
+        public static string LaunchingDeferredGameRunFlow => $"{LaunchingDeferredGame}\r\n" +
+            "If the prompt doesn't appear, the game has likely failed to start. " +
+            "Run the game in debug mode to investigate the issue.";
 
         const double _bytesPerMByte = 1024 * 1024d;
     }

@@ -27,6 +27,11 @@ namespace YetiVSI
         void ShowMessage(string message);
 
         /// <summary>
+        /// Displays the provided message as an 'Info' dialog.
+        /// </summary>
+        void ShowMessage(string message, string caption);
+
+        /// <summary>
         /// Displays a Yes/No prompt.  Returns true if Yes is selected.
         /// </summary>
         /// <returns>true if 'Yes' selected, otherwise false.</returns>
@@ -64,6 +69,11 @@ namespace YetiVSI
         public void ShowMessage(string message)
         {
             MessageBox.Show(message);
+        }
+
+        public void ShowMessage(string message, string caption)
+        {
+            MessageBox.Show(message, caption);
         }
 
         public bool ShowYesNo(string message, string caption)

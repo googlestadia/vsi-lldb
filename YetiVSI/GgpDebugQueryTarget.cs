@@ -16,6 +16,7 @@ using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
+using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -51,6 +52,7 @@ namespace YetiVSI
         readonly ChromeClientLaunchCommandFormatter _launchCommandFormatter;
         readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
         readonly IGameLauncher _gameLauncher;
+        readonly JoinableTaskContext _taskContext;
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
@@ -65,7 +67,8 @@ namespace YetiVSI
                                    ICloudRunner cloudRunner, Versions.SdkVersion sdkVersion,
                                    ChromeClientLaunchCommandFormatter launchCommandFormatter,
                                    DebugEngine.DebugEngine.Params.Factory paramsFactory,
-                                   IYetiVSIService yetiVsiService, IGameLauncher gameLauncher)
+                                   IYetiVSIService yetiVsiService, IGameLauncher gameLauncher,
+                                   JoinableTaskContext taskContext)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -84,6 +87,7 @@ namespace YetiVSI
             _launchCommandFormatter = launchCommandFormatter;
             _paramsFactory = paramsFactory;
             _gameLauncher = gameLauncher;
+            _taskContext = taskContext;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -217,9 +221,21 @@ namespace YetiVSI
                         IVsiGameLaunch launch = _gameLauncher.CreateLaunch(launchParams);
                         if (launch != null)
                         {
-                            debugLaunchSettings.Arguments =
-                                _launchCommandFormatter.CreateWithLaunchName(
-                                    launchParams, launch.LaunchName);
+                            if (launchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
+                            {
+                                // We dont need to start the ChromeClientLauncher,
+                                // as we won't open a Chrome window.
+                                debugLaunchSettings.Arguments = "/c exit";
+                                await _taskContext.Factory.SwitchToMainThreadAsync();
+                                _dialogUtil.ShowMessage(TaskMessages.LaunchingDeferredGameRunFlow,
+                                    TaskMessages.LaunchingDeferredGameTitle);
+                            }
+                            else
+                            {
+                                debugLaunchSettings.Arguments =
+                                    _launchCommandFormatter.CreateWithLaunchName(
+                                        launchParams, launch.LaunchName);
+                            }
                         }
                         else
                         {

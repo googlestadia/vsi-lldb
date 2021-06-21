@@ -206,6 +206,15 @@ namespace YetiVSI
             }
 
             // Create a task that runs the given synchronous action on a background thread,
+            // and waits on the resulting async task.
+            public virtual ICancelableTask Create(string text, string title,
+                Func<ICancelable, Task> action)
+            {
+                return new NoResult(taskContext, progressDialogFactory.Create(title, text),
+                    action, delay, reportPeriod);
+            }
+
+            // Create a task that runs the given synchronous action on a background thread,
             // and waits on the resulting async task, and captures its result.
             public virtual ICancelableTask<T> Create<T>(string text,
                                                         Func<ICancelable, Task<T>> action)
