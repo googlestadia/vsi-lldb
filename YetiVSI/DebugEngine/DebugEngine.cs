@@ -164,6 +164,8 @@ namespace YetiVSI.DebugEngine
             readonly ISymbolSettingsProvider _symbolSettingsProvider;
             readonly bool _deployLldbServer;
             readonly IGameLauncher _gameLauncher;
+            readonly DebugEventRecorder _debugEventRecorder;
+            readonly ExpressionEvaluationRecorder _expressionEvaluationRecorder;
 
             public Factory(JoinableTaskContext taskContext, ServiceManager serviceManager,
                            DebugSessionMetrics debugSessionMetrics,
@@ -183,7 +185,8 @@ namespace YetiVSI.DebugEngine
                            IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
-                           IGameLauncher gameLauncher)
+                           IGameLauncher gameLauncher, DebugEventRecorder debugEventRecorder,
+                           ExpressionEvaluationRecorder expressionEvaluationRecorder)
             {
                 _taskContext = taskContext;
                 _serviceManager = serviceManager;
@@ -211,6 +214,8 @@ namespace YetiVSI.DebugEngine
                 _symbolSettingsProvider = symbolSettingsProvider;
                 _deployLldbServer = deployLldbServer;
                 _gameLauncher = gameLauncher;
+                _debugEventRecorder = debugEventRecorder;
+                _expressionEvaluationRecorder = expressionEvaluationRecorder;
             }
 
             /// <summary>
@@ -238,7 +243,7 @@ namespace YetiVSI.DebugEngine
                     _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
                     _debugEngineCommands, _debugEventCallbackDecorator, envDteService?.RegistryRoot,
                     sessionNotifier, _symbolSettingsProvider, _deployLldbServer,
-                    _gameLauncher);
+                    _gameLauncher, _debugEventRecorder, _expressionEvaluationRecorder);
             }
         }
 
@@ -319,6 +324,8 @@ namespace YetiVSI.DebugEngine
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
         readonly bool _deployLldbServer;
         readonly IGameLauncher _gameLauncher;
+        readonly DebugEventRecorder _debugEventRecorder;
+        readonly ExpressionEvaluationRecorder _expressionEvaluationRecorder;
 
         // Keep track of the attach operation, so that it can be aborted by transport errors.
         ICancelableTask _attachOperation;
@@ -359,7 +366,9 @@ namespace YetiVSI.DebugEngine
             IRemoteDeploy remoteDeploy, IDebugEngineCommands debugEngineCommands,
             DebugEventCallbackTransform debugEventCallbackDecorator, string vsRegistryRoot,
             ISessionNotifier sessionNotifier, ISymbolSettingsProvider symbolSettingsProvider,
-            bool deployLldbServer, IGameLauncher gameLauncher)
+            bool deployLldbServer, IGameLauncher gameLauncher,
+            DebugEventRecorder debugEventRecorder,
+            ExpressionEvaluationRecorder expressionEvaluationRecorder)
             : base(self)
         {
             taskContext.ThrowIfNotOnMainThread();
@@ -397,6 +406,8 @@ namespace YetiVSI.DebugEngine
             _symbolSettingsProvider = symbolSettingsProvider;
             _deployLldbServer = deployLldbServer;
             _gameLauncher = gameLauncher;
+            _debugEventRecorder = debugEventRecorder;
+            _expressionEvaluationRecorder = expressionEvaluationRecorder;
 
             // Register observers on long lived objects last so that they don't hold a reference
             // to this if an exception is thrown during construction.
@@ -1165,6 +1176,8 @@ namespace YetiVSI.DebugEngine
                 return;
             }
 
+            _debugEventRecorder.Flush();
+            _expressionEvaluationRecorder.Flush();
             _attachedProgram.Stop();
             _sessionNotifier.NotifySessionStopped(new SessionStoppedEventArgs(_attachedProgram));
             StopTransportAndCleanup(exitInfo);

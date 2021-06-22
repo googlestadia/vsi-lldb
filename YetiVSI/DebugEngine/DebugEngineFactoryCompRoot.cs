@@ -87,9 +87,11 @@ namespace YetiVSI.DebugEngine
 
         DebugSessionMetrics _debugSessionMetrics;
 
-        IExceptionRecorder _exceptionRecorder;
+        DebugEventRecorder _debugEventRecorder;
 
         ExpressionEvaluationRecorder _expressionEvaluationRecorder;
+
+        IExceptionRecorder _exceptionRecorder;
 
         IDecorator _factoryDecorator;
 
@@ -393,7 +395,8 @@ namespace YetiVSI.DebugEngine
                 GetDialogUtil(), GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(),
                 debugEngineCommands,
                 GetDebugEventCallbackDecorator(GetVsiService().DebuggerOptions),
-                GetSymbolSettingsProvider(), deployLldbServer, gameLauncher);
+                GetSymbolSettingsProvider(), deployLldbServer, gameLauncher,
+                GetDebugEventRecorder(), GetExpressionEvaluationRecorder());
             return GetFactoryDecorator().Decorate(factory);
         }
 
@@ -584,14 +587,20 @@ namespace YetiVSI.DebugEngine
             return _debugSessionMetrics;
         }
 
-        public virtual IExceptionRecorder GetExceptionRecorder()
+        public DebugEventRecorder GetDebugEventRecorder()
         {
-            if (_exceptionRecorder == null)
+            if (_debugEventRecorder == null)
             {
-                _exceptionRecorder = new ExceptionRecorder(GetDebugSessionMetrics());
+                var schedulerFactory = new EventScheduler.Factory();
+                var debugEventAggregator =
+                    new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,
+                        DebugEventBatchSummary>(_metricsEventsBatchIntervalMs,
+                                                schedulerFactory);
+                _debugEventRecorder =
+                    new DebugEventRecorder(debugEventAggregator, GetDebugSessionMetrics());
             }
 
-            return _exceptionRecorder;
+            return _debugEventRecorder;
         }
 
         public ExpressionEvaluationRecorder GetExpressionEvaluationRecorder()
@@ -611,6 +620,16 @@ namespace YetiVSI.DebugEngine
             }
 
             return _expressionEvaluationRecorder;
+        }
+
+        public virtual IExceptionRecorder GetExceptionRecorder()
+        {
+            if (_exceptionRecorder == null)
+            {
+                _exceptionRecorder = new ExceptionRecorder(GetDebugSessionMetrics());
+            }
+
+            return _exceptionRecorder;
         }
 
         /// <summary>
@@ -764,7 +783,7 @@ namespace YetiVSI.DebugEngine
 
             if (debuggerOptions[DebuggerOption.STEP_TIME_METRICS] == DebuggerOptionState.ENABLED)
             {
-                SetupStepTimeMetrics(apiAspects, debugSessionMetrics);
+                SetupStepTimeMetrics(apiAspects);
             }
 
             return apiAspects;
@@ -848,18 +867,11 @@ namespace YetiVSI.DebugEngine
             return _callSequenceLogger;
         }
 
-        public virtual void SetupStepTimeMetrics(List<IInterceptor> apiAspects, IMetrics metrics)
+        public virtual void SetupStepTimeMetrics(List<IInterceptor> apiAspects)
         {
-            var schedulerFactory = new EventScheduler.Factory();
-
-            var debugEventAggregator =
-                new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,
-                    DebugEventBatchSummary>(_metricsEventsBatchIntervalMs, schedulerFactory);
-            var debugEventRecorder = new DebugEventRecorder(debugEventAggregator, metrics);
-
             var timeSource = GetTimeSource();
             var metricsCollectionAspect =
-                new MetricsCollectionAspect(debugEventRecorder, timeSource);
+                new MetricsCollectionAspect(GetDebugEventRecorder(), timeSource);
             apiAspects.Add(metricsCollectionAspect);
         }
 

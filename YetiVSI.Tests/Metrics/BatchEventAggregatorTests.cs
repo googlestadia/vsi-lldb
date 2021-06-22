@@ -73,6 +73,43 @@ namespace YetiVSI.Test.Metrics
                     }, batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
         }
 
+        [Test]
+        public void TestMetricsFlushing()
+        {
+            DebugEventBatchSummary batchSummary = null;
+            _batchEventAggregator.BatchSummaryReady += (_, newSummary) => batchSummary = newSummary;
+
+            AddEvent(TestClass.MethodInfo1);
+            _eventScheduler.Increment(_batchIntervalMs / 2);
+            Assert.IsNull(batchSummary);
+
+            AddEvent(TestClass.MethodInfo2);
+            _eventScheduler.Increment(_batchIntervalMs / 2);
+            Assert.NotNull(batchSummary);
+            Assert.AreEqual(_currentTimestamp, batchSummary.LatencyInMicroseconds);
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    TestClass.MethodInfo1.GetProto(), TestClass.MethodInfo2.GetProto()
+                }, batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
+
+            batchSummary = null;
+            _currentTimestamp = 0;
+
+            AddEvent(TestClass.MethodInfo3);
+            _eventScheduler.Increment(_batchIntervalMs / 2);
+            Assert.IsNull(batchSummary);
+
+            _batchEventAggregator.Flush();
+            Assert.NotNull(batchSummary);
+            Assert.AreEqual(_currentTimestamp, batchSummary.LatencyInMicroseconds);
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    TestClass.MethodInfo3.GetProto()
+                }, batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
+        }
+
         void AddEvent(MethodInfo methodInfo) =>
             _batchEventAggregator.Add(
                 new DebugEventBatchParams(methodInfo, _currentTimestamp, _currentTimestamp += 1));

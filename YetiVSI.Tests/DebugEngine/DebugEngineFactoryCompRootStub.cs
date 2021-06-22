@@ -137,7 +137,8 @@ namespace YetiVSI.Test.DebugEngine
                 _remoteDeploy, cancelableTaskFactory, _dialogUtil,
                 GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(), debugEngineCommands,
                 GetDebugEventCallbackDecorator(vsiService.DebuggerOptions),
-                GetSymbolSettingsProvider(), deployLldbServer, _gameLauncher);
+                GetSymbolSettingsProvider(), deployLldbServer, _gameLauncher,
+                GetDebugEventRecorder(), GetExpressionEvaluationRecorder());
             return GetFactoryDecorator().Decorate(factory);
         }
 

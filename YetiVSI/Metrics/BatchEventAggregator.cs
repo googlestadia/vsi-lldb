@@ -33,6 +33,11 @@ namespace YetiVSI.Metrics
         /// This event will be raised each time a new event batch summary is ready.
         /// </summary>
         event EventHandler<TSummary> BatchSummaryReady;
+
+        /// <summary>
+        /// Flushes the metrics that have been captured so far in the current batch.
+        /// </summary>
+        void Flush();
     }
 
     /// <summary>
@@ -44,6 +49,7 @@ namespace YetiVSI.Metrics
         public event EventHandler<TSummary> BatchSummaryReady;
 
         readonly IEventScheduler _scheduler;
+
         readonly object _currentBatchAndTimerLocker;
         IEventBatch<TParams, TSummary> _currentBatch;
 
@@ -92,6 +98,12 @@ namespace YetiVSI.Metrics
                 _scheduler.Disable();
             }
             BatchSummaryReady?.Invoke(this, finalizedBatch.GetSummary());
+        }
+
+        public void Flush()
+        {
+            // TODO: Shutdown batch events aggregator after flushing metrics
+            HandleBatchCheck();
         }
     }
 }

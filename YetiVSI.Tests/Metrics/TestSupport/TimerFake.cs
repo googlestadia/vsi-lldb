@@ -18,32 +18,32 @@ namespace YetiVSI.Test.Metrics.TestSupport
 {
     class TimerFake : ITimer
     {
-        bool running;
-        long ticks;
+        bool _running;
+        long _ticks;
 
-        public long ElapsedMilliseconds => ticks;
+        public long ElapsedMilliseconds => _ticks;
 
         public void Reset()
         {
-            ticks = 0;
-            running = false;
+            _ticks = 0;
+            _running = false;
         }
 
         public void Restart()
         {
-            ticks = 0;
-            running = true;
+            _ticks = 0;
+            _running = true;
         }
 
-        public void Start() => running = true;
+        public void Start() => _running = true;
 
-        public void Stop() => running = false;
+        public void Stop() => _running = false;
 
-        public void Increment(long tock)
+        public void Increment(long tick)
         {
-            if (running)
+            if (_running)
             {
-                ticks += tock;
+                _ticks += tick;
             }
         }
     }

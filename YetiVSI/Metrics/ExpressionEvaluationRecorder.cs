@@ -78,6 +78,8 @@ namespace YetiVSI.Metrics
                                  logEvent);
         }
 
+        public void Flush() => _batchEventAggregator.Flush();
+
         public class StepsRecorder
         {
             readonly List<ExpressionEvaluationStepBatchParams> _steps;

@@ -55,6 +55,8 @@ namespace YetiVSI.Metrics
             _metrics.RecordEvent(DeveloperEventType.Types.Type.VsiDebugEventBatch, logEvent);
         }
 
+        public void Flush() => _batchEventAggregator.Flush();
+
         long MillisFromMicros(long valueInMicroseconds) => valueInMicroseconds / 1000;
     }
 }
