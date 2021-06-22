@@ -136,7 +136,8 @@ namespace YetiVSI.DebugEngine.Variables
             string plainValue = varInfo.AssignmentValue;
             string memoryAddress = varInfo.GetMemoryAddressAsHex();
             string addressPrefix =
-                FormatSpecifierUtil.SuppressMemoryAddress(varInfo.FormatSpecifier)
+                FormatSpecifierUtil.SuppressMemoryAddress(varInfo.FormatSpecifier) ||
+                string.IsNullOrEmpty(memoryAddress)
                     ? ""
                     : memoryAddress + " ";
             if (value != "" && plainValue != value)

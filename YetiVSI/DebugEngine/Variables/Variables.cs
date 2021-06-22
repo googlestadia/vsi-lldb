@@ -453,8 +453,8 @@ namespace YetiVSI.DebugEngine.Variables
         public IChildAdapter GetChildAdapter() =>
             new ListChildAdapter.Factory().Create(new List<IVariableInformation>());
 
-        public ulong? GetMemoryContextAddress() => throw new NotImplementedException();
-        public string GetMemoryAddressAsHex() => throw new NotImplementedException();
+        public ulong? GetMemoryContextAddress() => null;
+        public string GetMemoryAddressAsHex() => "";
 
         #endregion
     }
