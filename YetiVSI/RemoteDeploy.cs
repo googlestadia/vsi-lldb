@@ -231,7 +231,7 @@ namespace YetiVSI
                     "You have set the <DeployPythonAndToolchainDependencies> project setting to " +
                     "False to speed up deployment, but the LLDB server file " +
                     $"{localLldbServerPath} moved. Either fix the wrong file path (preferred) or " +
-                    "set <DeployPythonAndToolchainDependencies> to False.");
+                    "set <DeployPythonAndToolchainDependencies> to False.", null);
             }
 #else
             string localLldbServerPath =

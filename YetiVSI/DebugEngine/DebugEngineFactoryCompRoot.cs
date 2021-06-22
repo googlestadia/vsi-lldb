@@ -88,6 +88,8 @@ namespace YetiVSI.DebugEngine
 
         DebugSessionMetrics _debugSessionMetrics;
 
+        IExceptionRecorder _exceptionRecorder;
+
         ExpressionEvaluationRecorder _expressionEvaluationRecorder;
 
         IDecorator _factoryDecorator;
@@ -588,6 +590,16 @@ namespace YetiVSI.DebugEngine
             return _debugSessionMetrics;
         }
 
+        public virtual IExceptionRecorder GetExceptionRecorder()
+        {
+            if (_exceptionRecorder == null)
+            {
+                _exceptionRecorder = new ExceptionRecorder(GetDebugSessionMetrics());
+            }
+
+            return _exceptionRecorder;
+        }
+
         public ExpressionEvaluationRecorder GetExpressionEvaluationRecorder()
         {
             if (_expressionEvaluationRecorder == null)
@@ -740,8 +752,7 @@ namespace YetiVSI.DebugEngine
 
             if (debuggerOptions[DebuggerOption.EXCEPTION_METRICS] == DebuggerOptionState.ENABLED)
             {
-                apiAspects.Add(
-                    new ExceptionRecorderAspect(new ExceptionRecorder(debugSessionMetrics)));
+                apiAspects.Add(new ExceptionRecorderAspect(GetExceptionRecorder()));
             }
 
             if (debuggerOptions[DebuggerOption.DEBUGGER_TRACING] == DebuggerOptionState.ENABLED)
@@ -891,7 +902,7 @@ namespace YetiVSI.DebugEngine
                     GetJoinableTaskContext(), GetTaskExecutor(), GetNatvisDiagnosticLogger(),
                     GetSolutionNatvisFileSource(),
                     new NatvisValidator.Factory(GetFileSystem(), GetNatvisDiagnosticLogger()),
-                    GetWindowsRegistry(), GetFileSystem());
+                    GetWindowsRegistry(), GetFileSystem(), GetExceptionRecorder());
             }
 
             return _natvisLoader;

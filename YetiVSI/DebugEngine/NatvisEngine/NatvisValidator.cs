@@ -84,7 +84,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         public void Validate(string filepath)
         {
-            Validate(fileSystem.FileStream.Create(filepath, FileMode.Open, FileAccess.Read));
+            using (Stream stream = fileSystem.FileStream.Create(filepath, FileMode.Open,
+                                                                FileAccess.Read, FileShare.Read))
+            {
+                Validate(stream);
+            }
         }
 
         public void Validate(Stream stream)

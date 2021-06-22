@@ -22,6 +22,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using Microsoft.VisualStudio.Threading;
+using YetiCommon.ExceptionRecorder;
 using YetiCommon.Util;
 using YetiVSI.DebugEngine.Interfaces;
 using YetiVSI.Util;
@@ -61,13 +62,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         readonly NatvisValidator.Factory _validatorFactory;
         readonly IWindowsRegistry _winRegistry;
         readonly IFileSystem _fileSystem;
+        readonly IExceptionRecorder _exceptionRecorder;
 
         string _registryRoot;
 
         public NatvisLoader(JoinableTaskContext taskContext, ITaskExecutor taskExecutor,
                             NatvisDiagnosticLogger logger, INatvisFileSource solutionNatvisFiles,
                             NatvisValidator.Factory validatorFactory, IWindowsRegistry winRegistry,
-                            IFileSystem fileSystem)
+                            IFileSystem fileSystem, IExceptionRecorder exceptionRecorder)
         {
             _taskContext = taskContext;
             _taskExecutor = taskExecutor;
@@ -76,6 +78,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             _validatorFactory = validatorFactory;
             _winRegistry = winRegistry;
             _fileSystem = fileSystem;
+            _exceptionRecorder = exceptionRecorder;
         }
 
         /// <summary>
@@ -106,24 +109,16 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         {
             _taskContext.ThrowIfNotOnMainThread();
 
-            try
-            {
-                TraceWriteLine(NatvisLoggingLevel.VERBOSE,
-                               "Loading Natvis files found in the project...");
-                var sw = new Stopwatch();
-                sw.Start();
-                _solutionNatvisFiles.GetFilePaths()
-                    .ForEach(path => LoadFile(path, typeVisualizers));
-                sw.Stop();
-                TraceWriteLine(NatvisLoggingLevel.VERBOSE,
-                               $"Loaded project Natvis files in {sw.Elapsed}.");
+            TraceWriteLine(NatvisLoggingLevel.VERBOSE,
+                           "Loading Natvis files found in the project...");
+            var sw = new Stopwatch();
+            sw.Start(); 
+            foreach (string path in _solutionNatvisFiles.GetFilePaths()) {
+                LoadFile(path, typeVisualizers);
             }
-            catch (FileNotFoundException ex)
-            {
-                TraceWriteLine(NatvisLoggingLevel.ERROR,
-                               $"Failed to load Natvis files from project. Reason: {ex.Message}" +
-                               $"{Environment.NewLine}Stacktrace:{ex.StackTrace}");
-            }
+            sw.Stop();
+            TraceWriteLine(NatvisLoggingLevel.VERBOSE,
+                           $"Loaded project Natvis files in {sw.Elapsed}.");
         }
 
         /// <summary>
@@ -183,7 +178,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 sw.Start();
 
                 using (Stream stream =
-                    _fileSystem.FileStream.Create(filePath, FileMode.Open, FileAccess.Read))
+                    _fileSystem.FileStream.Create(filePath, FileMode.Open, FileAccess.Read,
+                                                  FileShare.Read))
                 {
                     LoadFromStream(stream, filePath, typeVisualizers);
                 }
@@ -198,16 +194,23 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             catch (InvalidOperationException ex)
             {
                 // Handles invalid XML errors.
-
-                // don't allow natvis failures to stop debugging
+                // Don't allow natvis failures to stop debugging!
                 TraceWriteLine(NatvisLoggingLevel.ERROR,
                                $"Failed to load Natvis file '{filePath}'." +
                                $" Reason: {ex.Message}");
             }
+            catch (FileNotFoundException ex)
+            {
+                // (internal): Also handle obscure FileNotFoundException.
+                // Don't allow natvis failures to stop debugging!
+                TraceWriteLine(NatvisLoggingLevel.ERROR,
+                               $"Failed to load Natvis file '{filePath}'." +
+                               $" Reason: {ex.Message}");
+
+                _exceptionRecorder.Record(MethodBase.GetCurrentMethod(), ex);
+            }
             catch (Exception ex)
             {
-                // TODO: Ensure 'unhandled' exceptions are logged at a higher level, such
-                // as a global error handler.
                 TraceWriteLine(NatvisLoggingLevel.ERROR,
                                $"Failed to load Natvis file '{filePath}'. Reason: {ex.Message}" +
                                $"{Environment.NewLine}Stacktrace:{ex.StackTrace}");
