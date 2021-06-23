@@ -594,8 +594,8 @@ namespace YetiVSI.DebugEngine
                 var schedulerFactory = new EventScheduler.Factory();
                 var debugEventAggregator =
                     new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,
-                        DebugEventBatchSummary>(_metricsEventsBatchIntervalMs,
-                                                schedulerFactory);
+                        DebugEventBatchSummary>(_metricsEventsBatchIntervalMs, schedulerFactory,
+                                                GetExceptionRecorder());
                 _debugEventRecorder =
                     new DebugEventRecorder(debugEventAggregator, GetDebugSessionMetrics());
             }
@@ -612,7 +612,7 @@ namespace YetiVSI.DebugEngine
                 var expressionEvaluationEventAggregator =
                     new BatchEventAggregator<ExpressionEvaluationBatch,
                         ExpressionEvaluationBatchParams, ExpressionEvaluationBatchSummary>(
-                        _metricsEventsBatchIntervalMs, schedulerFactory);
+                        _metricsEventsBatchIntervalMs, schedulerFactory, GetExceptionRecorder());
 
                 _expressionEvaluationRecorder =
                     new ExpressionEvaluationRecorder(expressionEvaluationEventAggregator,

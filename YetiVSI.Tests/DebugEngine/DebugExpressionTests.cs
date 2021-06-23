@@ -68,10 +68,12 @@ namespace YetiVSI.Test.DebugEngine
                                          Arg.Any<int>())
                 .Returns(eventScheduler);
             const int minimumBatchSeparationMilliseconds = 1;
+            var exceptionRecorder = new ExceptionRecorder(_metrics);
             var batchEventAggregator =
                 new BatchEventAggregator<ExpressionEvaluationBatch, ExpressionEvaluationBatchParams,
                     ExpressionEvaluationBatchSummary>(minimumBatchSeparationMilliseconds,
-                                                      eventSchedulerFactory);
+                                                      eventSchedulerFactory,
+                                                      exceptionRecorder);
 
             _expressionEvaluationRecorder =
                 new ExpressionEvaluationRecorder(batchEventAggregator, _metrics);

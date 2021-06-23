@@ -13,6 +13,9 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics;
+using System.Reflection;
+using YetiCommon.ExceptionRecorder;
 
 namespace YetiVSI.Metrics
 {
@@ -52,14 +55,15 @@ namespace YetiVSI.Metrics
 
         readonly object _currentBatchAndTimerLocker;
         IEventBatch<TParams, TSummary> _currentBatch;
+        readonly IExceptionRecorder _exceptionRecorder;
 
-        public BatchEventAggregator(int intervalMs,
-                                    IEventSchedulerFactory schedulerFactory)
+        public BatchEventAggregator(int intervalMs, IEventSchedulerFactory schedulerFactory,
+                                    IExceptionRecorder exceptionRecorder)
         {
-            _scheduler =
-                schedulerFactory.Create(HandleBatchCheck, intervalMs);
+            _scheduler = schedulerFactory.Create(HandleBatchCheck, intervalMs);
 
             _currentBatchAndTimerLocker = new object();
+            _exceptionRecorder = exceptionRecorder;
         }
 
         public void Add(TParams batchParams)
@@ -97,7 +101,17 @@ namespace YetiVSI.Metrics
                 _currentBatch = null;
                 _scheduler.Disable();
             }
-            BatchSummaryReady?.Invoke(this, finalizedBatch.GetSummary());
+
+            // Record exceptions that could arise when retrieving the batch summary
+            try
+            {
+                BatchSummaryReady?.Invoke(this, finalizedBatch.GetSummary());
+            }
+            catch (Exception e)
+            {
+                _exceptionRecorder.Record(MethodBase.GetCurrentMethod(), e);
+                Trace.WriteLine($"Batch summary retrieval failed with exception: {e}");
+            }
         }
 
         public void Flush()

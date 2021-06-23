@@ -31,7 +31,6 @@ namespace YetiVSI.Test.Metrics
 
         EventSchedulerFake _eventScheduler;
         IMetrics _metrics;
-        TimerFake _timer;
 
         // Object under test
         DebugEventRecorder _debugEventRecorder;
@@ -44,11 +43,12 @@ namespace YetiVSI.Test.Metrics
             eventSchedulerFactory.Create(Arg.Do<System.Action>(a => _eventScheduler.Callback = a),
                                          _batchIntervalMs)
                 .Returns(_eventScheduler);
-            _timer = new TimerFake();
+            _metrics = Substitute.For<IMetrics>();
+            var exceptionRecorder = new ExceptionRecorder(_metrics);
             _batchEventAggregator =
                 new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,
-                    DebugEventBatchSummary>(_batchIntervalMs, eventSchedulerFactory);
-            _metrics = Substitute.For<IMetrics>();
+                    DebugEventBatchSummary>(_batchIntervalMs, eventSchedulerFactory,
+                                            exceptionRecorder);
             _debugEventRecorder = new DebugEventRecorder(_batchEventAggregator, _metrics);
         }
 
@@ -64,7 +64,6 @@ namespace YetiVSI.Test.Metrics
             DebugEventBatchSummary batchSummary = null;
             _batchEventAggregator.BatchSummaryReady += (_, newSummary) => batchSummary = newSummary;
 
-            _timer.Increment(_batchIntervalMs);
             _eventScheduler.Increment(_batchIntervalMs);
             CollectionAssert.AreEquivalent(
                 new[]

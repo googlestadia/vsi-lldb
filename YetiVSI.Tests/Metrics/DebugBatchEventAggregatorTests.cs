@@ -16,13 +16,14 @@ using NSubstitute;
 using NUnit.Framework;
 using System.Linq;
 using System.Reflection;
+using YetiCommon.ExceptionRecorder;
 using YetiVSI.Metrics;
 using YetiVSI.Test.Metrics.TestSupport;
 
 namespace YetiVSI.Test.Metrics
 {
     [TestFixture]
-    public class BatchEventAggregatorTests
+    public class DebugBatchEventAggregatorTests
     {
         const int _batchIntervalMs = 1026;
 
@@ -42,9 +43,11 @@ namespace YetiVSI.Test.Metrics
                                          _eventScheduler.Interval = _batchIntervalMs)
                 .Returns(_eventScheduler);
             _currentTimestamp = 0;
+            var schedulerRecorder = Substitute.For<IExceptionRecorder>();
             _batchEventAggregator =
                 new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,
-                    DebugEventBatchSummary>(_batchIntervalMs, eventSchedulerFactory);
+                    DebugEventBatchSummary>(_batchIntervalMs, eventSchedulerFactory,
+                                            schedulerRecorder);
         }
 
         [Test]
@@ -67,10 +70,10 @@ namespace YetiVSI.Test.Metrics
             Assert.AreEqual(_currentTimestamp, batchSummary.LatencyInMicroseconds);
             CollectionAssert.AreEquivalent(
                 new[]
-                    {
-                        TestClass.MethodInfo1.GetProto(), TestClass.MethodInfo2.GetProto(),
-                        TestClass.MethodInfo3.GetProto()
-                    }, batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
+                {
+                    TestClass.MethodInfo1.GetProto(), TestClass.MethodInfo2.GetProto(),
+                    TestClass.MethodInfo3.GetProto()
+                }, batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
         }
 
         [Test]
@@ -88,10 +91,8 @@ namespace YetiVSI.Test.Metrics
             Assert.NotNull(batchSummary);
             Assert.AreEqual(_currentTimestamp, batchSummary.LatencyInMicroseconds);
             CollectionAssert.AreEquivalent(
-                new[]
-                {
-                    TestClass.MethodInfo1.GetProto(), TestClass.MethodInfo2.GetProto()
-                }, batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
+                new[] { TestClass.MethodInfo1.GetProto(), TestClass.MethodInfo2.GetProto() },
+                batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
 
             batchSummary = null;
             _currentTimestamp = 0;
@@ -103,11 +104,9 @@ namespace YetiVSI.Test.Metrics
             _batchEventAggregator.Flush();
             Assert.NotNull(batchSummary);
             Assert.AreEqual(_currentTimestamp, batchSummary.LatencyInMicroseconds);
-            CollectionAssert.AreEquivalent(
-                new[]
-                {
-                    TestClass.MethodInfo3.GetProto()
-                }, batchSummary.Proto.DebugEvents.Select(a => a.MethodInfo));
+            CollectionAssert.AreEquivalent(new[] { TestClass.MethodInfo3.GetProto() },
+                                           batchSummary.Proto.DebugEvents
+                                               .Select(a => a.MethodInfo));
         }
 
         void AddEvent(MethodInfo methodInfo) =>

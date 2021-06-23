@@ -56,9 +56,11 @@ namespace YetiVSI.Test.Metrics
                 .Create(Arg.Do<System.Action>(a => _eventScheduler.Callback = a), Arg.Any<int>())
                 .Returns(_eventScheduler);
             _timeSource = new MonotonicTimeSource();
+            var exceptionRecorder = new ExceptionRecorder(_metrics);
             _batchEventAggregator =
                 new BatchEventAggregator<ExpressionEvaluationBatch, ExpressionEvaluationBatchParams,
-                    ExpressionEvaluationBatchSummary>(_batchIntervalMs, eventSchedulerFactory);
+                    ExpressionEvaluationBatchSummary>(_batchIntervalMs, eventSchedulerFactory,
+                                                      exceptionRecorder);
 
             _expressionEvaluationRecorder =
                 new ExpressionEvaluationRecorder(_batchEventAggregator, _metrics);
