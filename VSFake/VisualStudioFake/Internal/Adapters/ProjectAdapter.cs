@@ -233,6 +233,9 @@ namespace Google.VisualStudioFake.Internal
         public Task<string> GetTestAccountAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.GgpTestAccount);
 
+        public Task<string> GetExternalIdAsync() =>
+            GetStringPropertyAsync(ProjectPropertyName.GgpExternalId);
+
         public Task<StadiaEndpoint> GetEndpointAsync()
         {
             string endpointString = _project.GetPropertyValue(ProjectPropertyName.GgpEndpoint);

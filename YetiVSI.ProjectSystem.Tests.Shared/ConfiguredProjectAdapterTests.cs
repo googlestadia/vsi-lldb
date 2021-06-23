@@ -282,7 +282,7 @@ namespace YetiVSI.ProjectSystem.Tests
         [Test]
         public async Task GetGgpTestAccountAsync()
         {
-            var projectPath = @"C:\GGP_project_path\";
+            string projectPath = @"C:\GGP_project_path\";
             var projectValues = new ProjectValues
             {
                 GgpTestAccount = "GGP Test Account",
@@ -291,6 +291,20 @@ namespace YetiVSI.ProjectSystem.Tests
             var configuredProject = CreateConfiguredProject(projectValues, projectPath);
             IAsyncProject project = new ConfiguredProjectAdapter(configuredProject);
             Assert.AreEqual(projectValues.GgpTestAccount, await project.GetTestAccountAsync());
+        }
+
+        [Test]
+        public async Task GetGgpExternalIdAsync()
+        {
+            string projectPath = @"C:\GGP_project_path\";
+            var projectValues = new ProjectValues
+            {
+                GgpTestAccount = "GGP External ID",
+            };
+
+            var configuredProject = CreateConfiguredProject(projectValues, projectPath);
+            IAsyncProject project = new ConfiguredProjectAdapter(configuredProject);
+            Assert.AreEqual(projectValues.GgpExternalId, await project.GetExternalIdAsync());
         }
 
         [Test]
@@ -434,6 +448,7 @@ namespace YetiVSI.ProjectSystem.Tests
             public string GgpLaunchRgp { get; set; } = "";
             public string GgpVulkanDriverVariant { get; set; } = "";
             public string GgpTestAccount { get; set; } = "";
+            public string GgpExternalId { get; set; } = "";
             public string GgpEndpoint { get; set; } = "";
             public string TargetPath { get; set; } = "";
             public string OutDir { get; set; } = "";
@@ -483,6 +498,8 @@ namespace YetiVSI.ProjectSystem.Tests
                 .Returns(projectValues.GgpVulkanDriverVariant);
             userProperties.GetEvaluatedPropertyValueAsync("GgpTestAccount")
                 .Returns(projectValues.GgpTestAccount);
+            userProperties.GetEvaluatedPropertyValueAsync("GgpExternalId")
+                .Returns(projectValues.GgpExternalId);
 
             userProperties.GetEvaluatedPropertyValueAsync("TargetPath")
                 .Returns(projectValues.TargetPath);

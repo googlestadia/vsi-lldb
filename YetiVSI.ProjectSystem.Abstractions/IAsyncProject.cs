@@ -143,6 +143,11 @@ namespace YetiVSI.ProjectSystem.Abstractions
         Task<string> GetTestAccountAsync();
 
         /// <summary>
+        /// Get test account ID to use when launching.
+        /// </summary>
+        Task<string> GetExternalIdAsync();
+
+        /// <summary>
         /// Get endpoint to be used when launching.
         /// </summary>
         Task<StadiaEndpoint> GetEndpointAsync();
