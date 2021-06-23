@@ -290,6 +290,17 @@ namespace YetiVSI
             "'Debugging' page in your project properties. To see a list of available test " +
             "accounts, run 'ggp test-account list'.";
 
+        public static string
+            InvalidExternalAccount(string externalAccountId, string applicationId) =>
+            $"Invalid external account ({externalAccountId}) or external application id" +
+            $" ({applicationId}). Check the 'External ID' and 'Stadia Application ID or Name' " +
+            "field in the 'Debugging' page in your project properties. " +
+            "This only applies to Google Stream users.";
+
+        public static string MultipleExternalAccounts(string externalAccountId) =>
+            $"Found multiple external accounts for the external ID {externalAccountId}. " +
+            "Contact us at stadia.dev/partnersupport for assistance.";
+
         public static string MoreThanOneTestAccount(string stadiaName) =>
             $"More than one test account exists with the chosen Stadia Name {stadiaName}. Run " +
             $"'ggp test-account describe {stadiaName}' to list all test accounts with this name, " +

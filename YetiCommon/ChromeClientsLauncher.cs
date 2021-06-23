@@ -304,6 +304,10 @@ namespace YetiCommon
 
         public string TestAccountGamerName { get; set; }
 
+        public string ExternalAccount { get; set; }
+
+        public string ExternalAccountDisplayName { get; set; }
+
         public StadiaEndpoint Endpoint { get; set; }
 
         public string GameletEnvironmentVars { get; set; }

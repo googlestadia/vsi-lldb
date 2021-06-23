@@ -42,6 +42,28 @@ namespace YetiCommon.Tests.Cloud
                 Endpoint = StadiaEndpoint.TestClient
             };
 
+        public static LaunchParams ValidExternalParams =>
+            new LaunchParams
+            {
+                Account = "some_account",
+                ApplicationName = "test/app",
+                ApplicationId = "app-id",
+                Cmd = "some_bin arg1",
+                Debug = true,
+                GameletEnvironmentVars = "Var1=1;vAR2=3",
+                GameletName = "test/gamelet",
+                PoolId = "test_pool",
+                RenderDoc = true,
+                Rgp = false,
+                SdkVersion = "1",
+                VulkanDriverVariant = "test_variant",
+                SurfaceEnforcementMode = SurfaceEnforcementSetting.Warn,
+                ExternalAccount = "some_external_account",
+                ExternalAccountDisplayName = "some_external_account_display_name",
+                QueryParams = "",
+                Endpoint = StadiaEndpoint.TestClient
+            };
+
         public static LaunchGameRequest ValidRequest => new LaunchGameRequest
         {
             Parent = "Request_parent",

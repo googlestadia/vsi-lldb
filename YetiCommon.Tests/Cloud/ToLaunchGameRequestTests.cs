@@ -255,5 +255,50 @@ namespace YetiCommon.Tests.Cloud
                         Does.Contain("Test accounts are not supported by any player endpoint"));
             Assert.That(status.WarningMessage, Does.Contain("gamer#1234"));
         }
+
+        [Test]
+        public void ToLaunchGameRequestExternalParams()
+        {
+            LaunchParams parameters = ValidExternalParams;
+
+            ConfigStatus status =
+                _parametersConverter.ToLaunchGameRequest(parameters, out LaunchGameRequest request);
+
+            Assert.That(status.IsOk, Is.True);
+            Assert.IsNotNull(request);
+            Assert.That(request.Parent, Is.EqualTo(parameters.ExternalAccount));
+        }
+
+        [Test]
+        public void ToLaunchGameRequestWarningWhenBothTestAndExternalAccounts()
+        {
+            LaunchParams parameters = ValidParams;
+            parameters.ExternalAccount = "external";
+            parameters.ExternalAccountDisplayName = "externalDisplayName";
+
+            ConfigStatus status =
+                _parametersConverter.ToLaunchGameRequest(parameters, out LaunchGameRequest request);
+
+            Assert.That(status.IsWarningLevel, Is.True);
+            Assert.That(status.WarningMessage.Contains(
+                            $"You specified both test account ({parameters.TestAccount}) " +
+                            $"and external ID ({parameters.ExternalAccountDisplayName})"));
+            Assert.IsNotNull(request);
+            Assert.That(request.Parent, Is.EqualTo(parameters.ExternalAccount));
+        }
+
+        [Test]
+        public void ToLaunchGameRequestWithExternalUnsupportedEndpoint()
+        {
+            LaunchParams parameters = ValidExternalParams;
+            parameters.Endpoint = StadiaEndpoint.PlayerEndpoint;
+
+            ConfigStatus status =
+                _parametersConverter.ToLaunchGameRequest(parameters, out LaunchGameRequest request);
+
+            Assert.That(status.IsErrorLevel, Is.True);
+            Assert.That(status.ErrorMessage.Contains(
+                            "Player endpoint is not compatible with external ID"));
+        }
     }
 }

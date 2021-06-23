@@ -55,6 +55,7 @@ namespace YetiVSI
         readonly IGameLauncher _gameLauncher;
         readonly JoinableTaskContext _taskContext;
         readonly IProjectPropertiesMetricsParser _projectPropertiesParser;
+        readonly IIdentityClient _identityClient;
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
@@ -71,7 +72,8 @@ namespace YetiVSI
                                    DebugEngine.DebugEngine.Params.Factory paramsFactory,
                                    IYetiVSIService yetiVsiService, IGameLauncher gameLauncher,
                                    JoinableTaskContext taskContext,
-                                   IProjectPropertiesMetricsParser projectPropertiesParser)
+                                   IProjectPropertiesMetricsParser projectPropertiesParser,
+                                   IIdentityClient identityClient)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -92,6 +94,7 @@ namespace YetiVSI
             _gameLauncher = gameLauncher;
             _taskContext = taskContext;
             _projectPropertiesParser = projectPropertiesParser;
+            _identityClient = identityClient;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -143,6 +146,13 @@ namespace YetiVSI
                     launchParams.TestAccount = setupQueriesResult.TestAccount.Name;
                     launchParams.TestAccountGamerName =
                         setupQueriesResult.TestAccount.GamerStadiaName;
+                }
+
+                if (setupQueriesResult.ExternalAccount != null)
+                {
+                    launchParams.ExternalAccount = setupQueriesResult.ExternalAccount.Name;
+                    launchParams.ExternalAccountDisplayName =
+                        setupQueriesResult.ExternalAccount.ExternalId;
                 }
 
                 DeployOnLaunchSetting deployOnLaunchAsync = await project.GetDeployOnLaunchAsync();
@@ -209,7 +219,8 @@ namespace YetiVSI
                 {
                     if (_gameLauncher.LaunchGameApiEnabled ||
                         launchParams.Endpoint == StadiaEndpoint.PlayerEndpoint ||
-                        launchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
+                        launchParams.Endpoint == StadiaEndpoint.AnyEndpoint ||
+                        !string.IsNullOrEmpty(launchParams.ExternalAccount))
                     {
                         IVsiGameLaunch launch = _gameLauncher.CreateLaunch(launchParams);
                         if (launch != null)
@@ -291,19 +302,24 @@ namespace YetiVSI
                     ProjectProperties =
                         await _projectPropertiesParser.GetStadiaProjectPropertiesAsync(project)
                 });
-                var runner = _cloudRunner.Intercept(action);
-                var loadApplicationTask =
+                ICloudRunner runner = _cloudRunner.Intercept(action);
+                Task<Application> loadApplicationTask =
                     LoadApplicationAsync(runner, await project.GetApplicationAsync());
-                var loadGameletsTask = _gameletClientFactory.Create(runner).ListGameletsAsync();
-                var loadTestAccountTask = LoadTestAccountAsync(
+                Task<List<Gamelet>> loadGameletsTask =
+                    _gameletClientFactory.Create(runner).ListGameletsAsync();
+                Task<TestAccount> loadTestAccountTask = LoadTestAccountAsync(
                     runner, sdkConfig.OrganizationId, sdkConfig.ProjectId,
                     await project.GetTestAccountAsync());
+                Task<Player> loadExternalAccountTask =
+                    LoadExternalAccountAsync(runner, loadApplicationTask,
+                                             await project.GetExternalIdAsync());
 
                 return new SetupQueriesResult
                 {
                     Application = await loadApplicationTask,
                     Gamelets = await loadGameletsTask,
-                    TestAccount = await loadTestAccountTask
+                    TestAccount = await loadTestAccountTask,
+                    ExternalAccount = await loadExternalAccountTask
                 };
             };
 
@@ -377,11 +393,51 @@ namespace YetiVSI
             return testAccounts[0];
         }
 
+        /// <summary>
+        /// Load an external account given the application.
+        /// </summary>
+        /// <exception cref="ConfigurationException">Thrown if the given external account
+        /// doesn't exist.
+        /// </exception>
+        async Task<Player> LoadExternalAccountAsync(ICloudRunner runner,
+                                                    Task<Application> applicationTask,
+                                                    string externalAccount)
+        {
+            if (string.IsNullOrEmpty(externalAccount))
+            {
+                return null;
+            }
+
+            Application application = await applicationTask;
+            if (application == null)
+            {
+                return null;
+            }
+
+            var externalAccounts =
+                await _identityClient.SearchPlayers(application.PlatformName, externalAccount);
+            if (externalAccounts.Count == 0)
+            {
+                throw new ConfigurationException(
+                    ErrorStrings.InvalidExternalAccount(externalAccount, application.Id));
+            }
+
+            // This should not happen unless there is an issue on backend.
+            if (externalAccounts.Count > 1)
+            {
+                throw new ConfigurationException(
+                    ErrorStrings.MultipleExternalAccounts(externalAccount));
+            }
+
+            return externalAccounts[0];
+        }
+
         class SetupQueriesResult
         {
             public Application Application { get; set; }
             public List<Gamelet> Gamelets { get; set; }
             public TestAccount TestAccount { get; set; }
+            public Player ExternalAccount { get; set; }
         }
     }
 }

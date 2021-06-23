@@ -73,9 +73,18 @@ namespace YetiCommon.Cloud
                 parameters.TestAccount = null;
             }
 
+            if (!string.IsNullOrWhiteSpace(parameters.TestAccount) &&
+                !string.IsNullOrWhiteSpace(parameters.ExternalAccount))
+            {
+                status.AppendWarning(ErrorStrings.TestAccountsNotSupportedWithExternalId(
+                                         parameters.TestAccountGamerName,
+                                         parameters.ExternalAccountDisplayName));
+                parameters.TestAccount = null;
+            }
+
             request = new LaunchGameRequest
             {
-                Parent = Parent(sdkConfig, parameters),
+                Parent = Parent(parameters),
                 GameletName = parameters.GameletName,
                 ApplicationName = parameters.ApplicationName,
                 ExecutablePath = ExecutablePath(parameters),
@@ -98,6 +107,12 @@ namespace YetiCommon.Cloud
                 !string.IsNullOrEmpty(queryString))
             {
                 status.AppendWarning(ErrorStrings.QueryParamsNotSupported(queryString));
+            }
+
+            if (parameters.Endpoint == StadiaEndpoint.PlayerEndpoint &&
+                !string.IsNullOrEmpty(parameters.ExternalAccount))
+            {
+                status.AppendError(ErrorStrings.LaunchOnWebNotSupportedForExternalId);
             }
 
             status = status.Merge(ValidateAndAmendSettings(request));
@@ -206,10 +221,20 @@ namespace YetiCommon.Cloud
             return status;
         }
 
-        string Parent(ISdkConfig sdkConfig, LaunchParams parameters) =>
-            string.IsNullOrWhiteSpace(parameters.TestAccount)
-                ? _developerLaunchGameParent
-                : parameters.TestAccount;
+        string Parent(LaunchParams parameters)
+        {
+            if (!string.IsNullOrWhiteSpace(parameters.TestAccount))
+            {
+                return parameters.TestAccount;
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.ExternalAccount))
+            {
+                return parameters.ExternalAccount;
+            }
+
+            return _developerLaunchGameParent;
+        }
 
         string ExecutablePath(LaunchParams parameters)
         {

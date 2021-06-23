@@ -93,6 +93,7 @@ namespace YetiVSI
             var serializer = new JsonUtil();
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(serializer);
+            var identityClient = new IdentityClient(cloudRunner);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,
@@ -100,7 +101,7 @@ namespace YetiVSI
                                            gameletSelectorFactory, cloudRunner, sdkVersion,
                                            launchCommandFormatter, paramsFactory, yetiVsiService,
                                            gameLauncher, taskContext,
-                                           new ProjectPropertiesMetricsParser());
+                                           new ProjectPropertiesMetricsParser(), identityClient);
         }
 
         public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();

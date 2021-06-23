@@ -965,7 +965,8 @@ namespace YetiVSI.DebugEngine
 
                 if (_gameLauncher.LaunchGameApiEnabled ||
                     chromeLauncher.LaunchParams.Endpoint == StadiaEndpoint.PlayerEndpoint ||
-                    chromeLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
+                    chromeLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint ||
+                    !string.IsNullOrEmpty(chromeLauncher.LaunchParams.ExternalAccount))
                 {
                     LaunchGame(chromeLauncher);
                     if (_vsiGameLaunch == null)

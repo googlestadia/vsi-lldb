@@ -89,10 +89,20 @@ namespace YetiCommon
             "The following query parameters are not supported by any player endpoint: " +
             queryParams;
 
+        public const string LaunchOnWebNotSupportedForExternalId =
+            "Player endpoint is not compatible with external ID. " +
+            "Please select another endpoint in the Project Properties.";
+
         public static string TestAccountsNotSupported(string testAccount) =>
             $"You specified the test account in the project properties ({testAccount}). " +
             "Test accounts are not supported by any player endpoint. " +
             "Your developer account will be used instead.";
+
+        public static string TestAccountsNotSupportedWithExternalId(
+            string testAccount, string externalId) =>
+            $"You specified both test account ({testAccount}) and external ID ({externalId}). " +
+            "Test accounts are not compatible with external IDs. " +
+            "Your external ID will be used to launch the game.";
 
         public static string MultipleEnvironmentVariableKeys(string key) =>
             $"The custom environment variable '{key}' is set multiple times. " +

@@ -45,11 +45,14 @@ namespace YetiVSI.Test
         const string _testProjectDir = "test/project/dir";
         const string _testApplicationId = "test_application_id";
         const string _testApplicationName = "test/application/name";
+        const string _platformName = "platform_name";
         const string _testAccount = "test.account@sparklingsunset.com";
         const string _testDebugSessionId = "abc123";
         const string _testProjectId = "project123";
         const string _testOrganizationId = "organization123";
         const string _testTestAccountId = "testaccount123";
+        const string _externalAccount = "external-id";
+        const string _externalAccountId = "12345";
         const string _sdkVersionString = "1.22.1.7456";
         const string _customQueryParams = "test1=5&test2=10";
         readonly Versions.SdkVersion _sdkVersion = Versions.SdkVersion.Create("7456.1.22.1");
@@ -60,6 +63,7 @@ namespace YetiVSI.Test
         IYetiVSIService _yetiVsiService;
         IMetrics _metrics;
         IApplicationClient _applicationClient;
+        IIdentityClient _identityClient;
         TestAccountClient.Factory _testAccountClientFactory;
         IGameletSelector _gameletSelector;
         IGameletSelectorFactory _gameletSelectorFactory;
@@ -102,6 +106,8 @@ namespace YetiVSI.Test
             var gameletClientFactory = Substitute.For<GameletClient.Factory>();
             gameletClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(_gameletClient);
 
+            _identityClient = Substitute.For<IIdentityClient>();
+
             var remoteCommand = Substitute.For<IRemoteCommand>();
             _remoteDeploy = Substitute.For<IRemoteDeploy>();
             _dialogUtil = Substitute.For<IDialogUtil>();
@@ -115,9 +121,15 @@ namespace YetiVSI.Test
 
             _applicationClient = Substitute.For<IApplicationClient>();
             var application = new Application
-                { Id = _testApplicationId, Name = _testApplicationName };
+            {
+                Id = _testApplicationId, Name = _testApplicationName, PlatformName = _platformName
+            };
             _applicationClient.LoadByNameOrIdAsync(_testApplicationName)
                 .Returns(Task.FromResult(application));
+
+            var player = new Player() { Name = _externalAccountId, ExternalId = _externalAccount };
+            _identityClient.SearchPlayers(_platformName, _externalAccount)
+                .Returns(new List<Player>() { player });
             var applicationClientFactory = Substitute.For<ApplicationClient.Factory>();
             applicationClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(_applicationClient);
 
@@ -174,7 +186,8 @@ namespace YetiVSI.Test
                                                            _sdkVersion, _launchCommandFormatter,
                                                            _paramsFactory, _yetiVsiService,
                                                            _gameLauncher, taskContext,
-                                                           _projectPropertiesParser);
+                                                           _projectPropertiesParser,
+                                                           _identityClient);
         }
 
         [Test]
@@ -630,6 +643,70 @@ namespace YetiVSI.Test
             var launchSettings = await QueryDebugTargetsAsync(0);
             Assert.AreEqual(0, launchSettings.Count);
 
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
+                                 DeveloperEventStatus.Types.Code.InvalidConfiguration);
+        }
+
+        [Test]
+        public async Task LaunchExternalIdAsync()
+        {
+            _project.GetExternalIdAsync().Returns(_externalAccount);
+            var gamelets = new List<Gamelet>
+            {
+                new Gamelet
+                {
+                    Id = _testGameletId,
+                    Name = _testGameletName,
+                    IpAddr = _testGameletIp,
+                    State = GameletState.Reserved,
+                }
+            };
+            _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
+
+            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
+                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
+                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
+                                                        out Gamelet _).Returns(x =>
+            {
+                x[_outVariableIndex] = gamelets[0];
+                return true;
+            });
+
+            var launchSettings = await QueryDebugTargetsAsync(0);
+            Assert.That(launchSettings.Count, Is.EqualTo(1));
+
+            LaunchParams gameLaunchParams =
+                _launchCommandFormatter.DecodeLaunchParams(launchSettings[0].Arguments);
+            Assert.That(gameLaunchParams.ExternalAccount, Is.EqualTo(_externalAccountId));
+
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
+                                 DeveloperEventStatus.Types.Code.Success);
+        }
+
+        [Test]
+        public async Task LaunchWrongExternalIdReturnsErrorAsync()
+        {
+            _project.GetExternalIdAsync().Returns("wrongAccount");
+            _identityClient.SearchPlayers(_platformName, "wrongAccount")
+                .Returns(new List<Player>());
+
+            var launchSettings = await QueryDebugTargetsAsync(0);
+
+            Assert.That(launchSettings.Count, Is.EqualTo(0));
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
+                                 DeveloperEventStatus.Types.Code.InvalidConfiguration);
+        }
+
+        [Test]
+        public async Task LaunchExternalIdMultipleAccountsAsync()
+        {
+            _project.GetExternalIdAsync().Returns("wrongAccount");
+            _identityClient.SearchPlayers(_platformName, "wrongAccount")
+                .Returns(new List<Player>() { new Player(), new Player() });
+
+            var launchSettings = await QueryDebugTargetsAsync(0);
+
+            Assert.That(launchSettings.Count, Is.EqualTo(0));
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.InvalidConfiguration);
         }
