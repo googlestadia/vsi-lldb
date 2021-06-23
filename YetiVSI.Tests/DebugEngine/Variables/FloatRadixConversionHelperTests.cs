@@ -98,6 +98,24 @@ namespace YetiVSI.Test.DebugEngine.Variables
         }
 
         [Test]
+        public void ZeroValue()
+        {
+            const string value = "0";
+            string convertedValue = FloatRadixConversionHelper.TryConvertToFloatFromNumberString(
+                value, DoubleSize);
+            Assert.That(convertedValue, Is.EqualTo("0"));
+        }
+
+        [Test]
+        public void SeveralZerosValue()
+        {
+            const string value = "00";
+            string convertedValue = FloatRadixConversionHelper.TryConvertToFloatFromNumberString(
+                value, DoubleSize);
+            Assert.That(convertedValue, Is.EqualTo("0"));
+        }
+
+        [Test]
         public void WrongFormat()
         {
             const string value = "0xwrong";

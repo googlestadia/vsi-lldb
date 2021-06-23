@@ -62,7 +62,7 @@ namespace YetiVSI.DebugEngine.Variables
                     res = Convert.ToInt64(str.Substring(2), 2);
                     return true;
                 }
-                if (str.StartsWith("0"))
+                if (str.Length > 1 && str.StartsWith("0"))
                 {
                     res = Convert.ToInt64(str.Substring(1), 8);
                     return true;
