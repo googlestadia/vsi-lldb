@@ -186,11 +186,6 @@ namespace YetiVSI.DebugEngine
 
             var vsExpressionCreator = new VsExpressionCreator();
 
-            if (GetVsiService().Options.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED)
-            {
-                GetNatvis().VisualizerScanner.LoadProjectFiles();
-            }
-
             var debugEngineCommands = new DebugEngineCommands(
                 GetJoinableTaskContext(), GetNatvis(),
                 GetVsiService().Options.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED);

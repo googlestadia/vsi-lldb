@@ -407,6 +407,10 @@ namespace YetiVSI.DebugEngine
             {
                 _natvisLogger.NatvisLogEvent += natvisLogListener.OnNatvisLogEvent;
             }
+            if (_extensionOptions.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED)
+            {
+                _natvisExpander.VisualizerScanner.LoadProjectFiles();
+            }
 
             Trace.WriteLine("Debug session started.");
             Trace.WriteLine($"Extension version: {Versions.GetExtensionVersion()}");
