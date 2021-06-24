@@ -23,7 +23,7 @@ namespace YetiCommon
     {
         public const string SdkConfigFilename = "config.json";
 
-        const string _defaultUrl = "https://cloudcast-pa.googleapis.com";
+        const string _defaultUrl = "https://ggppartner-pa.googleapis.com";
         const string _defaultPartnerUrl = "https://console.ggp.google.com";
         const string _defaultPlayerPortalUrl = "https://stadia.google.com";
 
