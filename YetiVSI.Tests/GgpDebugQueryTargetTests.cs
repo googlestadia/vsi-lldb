@@ -72,6 +72,7 @@ namespace YetiVSI.Test
         GgpDebugQueryTarget _ggpDebugQueryTarget;
         IGameLauncher _gameLauncher;
         IVsiGameLaunch _gameLaunch;
+        IProjectPropertiesMetricsParser _projectPropertiesParser;
 
         [SetUp]
         public void SetUp()
@@ -157,6 +158,11 @@ namespace YetiVSI.Test
             _gameLauncher.LaunchGameApiEnabled.Returns(false);
             _gameLaunch = Substitute.For<IVsiGameLaunch>();
             _gameLaunch.LaunchName.Returns("launch_name");
+
+            _projectPropertiesParser = Substitute.For<IProjectPropertiesMetricsParser>();
+            _projectPropertiesParser.GetStadiaProjectPropertiesAsync(Arg.Any<IAsyncProject>())
+                .Returns(Task.FromResult((VSIProjectProperties)null));
+
             _ggpDebugQueryTarget = new GgpDebugQueryTarget(fileSystem, sdkConfigFactory,
                                                            gameletClientFactory,
                                                            applicationClientFactory,
@@ -167,7 +173,8 @@ namespace YetiVSI.Test
                                                            _gameletSelectorFactory, cloudRunner,
                                                            _sdkVersion, _launchCommandFormatter,
                                                            _paramsFactory, _yetiVsiService,
-                                                           _gameLauncher, taskContext);
+                                                           _gameLauncher, taskContext,
+                                                           _projectPropertiesParser);
         }
 
         [Test]

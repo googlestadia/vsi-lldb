@@ -99,7 +99,8 @@ namespace YetiVSI
                                            credentialManager, testAccountClientFactory,
                                            gameletSelectorFactory, cloudRunner, sdkVersion,
                                            launchCommandFormatter, paramsFactory, yetiVsiService,
-                                           gameLauncher, taskContext);
+                                           gameLauncher, taskContext,
+                                           new ProjectPropertiesMetricsParser());
         }
 
         public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();

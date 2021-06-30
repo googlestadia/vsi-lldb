@@ -30,6 +30,7 @@ using YetiVSI.DebuggerOptions;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.ProjectSystem.Abstractions;
+using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI
 {
@@ -53,6 +54,7 @@ namespace YetiVSI
         readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
         readonly IGameLauncher _gameLauncher;
         readonly JoinableTaskContext _taskContext;
+        readonly IProjectPropertiesMetricsParser _projectPropertiesParser;
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
@@ -68,7 +70,8 @@ namespace YetiVSI
                                    ChromeClientLaunchCommandFormatter launchCommandFormatter,
                                    DebugEngine.DebugEngine.Params.Factory paramsFactory,
                                    IYetiVSIService yetiVsiService, IGameLauncher gameLauncher,
-                                   JoinableTaskContext taskContext)
+                                   JoinableTaskContext taskContext,
+                                   IProjectPropertiesMetricsParser projectPropertiesParser)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -88,6 +91,7 @@ namespace YetiVSI
             _paramsFactory = paramsFactory;
             _gameLauncher = gameLauncher;
             _taskContext = taskContext;
+            _projectPropertiesParser = projectPropertiesParser;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -293,6 +297,11 @@ namespace YetiVSI
 
             Func<Task<SetupQueriesResult>> queryInformationTask = async delegate()
             {
+                action.UpdateEvent(new DeveloperLogEvent
+                {
+                    ProjectProperties =
+                        await _projectPropertiesParser.GetStadiaProjectPropertiesAsync(project)
+                });
                 var runner = _cloudRunner.Intercept(action);
                 var loadApplicationTask =
                     LoadApplicationAsync(runner, await project.GetApplicationAsync());

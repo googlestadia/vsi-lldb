@@ -86,12 +86,12 @@ namespace Google.VisualStudioFake.Internal
             var buildParams = new BuildParameters()
             {
                 DetailedSummary = true,
-                Loggers = new List<ILogger> {buildLogger},
+                Loggers = new List<ILogger> { buildLogger },
             };
 
             BuildResult result = manager.Build(buildParams,
                                                new BuildRequestData(
-                                                   projectInstance, new string[] {"Build"}));
+                                                   projectInstance, new string[] { "Build" }));
 
             _logger.Debug("Build output:\n" + buildLogger.GetLog());
 
@@ -250,6 +250,25 @@ namespace Google.VisualStudioFake.Internal
         public Task<string> GetQueryParamsAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.GgpQueryParams);
 
+        public Task<string> GetDeployExecutableOnLaunchRawAsync() =>
+            Task.FromResult(_project.GetPropertyValue(ProjectPropertyName.GgpDeployOnLaunch));
+
+        public Task<string> GetSurfaceEnforcementModeRawAsync() =>
+            Task.FromResult(
+                _project.GetPropertyValue(ProjectPropertyName.GgpSurfaceEnforcementMode));
+
+        public Task<string> GetLaunchWithRenderDocRawAsync() =>
+            Task.FromResult(_project.GetPropertyValue(ProjectPropertyName.GgpLaunchRenderDoc));
+
+        public Task<string> GetLaunchWithRgpRawAsync() =>
+            Task.FromResult(_project.GetPropertyValue(ProjectPropertyName.GgpLaunchRgp));
+
+        public Task<string> GetVulkanDriverVariantRawAsync() =>
+            Task.FromResult(_project.GetPropertyValue(ProjectPropertyName.GgpVulkanDriverVariant));
+
+        public Task<string> GetStadiaEndpointRawAsync() =>
+            Task.FromResult(_project.GetPropertyValue(ProjectPropertyName.GgpEndpoint));
+
         public void SetQueryParams(string queryParams) =>
             SetStringProperty(ProjectPropertyName.GgpQueryParams, queryParams);
 
@@ -289,9 +308,9 @@ namespace Google.VisualStudioFake.Internal
             readonly Dictionary<MessageImportance, LoggerVerbosity> _importanceToVerbosity =
                 new Dictionary<MessageImportance, LoggerVerbosity>()
                 {
-                    {MessageImportance.High, LoggerVerbosity.Minimal},
-                    {MessageImportance.Normal, LoggerVerbosity.Normal},
-                    {MessageImportance.Low, LoggerVerbosity.Detailed},
+                    { MessageImportance.High, LoggerVerbosity.Minimal },
+                    { MessageImportance.Normal, LoggerVerbosity.Normal },
+                    { MessageImportance.Low, LoggerVerbosity.Detailed },
                 };
 
             public string GetLog() => _log.ToString();
@@ -354,7 +373,9 @@ namespace Google.VisualStudioFake.Internal
                 // Don't print "MSBuild:" prefix for cleanness.
                 bool isMsBuild = e.SenderName.Equals("MSBuild",
                                                      StringComparison.InvariantCultureIgnoreCase);
-                string prefix = isMsBuild ? string.Empty : e.SenderName + ": ";
+                string prefix = isMsBuild
+                    ? string.Empty
+                    : e.SenderName + ": ";
                 WriteLine(prefix + line + e.Message);
             }
 

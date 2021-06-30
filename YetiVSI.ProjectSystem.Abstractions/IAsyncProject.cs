@@ -152,5 +152,35 @@ namespace YetiVSI.ProjectSystem.Abstractions
         /// or test client.
         /// </summary>
         Task<string> GetQueryParamsAsync();
+
+        /// <summary>
+        /// Get raw 'Deploy executable on launch' property value.
+        /// </summary>
+        Task<string> GetDeployExecutableOnLaunchRawAsync();
+
+        /// <summary>
+        /// Get raw 'Stadia instance surface enforcement' property value.
+        /// </summary>
+        Task<string> GetSurfaceEnforcementModeRawAsync();
+
+        /// <summary>
+        /// Get raw 'Launch with RenderDoc' property value.
+        /// </summary>
+        Task<string> GetLaunchWithRenderDocRawAsync();
+
+        /// <summary>
+        /// Get raw 'Launch with RGP' property value.
+        /// </summary>
+        Task<string> GetLaunchWithRgpRawAsync();
+
+        /// <summary>
+        /// Get raw 'Vulkan driver variant' property value.
+        /// </summary>
+        Task<string> GetVulkanDriverVariantRawAsync();
+
+        /// <summary>
+        /// Get raw 'Stadia Endpoint' property value.
+        /// </summary>
+        Task<string> GetStadiaEndpointRawAsync();
     }
 }

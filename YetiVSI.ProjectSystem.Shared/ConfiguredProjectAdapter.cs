@@ -174,6 +174,26 @@ namespace YetiVSI.ProjectSystem
             return queryParams;
         }
 
+        public Task<string> GetDeployExecutableOnLaunchRawAsync() =>
+            userProperties.GetEvaluatedPropertyValueAsync(ProjectPropertyName.GgpDeployOnLaunch);
+
+        public Task<string> GetSurfaceEnforcementModeRawAsync() =>
+            userProperties.GetEvaluatedPropertyValueAsync(
+                ProjectPropertyName.GgpSurfaceEnforcementMode);
+
+        public Task<string> GetLaunchWithRenderDocRawAsync() =>
+            userProperties.GetEvaluatedPropertyValueAsync(ProjectPropertyName.GgpLaunchRenderDoc);
+
+        public Task<string> GetLaunchWithRgpRawAsync() =>
+            userProperties.GetEvaluatedPropertyValueAsync(ProjectPropertyName.GgpLaunchRgp);
+
+        public Task<string> GetVulkanDriverVariantRawAsync() =>
+            userProperties.GetEvaluatedPropertyValueAsync(
+                ProjectPropertyName.GgpVulkanDriverVariant);
+
+        public Task<string> GetStadiaEndpointRawAsync() =>
+            userProperties.GetEvaluatedPropertyValueAsync(ProjectPropertyName.GgpEndpoint);
+
         public async Task<string> GetOutputDirectoryAsync()
         {
             var outDir = await userProperties.GetEvaluatedPropertyValueAsync(

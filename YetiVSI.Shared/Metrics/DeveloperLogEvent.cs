@@ -392,6 +392,7 @@ namespace YetiVSI.Shared.Metrics
         public VSIBoundBreakpointsData BoundBreakpointsData { get; set; }
         public GameLaunchData GameLaunchData { get; set; }
         public VSIDebugExpressionEvaluationBatch DebugExpressionEvaluationBatch { get; set; }
+        public VSIProjectProperties ProjectProperties { get; set; }
 
         public DeveloperLogEvent()
         {
@@ -567,6 +568,11 @@ namespace YetiVSI.Shared.Metrics
                 return false;
             }
 
+            if (!Equals(other.ProjectProperties, ProjectProperties))
+            {
+                return false;
+            }
+
             return true;
         }
 
@@ -590,6 +596,7 @@ namespace YetiVSI.Shared.Metrics
             clone.BoundBreakpointsData = BoundBreakpointsData?.Clone();
             clone.GameLaunchData = GameLaunchData?.Clone();
             clone.DebugExpressionEvaluationBatch = DebugExpressionEvaluationBatch?.Clone();
+            clone.ProjectProperties = ProjectProperties?.Clone();
             return clone;
         }
 
@@ -828,6 +835,16 @@ namespace YetiVSI.Shared.Metrics
                 }
 
                 DebugExpressionEvaluationBatch.MergeFrom(other.DebugExpressionEvaluationBatch);
+            }
+
+            if (other.ProjectProperties != null)
+            {
+                if (ProjectProperties == null)
+                {
+                    ProjectProperties = new VSIProjectProperties();
+                }
+
+                ProjectProperties.MergeFrom(other.ProjectProperties);
             }
         }
     }
