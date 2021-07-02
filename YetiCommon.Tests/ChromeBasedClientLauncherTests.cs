@@ -76,8 +76,7 @@ namespace YetiCommon.Tests
             string playerPortalUrl = _chromeClientsLauncher.MakePlayerClientUrl("launch_name");
             Assert.That(playerPortalUrl,
                         Is.EqualTo("https://player-portal.com/player/appId?bypass_pts=true" +
-                                   "&launch_id=launch_name&e=ChromeCloudcastPortalfe" +
-                                   "CommonwebEnableLaunchAnywhereParams::Launch"));
+                                   "&launch_id=launch_name"));
         }
 
         [Test, Sequential]

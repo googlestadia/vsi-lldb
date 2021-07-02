@@ -113,9 +113,6 @@ namespace YetiCommon
                 // bypass playability test, required param for the dev flow
                 QueryParam.Create("bypass_pts", "true"),
                 QueryParam.Create("launch_id", launchId),
-                // TODO: temporary param to enable launch on Web while in development.
-                QueryParam.Create(
-                    "e", "ChromeCloudcastPortalfeCommonwebEnableLaunchAnywhereParams::Launch"),
             };
             string queryString = additionalUrlParams.Where(p => p != null)
                                      .Select(p => p.ToString())

@@ -148,17 +148,6 @@ namespace YetiVSI
                 DeployOnLaunchSetting deployOnLaunchAsync = await project.GetDeployOnLaunchAsync();
                 launchParams.Account = _credentialManager.LoadAccount();
 
-                // TODO: Enable PlayerEndpoint Launches for non-internal usage in VS.
-                if (launchParams.Endpoint == StadiaEndpoint.PlayerEndpoint &&
-                    launchParams.Account != null &&
-                    !launchParams.Account.EndsWith("@sparklingsunset.com") &&
-                    !launchParams.Account.EndsWith("@subtlesunset.com"))
-                {
-                    throw new NotImplementedException(
-                        "Player Endpoints are not yet supported, please select " +
-                        "Test Client in the Project Properties instead.");
-                }
-
                 // TODO: Enable launch on any endpoint for external accounts.
                 if (launchParams.Endpoint == StadiaEndpoint.AnyEndpoint &&
                     launchParams.Account != null &&
