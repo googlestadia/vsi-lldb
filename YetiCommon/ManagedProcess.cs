@@ -441,8 +441,17 @@ namespace YetiCommon
                 return;
             }
 
-            Trace.WriteLine($"Process {ProcessName} [{Id}] exited with code {ExitCode}");
             OnExit?.Invoke(this, args);
+
+            try
+            {
+                Trace.WriteLine($"Process {ProcessName} [{Id}] exited with code {ExitCode}");
+            }
+            catch (InvalidOperationException exception)
+            {
+                Trace.WriteLine($"Failed to read an exit code of the process {ProcessName} " +
+                    $"[{Id}] due to `{exception.Message}`, the process is already disposed.");
+            }
         }
 
         public StreamReader StandardOutput => _process.StandardOutput;
