@@ -447,6 +447,7 @@ namespace YetiCommon
             {
                 Trace.WriteLine($"Process {ProcessName} [{Id}] exited with code {ExitCode}");
             }
+            // This should never happen, but for some reason it does, see (internal).
             catch (InvalidOperationException exception)
             {
                 Trace.WriteLine($"Failed to read an exit code of the process {ProcessName} " +

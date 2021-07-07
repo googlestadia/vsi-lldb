@@ -14,16 +14,18 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using YetiCommon;
 using YetiVSI.DebugEngine.Exit;
 
 namespace YetiVSI
 {
-    // ProcessManager launches and monitors processes necessary for the debugger to work
-    // (debug proxy client, game client, port forwarder).
-    //
-    // If any component exits, this is responsible for reporting it and cleaning up everything else.
+    /// <summary>
+    /// ProcessManager launches and monitors processes necessary for the debugger to work
+    /// (debug proxy client, game client, port forwarder).
+    /// If any component exits, this is responsible for reporting it and cleaning up everything else.
+    /// </summary>
     class ProcessManager
     {
         public delegate void ProcessExitHandler(string processName, int exitCode);
@@ -59,7 +61,9 @@ namespace YetiVSI
             _processes[process] = stopHandler;
         }
 
-        // Attempts to stop all processes, then clears the process list.
+        /// <summary>
+        /// Attempts to stop all processes, then clears the process list.
+        /// </summary>        
         public void StopAll(ExitReason exitReason)
         {
             List<KeyValuePair<IProcess, ProcessStopHandler>> processesCopy;
@@ -102,8 +106,22 @@ namespace YetiVSI
                 _processes.Remove(process);
             }
 
-            OnProcessExit?.Invoke(process.StartInfo.FileName, process.ExitCode);
-            process.Dispose();
+            try
+            {
+                OnProcessExit?.Invoke(process.StartInfo.FileName, process.ExitCode);
+            }
+            // This should never happen, but for some reason it does, see (internal).
+            catch (InvalidOperationException exception)
+            {
+                Trace.WriteLine("Failed to read an exit code of the process " +
+                    $"{process.StartInfo.FileName} due to `{exception.Message}`, " +
+                    "the process is already disposed.");
+                OnProcessExit?.Invoke(process.StartInfo.FileName, 0);
+            }
+            finally
+            {
+                process.Dispose();
+            }
         }
     }
 }
