@@ -109,7 +109,7 @@ namespace YetiCommon.Tests.Cloud
                 { "package_name", "params_package_name" },
                 { "enable_retroactive_frame_dump", "True" },
                 { "stream_profile_preset", "HIGH_VISUAL_QUALITY" },
-                { "pixel_density", "9876" },
+                { "pixel_density", "xhigh" },
                 { "network_model", "test - model"}
             };
 

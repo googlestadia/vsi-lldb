@@ -38,6 +38,7 @@ namespace YetiCommon.Cloud
     public class LaunchGameParamsConverter : ILaunchGameParamsConverter
     {
         const string _developerLaunchGameParent = "organizations/-/players/me";
+        const string _externalDecoder = "ExternalDecoder";
 
         readonly ISdkConfigFactory _sdkConfigFactory;
 
@@ -99,6 +100,8 @@ namespace YetiCommon.Cloud
                 status.AppendWarning(ErrorStrings.QueryParamsNotSupported(queryString));
             }
 
+            status = status.Merge(ValidateAndAmendSettings(request));
+
             return status;
         }
 
@@ -111,6 +114,96 @@ namespace YetiCommon.Cloud
             return string.IsNullOrWhiteSpace(testAccount)
                 ? $"{_developerLaunchGameParent}/gameLaunches/{actualLaunchName}"
                 : $"{testAccount}/gameLaunches/{actualLaunchName}";
+        }
+
+        ConfigStatus ValidateAndAmendSettings(LaunchGameRequest request)
+        {
+            ConfigStatus status = ConfigStatus.OkStatus();
+
+            Action<string> verifyCodecVp9 = (string message) =>
+            {
+                if (request.OverridePreferredCodec == Codec.Unspecified)
+                {
+                    request.OverridePreferredCodec = Codec.Vp9;
+                }
+
+                if (request.OverridePreferredCodec != Codec.Vp9)
+                {
+                    status.AppendError(message);
+                }
+            };
+
+            request.OverrideSystemDynamicRange = request.OverrideDynamicRange;
+
+            if (request.OverrideDynamicRange == DynamicRange.Hdr10)
+            {
+                verifyCodecVp9(ErrorStrings.CodecDynamicRangeIncompatibleError(
+                    request.OverridePreferredCodec, request.OverrideDynamicRange));
+            }
+
+            if (request.OverrideClientResolution == VideoResolution._1440P ||
+                request.OverrideClientResolution == VideoResolution._4K)
+            {
+                verifyCodecVp9(ErrorStrings.CodecResolutionIncompatibleError(
+                    request.OverridePreferredCodec, request.OverrideClientResolution));
+            }
+
+            switch (request.OverrideClientResolution)
+            {
+                case VideoResolution._720P:
+                    request.OverrideScreenWidthPixels = 1280;
+                    request.OverrideScreenHeightPixels = 720;
+                    break;
+                case VideoResolution._1080P:
+                    request.OverrideScreenWidthPixels = 1920;
+                    request.OverrideScreenHeightPixels = 1080;
+                    break;
+                case VideoResolution._1440P:
+                    request.OverrideScreenWidthPixels = 2560;
+                    request.OverrideScreenHeightPixels = 1440;
+                    break;
+                case VideoResolution._4K:
+                    request.OverrideScreenWidthPixels = 3840;
+                    request.OverrideScreenHeightPixels = 2160;
+                    break;
+                case VideoResolution.Unspecified:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(request.OverrideClientResolution), request.OverrideClientResolution,
+                        $"Unsupported client resolution value received.");
+            }
+
+            if (request.OverridePreferredCodec != Codec.Unspecified)
+            {
+                // Specify the external (hardware) decoder type to avoid restrictions on the stream
+                // quality. Note that this string constant is defined in the comments of the proto.
+                request.OverrideSystemVideoDecoderType = _externalDecoder;
+            }
+
+            if (request.OverrideClientResolution != VideoResolution.Unspecified)
+            {
+                // Prevent device settings from interfering with overrides specified above.
+                // This setting will not change the bandwidth all by itself.
+                request.OverrideDeviceSettingsBandwidth = BandwidthPreference.BandwidthUnlimited;
+            }
+
+            if (request.OverrideDynamicRange != DynamicRange.Unspecified)
+            {
+                // Prevent device settings from interfering with overrides specified above.
+                // This setting will not enable HDR all by itself.
+                request.OverrideDeviceSettingsHdr = HdrMode.HdrOn;
+            }
+
+            if (request.OverrideAudioChannelMode != ChannelMode.Unspecified)
+            {
+                // Make sure the developer overrides take precedence over any device-level
+                // audio settings. See (internal) for details.
+                request.OverrideDeviceSettingsAudioPlaybackPreference =
+                    AudioPlaybackPreference.PreferenceAutomatic;
+            }
+
+            return status;
         }
 
         string Parent(ISdkConfig sdkConfig, LaunchParams parameters) =>

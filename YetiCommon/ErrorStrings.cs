@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using GgpGrpc.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -129,5 +130,13 @@ namespace YetiCommon
             $"Expected: '{expected}'. " + Environment.NewLine +
             "To specify command line parameters for the binary, use the setting in " +
             "'Project Properties' -> 'Debugging' -> 'Stadia Launch Arguments'.";
+
+        public static string CodecResolutionIncompatibleError(Codec codec, VideoResolution res) =>
+            $"video_codec={codec} and client_resolution={res} are not compatible. " +
+            "Please edit 'Project Properties' -> 'Debugging' -> 'Custom Query Parameters'.";
+
+        public static string CodecDynamicRangeIncompatibleError(Codec codec, DynamicRange range) =>
+            $"video_codec={codec} and dynamic_range_type={range} are not compatible. " +
+            "Please edit 'Project Properties' -> 'Debugging' -> 'Custom Query Parameters'.";
     }
 }

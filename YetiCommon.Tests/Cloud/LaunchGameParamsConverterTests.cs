@@ -16,6 +16,7 @@ using GgpGrpc;
 using GgpGrpc.Models;
 using NSubstitute;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using YetiCommon.Cloud;
@@ -45,29 +46,8 @@ namespace YetiCommon.Tests.Cloud
         [SetUp]
         public void Setup()
         {
-            _sdkConfigFactory = Substitute.For<ISdkConfigFactory>();
-            _sdkConfigFactory.LoadGgpSdkConfigOrDefault().Returns(_sdkConfig);
-            _queryParametersParser = Substitute.For<IQueryParametersParser>();
-            IDictionary<string, string> dict = new Dictionary<string, string>();
-            _queryParametersParser
-                .GetFinalQueryString(dict, out string _)
-                .Returns(x =>
-                {
-                    x[1] = string.Empty;
-                    return ConfigStatus.OkStatus();
-                });
-            _queryParametersParser
-                .ParametersToDictionary(Arg.Any<string>(), out IDictionary<string, string> _)
-                .Returns(x =>
-                {
-                    x[1] = dict;
-                    return ConfigStatus.OkStatus();
-                });
-            _queryParametersParser.ParseToLaunchRequest(dict, Arg.Any<LaunchGameRequest>())
-                .Returns(ConfigStatus.OkStatus());
-            _queryParametersParser
-                .ParseToParameters(dict, Arg.Any<LaunchParams>())
-                .Returns(ConfigStatus.OkStatus());
+            _sdkConfigFactory = MockSdkConfigFactory();
+            _queryParametersParser = MockQueryParametersParser();
             _target = new LaunchGameParamsConverter(_sdkConfigFactory, _queryParametersParser);
         }
 
@@ -152,7 +132,8 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(request.MountUploadedPipelineCache, Is.EqualTo(null));
             Assert.That(request.OverrideAudioChannelMode, Is.EqualTo(ChannelMode.Unspecified));
             Assert.That(request.OverrideClientResolution, Is.EqualTo(VideoResolution.Unspecified));
-            Assert.That(request.OverrideDisplayPixelDensity, Is.EqualTo(null));
+            Assert.That(request.OverrideDisplayPixelDensity,
+                Is.EqualTo(PixelDensity.PixelDensityUndefined));
             Assert.That(request.OverrideDynamicRange, Is.EqualTo(DynamicRange.Unspecified));
             Assert.That(request.OverridePreferredCodec, Is.EqualTo(Codec.Unspecified));
             Assert.That(request.PackageName, Is.EqualTo(null));
@@ -354,6 +335,148 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(status.IsOk, Is.EqualTo(true));
             Assert.IsNotNull(request);
             Assert.That(request.EnableDeveloperResumeOffer, Is.EqualTo(enableOffer));
+        }
+
+        [TestCase(Codec.Unspecified, VideoResolution.Unspecified, DynamicRange.Unspecified,
+            ConfigStatus.ErrorLevel.Ok, Codec.Unspecified, null, HdrMode.HdrUndefined,
+            TestName = "NoSettings")]
+        [TestCase(Codec.Unspecified, VideoResolution._1080P, DynamicRange.Sdr,
+            ConfigStatus.ErrorLevel.Ok, Codec.Unspecified, null, HdrMode.HdrOn,
+            TestName = "SdrAnd1080DoesNotSetCodec")]
+        [TestCase(Codec.Unspecified, VideoResolution._1440P, DynamicRange.Unspecified,
+            ConfigStatus.ErrorLevel.Ok, Codec.Vp9, "ExternalDecoder", HdrMode.HdrUndefined,
+            TestName = "1440SetsVp9")]
+        [TestCase(Codec.Unspecified, VideoResolution._4K, DynamicRange.Unspecified,
+            ConfigStatus.ErrorLevel.Ok, Codec.Vp9, "ExternalDecoder", HdrMode.HdrUndefined,
+            TestName = "4kSetsVp9")]
+        [TestCase(Codec.Unspecified, VideoResolution.Unspecified, DynamicRange.Hdr10,
+            ConfigStatus.ErrorLevel.Ok, Codec.Vp9, "ExternalDecoder", HdrMode.HdrOn,
+            TestName = "Hdr10SetsVp9")]
+        [TestCase(Codec.H264, VideoResolution.Unspecified, DynamicRange.Hdr10,
+            ConfigStatus.ErrorLevel.Error, Codec.H264, "ExternalDecoder", HdrMode.HdrOn,
+            TestName = "NoVp9CodecHdr10Error")]
+        [TestCase(Codec.H264, VideoResolution._1440P, DynamicRange.Unspecified,
+            ConfigStatus.ErrorLevel.Error, Codec.H264, "ExternalDecoder", HdrMode.HdrUndefined,
+            TestName = "NoVp9Codec1440Error")]
+        public void ValidateDisplaySettings(Codec codec, VideoResolution resolution,
+            DynamicRange range, ConfigStatus.ErrorLevel expected, Codec expectedCodec,
+            string expectedDecoder, HdrMode expectedHdr)
+        {
+            _queryParametersParser = MockQueryParametersParser((d, r) =>
+            {
+                r.OverridePreferredCodec = codec;
+                r.OverrideClientResolution = resolution;
+                r.OverrideDynamicRange = range;
+                return ConfigStatus.OkStatus();
+            });
+            _target = new LaunchGameParamsConverter(_sdkConfigFactory, _queryParametersParser);
+
+            ConfigStatus status = _target.ToLaunchGameRequest(
+                ValidParams, out LaunchGameRequest request);
+
+            Assert.AreEqual(expected, status.SeverityLevel);
+            Assert.AreEqual(expectedCodec, request.OverridePreferredCodec);
+            Assert.AreEqual(expectedDecoder, request.OverrideSystemVideoDecoderType);
+            Assert.AreEqual(range, request.OverrideSystemDynamicRange);
+            Assert.AreEqual(expectedHdr, request.OverrideDeviceSettingsHdr);
+        }
+
+        [TestCase(VideoResolution.Unspecified, null, null, BandwidthPreference.BandwidthUndefined,
+            TestName = "NoResolution")]
+        [TestCase(VideoResolution._720P, 720, 1280, BandwidthPreference.BandwidthUnlimited,
+            TestName = "Resolution720")]
+        [TestCase(VideoResolution._1080P, 1080, 1920, BandwidthPreference.BandwidthUnlimited,
+            TestName = "Resolution1080")]
+        [TestCase(VideoResolution._1440P, 1440, 2560, BandwidthPreference.BandwidthUnlimited,
+            TestName = "Resolution1440")]
+        [TestCase(VideoResolution._4K, 2160, 3840, BandwidthPreference.BandwidthUnlimited,
+            TestName = "Resolution4K")]
+        public void PixelsSetWhenResolutionSet(VideoResolution resolution, int? expectedHeight,
+            int? expectedWidth, BandwidthPreference expectedBandwidth)
+        {
+            _queryParametersParser = MockQueryParametersParser((d, r) =>
+            {
+                r.OverrideClientResolution = resolution;
+                return ConfigStatus.OkStatus();
+            });
+            _target = new LaunchGameParamsConverter(_sdkConfigFactory, _queryParametersParser);
+
+            ConfigStatus status = _target.ToLaunchGameRequest(
+                ValidParams, out LaunchGameRequest request);
+
+            Assert.AreEqual(ConfigStatus.ErrorLevel.Ok, status.SeverityLevel);
+            Assert.AreEqual(expectedHeight, request.OverrideScreenHeightPixels);
+            Assert.AreEqual(expectedWidth, request.OverrideScreenWidthPixels);
+            Assert.AreEqual(expectedBandwidth, request.OverrideDeviceSettingsBandwidth);
+        }
+
+        [TestCase(ChannelMode.Mono, AudioPlaybackPreference.PreferenceAutomatic,
+            TestName = "Mono")]
+        [TestCase(ChannelMode.Stereo, AudioPlaybackPreference.PreferenceAutomatic,
+            TestName = "Stereo")]
+        [TestCase(ChannelMode.Surround51, AudioPlaybackPreference.PreferenceAutomatic,
+            TestName = "Surround51")]
+        [TestCase(ChannelMode.Surround51True, AudioPlaybackPreference.PreferenceAutomatic,
+            TestName = "Surround51True")]
+        [TestCase(ChannelMode.Unspecified, AudioPlaybackPreference.PreferenceUndefined,
+            TestName = "Unspecified")]
+        public void AudioPlaybackPreferenceSetWhenAudioChannelSet(
+            ChannelMode channel, AudioPlaybackPreference expectedPref)
+        {
+            _queryParametersParser = MockQueryParametersParser((d, r) =>
+            {
+                r.OverrideAudioChannelMode = channel;
+                return ConfigStatus.OkStatus();
+            });
+            _target = new LaunchGameParamsConverter(_sdkConfigFactory, _queryParametersParser);
+
+            ConfigStatus status = _target.ToLaunchGameRequest(
+                ValidParams, out LaunchGameRequest request);
+
+            Assert.AreEqual(ConfigStatus.ErrorLevel.Ok, status.SeverityLevel);
+            Assert.AreEqual(expectedPref, request.OverrideDeviceSettingsAudioPlaybackPreference);
+        }
+
+        ISdkConfigFactory MockSdkConfigFactory()
+        {
+            ISdkConfigFactory sdkConfigFactory = Substitute.For<ISdkConfigFactory>();
+            sdkConfigFactory.LoadGgpSdkConfigOrDefault().Returns(_sdkConfig);
+            return sdkConfigFactory;
+        }
+
+        IQueryParametersParser MockQueryParametersParser(
+            Func<IDictionary<string, string>, LaunchGameRequest, ConfigStatus>
+            parseToLaunchRequest = null)
+        {
+            IQueryParametersParser queryParametersParser =
+                Substitute.For<IQueryParametersParser>();
+            IDictionary<string, string> quryParamsDict = new Dictionary<string, string>();
+            queryParametersParser
+                .GetFinalQueryString(Arg.Any<IDictionary<string, string>>(), out string _)
+                .Returns(x =>
+                {
+                    x[1] = string.Empty;
+                    return ConfigStatus.OkStatus();
+                });
+            queryParametersParser
+                .ParametersToDictionary(Arg.Any<string>(), out IDictionary<string, string> _)
+                .Returns(x =>
+                {
+                    x[1] = quryParamsDict;
+                    return ConfigStatus.OkStatus();
+                });
+            if (parseToLaunchRequest == null)
+            {
+                parseToLaunchRequest = (d, r) => ConfigStatus.OkStatus();
+            }
+            queryParametersParser.ParseToLaunchRequest(
+                Arg.Any<IDictionary<string, string>>(), Arg.Any<LaunchGameRequest>())
+                .Returns(c => parseToLaunchRequest(
+                    (IDictionary<string, string>)c[0], (LaunchGameRequest)c[1]));
+            queryParametersParser
+                .ParseToParameters(Arg.Any<IDictionary<string, string>>(), Arg.Any<LaunchParams>())
+                .Returns(ConfigStatus.OkStatus());
+            return queryParametersParser;
         }
     }
 }

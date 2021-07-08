@@ -97,7 +97,8 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(request.MountUploadedPipelineCache, Is.EqualTo(null));
             Assert.That(request.OverrideAudioChannelMode, Is.EqualTo(ChannelMode.Unspecified));
             Assert.That(request.OverrideClientResolution, Is.EqualTo(VideoResolution.Unspecified));
-            Assert.That(request.OverrideDisplayPixelDensity, Is.EqualTo(null));
+            Assert.That(request.OverrideDisplayPixelDensity,
+                Is.EqualTo(PixelDensity.PixelDensityUndefined));
             Assert.That(request.OverrideDynamicRange, Is.EqualTo(DynamicRange.Unspecified));
             Assert.That(request.OverridePreferredCodec, Is.EqualTo(Codec.Unspecified));
             Assert.That(request.PackageName, Is.EqualTo(null));
@@ -208,7 +209,7 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(request.MountUploadedPipelineCache, Is.EqualTo(true));
             Assert.That(request.OverrideAudioChannelMode, Is.EqualTo(ChannelMode.Surround51True));
             Assert.That(request.OverrideClientResolution, Is.EqualTo(VideoResolution._720P));
-            Assert.That(request.OverrideDisplayPixelDensity, Is.EqualTo(9876));
+            Assert.That(request.OverrideDisplayPixelDensity, Is.EqualTo(PixelDensity.XHigh));
             Assert.That(request.OverrideDynamicRange, Is.EqualTo(DynamicRange.Sdr));
             Assert.That(request.OverridePreferredCodec, Is.EqualTo(Codec.Vp9));
             Assert.That(request.PackageName, Is.EqualTo("params_package_name"));

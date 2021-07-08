@@ -96,7 +96,7 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(launchRequest.OverrideAudioChannelMode,
                         Is.EqualTo(ChannelMode.Surround51True));
             Assert.That(launchRequest.StreamerFixedResolution, Is.EqualTo(VideoResolution._1440P));
-            Assert.That(launchRequest.OverrideDisplayPixelDensity, Is.EqualTo(9876));
+            Assert.That(launchRequest.OverrideDisplayPixelDensity, Is.EqualTo(PixelDensity.XHigh));
             Assert.That(launchRequest.StartForwardFrameDump, Is.EqualTo(false));
             Assert.That(launchRequest.AddInstanceCompatibilityRequirements,
                         Is.EqualTo(new[] { "r1", "other" }));
@@ -411,8 +411,6 @@ namespace YetiCommon.Tests.Cloud
         [TestCase("streamer_minimum_bandwidth_kbps", true,
                   nameof(LaunchGameRequest.StreamerMinimumBandWidthKbps),
                   TestName = "StreamerMinimumBandWidthKbps")]
-        [TestCase("pixel_density", true, nameof(LaunchGameRequest.OverrideDisplayPixelDensity),
-                  TestName = "OverrideDisplayPixelDensity")]
         public void ParseInt(string paramName, bool launchRequest, string propertyName)
         {
             var validIntValues = new Dictionary<string, int>
@@ -613,6 +611,34 @@ namespace YetiCommon.Tests.Cloud
                     { "  ", ConfigStatus.ErrorLevel.Warning },
                     { "HighVisualQuality", ConfigStatus.ErrorLevel.Warning },
                     { "LOW_LATENCY.", ConfigStatus.ErrorLevel.Warning }
+                }.ToDictionary(p => p.Key,
+                               p => Tuple.Create(string.Format(errorTemplate, p.Key), p.Value));
+            ParseValueFailure(paramName, launchRequest, invalidEnumValues);
+        }
+
+        [TestCase("pixel_density", true, nameof(LaunchGameRequest.OverrideDisplayPixelDensity),
+                  TestName = "OverrideDisplayPixelDensity")]
+        public void ParsePixelDensity(string paramName, bool launchRequest, string propertyName)
+        {
+            var validEnumValues = new Dictionary<string, int>
+            {
+                { "low", 120 },
+                { "medium", 160 },
+                { "high", 240 },
+                { "xhigh", 320 },
+                { "xxhigh", 480 },
+                { "xxxhigh", 640 },
+            };
+            ParseValueSuccess(paramName, launchRequest, propertyName, validEnumValues);
+            string errorTemplate = $"The parameter '{paramName}' has an invalid value: '{{0}}'. " +
+                "Valid values are: 'low', 'medium', 'high', 'xhigh', 'xxhigh', 'xxxhigh'.";
+            Dictionary<string, Tuple<string, ConfigStatus.ErrorLevel>> invalidEnumValues =
+                new Dictionary<string, ConfigStatus.ErrorLevel>
+                {
+                    { "Unspecified", ConfigStatus.ErrorLevel.Warning },
+                    { "  ", ConfigStatus.ErrorLevel.Warning },
+                    { "x_high", ConfigStatus.ErrorLevel.Warning },
+                    { string.Empty, ConfigStatus.ErrorLevel.Warning }
                 }.ToDictionary(p => p.Key,
                                p => Tuple.Create(string.Format(errorTemplate, p.Key), p.Value));
             ParseValueFailure(paramName, launchRequest, invalidEnumValues);
