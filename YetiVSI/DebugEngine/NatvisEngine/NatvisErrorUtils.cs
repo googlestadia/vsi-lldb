@@ -38,14 +38,5 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             LogAndGetExpandChildrenValidationError(loggingLevel, logger, visualizerName, typeName,
                                                    errorCause);
         }
-
-        public static ErrorVariableInformation LogAndGetEvaluationError(
-            NatvisDiagnosticLogger logger, string natvisType, string parentType, string displayName,
-            string errorCause)
-        {
-            logger.Error(() => $"Failed to evaluate {natvisType} node" +
-                               $" for {displayName}, type: {parentType}.");
-            return new ErrorVariableInformation(displayName, $"<Error> Reason: {errorCause}");
-        }
     }
 }

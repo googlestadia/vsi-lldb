@@ -74,8 +74,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
             catch (ExpressionEvaluationFailed e)
             {
-                return NatvisErrorUtils.LogAndGetEvaluationError(
-                    _logger, natvisType, variable?.TypeName, displayName, e.Message);
+                _logger.Error($"Failed to evaluate {natvisType} node" +
+                              $" for {displayName}, type: {variable?.TypeName}.");
+                return new ErrorVariableInformation(displayName, $"<Error> Reason: {e.Message}");
             }
         }
 
@@ -139,9 +140,40 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             long startTimestampUs = _timeSource.GetTimestampUs();
 
-            IVariableInformation variableInformation =
-                await EvaluateLldbExpressionWithMetricsAsync(
+            IVariableInformation varInfo = null;
+            try
+            {
+                // TODO: Don't throw exceptions, return ErrorVariableInformation instead.
+                varInfo = await EvaluateLldbExpressionWithMetricsAsync(
                     expression, variable, natvisScope, displayName, strategy, stepsRecorder);
+            }
+            finally
+            {
+                long endTimestampUs = _timeSource.GetTimestampUs();
+
+                _expressionEvaluationRecorder.Record(strategy, ExpressionEvaluationContext.VALUE,
+                                                     stepsRecorder, startTimestampUs,
+                                                     endTimestampUs, variable.Id);
+                _logger.Verbose(() =>
+                {
+                    var dt = new TimeSpan(endTimestampUs - startTimestampUs);
+                    if (varInfo == null)
+                    {
+                        return $"Failed to evaluated expression '{expression}' " +
+                               $"(took {dt.TotalMilliseconds}ms)";
+                    }
+                    else if (varInfo.Error)
+                    {
+                        return $"Failed to evaluated expression '{expression}': " +
+                               $"{varInfo.ErrorMessage} (took {dt.TotalMilliseconds}ms)";
+                    }
+                    else
+                    {
+                        return $"Evaluated expression '{expression}' (took {dt.TotalMilliseconds}ms)";
+                    }
+                });
+            }
+
             // Evaluating a context variable will just return the reference to it. Because of
             // deferred evaluation of display values, some values could be incorrectly displayed
             // (in the case a context variable was changed in between two expression evaluations).
@@ -149,16 +181,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             // a context variable.
             if (natvisScope.IsContextVariable(expression.Value))
             {
-                variableInformation = variableInformation.Clone(expression.FormatSpecifier);
+                varInfo = varInfo.Clone(expression.FormatSpecifier);
             }
 
-            long endTimestampUs = _timeSource.GetTimestampUs();
-
-            _expressionEvaluationRecorder.Record(strategy, ExpressionEvaluationContext.VALUE,
-                                                 stepsRecorder, startTimestampUs, endTimestampUs,
-                                                 variable.Id);
-
-            return variableInformation;
+            return varInfo;
         }
 
         async Task<IVariableInformation> EvaluateLldbExpressionWithMetricsAsync(

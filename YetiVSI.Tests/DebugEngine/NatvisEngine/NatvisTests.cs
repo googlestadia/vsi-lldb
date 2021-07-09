@@ -3982,7 +3982,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             nLogSpy.Clear();
             var children = await varInfo.GetAllChildrenAsync();
 
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("INFO"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("DEBUG"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("Child_0"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("ParentType"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("invalidExpression"));
@@ -4603,7 +4603,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var children = await varInfo.GetAllChildrenAsync();
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("INFO"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("DEBUG"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("_invalidListSize"));
 
             Assert.That(children.Length, Is.EqualTo(2));
@@ -4806,7 +4806,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var children = await varInfo.GetAllChildrenAsync();
 
             Assert.That(traceLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(traceLogSpy.GetOutput(), Does.Not.Contain("INFO"));
+            Assert.That(traceLogSpy.GetOutput(), Does.Not.Contain("DEBUG"));
             Assert.That(traceLogSpy.GetOutput(), Does.Not.Contain("_invalidListSize"));
 
             Assert.That(children.Length, Is.EqualTo(2));
@@ -5369,7 +5369,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var children = await varInfo.GetAllChildrenAsync();
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("INFO"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("DEBUG"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("LinkedList<int>"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("_invalidHead"));
 
@@ -5840,7 +5840,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             nLogSpy.Clear();
             var children = await varInfo.GetAllChildrenAsync();
 
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("INFO"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("DEBUG"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("<Synthetic>"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("invalidExpression"));
 
@@ -6335,7 +6335,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var children = await varInfo.GetAllChildrenAsync();
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("INFO"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("DEBUG"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("CustomTreeType"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("<TreeItems>"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("_invalidHead"));
@@ -6529,7 +6529,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("_treeSize"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("INFO"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("DEBUG"));
 
             Assert.That(children.Length, Is.EqualTo(2));
 
@@ -6598,7 +6598,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var children = await varInfo.GetAllChildrenAsync();
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("INFO"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("DEBUG"));
 
             Assert.That(children.Length, Is.EqualTo(3));
             Assert.That(children[0].DisplayName, Is.EqualTo("[0]"));
@@ -6660,7 +6660,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var children = await varInfo.GetAllChildrenAsync();
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("INFO"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("DEBUG"));
 
             Assert.That(children.Length, Is.EqualTo(6));
             Assert.That(children[0].DisplayName, Is.EqualTo("[0]"));

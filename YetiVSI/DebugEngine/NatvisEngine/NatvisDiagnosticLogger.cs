@@ -178,7 +178,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         {
             if (ShouldLog(NatvisLoggingLevel.VERBOSE))
             {
-                Write(LogLevel.Info, $"INFO: {message}");
+                Write(LogLevel.Info, $"DEBUG: {message}");
             }
         }
 
@@ -186,7 +186,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         {
             if (ShouldLog(NatvisLoggingLevel.VERBOSE))
             {
-                Write(LogLevel.Info, $"INFO: {deferredMessage()}");
+                Write(LogLevel.Info, $"DEBUG: {deferredMessage()}");
             }
         }
 
