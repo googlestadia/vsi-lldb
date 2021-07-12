@@ -112,11 +112,9 @@ namespace YetiCommon.Cloud
             QueryParamMapping.IgnoreParam("sdk_version"),
             QueryParamMapping.IgnoreParam("headless"),
             QueryParamMapping.IgnoreParam("game_launch_name"),
+            QueryParamMapping.IgnoreParam("test_account"),
             // Parameters, which are removed from the query string and
             // are passed as request parameters.
-            QueryParamMapping.RequestOnly("test_account",
-                                          nameof(LaunchParams.TestAccount),
-                                          typeof(LaunchParams)),
             QueryParamMapping.RequestOnly("renderdoc",
                                           nameof(LaunchParams.RenderDoc),
                                           typeof(LaunchParams)),

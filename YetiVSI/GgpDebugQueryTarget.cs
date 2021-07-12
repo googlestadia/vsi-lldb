@@ -314,10 +314,12 @@ namespace YetiVSI
                     _gameletClientFactory.Create(runner).ListGameletsAsync();
                 Task<TestAccount> loadTestAccountTask = LoadTestAccountAsync(
                     runner, sdkConfig.OrganizationId, sdkConfig.ProjectId,
-                    await project.GetTestAccountAsync());
+                    await project.GetTestAccountAsync(), await project.GetEndpointAsync(),
+                    await project.GetExternalIdAsync());
                 Task<Player> loadExternalAccountTask =
                     LoadExternalAccountAsync(runner, loadApplicationTask,
-                                             await project.GetExternalIdAsync());
+                                             await project.GetExternalIdAsync(),
+                                             await project.GetEndpointAsync());
 
                 return new SetupQueriesResult
                 {
@@ -375,10 +377,32 @@ namespace YetiVSI
         /// or if there is more than one test account with the given name.
         /// </exception>
         async Task<TestAccount> LoadTestAccountAsync(ICloudRunner runner, string organizationId,
-                                                     string projectId, string testAccount)
+                                                     string projectId, string testAccount,
+                                                     StadiaEndpoint endpoint,
+                                                     string externalAccount)
         {
             if (string.IsNullOrEmpty(testAccount))
             {
+                return null;
+            }
+
+            bool testAccountSupportedWithEndpoint = endpoint != StadiaEndpoint.PlayerEndpoint &&
+                 endpoint != StadiaEndpoint.AnyEndpoint;
+            if (!testAccountSupportedWithEndpoint)
+            {
+                await _taskContext.Factory.SwitchToMainThreadAsync();
+                _dialogUtil.ShowWarning(YetiCommon.ErrorStrings.TestAccountsNotSupported(
+                    testAccount));
+                return null;
+            }
+
+            bool testAccountSupportedWithExternalId = string.IsNullOrWhiteSpace(externalAccount);
+            if (!testAccountSupportedWithExternalId)
+            {
+                await _taskContext.Factory.SwitchToMainThreadAsync();
+                _dialogUtil.ShowWarning(
+                    YetiCommon.ErrorStrings.TestAccountsNotSupportedWithExternalId(
+                        testAccount, externalAccount));
                 return null;
             }
 
@@ -406,7 +430,8 @@ namespace YetiVSI
         /// </exception>
         async Task<Player> LoadExternalAccountAsync(ICloudRunner runner,
                                                     Task<Application> applicationTask,
-                                                    string externalAccount)
+                                                    string externalAccount,
+                                                    StadiaEndpoint endpoint)
         {
             if (string.IsNullOrEmpty(externalAccount))
             {
@@ -417,6 +442,13 @@ namespace YetiVSI
             if (application == null)
             {
                 return null;
+            }
+
+            bool externalAccountSupportedWithEndpoint = endpoint != StadiaEndpoint.PlayerEndpoint;
+            if (!externalAccountSupportedWithEndpoint)
+            {
+                throw new ConfigurationException(
+                    YetiCommon.ErrorStrings.LaunchOnWebNotSupportedForExternalId);
             }
 
             var externalAccounts =

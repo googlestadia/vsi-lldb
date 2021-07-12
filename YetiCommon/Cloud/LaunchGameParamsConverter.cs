@@ -64,24 +64,6 @@ namespace YetiCommon.Cloud
                 EnvironmentVariables(parameters, out IDictionary<string, string> envVariables));
             status = status.Merge(CommandLineArguments(parameters, out string[] cmdArgs));
 
-            if ((parameters.Endpoint == StadiaEndpoint.PlayerEndpoint ||
-                    parameters.Endpoint == StadiaEndpoint.AnyEndpoint) &&
-                !string.IsNullOrEmpty(parameters.TestAccount))
-            {
-                status.AppendWarning(
-                    ErrorStrings.TestAccountsNotSupported(parameters.TestAccountGamerName));
-                parameters.TestAccount = null;
-            }
-
-            if (!string.IsNullOrWhiteSpace(parameters.TestAccount) &&
-                !string.IsNullOrWhiteSpace(parameters.ExternalAccount))
-            {
-                status.AppendWarning(ErrorStrings.TestAccountsNotSupportedWithExternalId(
-                                         parameters.TestAccountGamerName,
-                                         parameters.ExternalAccountDisplayName));
-                parameters.TestAccount = null;
-            }
-
             request = new LaunchGameRequest
             {
                 Parent = Parent(parameters),
@@ -107,12 +89,6 @@ namespace YetiCommon.Cloud
                 !string.IsNullOrEmpty(queryString))
             {
                 status.AppendWarning(ErrorStrings.QueryParamsNotSupported(queryString));
-            }
-
-            if (parameters.Endpoint == StadiaEndpoint.PlayerEndpoint &&
-                !string.IsNullOrEmpty(parameters.ExternalAccount))
-            {
-                status.AppendError(ErrorStrings.LaunchOnWebNotSupportedForExternalId);
             }
 
             status = status.Merge(ValidateAndAmendSettings(request));

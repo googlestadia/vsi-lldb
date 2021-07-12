@@ -50,9 +50,7 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(parameters.VulkanDriverVariant, Is.EqualTo("test_variant"));
             Assert.That(parameters.SurfaceEnforcementMode,
                         Is.EqualTo(SurfaceEnforcementSetting.Warn));
-            Assert.That(parameters.TestAccount,
-                        Is.EqualTo("organizations/organization_id/" +
-                                   "projects/project_id/testAccounts/gamer#1234"));
+            Assert.That(parameters.TestAccount, Is.EqualTo("some_test_account"));
             Assert.That(parameters.QueryParams, Is.EqualTo(""));
         }
 
@@ -358,8 +356,6 @@ namespace YetiCommon.Tests.Cloud
             ParseValueFailure(paramName, launchRequest, invalidBooleanValues);
         }
 
-        [TestCase("test_account", false, nameof(LaunchParams.TestAccount),
-                  TestName = "TestAccount")]
         [TestCase("application_name", true, nameof(LaunchGameRequest.ApplicationName),
                   TestName = "ApplicationName")]
         [TestCase("game_state_id", true, nameof(LaunchGameRequest.GameStateName),

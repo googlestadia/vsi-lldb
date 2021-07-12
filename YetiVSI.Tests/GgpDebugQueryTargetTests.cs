@@ -145,13 +145,11 @@ namespace YetiVSI.Test
                 .Returns(new List<TestAccount> { testAccount });
             _testAccountClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(testAccountClient);
 
-            Substitute.For<IExtensionOptions>();
-
             _yetiVsiService = Substitute.For<IYetiVSIService>();
             var options = Substitute.For<IExtensionOptions>();
             var debuggerOptions = new YetiVSI.DebuggerOptions.DebuggerOptions();
             _yetiVsiService.DebuggerOptions.Returns(debuggerOptions);
-            options.LaunchGameApiFlow.Returns(LaunchGameApiFlow.DISABLED);
+            options.LaunchGameApiFlow.Returns(LaunchGameApiFlow.ENABLED);
             _yetiVsiService.Options.Returns(options);
             _metrics = Substitute.For<IMetrics>();
             _metrics.NewDebugSessionId().Returns(_testDebugSessionId);
@@ -199,27 +197,7 @@ namespace YetiVSI.Test
             _project.GetLaunchRenderDocAsync().Returns(renderdoc);
             _project.GetLaunchRgpAsync().Returns(rgp);
             _project.GetVulkanDriverVariantAsync().Returns(vulkanDriverVariant);
-
-            var gamelets = new List<Gamelet>
-            {
-                new Gamelet
-                {
-                    Id = _testGameletId,
-                    Name = _testGameletName,
-                    IpAddr = _testGameletIp,
-                    State = GameletState.Reserved,
-                }
-            };
-            _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
-
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
-                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                        out Gamelet _).Returns(x =>
-            {
-                x[_outVariableIndex] = gamelets[0];
-                return true;
-            });
+            Gamelet gamelet = SetupReservedGamelet();
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
             Assert.AreEqual(1, launchSettings.Count);
@@ -243,7 +221,7 @@ namespace YetiVSI.Test
             Assert.AreEqual(launchParams.QueryParams, _customQueryParams);
 
             await _remoteDeploy.Received().DeployGameExecutableAsync(
-                _project, new SshTarget(gamelets[0]), Arg.Any<ICancelable>(), Arg.Any<IAction>());
+                _project, new SshTarget(gamelet), Arg.Any<ICancelable>(), Arg.Any<IAction>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.Success);
@@ -265,27 +243,7 @@ namespace YetiVSI.Test
             _project.GetLaunchRgpAsync().Returns(rgp);
             _project.GetVulkanDriverVariantAsync().Returns(vulkanDriverVariant);
             _project.GetEndpointAsync().Returns(endpoint);
-
-            var gamelets = new List<Gamelet>
-            {
-                new Gamelet
-                {
-                    Id = _testGameletId,
-                    Name = _testGameletName,
-                    IpAddr = _testGameletIp,
-                    State = GameletState.Reserved,
-                }
-            };
-            _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
-
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
-                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                        out Gamelet _).Returns(x =>
-            {
-                x[_outVariableIndex] = gamelets[0];
-                return true;
-            });
+            Gamelet gamelet = SetupReservedGamelet();
 
             _gameLauncher.LaunchGameApiEnabled.Returns(true);
             _gameLauncher.CreateLaunch(Arg.Any<LaunchParams>())
@@ -315,7 +273,7 @@ namespace YetiVSI.Test
             }
 
             await _remoteDeploy.Received()
-                .DeployGameExecutableAsync(_project, new SshTarget(gamelets[0]),
+                .DeployGameExecutableAsync(_project, new SshTarget(gamelet),
                                            Arg.Any<ICancelable>(),
                                            Arg.Any<IAction>());
 
@@ -332,26 +290,7 @@ namespace YetiVSI.Test
             _project.GetLaunchRgpAsync().Returns(false);
             _project.GetVulkanDriverVariantAsync().Returns("optprintasserts");
 
-            var gamelets = new List<Gamelet>
-            {
-                new Gamelet
-                {
-                    Id = _testGameletId,
-                    Name = _testGameletName,
-                    IpAddr = _testGameletIp,
-                    State = GameletState.Reserved,
-                }
-            };
-            _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
-
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
-                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                        out Gamelet _).Returns(x =>
-            {
-                x[_outVariableIndex] = gamelets[0];
-                return true;
-            });
+            SetupReservedGamelet();
 
             _gameLauncher.LaunchGameApiEnabled.Returns(true);
             _gameLauncher.CreateLaunch(Arg.Any<LaunchParams>())
@@ -364,29 +303,10 @@ namespace YetiVSI.Test
         [Test]
         public async Task LaunchNoDebugDeployFailsAsync()
         {
-            var gamelets = new List<Gamelet>
-            {
-                new Gamelet
-                {
-                    Id = _testGameletId,
-                    Name = _testGameletName,
-                    IpAddr = _testGameletIp,
-                    State = GameletState.Reserved,
-                }
-            };
-            _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
-
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
-                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                        out Gamelet _).Returns(x =>
-            {
-                x[_outVariableIndex] = gamelets[0];
-                return true;
-            });
+            Gamelet gamelet = SetupReservedGamelet();
 
             _remoteDeploy
-                .DeployGameExecutableAsync(_project, new SshTarget(gamelets[0]),
+                .DeployGameExecutableAsync(_project, new SshTarget(gamelet),
                                            Arg.Any<ICancelable>(),
                                            Arg.Any<IAction>())
                 .Returns(x => throw new DeployException("deploy exception",
@@ -433,28 +353,7 @@ namespace YetiVSI.Test
             _project.GetLaunchRenderDocAsync().Returns(renderdoc);
             _project.GetLaunchRgpAsync().Returns(rgp);
             _project.GetVulkanDriverVariantAsync().Returns(vulkanDriverVariant);
-
-            var gamelets = new List<Gamelet>
-            {
-                new Gamelet
-                {
-                    Id = _testGameletId,
-                    Name = _testGameletName,
-                    IpAddr = _testGameletIp,
-                    State = GameletState.Reserved,
-                }
-            };
-            _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
-
-            Gamelet gamelet;
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
-                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                        out gamelet).Returns(x =>
-            {
-                x[_outVariableIndex] = gamelets[0];
-                return true;
-            });
+            Gamelet gamelet = SetupReservedGamelet();
 
             var launchSettings = await QueryDebugTargetsAsync(0);
             Assert.AreEqual(1, launchSettings.Count);
@@ -480,7 +379,7 @@ namespace YetiVSI.Test
             Assert.AreEqual(launchParams.QueryParams, _customQueryParams);
 
             await _remoteDeploy.Received().DeployGameExecutableAsync(
-                _project, new SshTarget(gamelets[0]), Arg.Any<ICancelable>(), Arg.Any<IAction>());
+                _project, new SshTarget(gamelet), Arg.Any<ICancelable>(), Arg.Any<IAction>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.Success);
@@ -492,27 +391,7 @@ namespace YetiVSI.Test
         public async Task LaunchTestAccountAsync()
         {
             _project.GetTestAccountAsync().Returns(_testTestAccountId);
-            var gamelets = new List<Gamelet>
-            {
-                new Gamelet
-                {
-                    Id = _testGameletId,
-                    Name = _testGameletName,
-                    IpAddr = _testGameletIp,
-                    State = GameletState.Reserved,
-                }
-            };
-            _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
-
-            Gamelet gamelet;
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
-                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                        out gamelet).Returns(x =>
-            {
-                x[_outVariableIndex] = gamelets[0];
-                return true;
-            });
+            SetupReservedGamelet();
 
             var launchSettings = await QueryDebugTargetsAsync(0);
             Assert.AreEqual(1, launchSettings.Count);
@@ -531,15 +410,7 @@ namespace YetiVSI.Test
         public async Task LaunchIncorrectTestAccountAsync()
         {
             _project.GetTestAccountAsync().Returns("wrong");
-            var gamelet = new Gamelet
-            {
-                Id = _testGameletId,
-                Name = _testGameletName,
-                IpAddr = _testGameletIp,
-                State = GameletState.Reserved,
-            };
-            _gameletClient.ListGameletsAsync().Returns(
-                Task.FromResult(new List<Gamelet> { gamelet }));
+            SetupReservedGamelet();
 
             var testAccountClient = Substitute.For<ITestAccountClient>();
             testAccountClient.LoadByIdOrGamerTagAsync(_testOrganizationId, _testProjectId, "wrong")
@@ -570,27 +441,7 @@ namespace YetiVSI.Test
                                          testTestAccountGamerTag)
                 .Returns(new List<TestAccount> { testAccount });
             _testAccountClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(testAccountClient);
-            var gamelets = new List<Gamelet>
-            {
-                new Gamelet
-                {
-                    Id = _testGameletId,
-                    Name = _testGameletName,
-                    IpAddr = _testGameletIp,
-                    State = GameletState.Reserved,
-                }
-            };
-            _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
-
-            Gamelet gamelet;
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
-                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                        out gamelet).Returns(x =>
-            {
-                x[_outVariableIndex] = gamelets[0];
-                return true;
-            });
+            SetupReservedGamelet();
 
             var launchSettings = await QueryDebugTargetsAsync(0);
             Assert.AreEqual(1, launchSettings.Count);
@@ -630,15 +481,7 @@ namespace YetiVSI.Test
                                          testTestAccountGamerTagName)
                 .Returns(new List<TestAccount> { testAccount, testAccount1 });
             _testAccountClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(testAccountClient);
-            var gamelet = new Gamelet
-            {
-                Id = _testGameletId,
-                Name = _testGameletName,
-                IpAddr = _testGameletIp,
-                State = GameletState.Reserved,
-            };
-            _gameletClient.ListGameletsAsync().Returns(
-                Task.FromResult(new List<Gamelet> { gamelet }));
+            SetupReservedGamelet();
 
             var launchSettings = await QueryDebugTargetsAsync(0);
             Assert.AreEqual(0, launchSettings.Count);
@@ -647,30 +490,46 @@ namespace YetiVSI.Test
                                  DeveloperEventStatus.Types.Code.InvalidConfiguration);
         }
 
+        [TestCase(StadiaEndpoint.PlayerEndpoint, TestName = "PlayerEndpoint")]
+        [TestCase(StadiaEndpoint.AnyEndpoint, TestName = "AnyEndpoint")]
+        public async Task LaunchTestAccountNotSupportedWithEndpointAsync(StadiaEndpoint endpoint)
+        {
+            const string testTestAccountGamerTagName = "test";
+            _project.GetTestAccountAsync().Returns(testTestAccountGamerTagName);
+            _project.GetEndpointAsync().Returns(endpoint);
+            var testAccount = new TestAccount()
+            {
+                Name = $"organizations/{_testOrganizationId}" +
+                    $"/projects/{_testProjectId}/testAccounts/{_testTestAccountId}",
+                GamerTagName = testTestAccountGamerTagName,
+                GamerTagSuffix = 123
+            };
+            var testAccountClient = Substitute.For<ITestAccountClient>();
+            testAccountClient
+                .LoadByIdOrGamerTagAsync(_testOrganizationId, _testProjectId,
+                                         testTestAccountGamerTagName)
+                .Returns(new List<TestAccount> { testAccount });
+            _testAccountClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(testAccountClient);
+            SetupReservedGamelet();
+
+            var launchSettings = await QueryDebugTargetsAsync(0);
+            Assert.AreEqual(1, launchSettings.Count);
+            _dialogUtil.Received(1).ShowWarning(Arg.Is<string>(
+                s => s.Contains("Test accounts are not supported")));
+            LaunchParams launchParams = _launchCommandFormatter.DecodeLaunchParams(
+                launchSettings[0].Arguments);
+            Assert.IsNull(launchParams.TestAccount);
+            Assert.IsNull(launchParams.TestAccountGamerName);
+
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
+                                 DeveloperEventStatus.Types.Code.Success);
+        }
+
         [Test]
         public async Task LaunchExternalIdAsync()
         {
             _project.GetExternalIdAsync().Returns(_externalAccount);
-            var gamelets = new List<Gamelet>
-            {
-                new Gamelet
-                {
-                    Id = _testGameletId,
-                    Name = _testGameletName,
-                    IpAddr = _testGameletIp,
-                    State = GameletState.Reserved,
-                }
-            };
-            _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
-
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
-                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                        out Gamelet _).Returns(x =>
-            {
-                x[_outVariableIndex] = gamelets[0];
-                return true;
-            });
+            SetupReservedGamelet();
 
             var launchSettings = await QueryDebugTargetsAsync(0);
             Assert.That(launchSettings.Count, Is.EqualTo(1));
@@ -707,6 +566,57 @@ namespace YetiVSI.Test
             var launchSettings = await QueryDebugTargetsAsync(0);
 
             Assert.That(launchSettings.Count, Is.EqualTo(0));
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
+                                 DeveloperEventStatus.Types.Code.InvalidConfiguration);
+        }
+
+        [Test]
+        public async Task LaunchTestAccountNotSupportedWithExternalAccountAsync()
+        {
+            const string testTestAccountGamerTagName = "test";
+            _project.GetTestAccountAsync().Returns(testTestAccountGamerTagName);
+            _project.GetExternalIdAsync().Returns(_externalAccount);
+            var testAccount = new TestAccount()
+            {
+                Name = $"organizations/{_testOrganizationId}" +
+                    $"/projects/{_testProjectId}/testAccounts/{_testTestAccountId}",
+                GamerTagName = testTestAccountGamerTagName,
+                GamerTagSuffix = 123
+            };
+            var testAccountClient = Substitute.For<ITestAccountClient>();
+            testAccountClient
+                .LoadByIdOrGamerTagAsync(_testOrganizationId, _testProjectId,
+                                         testTestAccountGamerTagName)
+                .Returns(new List<TestAccount> { testAccount });
+            _testAccountClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(testAccountClient);
+            SetupReservedGamelet();
+
+            var launchSettings = await QueryDebugTargetsAsync(0);
+            Assert.AreEqual(1, launchSettings.Count);
+            _dialogUtil.Received(1).ShowWarning(Arg.Is<string>(
+                s => s.Contains("Test accounts are not compatible with external IDs")));
+            LaunchParams launchParams = _launchCommandFormatter.DecodeLaunchParams(
+                launchSettings[0].Arguments);
+            Assert.IsNull(launchParams.TestAccount);
+            Assert.IsNull(launchParams.TestAccountGamerName);
+
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
+                                 DeveloperEventStatus.Types.Code.Success);
+        }
+
+        [Test]
+        public async Task LaunchExternalAccountNotSupportedWithEndpointAsync()
+        {
+            _project.GetEndpointAsync().Returns(StadiaEndpoint.PlayerEndpoint);
+            _project.GetExternalIdAsync().Returns(_externalAccount);
+            SetupReservedGamelet();
+
+            var launchSettings = await QueryDebugTargetsAsync(0);
+            Assert.AreEqual(0, launchSettings.Count);
+            _dialogUtil.Received(1).ShowError(Arg.Is<string>(
+                s => s.Contains("Player endpoint is not compatible with external ID")),
+                Arg.Any<string>());
+
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.InvalidConfiguration);
         }
@@ -779,6 +689,29 @@ namespace YetiVSI.Test
                 type,
                 Arg.Is<DeveloperLogEvent>(p => p.StatusCode == status &&
                                               p.DebugSessionIdStr == _testDebugSessionId));
+        }
+
+        Gamelet SetupReservedGamelet()
+        {
+            var gamelet = new Gamelet
+            {
+                Id = _testGameletId,
+                Name = _testGameletName,
+                IpAddr = _testGameletIp,
+                State = GameletState.Reserved,
+            };
+            _gameletClient.ListGameletsAsync().Returns(
+                Task.FromResult(new List<Gamelet> { gamelet }));
+            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
+                                                       Arg.Any<DeployOnLaunchSetting>(),
+                                                       Arg.Any<List<Gamelet>>(),
+                                                       Arg.Any<TestAccount>(), Arg.Any<string>(),
+                                                       out Gamelet _).Returns(x =>
+                                                       {
+                                                           x[_outVariableIndex] = gamelet;
+                                                           return true;
+                                                       });
+            return gamelet;
         }
     }
 }

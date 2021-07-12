@@ -88,16 +88,14 @@ namespace YetiCommon.Tests.Cloud
                 { "package_id", "params_package_id" },
                 { "sdk_version", "params_sdk_version" },
                 { "headless", "params_headless" },
-                { "game_launch_name", "params_game_launch_name" }
+                { "game_launch_name", "params_game_launch_name" },
+                { "test_account",
+                    "organizations/organization_id/projects/project_id/testAccounts/gamer#1234" }
             };
 
         public static Dictionary<string, string> ValidParamsQueryParams =>
             new Dictionary<string, string>
             {
-                {
-                    "test_account",
-                    "organizations/organization_id/projects/project_id/testAccounts/gamer#1234"
-                },
                 { "cmd", "  some_bin arg2" },
                 { "vars", "ParamsVar=val" },
                 { "renderdoc", "false" },
