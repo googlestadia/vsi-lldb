@@ -231,8 +231,13 @@ namespace YetiVSI
                                 // as we won't open a Chrome window.
                                 debugLaunchSettings.Arguments = "/c exit";
                                 await _taskContext.Factory.SwitchToMainThreadAsync();
-                                _dialogUtil.ShowMessage(TaskMessages.LaunchingDeferredGameRunFlow,
-                                    TaskMessages.LaunchingDeferredGameTitle);
+                                string message =
+                                    string.IsNullOrWhiteSpace(launchParams.ExternalAccount)
+                                        ? TaskMessages.LaunchingDeferredGameRunFlow
+                                        : TaskMessages.LaunchingDeferredGameWithExternalId(
+                                            launchParams.ApplicationId);
+                                _dialogUtil.ShowMessage(
+                                    message, TaskMessages.LaunchingDeferredGameTitle);
                             }
                             else
                             {

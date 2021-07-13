@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,8 +24,8 @@ using NUnit.Framework;
 using YetiCommon;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
- using YetiVSI.ProjectSystem.Abstractions;
- using YetiVSI.Shared.Metrics;
+using YetiVSI.ProjectSystem.Abstractions;
+using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Test.GameLaunch
 {
@@ -33,6 +33,7 @@ namespace YetiVSI.Test.GameLaunch
     public class VsiGameLaunchTests
     {
         const string _launchId = "game-launch-id";
+        const string _appId = "app-id";
 
         static readonly string _launchName = "organizations/org-id/projects/proj-id/testAccounts/" +
             $"test-account-id/gameLaunches/{_launchId}";
@@ -65,7 +66,7 @@ namespace YetiVSI.Test.GameLaunch
         [Test]
         public void IdentifiersTest()
         {
-            _target = GetGameLaunch(false);
+            _target = GetGameLaunch(false, false);
             Assert.That(_target.LaunchName, Is.EqualTo(_launchName));
             Assert.That(_target.LaunchId, Is.EqualTo(_launchId));
         }
@@ -73,7 +74,7 @@ namespace YetiVSI.Test.GameLaunch
         [Test]
         public void LaunchTestClientTest()
         {
-            _target = GetGameLaunch(false);
+            _target = GetGameLaunch(false, false);
             const string url = "https://test";
             const string workingDir = "C:/dir";
             _params.Endpoint = StadiaEndpoint.TestClient;
@@ -89,7 +90,7 @@ namespace YetiVSI.Test.GameLaunch
         [Test]
         public void LaunchOnWebTest()
         {
-            _target = GetGameLaunch(false);
+            _target = GetGameLaunch(false, false);
             const string url = "https://test";
             const string workingDir = "C:/dir";
             _params.Endpoint = StadiaEndpoint.PlayerEndpoint;
@@ -105,7 +106,7 @@ namespace YetiVSI.Test.GameLaunch
         [Test]
         public async Task GetLaunchStateAsyncTestAsync()
         {
-            _target = GetGameLaunch(false);
+            _target = GetGameLaunch(false, false);
             var action = Substitute.For<IAction>();
             var gameLaunch = GetGameLaunch();
             _gameletClient.GetGameLaunchStateAsync(_launchName, action)
@@ -124,7 +125,7 @@ namespace YetiVSI.Test.GameLaunch
         [TestCase(null, false, TestName = "GameNotEnded")]
         public async Task WaitForGameLaunchEndedAndRecordTestAsync(EndReason? reason, bool throws)
         {
-            _target = GetGameLaunch(false);
+            _target = GetGameLaunch(false, false);
             var action = Substitute.For<IAction>();
             DeveloperLogEvent devEvent = SetupUpdateEvent(action);
             action.RecordAsync(Arg.Any<Task>()).Returns(callInfo => callInfo.Arg<Task>());
@@ -161,11 +162,15 @@ namespace YetiVSI.Test.GameLaunch
                   new[] { 7, 1 }, false, TestName = "RunningTimeout")]
         [TestCase(new[] { GameLaunchState.IncompleteLaunch, GameLaunchState.RunningGame },
                   new[] { 7, 1 }, true, null, true, TestName = "NoTimeOutWithDeferred")]
+        [TestCase(new[] { GameLaunchState.IncompleteLaunch, GameLaunchState.RunningGame },
+                  new[] { 3, 1 }, true, null, true, "external",
+                  TestName = "RunWithExternalAccount")]
         public void WaitUntilGameLaunchedTest(GameLaunchState[] launchStates, int[] stateRepeat,
                                               bool launchResult, EndReason? endReason = null,
-                                              bool isDevResumeOfferEnabled = false)
+                                              bool isDevResumeOfferEnabled = false,
+                                              string externalId = null)
         {
-            _target = GetGameLaunch(isDevResumeOfferEnabled);
+            _target = GetGameLaunch(isDevResumeOfferEnabled, externalId != null);
             Func<ICancelable, Task> currentTask = null;
             var action = Substitute.For<IAction>();
             DeveloperLogEvent devEvent = SetupUpdateEvent(action);
@@ -179,14 +184,16 @@ namespace YetiVSI.Test.GameLaunch
             });
             if (isDevResumeOfferEnabled)
             {
+                string message = externalId == null
+                    ? TaskMessages.LaunchingDeferredGame
+                    : TaskMessages.LaunchingDeferredGameWithExternalId(_appId);
                 _cancelableTaskFactory.Create(
-                TaskMessages.LaunchingDeferredGame, TaskMessages.LaunchingDeferredGameTitle,
-                Arg.Any<Func<ICancelable, Task>>())
-                    .Returns(callInfo =>
-                    {
-                        currentTask = callInfo.Arg<Func<ICancelable, Task>>();
-                        return cancelable;
-                    });
+                    message, TaskMessages.LaunchingDeferredGameTitle,
+                    Arg.Any<Func<ICancelable, Task>>()).Returns(callInfo =>
+                {
+                    currentTask = callInfo.Arg<Func<ICancelable, Task>>();
+                    return cancelable;
+                });
             }
             else
             {
@@ -242,8 +249,10 @@ namespace YetiVSI.Test.GameLaunch
             return devEvent;
         }
 
-        VsiGameLaunch GetGameLaunch(bool isDeveloperResumeOfferEnabled) => new VsiGameLaunch(
-            _launchName, isDeveloperResumeOfferEnabled, _gameletClient, _cancelableTaskFactory,
-            _gameLaunchBeHelper, _actionRecorder, _dialogUtil, 500, 1000, 100);
+        VsiGameLaunch GetGameLaunch(bool isDeveloperResumeOfferEnabled, bool isExternalAccount) =>
+            new VsiGameLaunch(_launchName, isDeveloperResumeOfferEnabled, isExternalAccount, _appId,
+                              _gameletClient, _cancelableTaskFactory, _gameLaunchBeHelper,
+                              _actionRecorder, _dialogUtil, pollingTimeoutMs: 500,
+                              pollingTimeoutResumeOfferMs: 1000, pollDelayMs: 100);
     }
 }

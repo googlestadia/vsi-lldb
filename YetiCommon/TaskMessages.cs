@@ -32,6 +32,11 @@ namespace YetiCommon
             " endpoints. A prompt to play will appear on endpoints where you’re signed in. " +
             "You can switch endpoints at any time using these prompts, " +
             "and they’ll persist on all other endpoints unless you dismiss them.";
+
+        public static string LaunchingDeferredGameWithExternalId(string appId) =>
+            "Your run has started on all player endpoints. Go to the desired " +
+            $"endpoint and launch using application ID {appId}.";
+
         public const string LookingForTheCurrentLaunch = "Looking for the current launch...";
         public const string DeployingExecutable = "Deploying executable...";
         public const string CustomDeployCommand = "Running custom deploy command...";
@@ -47,6 +52,11 @@ namespace YetiCommon
 
         public static string LaunchingDeferredGameRunFlow => $"{LaunchingDeferredGame}\r\n" +
             "If the prompt doesn't appear, the game has likely failed to start. " +
+            "Run the game in debug mode to investigate the issue.";
+
+        public static string LaunchingDeferredGameRunFlowWithExternalId(string appId) =>
+            $"{LaunchingDeferredGameWithExternalId(appId)}\r\n" +
+            "If you are unable to launch the game, the game has likely failed to start. " +
             "Run the game in debug mode to investigate the issue.";
 
         const double _bytesPerMByte = 1024 * 1024d;

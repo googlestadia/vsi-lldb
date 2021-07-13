@@ -77,7 +77,9 @@ namespace YetiVSI.Test.GameLaunch
             _dialogUtil = Substitute.For<IDialogUtil>();
             _vsiGameLaunchFactory = Substitute.For<IVsiGameLaunchFactory>();
             _vsiGameLaunch = Substitute.For<IVsiGameLaunch>();
-            _vsiGameLaunchFactory.Create(_gameLaunchName, Arg.Any<bool>()).Returns(_vsiGameLaunch);
+            _vsiGameLaunchFactory
+                .Create(_gameLaunchName, Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<string>())
+                .Returns(_vsiGameLaunch);
             _vsiGameLaunch.LaunchName.Returns(_gameLaunchName);
             _vsiGameLaunch.LaunchId.Returns(_gameLaunchId);
 

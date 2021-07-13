@@ -71,11 +71,12 @@ namespace YetiVSI.GameLaunch
 
     public interface IVsiGameLaunchFactory
     {
-        IVsiGameLaunch Create(string launchName, bool isDeveloperResumeOfferEnabled);
+        IVsiGameLaunch Create(string launchName, bool isDeveloperResumeOfferEnabled,
+                              bool isExternalAccount, string applicationId);
 
         IVsiGameLaunch Create(string launchName, bool isDeveloperResumeOfferEnabled,
-                              int pollingTimeoutMs, int pollingTimeoutResumeOfferMs,
-                              int pollDelayMs);
+                              bool isExternalAccount, string applicationId, int pollingTimeoutMs,
+                              int pollingTimeoutResumeOfferMs, int pollDelayMs);
     }
 
     public class VsiGameLaunchFactory : IVsiGameLaunchFactory
@@ -98,18 +99,22 @@ namespace YetiVSI.GameLaunch
             _dialogUtil = dialogUtil;
         }
 
-        public IVsiGameLaunch Create(string launchName, bool isDeveloperResumeOfferEnabled) =>
-            new VsiGameLaunch(launchName, isDeveloperResumeOfferEnabled, _gameletClient,
-                              _cancelableTaskFactory, _gameLaunchBeHelper, _actionRecorder,
-                              _dialogUtil);
+        public IVsiGameLaunch Create(string launchName, bool isDeveloperResumeOfferEnabled,
+                                     bool isExternalAccount, string applicationId) =>
+            new VsiGameLaunch(launchName, isDeveloperResumeOfferEnabled, isExternalAccount,
+                              applicationId, _gameletClient, _cancelableTaskFactory,
+                              _gameLaunchBeHelper, _actionRecorder, _dialogUtil);
 
         public IVsiGameLaunch Create(string launchName, bool isDeveloperResumeOfferEnabled,
+                                     bool isExternalAccount, string applicationId,
                                      int pollingTimeoutMs, int pollingTimeoutResumeOfferMs,
                                      int pollDelayMs) =>
-            new VsiGameLaunch(launchName, isDeveloperResumeOfferEnabled, _gameletClient,
-                              _cancelableTaskFactory, _gameLaunchBeHelper, _actionRecorder,
-                              _dialogUtil, pollingTimeoutMs, pollingTimeoutResumeOfferMs,
-                              pollDelayMs);
+            new VsiGameLaunch(launchName, isDeveloperResumeOfferEnabled, isExternalAccount,
+                              applicationId, _gameletClient, _cancelableTaskFactory,
+                              _gameLaunchBeHelper, _actionRecorder, _dialogUtil,
+                              pollingTimeoutMs: pollingTimeoutMs,
+                              pollingTimeoutResumeOfferMs: pollingTimeoutResumeOfferMs,
+                              pollDelayMs: pollDelayMs);
     }
 
     public class VsiGameLaunch : IVsiGameLaunch
@@ -128,8 +133,11 @@ namespace YetiVSI.GameLaunch
         /// while waiting for the client to connect.
         /// </summary>
         readonly bool _isDeveloperResumeOfferEnabled;
+        readonly bool _isExternalAccount;
+        readonly string _applicationId;
 
         public VsiGameLaunch(string launchName, bool isDeveloperResumeOfferEnabled,
+                             bool isExternalAccount, string applicationId,
                              IGameletClient gameletClient,
                              CancelableTask.Factory cancelableTaskFactory,
                              IGameLaunchBeHelper gameLaunchBeHelper, ActionRecorder actionRecorder,
@@ -139,6 +147,8 @@ namespace YetiVSI.GameLaunch
         {
             LaunchName = launchName;
             _isDeveloperResumeOfferEnabled = isDeveloperResumeOfferEnabled;
+            _isExternalAccount = isExternalAccount;
+            _applicationId = applicationId;
             _gameletClient = gameletClient;
             _cancelableTaskFactory = cancelableTaskFactory;
             _gameLaunchBeHelper = gameLaunchBeHelper;
@@ -213,8 +223,11 @@ namespace YetiVSI.GameLaunch
             ICancelableTask pollForLaunchStatusTask;
             if (_isDeveloperResumeOfferEnabled)
             {
+                string message = _isExternalAccount
+                    ? TaskMessages.LaunchingDeferredGameWithExternalId(_applicationId)
+                    : TaskMessages.LaunchingDeferredGame;
                 pollForLaunchStatusTask = _cancelableTaskFactory.Create(
-                    TaskMessages.LaunchingDeferredGame, TaskMessages.LaunchingDeferredGameTitle,
+                    message, TaskMessages.LaunchingDeferredGameTitle,
                     async task => await PollForLaunchStatusAsync(task, action));
             }
             else
