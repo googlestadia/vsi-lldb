@@ -90,8 +90,9 @@ namespace YetiCommon
             queryParams;
 
         public const string LaunchOnWebNotSupportedForExternalId =
-            "Player endpoint is not compatible with external ID. " +
-            "Please select another endpoint in the Project Properties.";
+            "The web player endpoint option is only for launching to stadia.com, so it isn't " +
+            "compatible with external IDs. Select another endpoint option in the 'Debugging' " +
+            "page of your project properties.";
 
         public static string TestAccountsNotSupported(string testAccount) =>
             $"You specified the test account in the project properties ({testAccount}). " +
@@ -100,9 +101,10 @@ namespace YetiCommon
 
         public static string TestAccountsNotSupportedWithExternalId(
             string testAccount, string externalId) =>
-            $"You specified both test account ({testAccount}) and external ID ({externalId}). " +
-            "Test accounts are not compatible with external IDs. " +
-            "Your external ID will be used to launch the game.";
+            $"You specified both a test account ({testAccount}) and an external ID " + 
+            $"({externalId}) for this launch, however test accounts aren't compatible with " +
+            "external IDs, so the test account will be ignored. " +
+            "The external ID will be used for the launch.";
 
         public static string MultipleEnvironmentVariableKeys(string key) =>
             $"The custom environment variable '{key}' is set multiple times. " +

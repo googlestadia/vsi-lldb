@@ -456,7 +456,7 @@ namespace YetiVSI
             if (externalAccounts.Count == 0)
             {
                 throw new ConfigurationException(
-                    ErrorStrings.InvalidExternalAccount(externalAccount, application.Id));
+                    ErrorStrings.InvalidExternalAccount(externalAccount));
             }
 
             // This should not happen unless there is an issue on backend.

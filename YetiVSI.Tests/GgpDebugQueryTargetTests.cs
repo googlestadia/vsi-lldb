@@ -594,7 +594,7 @@ namespace YetiVSI.Test
             var launchSettings = await QueryDebugTargetsAsync(0);
             Assert.AreEqual(1, launchSettings.Count);
             _dialogUtil.Received(1).ShowWarning(Arg.Is<string>(
-                s => s.Contains("Test accounts are not compatible with external IDs")));
+                s => s.Contains("test accounts aren't compatible with external IDs")));
             LaunchParams launchParams = _launchCommandFormatter.DecodeLaunchParams(
                 launchSettings[0].Arguments);
             Assert.IsNull(launchParams.TestAccount);
@@ -613,9 +613,11 @@ namespace YetiVSI.Test
 
             var launchSettings = await QueryDebugTargetsAsync(0);
             Assert.AreEqual(0, launchSettings.Count);
-            _dialogUtil.Received(1).ShowError(Arg.Is<string>(
-                s => s.Contains("Player endpoint is not compatible with external ID")),
-                Arg.Any<string>());
+            _dialogUtil.Received(1)
+                .ShowError(
+                    Arg.Is<string>(s => s.Contains("web player endpoint option") &&
+                                       s.Contains("it isn't compatible with external IDs")),
+                    Arg.Any<string>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.InvalidConfiguration);

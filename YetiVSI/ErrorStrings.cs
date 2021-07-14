@@ -291,11 +291,12 @@ namespace YetiVSI
             "accounts, run 'ggp test-account list'.";
 
         public static string
-            InvalidExternalAccount(string externalAccountId, string applicationId) =>
-            $"Invalid external account ({externalAccountId}) or external application id" +
-            $" ({applicationId}). Check the 'External ID' and 'Stadia Application ID or Name' " +
-            "field in the 'Debugging' page in your project properties. " +
-            "This only applies to Google Stream users.";
+            InvalidExternalAccount(string externalAccountId) =>
+            $"Unable to find the external ID ({externalAccountId}). Ensure you've created a " +
+            "player for this platform that links your developer account to this external ID. " +
+            "Also, make sure to specify the correct application ID in the " +
+            "'Debugging' page of your project properties. External IDs are not " +
+            "applicable to Stadia.";
 
         public static string MultipleExternalAccounts(string externalAccountId) =>
             $"Found multiple external accounts for the external ID {externalAccountId}. " +
