@@ -102,7 +102,7 @@ namespace YetiVSI.DebuggerOptions
                 {DebuggerOption.EXCEPTION_LOGGING, DebuggerOptionState.ENABLED},
                 {DebuggerOption.EXCEPTION_METRICS, DebuggerOptionState.ENABLED},
                 {DebuggerOption.GRPC_LOGGING, DebuggerOptionState.DISABLED},
-                {DebuggerOption.NATVIS_EXPERIMENTAL, DebuggerOptionState.DISABLED},
+                {DebuggerOption.NATVIS_EXPERIMENTAL, DebuggerOptionState.ENABLED},
                 {DebuggerOption.PARAMETER_LOGGING, DebuggerOptionState.DISABLED},
                 {DebuggerOption.SERVER_LOGGING, DebuggerOptionState.DISABLED},
                 {DebuggerOption.SKIP_WAIT_LAUNCH, DebuggerOptionState.DISABLED},
