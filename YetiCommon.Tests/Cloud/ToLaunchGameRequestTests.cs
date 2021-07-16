@@ -15,12 +15,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using GgpGrpc;
 using GgpGrpc.Models;
-using NSubstitute;
 using NUnit.Framework;
 using YetiCommon.Cloud;
-using YetiVSI.ProjectSystem.Abstractions;
 using static YetiCommon.Tests.Cloud.LaunchRequestParsingTestData;
 
 namespace YetiCommon.Tests.Cloud
@@ -31,29 +28,15 @@ namespace YetiCommon.Tests.Cloud
     [TestFixture]
     class ToLaunchGameRequestTests
     {
-        class SdkConfigMock : ISdkConfig
-        {
-            public string ProjectId => "test_project_id";
-            public string OrganizationId => "test_organization_id";
-            public string UrlOrDefault => "http://test.url";
-
-            public string OrganizationProject =>
-                $"organizations/{OrganizationId}/projects/{ProjectId}/";
-        }
-
-        readonly SdkConfigMock _sdkConfig = new SdkConfigMock();
-        ISdkConfigFactory _sdkConfigFactory;
         QueryParametersParser _queryParametersParser;
         LaunchGameParamsConverter _parametersConverter;
 
         [SetUp]
         public void Setup()
         {
-            _sdkConfigFactory = Substitute.For<ISdkConfigFactory>();
-            _sdkConfigFactory.LoadGgpSdkConfigOrDefault().Returns(_sdkConfig);
             _queryParametersParser = new QueryParametersParser();
             _parametersConverter =
-                new LaunchGameParamsConverter(_sdkConfigFactory, _queryParametersParser);
+                new LaunchGameParamsConverter(_queryParametersParser);
         }
 
         [Test]

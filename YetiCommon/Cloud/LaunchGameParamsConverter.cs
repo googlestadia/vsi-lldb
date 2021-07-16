@@ -40,14 +40,10 @@ namespace YetiCommon.Cloud
         const string _developerLaunchGameParent = "organizations/-/players/me";
         const string _externalDecoder = "ExternalDecoder";
 
-        readonly ISdkConfigFactory _sdkConfigFactory;
-
         readonly IQueryParametersParser _queryParametersParser;
 
-        public LaunchGameParamsConverter(
-            ISdkConfigFactory sdkConfigFactory, IQueryParametersParser queryParametersParser)
+        public LaunchGameParamsConverter(IQueryParametersParser queryParametersParser)
         {
-            _sdkConfigFactory = sdkConfigFactory;
             _queryParametersParser = queryParametersParser;
         }
 
@@ -59,7 +55,6 @@ namespace YetiCommon.Cloud
                     parameters.QueryParams, out IDictionary<string, string> parametersDict);
             status = status.Merge(
                 _queryParametersParser.ParseToParameters(parametersDict, parameters));
-            ISdkConfig sdkConfig = _sdkConfigFactory.LoadGgpSdkConfigOrDefault();
             status = status.Merge(
                 EnvironmentVariables(parameters, out IDictionary<string, string> envVariables));
             status = status.Merge(CommandLineArguments(parameters, out string[] cmdArgs));
@@ -91,7 +86,15 @@ namespace YetiCommon.Cloud
                 status.AppendWarning(ErrorStrings.QueryParamsNotSupported(queryString));
             }
 
-            status = status.Merge(ValidateAndAmendSettings(request));
+            if(parameters.Endpoint == StadiaEndpoint.TestClient)
+            {
+                //TODO: Use simplified overrides for TestClient as well.
+                status = status.Merge(ValidateAndAmendSettings(request));
+            }
+            else
+            {
+                FillSimplifiedOverrides(request);
+            }
 
             return status;
         }
@@ -105,6 +108,15 @@ namespace YetiCommon.Cloud
             return string.IsNullOrWhiteSpace(testAccount)
                 ? $"{_developerLaunchGameParent}/gameLaunches/{actualLaunchName}"
                 : $"{testAccount}/gameLaunches/{actualLaunchName}";
+        }
+
+        void FillSimplifiedOverrides(LaunchGameRequest request)
+        {
+            request.SimplifiedOverrideDynamicRange = request.OverrideDynamicRange;
+            request.SimplifiedOverrideMaxEncodeResolution = request.OverrideClientResolution;
+            request.SimplifiedOverrideCodec = request.OverridePreferredCodec;
+            request.SimplifiedOverrideChannelMode = request.OverrideAudioChannelMode;
+            request.SimplifiedOverridePixelDensity = request.OverrideDisplayPixelDensity;
         }
 
         ConfigStatus ValidateAndAmendSettings(LaunchGameRequest request)

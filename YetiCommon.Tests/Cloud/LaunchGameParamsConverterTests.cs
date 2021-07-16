@@ -39,16 +39,14 @@ namespace YetiCommon.Tests.Cloud
         }
 
         readonly SdkConfigMock _sdkConfig = new SdkConfigMock();
-        ISdkConfigFactory _sdkConfigFactory;
         IQueryParametersParser _queryParametersParser;
         LaunchGameParamsConverter _target;
 
         [SetUp]
         public void Setup()
         {
-            _sdkConfigFactory = MockSdkConfigFactory();
             _queryParametersParser = MockQueryParametersParser();
-            _target = new LaunchGameParamsConverter(_sdkConfigFactory, _queryParametersParser);
+            _target = new LaunchGameParamsConverter(_queryParametersParser);
         }
 
         [Test]
@@ -369,7 +367,7 @@ namespace YetiCommon.Tests.Cloud
                 r.OverrideDynamicRange = range;
                 return ConfigStatus.OkStatus();
             });
-            _target = new LaunchGameParamsConverter(_sdkConfigFactory, _queryParametersParser);
+            _target = new LaunchGameParamsConverter(_queryParametersParser);
 
             ConfigStatus status = _target.ToLaunchGameRequest(
                 ValidParams, out LaunchGameRequest request);
@@ -399,7 +397,7 @@ namespace YetiCommon.Tests.Cloud
                 r.OverrideClientResolution = resolution;
                 return ConfigStatus.OkStatus();
             });
-            _target = new LaunchGameParamsConverter(_sdkConfigFactory, _queryParametersParser);
+            _target = new LaunchGameParamsConverter(_queryParametersParser);
 
             ConfigStatus status = _target.ToLaunchGameRequest(
                 ValidParams, out LaunchGameRequest request);
@@ -428,20 +426,13 @@ namespace YetiCommon.Tests.Cloud
                 r.OverrideAudioChannelMode = channel;
                 return ConfigStatus.OkStatus();
             });
-            _target = new LaunchGameParamsConverter(_sdkConfigFactory, _queryParametersParser);
+            _target = new LaunchGameParamsConverter(_queryParametersParser);
 
             ConfigStatus status = _target.ToLaunchGameRequest(
                 ValidParams, out LaunchGameRequest request);
 
             Assert.AreEqual(ConfigStatus.ErrorLevel.Ok, status.SeverityLevel);
             Assert.AreEqual(expectedPref, request.OverrideDeviceSettingsAudioPlaybackPreference);
-        }
-
-        ISdkConfigFactory MockSdkConfigFactory()
-        {
-            ISdkConfigFactory sdkConfigFactory = Substitute.For<ISdkConfigFactory>();
-            sdkConfigFactory.LoadGgpSdkConfigOrDefault().Returns(_sdkConfig);
-            return sdkConfigFactory;
         }
 
         IQueryParametersParser MockQueryParametersParser(

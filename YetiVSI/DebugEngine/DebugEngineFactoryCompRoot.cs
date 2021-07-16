@@ -300,7 +300,7 @@ namespace YetiVSI.DebugEngine
                                          debugThreadAsyncFactory.Create : debugThreadFactory.Create;
             var gameletFactory = GetGameletClientFactory();
             var launchParamsConverter =
-                new LaunchGameParamsConverter(GetSdkConfigFactory(), new QueryParametersParser());
+                new LaunchGameParamsConverter(new QueryParametersParser());
             var gameLaunchManager = new GameLaunchBeHelper(gameletFactory.Create(GetCloudRunner()),
                                                           launchParamsConverter);
             var debugProgramFactory =

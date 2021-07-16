@@ -74,7 +74,7 @@ namespace YetiVSI
             var sdkVersion = GetSdkVersion();
             var sshManager = GetSshManager(managedProcessFactory, cloudRunner);
             var launchParamsConverter =
-                new LaunchGameParamsConverter(sdkConfigFactory, new QueryParametersParser());
+                new LaunchGameParamsConverter(new QueryParametersParser());
             var debugSessionMetrics = new DebugSessionMetrics(metrics);
             var actionRecorder = new ActionRecorder(debugSessionMetrics);
             var gameLaunchManager = new GameLaunchBeHelper(gameletClientFactory.Create(cloudRunner),
