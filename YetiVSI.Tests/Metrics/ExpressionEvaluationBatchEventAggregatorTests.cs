@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using DebuggerApi;
 using NSubstitute;
 using NUnit.Framework;
@@ -17,6 +14,8 @@ namespace YetiVSI.Test.Metrics
     class ExpressionEvaluationBatchEventAggregatorTests
     {
         const int _batchIntervalMs = 1024;
+        const int _maxExceptionsChainLength = 2;
+        const int _maxStackTraceFrames = 2;
 
         EventSchedulerFake _eventScheduler;
         IMetrics _metrics;
@@ -35,7 +34,8 @@ namespace YetiVSI.Test.Metrics
                                          _eventScheduler.Interval = _batchIntervalMs)
                 .Returns(_eventScheduler);
             _metrics = Substitute.For<IMetrics>();
-            _exceptionRecorder = new ExceptionRecorder(_metrics);
+            _exceptionRecorder =
+                new ExceptionRecorder(_metrics, _maxExceptionsChainLength, _maxStackTraceFrames);
             _batchEventAggregator =
                 new BatchEventAggregator<ExpressionEvaluationBatch, ExpressionEvaluationBatchParams,
                     ExpressionEvaluationBatchSummary>(_batchIntervalMs, eventSchedulerFactory,
@@ -115,10 +115,39 @@ namespace YetiVSI.Test.Metrics
                     MethodName = "HandleBatchCheck"
                 }
             };
-            exceptionsData.ExceptionsChain.Add(new VSIExceptionData.Types.Exception
+
+            var firstExceptionInChain = new VSIExceptionData.Types.Exception
             {
                 ExceptionType = typeof(ArgumentException).GetProto()
-            });
+            };
+
+            var firstStackTraceFrame = new VSIExceptionData.Types.Exception.Types.StackTraceFrame
+            {
+                AllowedNamespace = true,
+                Method = new VSIMethodInfo
+                {
+                    NamespaceName = "YetiVSI.Metrics",
+                    ClassName = "ExpressionEvaluationBatchParams",
+                    MethodName = "GetContextProto"
+                },
+                Filename = "ExpressionEvaluationBatch.cs",
+                LineNumber = 115
+            };
+            var secondStackTraceFrame = new VSIExceptionData.Types.Exception.Types.StackTraceFrame
+            {
+                AllowedNamespace = true,
+                Method = new VSIMethodInfo
+                {
+                    NamespaceName = "YetiVSI.Metrics",
+                    ClassName = "ExpressionEvaluationBatchParams",
+                    MethodName = "ConvertToProto"
+                },
+                Filename = "ExpressionEvaluationBatch.cs",
+                LineNumber = 70
+            };
+            firstExceptionInChain.ExceptionStackTraceFrames.Add(firstStackTraceFrame);
+            firstExceptionInChain.ExceptionStackTraceFrames.Add(secondStackTraceFrame);
+            exceptionsData.ExceptionsChain.Add(firstExceptionInChain);
 
             var logEvent = new DeveloperLogEvent
             {
