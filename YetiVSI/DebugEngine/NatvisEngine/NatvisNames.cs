@@ -103,9 +103,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// Match this typeName to a candidate typeName. This type support wildcard matching against
         /// the candidate
         /// </summary>
-        /// <param name="t"></param>
+        /// <param name="t">A type to compare against</param>
+        /// <param name="score">Matching score that is updated during execution</param>
         /// <returns></returns>
-        public bool Match(TypeName t)
+        public bool Match(TypeName t, MatchScore score)
         {
             if (IsWildcard)
             {
@@ -122,20 +123,20 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return false;
             }
 
-            if (Qualifiers.Where((qualifier, i) => !qualifier.Match(t.Qualifiers[i])).Any())
+            if (Qualifiers.Where((qualifier, i) => !qualifier.Match(t.Qualifiers[i], score)).Any())
             {
                 return false;
             }
 
-            // args must match one-for one,
-            // or if last arg is a wildcard it will match any number of additional args
-            if (Args.Count > t.Args.Count || (Args.Count == 0 && t.Args.Count > 0) ||
-                (Args.Count < t.Args.Count && !Args[Args.Count - 1].IsWildcard))
+            // Template args must match one-for one, or if the last arg is a wildcard, it will
+            // match any number of additional args.
+            bool lastArgIsWildcard = Args.Count > 0 && Args[Args.Count - 1].IsWildcard;
+            if (!(Args.Count == t.Args.Count || (Args.Count < t.Args.Count && lastArgIsWildcard)))
             {
                 return false;
             }
 
-            if (Args.Where((arg, i) => !arg.Match(t.Args[i])).Any())
+            if (Args.Where((arg, i) => !arg.Match(t.Args[i], score)).Any())
             {
                 return false;
             }
@@ -145,18 +146,20 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return false;
             }
 
-            if (!IsArray)
-            {
-                return true;
-            }
-
-            if (Dimensions.Length != t.Dimensions.Length)
+            if (IsArray && Dimensions.Length != t.Dimensions.Length)
             {
                 return false;
             }
 
-            return Dimensions.Where((dimension, i) => dimension != t.Dimensions[i])
-                .All(dimension => dimension == -1);
+            if (IsArray && Dimensions.Where((dimension, i) => dimension != t.Dimensions[i])
+                               .Any(dimension => dimension != -1))
+            {
+                return false;
+            }
+
+            score.ExactTypeMatchCount++;
+            score.ArgCountDifference += t.Args.Count - Args.Count;
+            return true;
         }
 
         /// <summary>
@@ -406,6 +409,55 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         {
             IsArray = true;
             Dimensions = dimensions;
+        }
+
+        /// <summary>
+        /// Score for Match(). Used to prefer exact template matches over wildcard matches.
+        /// <example><![CDATA[
+        /// Natvis types:
+        ///   1) <T1, T2, *>
+        ///   2) <T1, T2, *, *>
+        ///   3) <T1, T2, T3>
+        ///
+        /// C++ types:
+        ///   <T1, T2, T3> should prefer 3) as Natvis type, even if it also matches 1).
+        ///   <T1, T2, T3, T4> should prefer 2), even if it also matches 1).
+        /// ]]></example>
+        /// </summary>
+        public class MatchScore : IComparable<MatchScore>
+        {
+            public MatchScore()
+            {
+            }
+
+            /// <summary>
+            /// How many times types matched exactly. Higher is better.
+            /// </summary>
+            /// <example><![CDATA[
+            /// <*, T2, *> and <T1, T2, T3, T4> -> 1 exact match
+            /// ]]></example>
+            public int ExactTypeMatchCount { get; set; }
+
+            /// <summary>
+            /// Difference of C++ and Natvis type template arg counts. Lower is better.
+            /// </summary>
+            /// <example><![CDATA[
+            /// <T1, T2, *> and <T1, T2, T3> -> 0  (same number of args)
+            /// <T1, T2, *> and <T1, T2, T3, T4> -> 1 (right type has one more arg)
+            /// ]]></example>
+            public int ArgCountDifference { get; set; }
+
+            public int CompareTo(MatchScore other)
+            {
+                if (ExactTypeMatchCount != other.ExactTypeMatchCount)
+                {
+                    // Since higher is better, do this.CompareTo(other).
+                    return other.ExactTypeMatchCount.CompareTo(ExactTypeMatchCount);
+                }
+
+                // Since lower is better, do other.CompareTo(this).
+                return ArgCountDifference.CompareTo(other.ArgCountDifference);
+            }
         }
     }
 }

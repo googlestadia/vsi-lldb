@@ -299,7 +299,38 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await varInfo.ValueAsync(), Is.EqualTo("expectedValue"));
         }
 
-        #endregion
+        [Test]
+        public async Task MatchTemplateArgumentsAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""Tuple&lt;*&gt;"">
+    <DisplayString>*</DisplayString>
+  </Type>
+  <Type Name=""Tuple&lt;*,*&gt;"">
+    <DisplayString>*,*</DisplayString>
+  </Type>
+  <Type Name=""Tuple&lt;int&gt;"">
+    <DisplayString>int</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var t1 = CreateVarInfo(RemoteValueFakeUtil.CreateClass("Tuple<int>", "t1", "1"));
+            var t2 = CreateVarInfo(RemoteValueFakeUtil.CreateClass("Tuple<short>", "t2", "2"));
+            var t3 =
+                CreateVarInfo(RemoteValueFakeUtil.CreateClass("Tuple<int, short>", "t3", "value"));
+            var t4 = CreateVarInfo(
+                RemoteValueFakeUtil.CreateClass("Tuple<int, int, int>", "t4", "value"));
+
+            Assert.That(await t1.ValueAsync(), Does.Contain("int"));
+            Assert.That(await t2.ValueAsync(), Does.Contain("*"));
+            Assert.That(await t3.ValueAsync(), Does.Contain("*,*"));
+            Assert.That(await t4.ValueAsync(), Does.Contain("*,*"));
+        }
+
+#endregion
 
         #region AlternativeType
 

@@ -276,21 +276,27 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             // CustomVisualizers overridable, e.g. priority, a custom built-in flag or storing
             // built-in Natvis in a file that can be changed by users.
             _visualizerCache[varTypeName] = null;
+            var matches = new List<Tuple<TypeName.MatchScore, TypeInfo>>();
             for (int index = _typeVisualizers.Count - 1; index >= 0; --index)
             {
                 FileInfo fileInfo = _typeVisualizers[index];
 
-                // TODO: match on View, version, etc
-                TypeInfo visualizer =
-                    fileInfo.Visualizers.Find(v => v.ParsedName.Match(typeNameToFind));
-
-                if (visualizer != null)
+                // TODO: match on version, etc
+                foreach (TypeInfo v in fileInfo.Visualizers)
                 {
-                    _visualizerCache[varTypeName] =
-                        new VisualizerInfo(visualizer.Visualizer, typeNameToFind);
-
-                    break;
+                    var score = new TypeName.MatchScore();
+                    if (v.ParsedName.Match(typeNameToFind, score))
+                    {
+                        matches.Add(new Tuple<TypeName.MatchScore, TypeInfo>(score, v));
+                    }
                 }
+            }
+
+            if (matches.Count > 0)
+            {
+                matches = matches.OrderBy(scoreAndTypeInfo => scoreAndTypeInfo.Item1).ToList();
+                _visualizerCache[varTypeName] =
+                    new VisualizerInfo(matches[0].Item2.Visualizer, typeNameToFind);
             }
 
             return _visualizerCache[varTypeName];
