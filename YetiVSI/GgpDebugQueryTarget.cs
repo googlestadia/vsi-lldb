@@ -161,6 +161,7 @@ namespace YetiVSI
 
                 // TODO: Enable launch on any endpoint for external accounts.
                 if (launchParams.Endpoint == StadiaEndpoint.AnyEndpoint &&
+                    string.IsNullOrWhiteSpace(launchParams.ExternalAccount) &&
                     launchParams.Account != null &&
                     !launchParams.Account.EndsWith("@sparklingsunset.com") &&
                     !launchParams.Account.EndsWith("@subtlesunset.com"))
