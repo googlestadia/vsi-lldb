@@ -1179,8 +1179,11 @@ namespace YetiVSI.DebugEngine
                 return;
             }
 
+            // The flush of the metrics that are batched at this point doesn't guarantee that all
+            // the events are sent. Some end of session debug events could be ignored ((internal)).
             _debugEventRecorder.Flush();
             _expressionEvaluationRecorder.Flush();
+
             _attachedProgram.Stop();
             _sessionNotifier.NotifySessionStopped(new SessionStoppedEventArgs(_attachedProgram));
             StopTransportAndCleanup(exitInfo);

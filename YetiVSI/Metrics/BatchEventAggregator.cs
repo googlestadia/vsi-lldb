@@ -114,9 +114,10 @@ namespace YetiVSI.Metrics
             }
         }
 
+        // Invoking this method doesn't prevent new metrics from being added afterwards. It isn't
+        // guaranteed that the events added to the batch after the flush are dispatched.
         public void Flush()
         {
-            // TODO: Shutdown batch events aggregator after flushing metrics
             HandleBatchCheck();
         }
     }
