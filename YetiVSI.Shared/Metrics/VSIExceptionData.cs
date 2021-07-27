@@ -28,7 +28,75 @@ namespace YetiVSI.Shared.Metrics
         {
             public class Exception
             {
+                public class Types
+                {
+                    public class StackTraceFrame
+                    {
+                        public bool? AllowedNamespace { get; set; }
+                        public VSIMethodInfo Method { get; set; }
+                        public string Filename { get; set; }
+                        public uint? LineNumber { get; set; }
+
+                        public override int GetHashCode()
+                        {
+                            return 42;
+                        }
+
+                        public override bool Equals(object other) =>
+                            Equals(other as StackTraceFrame);
+
+                        public bool Equals(StackTraceFrame other)
+                        {
+                            if (ReferenceEquals(other, null))
+                            {
+                                return false;
+                            }
+
+                            if (ReferenceEquals(other, this))
+                            {
+                                return true;
+                            }
+
+                            if (!object.Equals(other.AllowedNamespace, AllowedNamespace))
+                            {
+                                return false;
+                            }
+
+                            if (!object.Equals(other.Method, Method))
+                            {
+                                return false;
+                            }
+
+                            if (!object.Equals(other.Filename, Filename))
+                            {
+                                return false;
+                            }
+
+                            if (!object.Equals(other.LineNumber, LineNumber))
+                            {
+                                return false;
+                            }
+
+                            return true;
+                        }
+
+                        public StackTraceFrame Clone()
+                        {
+                            var clone = (StackTraceFrame) MemberwiseClone();
+                            clone.Method = Method.Clone();
+
+                            return clone;
+                        }
+                    }
+                }
+
                 public VSITypeInfo ExceptionType { get; set; }
+                public List<Types.StackTraceFrame> ExceptionStackTraceFrames { get; set; }
+
+                public Exception()
+                {
+                    ExceptionStackTraceFrames = new List<Types.StackTraceFrame>();
+                }
 
                 public override int GetHashCode()
                 {
@@ -54,10 +122,30 @@ namespace YetiVSI.Shared.Metrics
                         return false;
                     }
 
+                    if (!Equals(other.ExceptionStackTraceFrames, ExceptionStackTraceFrames) &&
+                        (other.ExceptionStackTraceFrames == null ||
+                            ExceptionStackTraceFrames == null ||
+                            !other.ExceptionStackTraceFrames.SequenceEqual(
+                                ExceptionStackTraceFrames)))
+                    {
+                        return false;
+                    }
+
                     return true;
                 }
 
-                public Exception Clone() => new Exception {ExceptionType = ExceptionType?.Clone()};
+                public Exception Clone()
+                {
+                    var clone = new Exception
+                    {
+                        ExceptionType = ExceptionType.Clone(),
+                        ExceptionStackTraceFrames = ExceptionStackTraceFrames
+                            .Select(frame => frame.Clone())
+                            .ToList()
+                    };
+
+                    return clone;
+                }
             }
         }
 
