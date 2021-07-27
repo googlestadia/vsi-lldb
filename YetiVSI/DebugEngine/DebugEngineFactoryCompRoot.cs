@@ -245,59 +245,38 @@ namespace YetiVSI.DebugEngine
             var childrenProviderFactory = GetFactoryDecorator().Decorate<IChildrenProviderFactory>(
                 concreteChildrenProviderFactory);
 
-            // TODO: Add test for this: (internal)
-            bool asyncInterfacesEnabled =
-                GetVsiService().Options.AsyncInterfaces == AsyncInterfaces.ENABLED;
+            var debugPropertyFactory = GetFactoryDecorator()
+                .Decorate(new DebugAsyncProperty.Factory(varInfoEnumFactory,
+                                                         childrenProviderFactory,
+                                                         debugCodeContextFactory,
+                                                         vsExpressionCreator, GetTaskExecutor()));
 
-            var debugPropertyFactory = GetFactoryDecorator().Decorate(new DebugProperty.Factory(
-                varInfoEnumFactory, childrenProviderFactory, debugCodeContextFactory,
-                vsExpressionCreator, GetTaskExecutor()));
-            var debugPropertyAsyncFactory =
-                GetFactoryDecorator().Decorate(new DebugAsyncProperty.Factory(
-                    varInfoEnumFactory, childrenProviderFactory, debugCodeContextFactory,
-                    vsExpressionCreator, GetTaskExecutor()));
+            concreteChildrenProviderFactory.Initialize(debugPropertyFactory);
 
-            var createDebugPropertyDelegate =
-                asyncInterfacesEnabled
-                ?(CreateDebugPropertyDelegate)
-                    debugPropertyAsyncFactory.Create : debugPropertyFactory.Create;
+            var asyncEvaluatorFactory = GetFactoryDecorator().Decorate(
+                new AsyncExpressionEvaluator.Factory(debugPropertyFactory, GetVarInfoBuilder(),
+                                                     vsExpressionCreator,
+                                                     new ErrorDebugProperty.Factory(),
+                                                     debugEngineCommands, GetVsiService().Options,
+                                                     GetExpressionEvaluationRecorder(),
+                                                     GetTimeSource()));
 
-            concreteChildrenProviderFactory.Initialize(createDebugPropertyDelegate);
-
-            var asyncEvaluatorFactory =
-                GetFactoryDecorator().Decorate(new AsyncExpressionEvaluator.Factory(
-                    createDebugPropertyDelegate, GetVarInfoBuilder(), vsExpressionCreator,
-                    new ErrorDebugProperty.Factory(), debugEngineCommands,
-                    GetVsiService().Options, GetExpressionEvaluationRecorder(), GetTimeSource()));
-
-            var debugExpressionFactory = GetFactoryDecorator().Decorate(
-                new DebugExpression.Factory(asyncEvaluatorFactory, GetTaskExecutor()));
             var debugAsyncExpressionFactory = GetFactoryDecorator().Decorate(
                 new DebugAsyncExpression.Factory(asyncEvaluatorFactory, GetTaskExecutor()));
-            var debugExpressionCreator =
-                asyncInterfacesEnabled
-                ?(CreateDebugExpressionDelegate)
-                    debugAsyncExpressionFactory.Create : debugExpressionFactory.Create;
+
             var registerSetsBuilderFactory = GetFactoryDecorator().Decorate(
                 new RegisterSetsBuilder.Factory(GetVariableInformationFactory()));
-            var debugStackFrameFactory = GetFactoryDecorator().Decorate(new DebugStackFrame.Factory(
-                debugDocumentContextFactory, childrenProviderFactory, debugCodeContextFactory,
-                debugExpressionCreator, GetVariableInformationFactory(), varInfoEnumFactory,
-                registerSetsBuilderFactory, GetTaskExecutor()));
-            var debugStackFrameFactoryAsync =
-                GetFactoryDecorator().Decorate(new DebugStackFrameAsync.Factory(
-                    debugDocumentContextFactory, childrenProviderFactory, debugCodeContextFactory,
-                    debugExpressionCreator, GetVariableInformationFactory(), varInfoEnumFactory,
-                    registerSetsBuilderFactory, GetTaskExecutor()));
-            var debugStackFrameCreator =
-                asyncInterfacesEnabled ?(CreateDebugStackFrameDelegate)
-                    debugStackFrameFactoryAsync.Create : debugStackFrameFactory.Create;
-            var debugThreadFactory = GetFactoryDecorator().Decorate(new DebugThread.Factory(
-                _taskExecutor));
-            var debugThreadAsyncFactory =
-                GetFactoryDecorator().Decorate(new DebugThreadAsync.Factory(_taskExecutor));
-            var debugThreadCreator = asyncInterfacesEnabled ?(CreateDebugThreadDelegate)
-                                         debugThreadAsyncFactory.Create : debugThreadFactory.Create;
+
+            var debugStackFrameFactory = GetFactoryDecorator().Decorate(
+                new DebugAsyncStackFrame.Factory(debugDocumentContextFactory,
+                                                 childrenProviderFactory, debugCodeContextFactory,
+                                                 debugAsyncExpressionFactory,
+                                                 GetVariableInformationFactory(),
+                                                 varInfoEnumFactory, registerSetsBuilderFactory,
+                                                 GetTaskExecutor()));
+
+            var debugThreadAsyncFactory = GetFactoryDecorator()
+                .Decorate(new DebugAsyncThread.Factory(_taskExecutor));
             var gameletFactory = GetGameletClientFactory();
             var launchParamsConverter =
                 new LaunchGameParamsConverter(new QueryParametersParser());
@@ -354,8 +333,8 @@ namespace YetiVSI.DebugEngine
                         GetFactoryDecorator().Decorate<IDebugEngineHandlerFactory>(
                             new DebugEngineHandler.Factory(GetJoinableTaskContext())),
                         GetTaskExecutor(), eventManagerFactory, debugProgramFactory,
-                        debugModuleCacheFactory, debugModuleFactory, debugThreadCreator,
-                        debugStackFrameCreator, lldbShell, breakpointManagerFactory,
+                        debugModuleCacheFactory, debugModuleFactory, debugThreadAsyncFactory,
+                        debugStackFrameFactory, lldbShell, breakpointManagerFactory,
                         symbolLoaderFactory, binaryLoaderFactory, moduleFileLoaderFactory));
             bool fastExpressionEvaluation = GetVsiService().Options.FastExpressionEvaluation ==
                                             FastExpressionEvaluation.ENABLED;

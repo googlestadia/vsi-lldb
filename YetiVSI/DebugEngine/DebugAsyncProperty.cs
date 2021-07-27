@@ -26,9 +26,8 @@ using YetiVSI.DebugEngine.Variables;
 
 namespace YetiVSI.DebugEngine
 {
-    public delegate IGgpDebugProperty CreateDebugPropertyDelegate(IVariableInformation varInfo);
-
-    public interface IGgpDebugProperty : IDecoratorSelf<IGgpDebugProperty>, IDebugProperty3
+    public interface IGgpDebugProperty : IDecoratorSelf<IGgpDebugProperty>, IDebugProperty3,
+        IDebugProperty157
     {
         /// <summary>
         /// The extension to IDebugProperty3 interface that:
@@ -50,8 +49,9 @@ namespace YetiVSI.DebugEngine
                                        DEBUG_PROPERTY_INFO[] pPropertyInfo);
     }
 
-    public interface IGgpAsyncDebugProperty : IGgpDebugProperty, IDebugProperty157
+    public interface IGgpDebugPropertyFactory
     {
+        IGgpDebugProperty Create(IVariableInformation varInfo);
     }
 
     /// <summary>
@@ -60,23 +60,52 @@ namespace YetiVSI.DebugEngine
     /// methods are not accessing IVariableInformation simultaneously. Thus all calls to varInfo
     /// go through taskExecutor.
     /// </summary>
-    public abstract class GgpCommonDebugProperty : SimpleDecoratorSelf<IGgpDebugProperty>,
-        IGgpDebugProperty
+    public class DebugAsyncProperty : SimpleDecoratorSelf<IGgpDebugProperty>, IGgpDebugProperty
     {
-        protected readonly IChildrenProviderFactory _childrenProviderFactory;
-        protected readonly IVariableInformation _varInfo;
-        protected readonly ITaskExecutor _taskExecutor;
+        public class Factory: IGgpDebugPropertyFactory
+        {
+            readonly DebugCodeContext.Factory _codeContextFactory;
+            readonly VsExpressionCreator _vsExpressionCreator;
+            readonly IVariableInformationEnumFactory _varInfoEnumFactory;
+            readonly IChildrenProviderFactory _childrenProviderFactory;
+            readonly ITaskExecutor _taskExecutor;
+
+            [Obsolete("This constructor only exists to support castle proxy.", error: true)]
+            protected Factory()
+            {
+            }
+
+            public Factory(IVariableInformationEnumFactory varInfoEnumFactory,
+                           IChildrenProviderFactory childrenProviderFactory,
+                           DebugCodeContext.Factory codeContextFactory,
+                           VsExpressionCreator vsExpressionCreator, ITaskExecutor taskExecutor)
+            {
+                _varInfoEnumFactory = varInfoEnumFactory;
+                _childrenProviderFactory = childrenProviderFactory;
+                _codeContextFactory = codeContextFactory;
+                _vsExpressionCreator = vsExpressionCreator;
+                _taskExecutor = taskExecutor;
+            }
+
+            public virtual IGgpDebugProperty Create(IVariableInformation varInfo) =>
+                new DebugAsyncProperty(_taskExecutor, _childrenProviderFactory, _varInfoEnumFactory,
+                                       varInfo, _codeContextFactory, _vsExpressionCreator);
+        }
+
+        readonly IChildrenProviderFactory _childrenProviderFactory;
+        readonly IVariableInformation _varInfo;
+        readonly ITaskExecutor _taskExecutor;
 
         readonly IVariableInformationEnumFactory _varInfoEnumFactory;
         readonly DebugCodeContext.Factory _codeContextFactory;
         readonly VsExpressionCreator _vsExpressionCreator;
 
-        protected GgpCommonDebugProperty(ITaskExecutor taskExecutor,
-                                         IChildrenProviderFactory childrenProviderFactory,
-                                         IVariableInformationEnumFactory varInfoEnumFactory,
-                                         IVariableInformation varInfo,
-                                         DebugCodeContext.Factory codeContextFactory,
-                                         VsExpressionCreator vsExpressionCreator)
+        DebugAsyncProperty(ITaskExecutor taskExecutor,
+                                     IChildrenProviderFactory childrenProviderFactory,
+                                     IVariableInformationEnumFactory varInfoEnumFactory,
+                                     IVariableInformation varInfo,
+                                     DebugCodeContext.Factory codeContextFactory,
+                                     VsExpressionCreator vsExpressionCreator)
         {
             _taskExecutor = taskExecutor;
             _childrenProviderFactory = childrenProviderFactory;
@@ -342,94 +371,7 @@ namespace YetiVSI.DebugEngine
 
         #endregion
 
-        ValueFormat GetFallbackValueFormat(uint radix) =>
-            radix == 16 ? ValueFormat.Hex : ValueFormat.Default;
-    }
-
-    public class DebugProperty : GgpCommonDebugProperty
-    {
-        public class Factory
-        {
-            readonly DebugCodeContext.Factory _codeContextFactory;
-            readonly VsExpressionCreator _vsExpressionCreator;
-            readonly IVariableInformationEnumFactory _varInfoEnumFactory;
-            readonly IChildrenProviderFactory _childrenProviderFactory;
-            readonly ITaskExecutor _taskExecutor;
-
-            [Obsolete("This constructor only exists to support castle proxy.", error: true)]
-            protected Factory()
-            {
-            }
-
-            public Factory(IVariableInformationEnumFactory varInfoEnumFactory,
-                           IChildrenProviderFactory childrenProviderFactory,
-                           DebugCodeContext.Factory codeContextFactory,
-                           VsExpressionCreator vsExpressionCreator, ITaskExecutor taskExecutor)
-            {
-                _varInfoEnumFactory = varInfoEnumFactory;
-                _childrenProviderFactory = childrenProviderFactory;
-                _codeContextFactory = codeContextFactory;
-                _vsExpressionCreator = vsExpressionCreator;
-                _taskExecutor = taskExecutor;
-            }
-
-            public virtual IGgpDebugProperty Create(IVariableInformation varInfo) =>
-                new DebugProperty(_taskExecutor, _childrenProviderFactory, _varInfoEnumFactory,
-                                  varInfo, _codeContextFactory, _vsExpressionCreator);
-        }
-
-        DebugProperty(ITaskExecutor taskExecutor, IChildrenProviderFactory childrenProviderFactory,
-                      IVariableInformationEnumFactory varInfoEnumFactory,
-                      IVariableInformation varInfo, DebugCodeContext.Factory codeContextFactory,
-                      VsExpressionCreator vsExpressionCreator) : base(
-            taskExecutor, childrenProviderFactory, varInfoEnumFactory, varInfo, codeContextFactory,
-            vsExpressionCreator)
-        {
-        }
-    }
-
-    public class DebugAsyncProperty : GgpCommonDebugProperty, IGgpAsyncDebugProperty
-    {
-        public class Factory
-        {
-            readonly DebugCodeContext.Factory _codeContextFactory;
-            readonly VsExpressionCreator _vsExpressionCreator;
-            readonly IVariableInformationEnumFactory _varInfoEnumFactory;
-            readonly IChildrenProviderFactory _childrenProviderFactory;
-            readonly ITaskExecutor _taskExecutor;
-
-            [Obsolete("This constructor only exists to support castle proxy.", error: true)]
-            protected Factory()
-            {
-            }
-
-            public Factory(IVariableInformationEnumFactory varInfoEnumFactory,
-                           IChildrenProviderFactory childrenProviderFactory,
-                           DebugCodeContext.Factory codeContextFactory,
-                           VsExpressionCreator vsExpressionCreator, ITaskExecutor taskExecutor)
-            {
-                _varInfoEnumFactory = varInfoEnumFactory;
-                _childrenProviderFactory = childrenProviderFactory;
-                _codeContextFactory = codeContextFactory;
-                _vsExpressionCreator = vsExpressionCreator;
-                _taskExecutor = taskExecutor;
-            }
-
-            public virtual IGgpAsyncDebugProperty Create(IVariableInformation varInfo) =>
-                new DebugAsyncProperty(_taskExecutor, _childrenProviderFactory, _varInfoEnumFactory,
-                                       varInfo, _codeContextFactory, _vsExpressionCreator);
-        }
-
-        DebugAsyncProperty(ITaskExecutor taskExecutor,
-                           IChildrenProviderFactory childrenProviderFactory,
-                           IVariableInformationEnumFactory varInfoEnumFactory,
-                           IVariableInformation varInfo,
-                           DebugCodeContext.Factory codeContextFactory,
-                           VsExpressionCreator vsExpressionCreator) : base(
-            taskExecutor, childrenProviderFactory, varInfoEnumFactory, varInfo, codeContextFactory,
-            vsExpressionCreator)
-        {
-        }
+        #region IDebugProperty157 functions
 
         public int GetChildPropertyProvider(uint dwFields, uint dwRadix, uint dwTimeout,
                                             out IAsyncDebugPropertyInfoProvider
@@ -447,5 +389,10 @@ namespace YetiVSI.DebugEngine
 
             return VSConstants.S_OK;
         }
+
+        #endregion
+
+        ValueFormat GetFallbackValueFormat(uint radix) =>
+            radix == 16 ? ValueFormat.Hex : ValueFormat.Default;
     }
 }

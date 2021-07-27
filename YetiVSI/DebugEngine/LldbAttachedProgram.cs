@@ -124,10 +124,10 @@ namespace YetiVSI.DebugEngine
             readonly IDebugEngineHandlerFactory _debugEngineHandlerFactory;
             readonly ITaskExecutor _taskExecutor;
             readonly IDebugProgramFactory _debugProgramFactory;
-            readonly CreateDebugThreadDelegate _debugThreadCreatorDelegate;
+            readonly IDebugThreadFactory _debugThreadFactory;
             readonly DebugModule.Factory _debugModuleFactory;
             readonly DebugModuleCache.Factory _debugModuleCacheFactory;
-            readonly CreateDebugStackFrameDelegate _debugStackFrameCreator;
+            readonly IDebugStackFrameFactory _debugStackFrameFactory;
             readonly LldbEventManager.Factory _eventManagerFactory;
             readonly ILLDBShell _lldbShell;
             readonly LldbBreakpointManager.Factory _breakpointManagerFactory;
@@ -141,8 +141,8 @@ namespace YetiVSI.DebugEngine
                            IDebugProgramFactory debugProgramFactory,
                            DebugModuleCache.Factory debugModuleCacheFactory,
                            DebugModule.Factory debugModuleFactory,
-                           CreateDebugThreadDelegate debugThreadCreatorDelegate,
-                           CreateDebugStackFrameDelegate debugStackFrameCreator,
+                           IDebugThreadFactory debugThreadFactory,
+                           IDebugStackFrameFactory debugStackFrameFactory,
                            ILLDBShell lldbShell,
                            LldbBreakpointManager.Factory breakpointManagerFactory,
                            SymbolLoader.Factory symbolLoaderFactory,
@@ -156,8 +156,8 @@ namespace YetiVSI.DebugEngine
                 _debugProgramFactory = debugProgramFactory;
                 _debugModuleCacheFactory = debugModuleCacheFactory;
                 _debugModuleFactory = debugModuleFactory;
-                _debugThreadCreatorDelegate = debugThreadCreatorDelegate;
-                _debugStackFrameCreator = debugStackFrameCreator;
+                _debugThreadFactory = debugThreadFactory;
+                _debugStackFrameFactory = debugStackFrameFactory;
                 _breakpointManagerFactory = breakpointManagerFactory;
                 _lldbShell = lldbShell;
                 _symbolLoaderFactory = symbolLoaderFactory;
@@ -192,10 +192,10 @@ namespace YetiVSI.DebugEngine
                 var ad7FrameInfoCreator = new AD7FrameInfoCreator(debugModuleCache);
 
                 var stackFrameCreator = new StackFramesProvider.StackFrameCreator(
-                    (frame, thread, program) => _debugStackFrameCreator(
+                    (frame, thread, program) => _debugStackFrameFactory.Create(
                         ad7FrameInfoCreator, frame, thread, debugEngineHandler, program));
                 var threadCreator = new DebugProgram.ThreadCreator(
-                    (thread, program) => _debugThreadCreatorDelegate(
+                    (thread, program) => _debugThreadFactory.Create(
                         ad7FrameInfoCreator, stackFrameCreator, thread, program));
                 var debugProgram = _debugProgramFactory.Create(
                     debugEngineHandler, threadCreator, debugProcess, programId, process, target,

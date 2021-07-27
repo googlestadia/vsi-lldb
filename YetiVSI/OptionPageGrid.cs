@@ -176,14 +176,6 @@ namespace YetiVSI
         [Description("Disabled")] DISABLED = 2,
     }
 
-    public enum AsyncInterfacesFlag
-    {
-        [Description("Default - Enabled")] [EnumValueAlias(ENABLED)]
-        DEFAULT = 0,
-        [Description("Enabled")] ENABLED = 1,
-        [Description("Disabled")] DISABLED = 2,
-    }
-
     public enum ExpressionEvaluationEngineFlag
     {
         [Description("Default - lldb-eval with fallback to LLDB")]
@@ -217,7 +209,6 @@ namespace YetiVSI
         NatvisLoggingLevel NatvisLoggingLevel { get; }
         FastExpressionEvaluation FastExpressionEvaluation { get; }
         ExpressionEvaluationStrategy ExpressionEvaluationStrategy { get; }
-        AsyncInterfaces AsyncInterfaces { get; }
         ShowOption SdkCompatibilityWarningOption { get; }
         void AddSdkVersionsToHide(string gameletVersion, string localVersion, string gameletName);
         bool SdkVersionsAreHidden(string gameletVersion, string localVersion, string gameletName);
@@ -246,7 +237,6 @@ namespace YetiVSI
         NatvisLoggingLevelFeatureFlag _natvisLoggingLevel;
         FastExpressionEvaluationFlag _fastExpressionEvaluation;
         ExpressionEvaluationEngineFlag _expressionEvaluationEngine;
-        AsyncInterfacesFlag _asyncInterfaces;
 
         [Category("Runtime")]
         [DisplayName("Display game output in Output window")]
@@ -354,25 +344,6 @@ namespace YetiVSI
             }
         }
 
-        [Category("LLDB Debugger")]
-        [DisplayName("Asynchronous expressions evaluation")]
-        [Description("Evaluate some expressions in the background while stepping. This may lead " +
-            "to a more responsive debugging experience.")]
-        [TypeConverter(typeof(FeatureFlagConverter))]
-        [DefaultValue(AsyncInterfacesFlag.DEFAULT)]
-        public AsyncInterfacesFlag AsyncInterfaces
-        {
-            get => _asyncInterfaces;
-            set
-            {
-                if (value != _asyncInterfaces)
-                {
-                    _asyncInterfaces = value;
-                    OnPropertyChanged(nameof(AsyncInterfaces));
-                }
-            }
-        }
-
         public OptionPageGrid()
         {
             ResetSettings();
@@ -437,9 +408,6 @@ namespace YetiVSI
         ExpressionEvaluationStrategy IExtensionOptions.ExpressionEvaluationStrategy =>
             EnumValueAliasAttribute.GetAliasOrValue(ExpressionEvaluationEngine)
                 .ConvertTo<ExpressionEvaluationStrategy>();
-
-        AsyncInterfaces IExtensionOptions.AsyncInterfaces =>
-            EnumValueAliasAttribute.GetAliasOrValue(AsyncInterfaces).ConvertTo<AsyncInterfaces>();
 
         ShowOption IExtensionOptions.SdkCompatibilityWarningOption =>
             SdkIncompatibilityWarning.ShowOption;

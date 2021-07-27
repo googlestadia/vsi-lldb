@@ -24,44 +24,79 @@ using YetiVSI.DebugEngine.Interfaces;
 
 namespace YetiVSI.DebugEngine
 {
-    public delegate IDebugThread CreateDebugThreadDelegate(
-        AD7FrameInfoCreator ad7FrameInfoCreator,
-        StackFramesProvider.StackFrameCreator stackFrameCreator, RemoteThread lldbThread,
-        IGgpDebugProgram debugProgram);
-
-    public interface IDebugThread : IDebugThread2, IDecoratorSelf<IDebugThread>
+    public interface IDebugThread : IDebugThread2, IDebugThread157, IDecoratorSelf<IDebugThread>
     {
         // Returns the underlying LLDB thread object.
         RemoteThread GetRemoteThread();
     }
 
-    public interface IDebugThreadAsync : IDebugThread, IDebugThread157
+    public interface IDebugThreadFactory
     {
+        IDebugThread Create(AD7FrameInfoCreator ad7FrameInfoCreator,
+                            StackFramesProvider.StackFrameCreator stackFrameCreator,
+                            RemoteThread lldbThread, IGgpDebugProgram debugProgram);
+
+        /// <summary>
+        /// Creator for unit tests.
+        /// </summary>
+        /// <param name="stackFramesProvider"></param>
+        /// <param name="lldbThread"></param>
+        /// <returns></returns>
+        IDebugThread CreateForTesting(StackFramesProvider stackFramesProvider,
+                                      RemoteThread lldbThread);
     }
 
-    public abstract class BaseDebugThread : SimpleDecoratorSelf<IDebugThread>, IDebugThread
+    public class DebugAsyncThread : SimpleDecoratorSelf<IDebugThread>, IDebugThread
     {
+        public class Factory : IDebugThreadFactory
+        {
+            readonly ITaskExecutor _taskExecutor;
+
+            [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
+            protected Factory()
+            {
+            }
+
+            public Factory(ITaskExecutor taskExecutor)
+            {
+                _taskExecutor = taskExecutor;
+            }
+
+            public virtual IDebugThread Create(AD7FrameInfoCreator ad7FrameInfoCreator,
+                                               StackFramesProvider.StackFrameCreator
+                                                   stackFrameCreator, RemoteThread lldbThread,
+                                               IGgpDebugProgram debugProgram) =>
+                new DebugAsyncThread(_taskExecutor,
+                                     new StackFramesProvider(
+                                         lldbThread, stackFrameCreator, debugProgram,
+                                         ad7FrameInfoCreator, debugProgram), lldbThread);
+
+            public virtual IDebugThread CreateForTesting(StackFramesProvider stackFramesProvider,
+                                                         RemoteThread lldbThread) =>
+                new DebugAsyncThread(_taskExecutor, stackFramesProvider, lldbThread);
+        }
+
         // Main thread required to provide name and ID for debugger to fully attach
         readonly string _name;
         readonly uint _id;
         readonly RemoteThread _remoteThread;
 
-        protected readonly ITaskExecutor _taskExecutor;
-        protected readonly StackFramesProvider _stackFramesProvider;
+        readonly ITaskExecutor _taskExecutor;
+        readonly StackFramesProvider _stackFramesProvider;
 
-        protected BaseDebugThread(ITaskExecutor taskExecutor,
-                                  StackFramesProvider stackFramesProvider, RemoteThread lldbThread)
+        protected DebugAsyncThread(ITaskExecutor taskExecutor,
+                                   StackFramesProvider stackFramesProvider, RemoteThread lldbThread)
         {
             _remoteThread = lldbThread;
             _name = lldbThread.GetName();
-            _id = (uint)lldbThread.GetThreadId();
+            _id = (uint) lldbThread.GetThreadId();
             _taskExecutor = taskExecutor;
             _stackFramesProvider = stackFramesProvider;
         }
 
         public RemoteThread GetRemoteThread() => _remoteThread;
 
-#region IDebugThread2 functions
+        #region IDebugThread2 functions
 
         public int CanSetNextStatement(IDebugStackFrame2 stackFrameOrigin,
                                        IDebugCodeContext2 codeContextDestination)
@@ -79,9 +114,9 @@ namespace YetiVSI.DebugEngine
             }
 
             var contextInfosDestination = new CONTEXT_INFO[1];
-            int result = codeContextDestination.GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS |
-                                                            enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
-                                                        contextInfosDestination);
+            int result = codeContextDestination.GetInfo(
+                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS | enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
+                contextInfosDestination);
             if (result != VSConstants.S_OK)
             {
                 return result;
@@ -268,7 +303,7 @@ namespace YetiVSI.DebugEngine
             return VSConstants.E_NOTIMPL;
         }
 
-#region Uncalled IDebugThread2 functions
+        #region Uncalled IDebugThread2 functions
 
         public int GetLogicalThread(IDebugStackFrame2 stackFrame,
                                     out IDebugLogicalThread2 logicalThread)
@@ -282,102 +317,9 @@ namespace YetiVSI.DebugEngine
             return VSConstants.E_NOTIMPL;
         }
 
-#endregion
+        #endregion
 
-#endregion
-    }
-
-    public class DebugThread : BaseDebugThread
-    {
-        public class Factory
-        {
-            readonly ITaskExecutor _taskExecutor;
-
-            [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
-            protected Factory()
-            {
-            }
-
-            public Factory(ITaskExecutor taskExecutor)
-            {
-                _taskExecutor = taskExecutor;
-            }
-
-            public virtual IDebugThread Create(
-                AD7FrameInfoCreator ad7FrameInfoCreator,
-                StackFramesProvider.StackFrameCreator stackFrameCreator, RemoteThread lldbThread,
-                IGgpDebugProgram debugProgram) => new DebugThread(_taskExecutor,
-                                                                  new StackFramesProvider(
-                                                                      lldbThread, stackFrameCreator,
-                                                                      debugProgram,
-                                                                      ad7FrameInfoCreator,
-                                                                      debugProgram),
-                                                                  lldbThread);
-
-            /// <summary>
-            /// Creator for unit tests.
-            /// </summary>
-            /// <param name="stackFramesProvider"></param>
-            /// <param name="lldbThread"></param>
-            /// <returns></returns>
-            public virtual IDebugThread CreateForTesting(
-                StackFramesProvider stackFramesProvider,
-                RemoteThread lldbThread) => new DebugThread(_taskExecutor, stackFramesProvider,
-                                                            lldbThread);
-        }
-
-        DebugThread(ITaskExecutor taskExecutor, StackFramesProvider stackFramesProvider,
-                    RemoteThread lldbThread)
-            : base(taskExecutor, stackFramesProvider, lldbThread)
-        {
-        }
-    }
-
-    public class DebugThreadAsync : BaseDebugThread, IDebugThreadAsync
-    {
-        public class Factory
-        {
-            readonly ITaskExecutor _taskExecutor;
-
-            [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
-            protected Factory()
-            {
-            }
-
-            public Factory(ITaskExecutor taskExecutor)
-            {
-                _taskExecutor = taskExecutor;
-            }
-
-            public virtual IDebugThreadAsync Create(
-                AD7FrameInfoCreator ad7FrameInfoCreator,
-                StackFramesProvider.StackFrameCreator stackFrameCreator, RemoteThread lldbThread,
-                IGgpDebugProgram debugProgram) => new DebugThreadAsync(_taskExecutor,
-                                                                       new StackFramesProvider(
-                                                                           lldbThread,
-                                                                           stackFrameCreator,
-                                                                           debugProgram,
-                                                                           ad7FrameInfoCreator,
-                                                                           debugProgram),
-                                                                       lldbThread);
-
-            /// <summary>
-            /// Creator for unit tests.
-            /// </summary>
-            /// <param name="stackFramesProvider"></param>
-            /// <param name="lldbThread"></param>
-            /// <returns></returns>
-            public virtual IDebugThreadAsync CreateForTesting(
-                StackFramesProvider stackFramesProvider,
-                RemoteThread lldbThread) => new DebugThreadAsync(_taskExecutor, stackFramesProvider,
-                                                                 lldbThread);
-        }
-
-        DebugThreadAsync(ITaskExecutor taskExecutor, StackFramesProvider stackFramesProvider,
-                         RemoteThread lldbThread)
-            : base(taskExecutor, stackFramesProvider, lldbThread)
-        {
-        }
+        #endregion
 
         public int GetAllFramesAsync(enum_FRAMEINFO_FLAGS dwFlags, uint dwFlagsEx, uint radix,
                                      IAsyncDebugGetFramesCompletionHandler pCompletionHandler,

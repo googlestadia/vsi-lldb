@@ -31,80 +31,77 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class DebugStackFrameTests
     {
-        const ulong TEST_PC = 0x123456789abcdef0;
-        const string NAME = "DebugStackFrameTests";
+        const ulong _testPc = 0x123456789abcdef0;
+        const string _name = "DebugStackFrameTests";
 
-        IDebugStackFrame stackFrame;
-        IDebugStackFrameAsync stackFrameAsync;
-        RemoteFrame mockDebuggerStackFrame;
-        LineEntryInfo lineEntry;
-        IDebugDocumentContext2 mockDocumentContext;
-        IDebugThread mockThread;
-        DebugDocumentContext.Factory mockDocumentContextFactory;
-        DebugCodeContext.Factory mockCodeContextFactory;
-        DebugExpression.Factory mockExpressionFactory;
-        IDebugModuleCache mockModuleCache;
-        IDebugEngineHandler mockDebugEngineHandler;
-        ITaskExecutor taskExecutor;
-        IGgpDebugProgram mockProgram;
+        IDebugStackFrame _stackFrame;
+        RemoteFrame _mockDebuggerStackFrame;
+        LineEntryInfo _lineEntry;
+        IDebugDocumentContext2 _mockDocumentContext;
+        IDebugThread _mockThread;
+        DebugDocumentContext.Factory _mockDocumentContextFactory;
+        DebugCodeContext.Factory _mockCodeContextFactory;
+        IDebugExpressionFactory _mockExpressionFactory;
+        IDebugModuleCache _mockModuleCache;
+        IDebugEngineHandler _mockDebugEngineHandler;
+        ITaskExecutor _taskExecutor;
+        IGgpDebugProgram _mockProgram;
 
         [SetUp]
         public void SetUp()
         {
-            lineEntry = new LineEntryInfo();
-            mockDocumentContext = Substitute.For<IDebugDocumentContext2>();
-            mockThread = Substitute.For<IDebugThread>();
-            mockDocumentContextFactory = Substitute.For<DebugDocumentContext.Factory>();
-            mockDocumentContextFactory.Create(lineEntry).Returns(mockDocumentContext);
-            mockDebuggerStackFrame = Substitute.For<RemoteFrame>();
-            mockDebuggerStackFrame.GetLineEntry().Returns(lineEntry);
-            mockDebuggerStackFrame.GetPC().Returns(TEST_PC);
-            mockDebuggerStackFrame.GetFunctionName().Returns(NAME);
-            mockDebuggerStackFrame.GetFunctionNameWithSignature().Returns(NAME);
+            _lineEntry = new LineEntryInfo();
+            _mockDocumentContext = Substitute.For<IDebugDocumentContext2>();
+            _mockThread = Substitute.For<IDebugThread>();
+            _mockDocumentContextFactory = Substitute.For<DebugDocumentContext.Factory>();
+            _mockDocumentContextFactory.Create(_lineEntry).Returns(_mockDocumentContext);
+            _mockDebuggerStackFrame = Substitute.For<RemoteFrame>();
+            _mockDebuggerStackFrame.GetLineEntry().Returns(_lineEntry);
+            _mockDebuggerStackFrame.GetPC().Returns(_testPc);
+            _mockDebuggerStackFrame.GetFunctionName().Returns(_name);
+            _mockDebuggerStackFrame.GetFunctionNameWithSignature().Returns(_name);
 
-            mockCodeContextFactory = Substitute.For<DebugCodeContext.Factory>();
-            mockExpressionFactory = Substitute.For<DebugExpression.Factory>();
-            mockModuleCache = Substitute.For<IDebugModuleCache>();
+            _mockCodeContextFactory = Substitute.For<DebugCodeContext.Factory>();
+            _mockExpressionFactory = Substitute.For<IDebugExpressionFactory>();
+            _mockModuleCache = Substitute.For<IDebugModuleCache>();
 
-            mockDebugEngineHandler = Substitute.For<IDebugEngineHandler>();
-            mockProgram = Substitute.For<IGgpDebugProgram>();
+            _mockDebugEngineHandler = Substitute.For<IDebugEngineHandler>();
+            _mockProgram = Substitute.For<IGgpDebugProgram>();
 
-            taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
+            _taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
 
             var childAdapterFactory = new RemoteValueChildAdapter.Factory();
             var varInfoFactory = new LLDBVariableInformationFactory(childAdapterFactory);
-            var varInfoEnumFactory = new VariableInformationEnum.Factory(taskExecutor);
+            var varInfoEnumFactory = new VariableInformationEnum.Factory(_taskExecutor);
             var childrenProviderFactory = new ChildrenProvider.Factory();
-            var propertyFactory =
-                new DebugProperty.Factory(varInfoEnumFactory, childrenProviderFactory,
-                                          Substitute.For<DebugCodeContext.Factory>(),
-                                          new VsExpressionCreator(), taskExecutor);
-            childrenProviderFactory.Initialize(propertyFactory.Create);
+            var propertyFactory = new DebugAsyncProperty.Factory(
+                varInfoEnumFactory, childrenProviderFactory,
+                Substitute.For<DebugCodeContext.Factory>(), new VsExpressionCreator(),
+                _taskExecutor);
+            childrenProviderFactory.Initialize(propertyFactory);
             var registerSetsBuilderFactory = new RegisterSetsBuilder.Factory(varInfoFactory);
 
-            stackFrame = new DebugStackFrame.Factory(mockDocumentContextFactory,
-                                                     childrenProviderFactory, mockCodeContextFactory, mockExpressionFactory.Create,
-                                                     varInfoFactory, varInfoEnumFactory, registerSetsBuilderFactory, taskExecutor)
-                .Create(new AD7FrameInfoCreator(mockModuleCache), mockDebuggerStackFrame,
-                    mockThread, mockDebugEngineHandler, mockProgram);
-
-            stackFrameAsync = new DebugStackFrameAsync.Factory(mockDocumentContextFactory,
-                    childrenProviderFactory, mockCodeContextFactory, mockExpressionFactory.Create,
-                    varInfoFactory, varInfoEnumFactory, registerSetsBuilderFactory, taskExecutor)
-                .Create(new AD7FrameInfoCreator(mockModuleCache), mockDebuggerStackFrame,
-                    mockThread, mockDebugEngineHandler, mockProgram);
+            _stackFrame = new DebugAsyncStackFrame.Factory(_mockDocumentContextFactory,
+                                                           childrenProviderFactory,
+                                                           _mockCodeContextFactory,
+                                                           _mockExpressionFactory, varInfoFactory,
+                                                           varInfoEnumFactory,
+                                                           registerSetsBuilderFactory,
+                                                           _taskExecutor)
+                .Create(new AD7FrameInfoCreator(_mockModuleCache), _mockDebuggerStackFrame,
+                        _mockThread,
+                        _mockDebugEngineHandler, _mockProgram);
         }
 
         [Test]
         public void GetCodeContext()
         {
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            mockCodeContextFactory
-                .Create(TEST_PC, NAME, mockDocumentContext, Guid.Empty)
+            _mockCodeContextFactory.Create(_testPc, _name, _mockDocumentContext, Guid.Empty)
                 .Returns(mockCodeContext);
 
             Assert.AreEqual(VSConstants.S_OK,
-                            stackFrame.GetCodeContext(out IDebugCodeContext2 codeContext));
+                            _stackFrame.GetCodeContext(out IDebugCodeContext2 codeContext));
             Assert.AreEqual(codeContext, mockCodeContext);
         }
 
@@ -112,61 +109,58 @@ namespace YetiVSI.Test.DebugEngine
         public void GetCodeContextNoDocumentContext()
         {
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            mockCodeContextFactory
-                .Create(TEST_PC, NAME, null, Guid.Empty)
+            _mockCodeContextFactory.Create(_testPc, _name, null, Guid.Empty)
                 .Returns(mockCodeContext);
             LineEntryInfo lineEntryNull = null;
-            mockDebuggerStackFrame.GetLineEntry().Returns(lineEntryNull);
+            _mockDebuggerStackFrame.GetLineEntry().Returns(lineEntryNull);
 
-            IDebugCodeContext2 codeContext;
-            Assert.AreEqual(VSConstants.S_OK, stackFrame.GetCodeContext(out codeContext));
+            Assert.AreEqual(VSConstants.S_OK,
+                            _stackFrame.GetCodeContext(out IDebugCodeContext2 codeContext));
             Assert.AreEqual(codeContext, mockCodeContext);
         }
 
         [Test]
         public void GetDocumentContext()
         {
-            IDebugDocumentContext2 documentContext;
             Assert.AreEqual(VSConstants.S_OK,
-                stackFrame.GetDocumentContext(out documentContext));
-            Assert.AreEqual(mockDocumentContext, documentContext);
+                            _stackFrame.GetDocumentContext(
+                                out IDebugDocumentContext2 documentContext));
+            Assert.AreEqual(_mockDocumentContext, documentContext);
         }
 
         [Test]
         public void GetDocumentContextNoLineEntry()
         {
             LineEntryInfo lineEntryNull = null;
-            mockDebuggerStackFrame.GetLineEntry().Returns(lineEntryNull);
-            IDebugDocumentContext2 documentContext;
+            _mockDebuggerStackFrame.GetLineEntry().Returns(lineEntryNull);
             Assert.AreEqual(VSConstants.E_FAIL,
-                stackFrame.GetDocumentContext(out documentContext));
+                            _stackFrame.GetDocumentContext(
+                                out IDebugDocumentContext2 documentContext));
             Assert.AreEqual(null, documentContext);
         }
 
         [Test]
         public void GetExpressionContext()
         {
-            IDebugExpressionContext2 context;
-            Assert.AreEqual(VSConstants.S_OK, stackFrame.GetExpressionContext(out context));
-            Assert.AreEqual(stackFrame, context);
+            Assert.AreEqual(VSConstants.S_OK,
+                            _stackFrame.GetExpressionContext(out IDebugExpressionContext2 context));
+            Assert.AreEqual(_stackFrame, context);
         }
 
         [Test]
         public void ParseText()
         {
-            var test_expression = "test expression";
+            var testExpression = "test expression";
 
             var mockExpression = Substitute.For<IDebugExpression>();
-            mockExpressionFactory.Create(mockDebuggerStackFrame, test_expression,
-                mockDebugEngineHandler, mockProgram, mockThread)
+            _mockExpressionFactory.Create(_mockDebuggerStackFrame, testExpression,
+                                          _mockDebugEngineHandler, _mockProgram, _mockThread)
                 .Returns(mockExpression);
 
-            IDebugExpression2 expression;
-            string errorString;
-            uint error;
             Assert.AreEqual(VSConstants.S_OK,
-                stackFrame.ParseText(test_expression, 0, 0, out expression, out errorString,
-                out error));
+                            _stackFrame.ParseText(testExpression, 0, 0,
+                                                  out IDebugExpression2 expression,
+                                                  out string errorString, out uint error));
             Assert.AreEqual(mockExpression, expression);
             Assert.AreEqual(0, error);
             Assert.AreEqual("", errorString);
@@ -175,92 +169,86 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void EnumPropertiesSupportedFilter()
         {
-            mockDebuggerStackFrame.GetVariables(false, true, false, true).Returns(
-                new List<RemoteValue> { });
+            _mockDebuggerStackFrame.GetVariables(false, true, false, true)
+                .Returns(new List<RemoteValue> { });
 
-            IEnumDebugPropertyInfo2 propertyEnum;
-            uint count;
             var guidFilter = FrameVariablesProvider.PropertyFilterGuids.AllLocals;
-            Assert.AreEqual(VSConstants.S_OK, stackFrame.EnumProperties(
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 0, ref guidFilter, 0, out count,
-                out propertyEnum));
+            Assert.AreEqual(VSConstants.S_OK,
+                            _stackFrame.EnumProperties(
+                                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 0, ref guidFilter, 0,
+                                out uint count, out IEnumDebugPropertyInfo2 propertyEnum));
         }
 
         [Test]
         public void EnumPropertiesUnsupportedFilter()
         {
-            IEnumDebugPropertyInfo2 propertyEnum;
-            uint count;
             var guidFilter = new Guid("12345678-1234-1234-1234-123456789123");
-            Assert.AreEqual(VSConstants.E_NOTIMPL, stackFrame.EnumProperties(
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 0, ref guidFilter, 0, out count,
-                out propertyEnum));
+            Assert.AreEqual(VSConstants.E_NOTIMPL,
+                            _stackFrame.EnumProperties(
+                                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 0, ref guidFilter, 0,
+                                out uint count, out IEnumDebugPropertyInfo2 propertyEnum));
         }
 
         [Test]
         public void GetThread()
         {
-            IDebugThread2 thread;
-            Assert.AreEqual(VSConstants.S_OK, stackFrame.GetThread(out thread));
-            Assert.AreEqual(mockThread, thread);
+            Assert.AreEqual(VSConstants.S_OK, _stackFrame.GetThread(out IDebugThread2 thread));
+            Assert.AreEqual(_mockThread, thread);
         }
 
         [Test]
         public void GetFrame()
         {
-            mockDebuggerStackFrame.GetInfo(FrameInfoFlags.FIF_FRAME).Returns(
+            _mockDebuggerStackFrame.GetInfo(FrameInfoFlags.FIF_FRAME).Returns(
                 new FrameInfo<SbModule> { ValidFields = FrameInfoFlags.FIF_FRAME });
 
             var info = new FRAMEINFO[1];
             var fields = enum_FRAMEINFO_FLAGS.FIF_FRAME;
 
-            Assert.AreEqual(VSConstants.S_OK, stackFrame.GetInfo(fields, 0, info));
+            Assert.AreEqual(VSConstants.S_OK, _stackFrame.GetInfo(fields, 0, info));
             Assert.AreEqual(enum_FRAMEINFO_FLAGS.FIF_FRAME,
-                info[0].m_dwValidFields & enum_FRAMEINFO_FLAGS.FIF_FRAME);
-            Assert.AreEqual(stackFrame, info[0].m_pFrame);
+                            info[0].m_dwValidFields & enum_FRAMEINFO_FLAGS.FIF_FRAME);
+            Assert.AreEqual(_stackFrame, info[0].m_pFrame);
         }
 
         [Test]
         public void GetModule()
         {
             var mockModule = Substitute.For<SbModule>();
-            mockDebuggerStackFrame.GetInfo(FrameInfoFlags.FIF_DEBUG_MODULEP).Returns(
+            _mockDebuggerStackFrame.GetInfo(FrameInfoFlags.FIF_DEBUG_MODULEP).Returns(
                 new FrameInfo<SbModule>
                 {
                     ValidFields = FrameInfoFlags.FIF_DEBUG_MODULEP,
                     Module = mockModule
                 });
             var debugModule = Substitute.For<IDebugModule3>();
-            mockModuleCache.GetOrCreate(mockModule, mockProgram).Returns(debugModule);
+            _mockModuleCache.GetOrCreate(mockModule, _mockProgram).Returns(debugModule);
 
             var info = new FRAMEINFO[1];
             var fields = enum_FRAMEINFO_FLAGS.FIF_DEBUG_MODULEP;
 
-            Assert.AreEqual(VSConstants.S_OK, stackFrame.GetInfo(fields, 0, info));
+            Assert.AreEqual(VSConstants.S_OK, _stackFrame.GetInfo(fields, 0, info));
             Assert.AreEqual(enum_FRAMEINFO_FLAGS.FIF_DEBUG_MODULEP,
                             info[0].m_dwValidFields & enum_FRAMEINFO_FLAGS.FIF_DEBUG_MODULEP);
             Assert.AreEqual(debugModule, info[0].m_pModule);
         }
 
         [Test]
-        public void EnsureFrameInfoFlagsMatchAD7()
+        public void EnsureFrameInfoFlagsMatchAd7()
         {
-            CollectionAssert.AreEqual(
-                Enum.GetNames(typeof(enum_FRAMEINFO_FLAGS)),
-                Enum.GetNames(typeof(FrameInfoFlags)));
+            CollectionAssert.AreEqual(Enum.GetNames(typeof(enum_FRAMEINFO_FLAGS)),
+                                      Enum.GetNames(typeof(FrameInfoFlags)));
 
-            Assert.AreEqual(
-                Enum.GetUnderlyingType(typeof(enum_FRAMEINFO_FLAGS)),
-                Enum.GetUnderlyingType(typeof(FrameInfoFlags)));
+            Assert.AreEqual(Enum.GetUnderlyingType(typeof(enum_FRAMEINFO_FLAGS)),
+                            Enum.GetUnderlyingType(typeof(FrameInfoFlags)));
 
-            var underlyingType = Enum.GetUnderlyingType(typeof(FrameInfoFlags));
-            var ad7Values = Enum.GetValues(typeof(enum_FRAMEINFO_FLAGS));
-            var customValues = Enum.GetValues(typeof(FrameInfoFlags));
+            Type underlyingType = Enum.GetUnderlyingType(typeof(FrameInfoFlags));
+            Array ad7Values = Enum.GetValues(typeof(enum_FRAMEINFO_FLAGS));
+            Array customValues = Enum.GetValues(typeof(FrameInfoFlags));
             for (int i = 0; i < ad7Values.Length; ++i)
             {
-                Assert.AreEqual(
-                    Convert.ChangeType(ad7Values.GetValue(i), underlyingType),
-                    Convert.ChangeType(customValues.GetValue(i), underlyingType));
+                Assert.AreEqual(Convert.ChangeType(ad7Values.GetValue(i), underlyingType),
+                                Convert.ChangeType(customValues.GetValue(i), underlyingType));
             }
         }
 
@@ -269,7 +257,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             Guid guidFilter = FrameVariablesProvider.PropertyFilterGuids.AllLocals;
 
-            int status = stackFrameAsync.GetPropertyProvider(
+            int status = _stackFrame.GetPropertyProvider(
                 (uint) enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 0, ref guidFilter, 0,
                 out IAsyncDebugPropertyInfoProvider provider);
 

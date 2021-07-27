@@ -53,7 +53,7 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory
         {
-            readonly CreateDebugPropertyDelegate _createPropertyDelegate;
+            readonly IGgpDebugPropertyFactory _propertyFactory;
             readonly VarInfoBuilder _varInfoBuilder;
             readonly VsExpressionCreator _vsExpressionCreator;
             readonly ErrorDebugProperty.Factory _errorDebugPropertyFactory;
@@ -67,15 +67,15 @@ namespace YetiVSI.DebugEngine
             {
             }
 
-            public Factory(CreateDebugPropertyDelegate createPropertyDelegate,
-                           VarInfoBuilder varInfoBuilder, VsExpressionCreator vsExpressionCreator,
+            public Factory(IGgpDebugPropertyFactory propertyFactory, VarInfoBuilder varInfoBuilder,
+                           VsExpressionCreator vsExpressionCreator,
                            ErrorDebugProperty.Factory errorDebugPropertyFactory,
                            IDebugEngineCommands debugEngineCommands,
                            IExtensionOptions extensionOptions,
                            ExpressionEvaluationRecorder expressionEvaluationRecorder,
                            ITimeSource timeSource)
             {
-                _createPropertyDelegate = createPropertyDelegate;
+                _propertyFactory = propertyFactory;
                 _varInfoBuilder = varInfoBuilder;
                 _vsExpressionCreator = vsExpressionCreator;
                 _errorDebugPropertyFactory = errorDebugPropertyFactory;
@@ -93,7 +93,7 @@ namespace YetiVSI.DebugEngine
                 var expressionEvaluationStrategy = _extensionOptions.ExpressionEvaluationStrategy;
 
                 return new AsyncExpressionEvaluator(frame, text, _vsExpressionCreator,
-                                                    _varInfoBuilder, _createPropertyDelegate,
+                                                    _varInfoBuilder, _propertyFactory,
                                                     _errorDebugPropertyFactory,
                                                     _debugEngineCommands,
                                                     expressionEvaluationStrategy,
@@ -106,7 +106,7 @@ namespace YetiVSI.DebugEngine
 
         readonly VsExpressionCreator _vsExpressionCreator;
         readonly VarInfoBuilder _varInfoBuilder;
-        readonly CreateDebugPropertyDelegate _createPropertyDelegate;
+        readonly IGgpDebugPropertyFactory _propertyFactory;
         readonly ErrorDebugProperty.Factory _errorDebugPropertyFactory;
         readonly IDebugEngineCommands _debugEngineCommands;
         readonly RemoteFrame _frame;
@@ -118,7 +118,7 @@ namespace YetiVSI.DebugEngine
         AsyncExpressionEvaluator(RemoteFrame frame, string text,
                                  VsExpressionCreator vsExpressionCreator,
                                  VarInfoBuilder varInfoBuilder,
-                                 CreateDebugPropertyDelegate createPropertyDelegate,
+                                 IGgpDebugPropertyFactory propertyFactory,
                                  ErrorDebugProperty.Factory errorDebugPropertyFactory,
                                  IDebugEngineCommands debugEngineCommands,
                                  ExpressionEvaluationStrategy expressionEvaluationStrategy,
@@ -129,7 +129,7 @@ namespace YetiVSI.DebugEngine
             _text = text;
             _vsExpressionCreator = vsExpressionCreator;
             _varInfoBuilder = varInfoBuilder;
-            _createPropertyDelegate = createPropertyDelegate;
+            _propertyFactory = propertyFactory;
             _errorDebugPropertyFactory = errorDebugPropertyFactory;
             _debugEngineCommands = debugEngineCommands;
             _expressionEvaluationStrategy = expressionEvaluationStrategy;
@@ -159,7 +159,7 @@ namespace YetiVSI.DebugEngine
             string displayName = vsExpression.ToString();
             IVariableInformation varInfo =
                 _varInfoBuilder.Create(remoteValue, displayName, vsExpression.FormatSpecifier);
-            result = _createPropertyDelegate.Invoke(varInfo);
+            result = _propertyFactory.Create(varInfo);
 
             return EvaluationResult.FromResult(result);
         }

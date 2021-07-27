@@ -30,161 +30,164 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class DebugThreadTests
     {
-        ITaskExecutor taskExecutor;
+        ITaskExecutor _taskExecutor;
         StackFramesProvider _stackFramesProvider;
+        IDebugThreadFactory _debugThreadFactory;
 
         [SetUp]
         public void SetUp()
         {
-            taskExecutor = Substitute.ForPartsOf<FakeTaskExecutor>();
+            _taskExecutor = Substitute.ForPartsOf<FakeTaskExecutor>();
             _stackFramesProvider =
                 Substitute.ForPartsOf<StackFramesProvider>(null, null, null, null, null);
+            _debugThreadFactory = new DebugAsyncThread.Factory(_taskExecutor);
         }
 
         [Test]
         public void GetName()
         {
-            var THREAD_NAME = "thread-name";
+            const string threadName = "thread-name";
             var lldbThread = Substitute.For<RemoteThread>();
-            lldbThread.GetName().Returns(THREAD_NAME);
-            IDebugThread thread = CreateDebugThread<IDebugThread>(lldbThread);
-            string debugThreadName;
-            thread.GetName(out debugThreadName);
-            Assert.AreEqual(THREAD_NAME, debugThreadName);
+            lldbThread.GetName().Returns(threadName);
+            IDebugThread thread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, lldbThread);
+            thread.GetName(out string debugThreadName);
+            Assert.AreEqual(threadName, debugThreadName);
         }
 
         [Test]
         public void CanSetNextStatementSameFunction()
         {
-            const string NAME = "test";
-            var threadId = 1u;
+            const string frameName = "test";
+            const uint threadId = 1u;
             var mockThread = Substitute.For<RemoteThread>();
             mockThread.GetThreadId().Returns(threadId);
             var mockStackFrame = Substitute.For<IDebugStackFrame2>();
-            string name;
-            mockStackFrame.GetName(out name).Returns(x =>
+            mockStackFrame.GetName(out string _).Returns(x =>
             {
-                x[0] = NAME;
+                x[0] = frameName;
                 return VSConstants.S_OK;
             });
-            IDebugThread2 outThread;
-            IDebugThread thread = CreateDebugThread<IDebugThread>(mockThread);
-            mockStackFrame.GetThread(out outThread).Returns(x =>
+            IDebugThread thread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
+            mockStackFrame.GetThread(out IDebugThread2 _).Returns(x =>
             {
                 x[0] = thread;
                 return VSConstants.S_OK;
             });
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
             var contextInfosDestination = Arg.Any<CONTEXT_INFO[]>();
-            mockCodeContext.GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS |
-                enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION, contextInfosDestination).Returns(x =>
+            mockCodeContext
+                .GetInfo(
+                    enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS | enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
+                    contextInfosDestination).Returns(x =>
                 {
                     var infos = x[1] as CONTEXT_INFO[];
                     infos[0] = new CONTEXT_INFO
                     {
-                        bstrFunction = NAME,
+                        bstrFunction = frameName,
                         bstrAddress = "0xabcd",
                     };
                     return VSConstants.S_OK;
                 });
-            Assert.AreEqual(VSConstants.S_OK, thread.CanSetNextStatement(mockStackFrame, mockCodeContext));
+            Assert.AreEqual(VSConstants.S_OK,
+                            thread.CanSetNextStatement(mockStackFrame, mockCodeContext));
         }
 
         [Test]
         public void CanSetNextStatementMatchingPc()
         {
-            const ulong ADDRESS = 0xdeadbeef;
-            const string NAME = "test";
-            var threadId = 1u;
+            const ulong address = 0xdeadbeef;
+            const string frameName = "test";
+            const uint threadId = 1u;
             var mockThread = Substitute.For<RemoteThread>();
             mockThread.GetThreadId().Returns(threadId);
             var mockStackFrame = Substitute.For<IDebugStackFrame2>();
             string name;
             mockStackFrame.GetName(out name).Returns(x =>
             {
-                x[0] = NAME;
+                x[0] = frameName;
                 return VSConstants.S_OK;
             });
-            IDebugThread2 outThread;
-            IDebugThread thread = CreateDebugThread<IDebugThread>(mockThread);
-            mockStackFrame.GetThread(out outThread).Returns(x =>
+            IDebugThread thread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
+            mockStackFrame.GetThread(out IDebugThread2 _).Returns(x =>
             {
                 x[0] = thread;
                 return VSConstants.S_OK;
             });
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            mockCodeContext
-                .GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS |
-                             enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
-                         Arg.Do<CONTEXT_INFO[]>(infos =>
-                         {
-                             infos[0].bstrAddress = "0x" + ADDRESS.ToString("x16");
-                             infos[0].bstrFunction = NAME;
-                         }))
-                .Returns(VSConstants.S_OK);
+            mockCodeContext.GetInfo(
+                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS | enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
+                Arg.Do<CONTEXT_INFO[]>(infos =>
+                {
+                    infos[0].bstrAddress = "0x" + address.ToString("x16");
+                    infos[0].bstrFunction = frameName;
+                })).Returns(VSConstants.S_OK);
             var mockFrame = Substitute.For<RemoteFrame>();
-            mockFrame.GetPC().Returns(ADDRESS);
+            mockFrame.GetPC().Returns(address);
             mockThread.GetFrameAtIndex(0).Returns(mockFrame);
             Assert.AreEqual(VSConstants.S_OK,
-                thread.CanSetNextStatement(mockStackFrame, mockCodeContext));
+                            thread.CanSetNextStatement(mockStackFrame, mockCodeContext));
         }
 
         [Test]
         public void CanSetNextStatementNoThreadOrigin()
         {
-            var threadId = 1u;
+            const uint threadId = 1u;
             var mockThread = Substitute.For<RemoteThread>();
             mockThread.GetThreadId().Returns(threadId);
             var mockStackFrame = Substitute.For<IDebugStackFrame2>();
-            IDebugThread2 outThread;
-            IDebugThread thread = CreateDebugThread<IDebugThread>(mockThread);
-            mockStackFrame.GetThread(out outThread).Returns(x =>
+            IDebugThread thread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
+            mockStackFrame.GetThread(out IDebugThread2 _).Returns(x =>
             {
                 x[0] = null;
                 return VSConstants.S_OK;
             });
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            Assert.AreEqual(VSConstants.E_FAIL, thread.CanSetNextStatement(mockStackFrame, mockCodeContext));
+            Assert.AreEqual(VSConstants.E_FAIL,
+                            thread.CanSetNextStatement(mockStackFrame, mockCodeContext));
         }
 
         [Test]
         public void CanSetNextStatementDifferentThread()
         {
-            var threadId = 1u;
+            const uint threadId = 1u;
             var mockThread = Substitute.For<RemoteThread>();
             mockThread.GetThreadId().Returns(threadId);
             var mockStackFrame = Substitute.For<IDebugStackFrame2>();
-            IDebugThread2 outThread;
-            IDebugThread thread = CreateDebugThread<IDebugThread>(mockThread);
-            mockStackFrame.GetThread(out outThread).Returns(x =>
+            IDebugThread thread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
+            mockStackFrame.GetThread(out IDebugThread2 _).Returns(x =>
             {
                 x[0] = Substitute.For<IDebugThread2>();
                 return VSConstants.S_OK;
             });
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            Assert.AreEqual(VSConstants.S_FALSE, thread.CanSetNextStatement(mockStackFrame, mockCodeContext));
+            Assert.AreEqual(VSConstants.S_FALSE,
+                            thread.CanSetNextStatement(mockStackFrame, mockCodeContext));
         }
 
         [Test]
         public void CanSetNextStatementFalse()
         {
-            const ulong ADDRESS = 0xdeadbeef;
-            const string NAME = "test";
-            const ulong ANOTHER_ADDRESS = 0xabcd;
-            const string ANOTHER_NAME = "test1";
-            var threadId = 1u;
+            const ulong address = 0xdeadbeef;
+            const string frameName = "test";
+            const ulong anotherAddress = 0xabcd;
+            const string anotherName = "test1";
+            const uint threadId = 1u;
             var mockThread = Substitute.For<RemoteThread>();
             mockThread.GetThreadId().Returns(threadId);
             var mockStackFrame = Substitute.For<IDebugStackFrame2>();
-            string name;
-            mockStackFrame.GetName(out name).Returns(x =>
+            mockStackFrame.GetName(out string _).Returns(x =>
             {
-                x[0] = NAME;
+                x[0] = frameName;
                 return VSConstants.S_OK;
             });
-            IDebugThread2 outThread;
-            IDebugThread thread = CreateDebugThread<IDebugThread>(mockThread);
-            mockStackFrame.GetThread(out outThread).Returns(x =>
+            IDebugThread thread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
+            mockStackFrame.GetThread(out IDebugThread2 _).Returns(x =>
             {
                 x[0] = thread;
                 return VSConstants.S_OK;
@@ -192,198 +195,202 @@ namespace YetiVSI.Test.DebugEngine
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
 
             var contextInfoFields = enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS |
-                                    enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
-            System.Action<CONTEXT_INFO[]> setContextInfo = infos =>
+                enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
+
+            void SetContextInfo(CONTEXT_INFO[] infos)
             {
-                infos[0].bstrFunction = ANOTHER_NAME;
-                infos[0].bstrAddress = "0x" + ANOTHER_ADDRESS.ToString("x16");
+                infos[0].bstrFunction = anotherName;
+                infos[0].bstrAddress = "0x" + anotherAddress.ToString("x16");
                 infos[0].dwFields = contextInfoFields;
-            };
+            }
+
             mockCodeContext
-                .GetInfo(contextInfoFields, Arg.Do(setContextInfo))
+                .GetInfo(contextInfoFields, Arg.Do((System.Action<CONTEXT_INFO[]>) SetContextInfo))
                 .Returns(VSConstants.S_OK);
-            ((IDebugMemoryContext2)mockCodeContext)
-                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(), Arg.Do(setContextInfo))
+            ((IDebugMemoryContext2) mockCodeContext)
+                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(),
+                         Arg.Do((System.Action<CONTEXT_INFO[]>) SetContextInfo))
                 .Returns(VSConstants.S_OK);
             var mockFrame = Substitute.For<RemoteFrame>();
-            mockFrame.GetPC().Returns(ADDRESS);
+            mockFrame.GetPC().Returns(address);
             mockThread.GetFrameAtIndex(0).Returns(mockFrame);
             Assert.AreEqual(VSConstants.S_FALSE,
-                thread.CanSetNextStatement(mockStackFrame, mockCodeContext));
+                            thread.CanSetNextStatement(mockStackFrame, mockCodeContext));
         }
 
         [Test]
         public void SetNextStatement()
         {
             // We need CanSetNextStatement() to pass in order to execute SetNexStatement().
-            const string NAME = "test";
-            const ulong ADDRESS = 0xabcd;
-            var threadId = 1u;
+            const string frameName = "test";
+            const ulong address = 0xabcd;
+            const uint threadId = 1u;
             var mockThread = Substitute.For<RemoteThread>();
             mockThread.GetThreadId().Returns(threadId);
             var mockStackFrame = Substitute.For<IDebugStackFrame2>();
-            string name;
-            mockStackFrame.GetName(out name).Returns(x =>
+            mockStackFrame.GetName(out string _).Returns(x =>
             {
-                x[0] = NAME;
+                x[0] = frameName;
                 return VSConstants.S_OK;
             });
-            IDebugThread2 outThread;
-            IDebugThread thread = CreateDebugThread<IDebugThread>(mockThread);
-            mockStackFrame.GetThread(out outThread).Returns(x =>
+            IDebugThread thread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
+            mockStackFrame.GetThread(out IDebugThread2 _).Returns(x =>
             {
                 x[0] = thread;
                 return VSConstants.S_OK;
             });
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
             var contextInfosDestination = Arg.Any<CONTEXT_INFO[]>();
-            mockCodeContext.GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS |
-                enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION, contextInfosDestination).Returns(x =>
+            mockCodeContext
+                .GetInfo(
+                    enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS | enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
+                    contextInfosDestination).Returns(x =>
                 {
                     var infos = x[1] as CONTEXT_INFO[];
                     infos[0] = new CONTEXT_INFO
                     {
-                        bstrFunction = NAME,
-                        bstrAddress = "0x" + ADDRESS.ToString("x16"),
+                        bstrFunction = frameName,
+                        bstrAddress = "0x" + address.ToString("x16"),
                     };
                     return VSConstants.S_OK;
                 });
-            IDebugDocumentContext2 documentContext;
             var mockDocumentContext = Substitute.For<IDebugDocumentContext2>();
-            mockCodeContext.GetDocumentContext(out documentContext).Returns(x =>
+            mockCodeContext.GetDocumentContext(out IDebugDocumentContext2 _).Returns(x =>
             {
                 x[0] = mockDocumentContext;
                 return VSConstants.S_OK;
             });
-            const uint LINE = 2;
-            const string PATH = "path\\to\\file";
-            string path;
-            mockDocumentContext.GetName(enum_GETNAME_TYPE.GN_FILENAME, out path).Returns(x =>
-            {
-                x[1] = PATH;
-                return VSConstants.S_OK;
-            });
-            mockDocumentContext.GetStatementRange(
-                Arg.Any<TEXT_POSITION[]>(), Arg.Any<TEXT_POSITION[]>()).Returns(x =>
+            const uint line = 2;
+            const string path = "path\\to\\file";
+            mockDocumentContext.GetName(enum_GETNAME_TYPE.GN_FILENAME, out string outPath).Returns(
+                x =>
                 {
-                    var startPosition = x[0] as TEXT_POSITION[];
-                    startPosition[0].dwLine = LINE;
+                    x[1] = path;
                     return VSConstants.S_OK;
                 });
+            mockDocumentContext.GetStatementRange(
+                Arg.Any<TEXT_POSITION[]>(), Arg.Any<TEXT_POSITION[]>()).Returns(x =>
+            {
+                var startPosition = x[0] as TEXT_POSITION[];
+                startPosition[0].dwLine = line;
+                return VSConstants.S_OK;
+            });
             var mockError = Substitute.For<SbError>();
             mockError.Fail().Returns(false);
-            mockThread.JumpToLine(PATH, LINE).Returns(mockError);
+            mockThread.JumpToLine(path, line).Returns(mockError);
             Assert.AreEqual(VSConstants.S_OK,
-                thread.SetNextStatement(mockStackFrame, mockCodeContext));
-            mockThread.Received(1).JumpToLine(PATH, LINE + 1);
+                            thread.SetNextStatement(mockStackFrame, mockCodeContext));
+            mockThread.Received(1).JumpToLine(path, line + 1);
         }
 
         [Test]
         public void SetNextStatementNoDocumentContext()
         {
             // We need CanSetNextStatement() to pass in order to execute SetNexStatement().
-            const string NAME = "test";
-            const ulong ADDRESS = 0xabcd;
+            const string name = "test";
+            const ulong address = 0xabcd;
             var threadId = 1u;
             var mockThread = Substitute.For<RemoteThread>();
             mockThread.GetThreadId().Returns(threadId);
             var mockStackFrame = Substitute.For<IDebugStackFrame2>();
-            string name;
-            mockStackFrame.GetName(out name).Returns(x =>
+            mockStackFrame.GetName(out string _).Returns(x =>
             {
-                x[0] = NAME;
+                x[0] = name;
                 return VSConstants.S_OK;
             });
-            IDebugThread2 outThread;
-            IDebugThread thread = CreateDebugThread<IDebugThread>(mockThread);
-            mockStackFrame.GetThread(out outThread).Returns(x =>
+            IDebugThread thread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
+            mockStackFrame.GetThread(out IDebugThread2 _).Returns(x =>
             {
                 x[0] = thread;
                 return VSConstants.S_OK;
             });
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            System.Action<CONTEXT_INFO[]> setContextInfo = infos =>
+
+            void SetContextInfo(CONTEXT_INFO[] infos)
             {
-                infos[0].bstrFunction = NAME;
-                infos[0].bstrAddress = "0x" + ADDRESS.ToString("x16");
+                infos[0].bstrFunction = name;
+                infos[0].bstrAddress = "0x" + address.ToString("x16");
                 infos[0].dwFields = enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS |
                     enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
-            };
+            }
+
             mockCodeContext
-                .GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS |
-                    enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION, Arg.Do(setContextInfo))
+                .GetInfo(
+                    enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS | enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
+                    Arg.Do((System.Action<CONTEXT_INFO[]>) SetContextInfo))
                 .Returns(VSConstants.S_OK);
-            ((IDebugMemoryContext2)mockCodeContext)
-                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(), Arg.Do(setContextInfo))
+            ((IDebugMemoryContext2) mockCodeContext)
+                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(),
+                         Arg.Do((System.Action<CONTEXT_INFO[]>) SetContextInfo))
                 .Returns(VSConstants.S_OK);
 
-            IDebugDocumentContext2 documentContext;
-            mockCodeContext.GetDocumentContext(out documentContext).Returns(x =>
+            mockCodeContext.GetDocumentContext(out IDebugDocumentContext2 _).Returns(x =>
             {
                 x[0] = null;
                 return VSConstants.S_OK;
             });
 
-            const string DIR = "path\\to";
-            const string FILE_NAME = "file";
-            const uint LINE = 2;
+            const string dir = "path\\to";
+            const string fileName = "file";
+            const uint line = 2;
             var mockProcess = Substitute.For<SbProcess>();
             mockThread.GetProcess().Returns(mockProcess);
             var mockTarget = Substitute.For<RemoteTarget>();
             mockProcess.GetTarget().Returns(mockTarget);
             var mockAddress = Substitute.For<SbAddress>();
             var mockLineEntry = new LineEntryInfo();
-            mockLineEntry.Directory = DIR;
-            mockLineEntry.FileName = FILE_NAME;
-            mockLineEntry.Line = LINE;
+            mockLineEntry.Directory = dir;
+            mockLineEntry.FileName = fileName;
+            mockLineEntry.Line = line;
             var mockError = Substitute.For<SbError>();
             mockError.Fail().Returns(false);
-            mockThread.JumpToLine(Path.Combine(DIR, FILE_NAME), LINE).Returns(mockError);
+            mockThread.JumpToLine(Path.Combine(dir, fileName), line).Returns(mockError);
             mockAddress.GetLineEntry().Returns(mockLineEntry);
-            mockTarget.ResolveLoadAddress(ADDRESS).Returns(mockAddress);
+            mockTarget.ResolveLoadAddress(address).Returns(mockAddress);
             Assert.AreEqual(VSConstants.S_OK,
-                thread.SetNextStatement(mockStackFrame, mockCodeContext));
-            mockThread.Received(1).JumpToLine(Path.Combine(DIR, FILE_NAME), LINE);
+                            thread.SetNextStatement(mockStackFrame, mockCodeContext));
+            mockThread.Received(1).JumpToLine(Path.Combine(dir, fileName), line);
         }
 
         [Test]
         public void SetNextStatementCannot()
         {
-            var threadId = 1u;
+            const uint threadId = 1u;
             var mockThread = Substitute.For<RemoteThread>();
             mockThread.GetThreadId().Returns(threadId);
             var mockStackFrame = Substitute.For<IDebugStackFrame2>();
-            IDebugThread2 outThread;
-            IDebugThread thread = CreateDebugThread<IDebugThread>(mockThread);
-            mockStackFrame.GetThread(out outThread).Returns(x =>
+            IDebugThread thread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
+            mockStackFrame.GetThread(out IDebugThread2 _).Returns(x =>
             {
                 x[0] = Substitute.For<IDebugThread2>();
                 return VSConstants.S_OK;
             });
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
             Assert.AreEqual(VSConstants.E_FAIL,
-                thread.SetNextStatement(mockStackFrame, mockCodeContext));
+                            thread.SetNextStatement(mockStackFrame, mockCodeContext));
         }
 
         [Test]
         public void SetNextStatementFailToJump()
         {
             // We need CanSetNextStatement() to pass in order to execute SetNexStatement().
-            const string NAME = "test";
-            const ulong ADDRESS = 0xabcd;
-            var threadId = 1u;
+            const string name = "test";
+            const ulong address = 0xabcd;
+            const uint threadId = 1u;
             var mockThread = Substitute.For<RemoteThread>();
             mockThread.GetThreadId().Returns(threadId);
             var mockStackFrame = Substitute.For<IDebugStackFrame2>();
-            string name;
-            mockStackFrame.GetName(out name).Returns(x =>
+            mockStackFrame.GetName(out string _).Returns(x =>
             {
-                x[0] = NAME;
+                x[0] = name;
                 return VSConstants.S_OK;
             });
-            IDebugThread2 outThread;
-            IDebugThread thread = CreateDebugThread<IDebugThread>(mockThread);
-            mockStackFrame.GetThread(out outThread).Returns(x =>
+            IDebugThread thread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
+            mockStackFrame.GetThread(out IDebugThread2 _).Returns(x =>
             {
                 x[0] = thread;
                 return VSConstants.S_OK;
@@ -391,47 +398,51 @@ namespace YetiVSI.Test.DebugEngine
             var mockCodeContext = Substitute.For<IDebugCodeContext2>();
             var contextInfoFields = enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS |
                 enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
-            System.Action<CONTEXT_INFO[]> setContext = (infos =>
+
+            void SetContext(CONTEXT_INFO[] infos)
             {
-                infos[0].bstrFunction = NAME;
+                infos[0].bstrFunction = name;
                 infos[0].bstrAddress = "0xabcd";
                 infos[0].dwFields = contextInfoFields;
+            }
 
-            });
             mockCodeContext
-                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(), Arg.Do(setContext))
+                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(),
+                         Arg.Do((System.Action<CONTEXT_INFO[]>) SetContext))
                 .Returns(VSConstants.S_OK);
-            ((IDebugMemoryContext2)mockCodeContext)
-                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(), Arg.Do(setContext))
+            ((IDebugMemoryContext2) mockCodeContext)
+                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(),
+                         Arg.Do((System.Action<CONTEXT_INFO[]>) SetContext))
                 .Returns(VSConstants.S_OK);
 
-            const string DIR = "path\\to";
-            const string FILE_NAME = "file";
-            const uint LINE = 2;
+            const string dir = "path\\to";
+            const string fileName = "file";
+            const uint line = 2;
             var mockProcess = Substitute.For<SbProcess>();
             mockThread.GetProcess().Returns(mockProcess);
             var mockTarget = Substitute.For<RemoteTarget>();
             mockProcess.GetTarget().Returns(mockTarget);
             var mockAddress = Substitute.For<SbAddress>();
             var lineEntry = Substitute.For<LineEntryInfo>();
-            lineEntry.Directory = DIR;
-            lineEntry.FileName = FILE_NAME;
-            lineEntry.Line = LINE;
+            lineEntry.Directory = dir;
+            lineEntry.FileName = fileName;
+            lineEntry.Line = line;
             var mockError = Substitute.For<SbError>();
             mockError.Fail().Returns(true);
             mockError.GetCString().Returns("JumpToLine() failed for some reason.");
-            mockThread.JumpToLine(Path.Combine(DIR, FILE_NAME), LINE).Returns(mockError);
+            mockThread.JumpToLine(Path.Combine(dir, fileName), line).Returns(mockError);
             mockAddress.GetLineEntry().Returns(lineEntry);
-            mockTarget.ResolveLoadAddress(ADDRESS).Returns(mockAddress);
+            mockTarget.ResolveLoadAddress(address).Returns(mockAddress);
             Assert.AreEqual(VSConstants.E_FAIL,
-                thread.SetNextStatement(mockStackFrame, mockCodeContext));
+                            thread.SetNextStatement(mockStackFrame, mockCodeContext));
         }
 
         [Test]
         public void EnumFrameInfoTest()
         {
-            RemoteThread mockThread = Substitute.For<RemoteThread>();
-            IDebugThread debugThread = CreateDebugThread<IDebugThread>(mockThread);
+            var mockThread = Substitute.For<RemoteThread>();
+            IDebugThread debugThread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
 
             IList<FRAMEINFO> framesList = new List<FRAMEINFO>
             {
@@ -440,19 +451,17 @@ namespace YetiVSI.Test.DebugEngine
             };
 
             _stackFramesProvider.GetRange(Arg.Any<enum_FRAMEINFO_FLAGS>(), debugThread.Self,
-                0, uint.MaxValue).Returns(framesList);
+                                          0, uint.MaxValue).Returns(framesList);
 
-            IEnumDebugFrameInfo2 enumDebugFrameInfo2;
-            int result = debugThread.EnumFrameInfo(
-                enum_FRAMEINFO_FLAGS.FIF_ARGS, 10, out enumDebugFrameInfo2);
+            int result = debugThread.EnumFrameInfo(enum_FRAMEINFO_FLAGS.FIF_ARGS, 10,
+                                                   out IEnumDebugFrameInfo2 enumDebugFrameInfo2);
 
-            _stackFramesProvider.ReceivedWithAnyArgs(0)
-                .GetRange(Arg.Any<enum_FRAMEINFO_FLAGS>(), Arg.Any<IDebugThread>(),
-                Arg.Any<uint>(), Arg.Any<uint>());
+            _stackFramesProvider.ReceivedWithAnyArgs(0).GetRange(
+                Arg.Any<enum_FRAMEINFO_FLAGS>(), Arg.Any<IDebugThread>(), Arg.Any<uint>(),
+                Arg.Any<uint>());
             Assert.That(result, Is.EqualTo(VSConstants.S_OK));
             Assert.IsNotNull(enumDebugFrameInfo2);
-            uint count;
-            Assert.That(enumDebugFrameInfo2.GetCount(out count), Is.EqualTo(VSConstants.S_OK));
+            Assert.That(enumDebugFrameInfo2.GetCount(out uint count), Is.EqualTo(VSConstants.S_OK));
             Assert.That(count, Is.EqualTo(2));
             _stackFramesProvider.ReceivedWithAnyArgs(1).GetRange(
                 Arg.Any<enum_FRAMEINFO_FLAGS>(), Arg.Any<IDebugThread>(), 0, uint.MaxValue);
@@ -461,28 +470,16 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetAllFramesAsyncTest()
         {
-            RemoteThread mockThread = Substitute.For<RemoteThread>();
-            IDebugThreadAsync debugThread = CreateDebugThread<IDebugThreadAsync>(mockThread);
+            var mockThread = Substitute.For<RemoteThread>();
+            IDebugThread debugThread =
+                _debugThreadFactory.CreateForTesting(_stackFramesProvider, mockThread);
 
-            IAsyncDebugEngineOperation ppDebugOperation;
             int result = debugThread.GetAllFramesAsync(enum_FRAMEINFO_FLAGS.FIF_ARGS, 0, 10, null,
-                out ppDebugOperation);
+                                                       out IAsyncDebugEngineOperation
+                                                           ppDebugOperation);
 
             Assert.That(result, Is.EqualTo(VSConstants.S_OK));
             Assert.That(ppDebugOperation is AsyncGetStackFramesOperation);
-        }
-
-        T CreateDebugThread<T>(RemoteThread thread)
-            where T : IDebugThread
-        {
-            bool isAsync = typeof(IDebugThreadAsync).IsAssignableFrom(typeof(T));
-
-            T debugThread = isAsync ? (T)new DebugThreadAsync.Factory(taskExecutor)
-                                          .CreateForTesting(_stackFramesProvider, thread)
-                                    : (T)new DebugThread.Factory(taskExecutor)
-                                          .CreateForTesting(_stackFramesProvider, thread);
-
-            return debugThread;
         }
     }
 }

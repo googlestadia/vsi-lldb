@@ -481,17 +481,16 @@ namespace YetiVSI.Test.DebugEngine
                 new DebugModule.Factory(
                     FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false),
                     actionRecorder, moduleFileLoadRecorderFactory, lldbModuleUtil,
-                    symbolSettingsProvider),
-                new DebugThread.Factory(taskExecutor).Create,
-                new DebugStackFrame.Factory(debugDocumentContextFactory,
-                                            new ChildrenProvider.Factory(), debugCodeContextFactory,
-                                            Substitute.For<DebugExpression.Factory>().Create,
-                                            varInfoFactory,
-                                            new VariableInformationEnum.Factory(taskExecutor),
-                                            new RegisterSetsBuilder.Factory(varInfoFactory),
-                                            taskExecutor).Create, lldbShell,
-                new LldbBreakpointManager.Factory(taskContext,
-                                                  new DebugPendingBreakpoint.Factory(
+                    symbolSettingsProvider), new DebugAsyncThread.Factory(taskExecutor),
+                new DebugAsyncStackFrame.Factory(debugDocumentContextFactory,
+                                                 new ChildrenProvider.Factory(),
+                                                 debugCodeContextFactory,
+                                                 Substitute.For<IDebugExpressionFactory>(),
+                                                 varInfoFactory,
+                                                 new VariableInformationEnum.Factory(taskExecutor),
+                                                 new RegisterSetsBuilder.Factory(varInfoFactory),
+                                                 taskExecutor), lldbShell,
+                new LldbBreakpointManager.Factory(taskContext, new DebugPendingBreakpoint.Factory(
                                                       taskContext,
                                                       new DebugBoundBreakpoint.Factory(
                                                           debugDocumentContextFactory,

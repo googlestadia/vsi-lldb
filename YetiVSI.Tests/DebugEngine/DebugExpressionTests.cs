@@ -42,7 +42,7 @@ namespace YetiVSI.Test.DebugEngine
         IDebugEngineHandler _mockDebugEngineHandler;
         IGgpDebugProgram _mockProgram;
         IDebugThread2 _mockThread;
-        CreateDebugPropertyDelegate _createPropertyDelegate;
+        IGgpDebugPropertyFactory _propertyFactory;
         VarInfoBuilder _varInfoBuilder;
         IDebugEngineCommands _engineCommandsMock;
         VsExpressionCreator _vsExpressionCreator;
@@ -84,12 +84,10 @@ namespace YetiVSI.Test.DebugEngine
             var enumFactory = new VariableInformationEnum.Factory(_taskExecutor);
 
             var childrenProviderFactory = new ChildrenProvider.Factory();
-            var debugPropertyFactory = new DebugProperty.Factory(
+            _propertyFactory = new DebugAsyncProperty.Factory(
                 enumFactory, childrenProviderFactory, null, _vsExpressionCreator, _taskExecutor);
 
-            _createPropertyDelegate = debugPropertyFactory.Create;
-
-            childrenProviderFactory.Initialize(_createPropertyDelegate);
+            childrenProviderFactory.Initialize(_propertyFactory);
 
             _varInfoBuilder = new VarInfoBuilder(varInfoFactory);
             varInfoFactory.SetVarInfoBuilder(_varInfoBuilder);
@@ -101,17 +99,16 @@ namespace YetiVSI.Test.DebugEngine
             _mockThread = Substitute.For<IDebugThread2>();
         }
 
-        IDebugAsyncExpression CreateExpression(string expression,
-                                               ExpressionEvaluationStrategy
-                                                   expressionEvaluationStrategy =
-                                                   ExpressionEvaluationStrategy.LLDB)
+        IDebugExpression CreateExpression(string expression,
+                                          ExpressionEvaluationStrategy expressionEvaluationStrategy
+                                              = ExpressionEvaluationStrategy.LLDB)
         {
             var extensionOptionsMock = Substitute.For<IExtensionOptions>();
 
             extensionOptionsMock.ExpressionEvaluationStrategy.Returns(expressionEvaluationStrategy);
 
             var asyncEvaluatorFactory = new AsyncExpressionEvaluator.Factory(
-                _createPropertyDelegate, _varInfoBuilder, _vsExpressionCreator,
+                _propertyFactory, _varInfoBuilder, _vsExpressionCreator,
                 new ErrorDebugProperty.Factory(), _engineCommandsMock, extensionOptionsMock,
                 _expressionEvaluationRecorder, _timeSource);
 
@@ -140,7 +137,7 @@ namespace YetiVSI.Test.DebugEngine
                                                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ALL)
         {
             var propertyInfos = new DEBUG_PROPERTY_INFO[1];
-            int result = debugProperty.GetPropertyInfo(dwFields, 0, 0, null, 0, propertyInfos);
+            debugProperty.GetPropertyInfo(dwFields, 0, 0, null, 0, propertyInfos);
             return propertyInfos[0];
         }
 
@@ -492,7 +489,7 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void EvaluateAsyncOp()
         {
-            IDebugAsyncExpression expression = CreateExpression("someExpression");
+            IDebugExpression expression = CreateExpression("someExpression");
             var pCompletionHandler = Substitute.For<IAsyncDebugEvaluateCompletionHandler>();
             int status = expression.GetEvaluateAsyncOp(0, 0, 0, 0, pCompletionHandler,
                                                        out IAsyncDebugEngineOperation

@@ -55,11 +55,11 @@ namespace YetiVSI.Test.DebugEngine
             _enumFactory = new VariableInformationEnum.Factory(taskExecutor);
 
             _childrenProviderFactory = new ChildrenProvider.Factory();
-            var propertyFactory = new DebugProperty.Factory(
+            var propertyFactory = new DebugAsyncProperty.Factory(
                 _enumFactory, _childrenProviderFactory, Substitute.For<DebugCodeContext.Factory>(),
                 new VsExpressionCreator(), taskExecutor);
 
-            _childrenProviderFactory.Initialize(propertyFactory.Create);
+            _childrenProviderFactory.Initialize(propertyFactory);
 
             var childrenProvider = _childrenProviderFactory.Create(
                 new ListChildAdapter.Factory().Create(_children),

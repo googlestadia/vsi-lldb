@@ -36,46 +36,43 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class DebugPropertyTests
     {
-        LogSpy logSpy;
-        IVariableInformation mockVarInfo;
-        DebugCodeContext.Factory mockCodeContextFactory;
-        CreateDebugPropertyDelegate createPropertyDelegate;
+        LogSpy _logSpy;
+        IVariableInformation _mockVarInfo;
+        DebugCodeContext.Factory _mockCodeContextFactory;
+        IGgpDebugPropertyFactory _propertyFactory;
 
         [SetUp]
         public void SetUp()
         {
-            mockVarInfo = Substitute.For<IVariableInformation>();
-            mockCodeContextFactory = Substitute.For<DebugCodeContext.Factory>();
+            _mockVarInfo = Substitute.For<IVariableInformation>();
+            _mockCodeContextFactory = Substitute.For<DebugCodeContext.Factory>();
 
             var taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
             var enumFactory = new VariableInformationEnum.Factory(taskExecutor);
 
             var childrenProviderFactory = new ChildrenProvider.Factory();
-            var debugPropertyFactory = new DebugAsyncProperty.Factory(
-                enumFactory, childrenProviderFactory, mockCodeContextFactory,
+            _propertyFactory = new DebugAsyncProperty.Factory(
+                enumFactory, childrenProviderFactory, _mockCodeContextFactory,
                 new VsExpressionCreator(), taskExecutor);
 
-            createPropertyDelegate = debugPropertyFactory.Create;
+            childrenProviderFactory.Initialize(_propertyFactory);
 
-            childrenProviderFactory.Initialize(createPropertyDelegate);
-
-            logSpy = new LogSpy();
-            logSpy.Attach();
+            _logSpy = new LogSpy();
+            _logSpy.Attach();
         }
 
         [TearDown]
         public void Cleanup()
         {
-            logSpy.Detach();
+            _logSpy.Detach();
         }
 
         [Test]
         public void SetValueAsStringSuccess()
         {
             const string newValue = "newValue";
-            string error;
-            mockVarInfo.Assign(newValue, out error).Returns(true);
-            var debugProperty = createPropertyDelegate.Invoke(mockVarInfo);
+            _mockVarInfo.Assign(newValue, out string _).Returns(true);
+            var debugProperty = _propertyFactory.Create(_mockVarInfo);
 
             var result = debugProperty.SetValueAsString(newValue, 0, 0);
 
@@ -86,74 +83,70 @@ namespace YetiVSI.Test.DebugEngine
         public void SetValueAsStringFailure()
         {
             const string newValue = "newValue";
-            string error;
-            mockVarInfo.Assign(newValue, out error).Returns(false);
-            var debugProperty = createPropertyDelegate.Invoke(mockVarInfo);
+            _mockVarInfo.Assign(newValue, out string _).Returns(false);
+            var debugProperty = _propertyFactory.Create(_mockVarInfo);
 
-            var result = debugProperty.SetValueAsString(newValue, 0, 0);
+            int result = debugProperty.SetValueAsString(newValue, 0, 0);
 
             Assert.That(result, Is.EqualTo(AD7Constants.E_SETVALUE_VALUE_CANNOT_BE_SET));
-            Assert.That(logSpy.GetOutput(), Does.Contain(newValue));
-            Assert.That(logSpy.GetOutput(), Does.Contain("Error"));
+            Assert.That(_logSpy.GetOutput(), Does.Contain(newValue));
+            Assert.That(_logSpy.GetOutput(), Does.Contain("Error"));
         }
 
         [Test]
         public void SetValueAsStringWithError()
         {
             const string newValue = "newValue";
-            string error;
-            mockVarInfo.Assign(newValue, out error)
-                .Returns(x =>
-                {
-                    x[1] = "Something Bad Happened";
-                    return false;
-                });
+            _mockVarInfo.Assign(newValue, out string _).Returns(x =>
+            {
+                x[1] = "Something Bad Happened";
+                return false;
+            });
 
-            var debugProperty = createPropertyDelegate.Invoke(mockVarInfo);
+            var debugProperty = _propertyFactory.Create(_mockVarInfo);
 
-            string actualError;
-            var result = debugProperty.SetValueAsStringWithError(newValue, 0, 0, out actualError);
+            int result =
+                debugProperty.SetValueAsStringWithError(newValue, 0, 0, out string actualError);
 
             Assert.That(result, Is.EqualTo(AD7Constants.E_SETVALUE_VALUE_CANNOT_BE_SET));
-            Assert.That(logSpy.GetOutput(), Does.Contain(newValue));
-            Assert.That(logSpy.GetOutput(), Does.Contain("Error"));
+            Assert.That(_logSpy.GetOutput(), Does.Contain(newValue));
+            Assert.That(_logSpy.GetOutput(), Does.Contain("Error"));
             Assert.That(actualError, Is.EqualTo("Something Bad Happened"));
         }
 
         [Test]
         public void GetMemoryContext()
         {
-            const string VAR_NAME = "test";
-            const ulong EXPECTED_ADDRESS = 0xdeadbeef;
+            const string varName = "test";
+            const ulong expectedAddress = 0xdeadbeef;
 
-            mockVarInfo.DisplayName.Returns(VAR_NAME);
-            mockVarInfo.GetMemoryContextAddress().Returns<ulong?>(EXPECTED_ADDRESS);
+            _mockVarInfo.DisplayName.Returns(varName);
+            _mockVarInfo.GetMemoryContextAddress().Returns<ulong?>(expectedAddress);
 
-            IDebugCodeContext2 mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            mockCodeContextFactory.Create(EXPECTED_ADDRESS, VAR_NAME, null, Guid.Empty)
+            var mockCodeContext = Substitute.For<IDebugCodeContext2>();
+            _mockCodeContextFactory.Create(expectedAddress, varName, null, Guid.Empty)
                 .Returns(mockCodeContext);
 
-            var debugProperty = createPropertyDelegate.Invoke(mockVarInfo);
+            var debugProperty = _propertyFactory.Create(_mockVarInfo);
 
-            IDebugMemoryContext2 memoryContext;
-            Assert.AreEqual(VSConstants.S_OK, debugProperty.GetMemoryContext(out memoryContext));
+            Assert.AreEqual(VSConstants.S_OK,
+                            debugProperty.GetMemoryContext(out IDebugMemoryContext2 memoryContext));
             Assert.AreEqual(mockCodeContext, memoryContext);
         }
 
         [Test]
         public void GetMemoryContextInvalid()
         {
-            const string VAR_NAME = "test";
-            const string VAR_VALUE = "not an address";
+            const string varName = "test";
+            const string varValue = "not an address";
 
-            mockVarInfo.DisplayName.Returns(VAR_NAME);
-            mockVarInfo.ValueAsync().Returns(VAR_VALUE);
+            _mockVarInfo.DisplayName.Returns(varName);
+            _mockVarInfo.ValueAsync().Returns(varValue);
 
-            var debugProperty = createPropertyDelegate.Invoke(mockVarInfo);
+            var debugProperty = _propertyFactory.Create(_mockVarInfo);
 
-            IDebugMemoryContext2 memoryContext;
             Assert.AreEqual(AD7Constants.S_GETMEMORYCONTEXT_NO_MEMORY_CONTEXT,
-                            debugProperty.GetMemoryContext(out memoryContext));
+                            debugProperty.GetMemoryContext(out IDebugMemoryContext2 _));
         }
 
         [Test]
@@ -166,121 +159,110 @@ namespace YetiVSI.Test.DebugEngine
                 Substitute.For<IVariableInformation>()
             };
 
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.GetChildAdapter().Returns(new ListChildAdapter.Factory().Create(children));
-            mockVarInfo.GetCachedView().Returns(mockVarInfo);
-            var property = createPropertyDelegate.Invoke(mockVarInfo);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.GetChildAdapter().Returns(new ListChildAdapter.Factory().Create(children));
+            _mockVarInfo.GetCachedView().Returns(_mockVarInfo);
+            var property = _propertyFactory.Create(_mockVarInfo);
 
-            IEnumDebugPropertyInfo2 propertyEnum;
-            var guid = new System.Guid();
+            var guid = new Guid();
             var result = property.EnumChildren(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 10,
                                                ref guid,
                                                enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_ALL, "", 0,
-                                               out propertyEnum);
+                                               out IEnumDebugPropertyInfo2 propertyEnum);
 
             Assert.That(result, Is.EqualTo(VSConstants.S_OK));
 
-            uint count;
-            propertyEnum.GetCount(out count);
+            propertyEnum.GetCount(out uint count);
             Assert.That(count, Is.EqualTo(children.Count));
         }
 
         [Test]
         public void TestEnumChildrenHexadecimalDisplay()
         {
-            mockVarInfo.MightHaveChildren().Returns(false);
-            var property = createPropertyDelegate.Invoke(mockVarInfo);
+            _mockVarInfo.MightHaveChildren().Returns(false);
+            var property = _propertyFactory.Create(_mockVarInfo);
 
-            IEnumDebugPropertyInfo2 propertyEnum;
-            var guid = new System.Guid();
+            var guid = new Guid();
 
             // For radix 10, mockVarInfo.UpdateValueFormat is called with ValueFormat.Default.
-            var result = property.EnumChildren(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 10,
+            int result = property.EnumChildren(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 10,
                                                ref guid,
                                                enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_ALL, "", 0,
-                                               out propertyEnum);
+                                               out IEnumDebugPropertyInfo2 _);
 
             Assert.That(result, Is.EqualTo(VSConstants.S_OK));
-            Assert.AreEqual(ValueFormat.Default, mockVarInfo.FallbackValueFormat);
+            Assert.AreEqual(ValueFormat.Default, _mockVarInfo.FallbackValueFormat);
 
             // For radix 16, mockVarInfo.UpdateValueFormat is called with ValueFormat.Hex.
             result = property.EnumChildren(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 16,
                                            ref guid, enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_ALL,
-                                           "", 0, out propertyEnum);
+                                           "", 0, out IEnumDebugPropertyInfo2 _);
 
             Assert.That(result, Is.EqualTo(VSConstants.S_OK));
-            Assert.AreEqual(ValueFormat.Hex, mockVarInfo.FallbackValueFormat);
+            Assert.AreEqual(ValueFormat.Hex, _mockVarInfo.FallbackValueFormat);
         }
     }
 
     [TestFixture]
-    class DebugProperty_GetPropertyInfo_Tests
+    class DebugPropertyGetPropertyInfoTests
     {
-        IVariableInformation mockVarInfo;
-        LogSpy logSpy;
-        DebugAsyncProperty.Factory propertyFactory;
-
-        CreateDebugPropertyDelegate createPropertyDelegate;
+        IVariableInformation _mockVarInfo;
+        LogSpy _logSpy;
+        IGgpDebugPropertyFactory _propertyFactory;
 
         // Test target.
-        IDebugProperty3 debugProperty;
+        IDebugProperty3 _debugProperty;
 
         [SetUp]
         public void SetUp()
         {
-            mockVarInfo = Substitute.For<IVariableInformation>();
-            mockVarInfo.GetCachedView().Returns(mockVarInfo);
+            _mockVarInfo = Substitute.For<IVariableInformation>();
+            _mockVarInfo.GetCachedView().Returns(_mockVarInfo);
 
             var taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
             var enumFactory = new VariableInformationEnum.Factory(taskExecutor);
 
             var childrenProviderFactory = new ChildrenProvider.Factory();
-            propertyFactory =
-                new DebugAsyncProperty.Factory(enumFactory, childrenProviderFactory, null,
-                                               new VsExpressionCreator(), taskExecutor);
+            _propertyFactory = new DebugAsyncProperty.Factory(
+                enumFactory, childrenProviderFactory, null, new VsExpressionCreator(),
+                taskExecutor);
 
-            createPropertyDelegate = propertyFactory.Create;
+            childrenProviderFactory.Initialize(_propertyFactory);
 
-            childrenProviderFactory.Initialize(createPropertyDelegate);
+            _debugProperty = _propertyFactory.Create(_mockVarInfo);
 
-            debugProperty = propertyFactory.Create(mockVarInfo);
-
-            logSpy = new LogSpy();
-            logSpy.Attach();
+            _logSpy = new LogSpy();
+            _logSpy.Attach();
         }
 
         [TearDown]
         public void Cleanup()
         {
-            logSpy.Detach();
+            _logSpy.Detach();
         }
 
         // Helper function to exercise the test target.
-        int GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS fields, out DEBUG_PROPERTY_INFO propertyInfo)
-        {
-            var result = debugProperty.GetPropertyInfo(fields, out propertyInfo);
-            return result;
-        }
+        int GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS fields,
+                            out DEBUG_PROPERTY_INFO propertyInfo) =>
+            _debugProperty.GetPropertyInfo(fields, out propertyInfo);
 
         [Test]
         public void GetPropertyInfoNone()
         {
             var unexpectedCall = new Exception("Unexpected call");
-            mockVarInfo.DisplayName.Throws(unexpectedCall);
-            mockVarInfo.TypeName.Throws(unexpectedCall);
-            mockVarInfo.AssignmentValue.Throws(unexpectedCall);
-            mockVarInfo.ValueAsync().Throws(unexpectedCall);
-            mockVarInfo.Error.Throws(unexpectedCall);
-            mockVarInfo.MightHaveChildren().Throws(unexpectedCall);
-            mockVarInfo.GetChildAdapter().Throws(unexpectedCall);
-            mockVarInfo.FindChildByName(Arg.Any<string>()).ThrowsForAnyArgs(unexpectedCall);
-            mockVarInfo.IsReadOnly.Throws(unexpectedCall);
-            string error;
-            mockVarInfo.Assign(Arg.Any<string>(), out error).ThrowsForAnyArgs(unexpectedCall);
+            _mockVarInfo.DisplayName.Throws(unexpectedCall);
+            _mockVarInfo.TypeName.Throws(unexpectedCall);
+            _mockVarInfo.AssignmentValue.Throws(unexpectedCall);
+            _mockVarInfo.ValueAsync().Throws(unexpectedCall);
+            _mockVarInfo.Error.Throws(unexpectedCall);
+            _mockVarInfo.MightHaveChildren().Throws(unexpectedCall);
+            _mockVarInfo.GetChildAdapter().Throws(unexpectedCall);
+            _mockVarInfo.FindChildByName(Arg.Any<string>()).ThrowsForAnyArgs(unexpectedCall);
+            _mockVarInfo.IsReadOnly.Throws(unexpectedCall);
+            _mockVarInfo.Assign(Arg.Any<string>(), out string _).ThrowsForAnyArgs(unexpectedCall);
 
-            DEBUG_PROPERTY_INFO propertyInfo;
             int result = GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NONE,
-                                         out propertyInfo);
+                                         out DEBUG_PROPERTY_INFO propertyInfo);
 
             // Also verifies exceptions are not raised.
 
@@ -292,12 +274,11 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoAll()
         {
-            mockVarInfo = Substitute.For<IVariableInformation>();
-            debugProperty = createPropertyDelegate.Invoke(mockVarInfo);
+            _mockVarInfo = Substitute.For<IVariableInformation>();
+            _debugProperty = _propertyFactory.Create(_mockVarInfo);
 
-            DEBUG_PROPERTY_INFO propertyInfo;
-            var result = GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ALL,
-                                         out propertyInfo);
+            int result = GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ALL,
+                                         out DEBUG_PROPERTY_INFO _);
 
             Assert.That(result, Is.EqualTo(VSConstants.S_OK));
         }
@@ -305,11 +286,11 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoWhenFullNameExists()
         {
-            var varName = "list.head->value";
-            mockVarInfo.Fullname().Returns(varName);
+            string varName = "list.head->value";
+            _mockVarInfo.Fullname().Returns(varName);
 
-            DEBUG_PROPERTY_INFO propertyInfo;
-            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME, out propertyInfo);
+            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME,
+                            out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(
                 propertyInfo.dwFields.HasFlag(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME));
@@ -320,10 +301,10 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoWhenFullNameDoesntExist()
         {
-            mockVarInfo.Fullname().Returns("");
+            _mockVarInfo.Fullname().Returns("");
 
-            DEBUG_PROPERTY_INFO propertyInfo;
-            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME, out propertyInfo);
+            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME,
+                            out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(
                 !propertyInfo.dwFields.HasFlag(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME));
@@ -332,11 +313,11 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoName()
         {
-            var varName = "myVar";
-            mockVarInfo.DisplayName.Returns(varName);
+            string varName = "myVar";
+            _mockVarInfo.DisplayName.Returns(varName);
 
-            DEBUG_PROPERTY_INFO propertyInfo;
-            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, out propertyInfo);
+            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME,
+                            out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(
                 propertyInfo.dwFields.HasFlag(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME));
@@ -347,11 +328,11 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoTypeName()
         {
-            var varType = "myType";
-            mockVarInfo.TypeName.Returns(varType);
+            string varType = "myType";
+            _mockVarInfo.TypeName.Returns(varType);
 
-            DEBUG_PROPERTY_INFO propertyInfo;
-            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE, out propertyInfo);
+            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE,
+                            out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(
                 propertyInfo.dwFields.HasFlag(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE));
@@ -362,14 +343,14 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoValue()
         {
-            var varValue = "randomValue";
-            mockVarInfo.ValueAsync().Returns(varValue);
+            string varValue = "randomValue";
+            _mockVarInfo.ValueAsync().Returns(varValue);
 
             // If the AUTOEXPAND flag is set, then display the value summary.
-            DEBUG_PROPERTY_INFO propertyInfo;
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(
                 propertyInfo.dwFields.HasFlag(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE));
@@ -380,25 +361,23 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoCustomStringView()
         {
-            var stringViewValue = "customStringViewValue";
-            mockVarInfo.StringView.Returns(stringViewValue);
+            string stringViewValue = "customStringViewValue";
+            _mockVarInfo.StringView.Returns(stringViewValue);
 
-            DEBUG_PROPERTY_INFO propertyInfo;
-            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB, out propertyInfo);
+            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB,
+                            out DEBUG_PROPERTY_INFO propertyInfo);
             Assert.That(propertyInfo.dwAttrib.HasFlag(
                             enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_VALUE_RAW_STRING));
 
-            uint length;
-            Assert.That(debugProperty.GetStringCharLength(out length),
+            Assert.That(_debugProperty.GetStringCharLength(out uint length),
                         Is.EqualTo(VSConstants.S_OK));
 
             Assert.That(length, Is.EqualTo(stringViewValue.Length));
 
             var stringViewArray = new ushort[stringViewValue.Length];
-            uint eltsFetched;
             Assert.That(
-                debugProperty.GetStringChars((uint) stringViewValue.Length, stringViewArray,
-                                             out eltsFetched), Is.EqualTo(VSConstants.S_OK));
+                _debugProperty.GetStringChars((uint) stringViewValue.Length, stringViewArray,
+                                              out uint eltsFetched), Is.EqualTo(VSConstants.S_OK));
 
             Assert.That(eltsFetched, Is.EqualTo(stringViewValue.Length));
             Assert.That(stringViewArray, Is.EqualTo(FromStringToUshortArray(stringViewValue)));
@@ -407,25 +386,23 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoDefaultStringViewForStrings()
         {
-            var stringViewValue = "randomValue";
-            mockVarInfo.StringView.Returns(stringViewValue);
+            string stringViewValue = "randomValue";
+            _mockVarInfo.StringView.Returns(stringViewValue);
 
-            DEBUG_PROPERTY_INFO propertyInfo;
-            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB, out propertyInfo);
+            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB,
+                            out DEBUG_PROPERTY_INFO propertyInfo);
             Assert.That(propertyInfo.dwAttrib.HasFlag(
                             enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_VALUE_RAW_STRING));
 
-            uint length;
-            Assert.That(debugProperty.GetStringCharLength(out length),
+            Assert.That(_debugProperty.GetStringCharLength(out uint length),
                         Is.EqualTo(VSConstants.S_OK));
 
             Assert.That(length, Is.EqualTo(stringViewValue.Length));
 
             var stringViewArray = new ushort[stringViewValue.Length];
-            uint eltsFetched;
             Assert.That(
-                debugProperty.GetStringChars((uint) stringViewValue.Length, stringViewArray,
-                                             out eltsFetched), Is.EqualTo(VSConstants.S_OK));
+                _debugProperty.GetStringChars((uint) stringViewValue.Length, stringViewArray,
+                                              out uint eltsFetched), Is.EqualTo(VSConstants.S_OK));
 
             Assert.That(eltsFetched, Is.EqualTo(stringViewValue.Length));
             Assert.That(stringViewArray, Is.EqualTo(FromStringToUshortArray(stringViewValue)));
@@ -446,11 +423,11 @@ namespace YetiVSI.Test.DebugEngine
         public void GetPropertyInfoAssigmentValue()
         {
             var varValue = "assignmentValue";
-            mockVarInfo.AssignmentValue.Returns(varValue);
+            _mockVarInfo.AssignmentValue.Returns(varValue);
 
             // If the AUTOEXPAND flag is not set, then display the assignment value.
-            DEBUG_PROPERTY_INFO propertyInfo;
-            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE, out propertyInfo);
+            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE,
+                            out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(
                 propertyInfo.dwFields.HasFlag(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE));
@@ -466,22 +443,21 @@ namespace YetiVSI.Test.DebugEngine
             mockVarInfoChild.ValueAsync().Returns("1");
             mockVarInfoChild.GetCachedView().Returns(mockVarInfoChild);
 
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsPointer.Returns(true);
-            mockVarInfo.AssignmentValue.Returns("0xDEADBEEF");
-            mockVarInfo.ValueAsync().Returns("0xDEADBEEF");
-            mockVarInfo.GetMemoryAddressAsHex().Returns("0xDEADBEEF");
-            mockVarInfo.GetChildAdapter()
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsPointer.Returns(true);
+            _mockVarInfo.AssignmentValue.Returns("0xDEADBEEF");
+            _mockVarInfo.ValueAsync().Returns("0xDEADBEEF");
+            _mockVarInfo.GetMemoryAddressAsHex().Returns("0xDEADBEEF");
+            _mockVarInfo.GetChildAdapter()
                 .Returns(new ListChildAdapter.Factory().Create(new List<IVariableInformation>()
-                                                                   {mockVarInfoChild}));
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+                                                                   { mockVarInfoChild }));
 
             // Display both the pointer value and the value representation.
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue, Is.EqualTo("0xDEADBEEF {1}"));
 
@@ -494,7 +470,7 @@ namespace YetiVSI.Test.DebugEngine
         public void GetPropertyInfoRecursivePointer()
         {
             const int numChildren = 3;
-            var children = new IVariableInformation[]
+            var children = new[]
             {
                 Substitute.For<IVariableInformation>(),
                 Substitute.For<IVariableInformation>(),
@@ -516,29 +492,27 @@ namespace YetiVSI.Test.DebugEngine
                 children[i].ValueAsync().Returns($"0x000{i}");
                 children[i].IsPointer.Returns(true);
                 children[i].MightHaveChildren().Returns(true);
-                children[i]
-                    .GetChildAdapter()
+                children[i].GetChildAdapter()
                     .Returns(new ListChildAdapter.Factory().Create(new List<IVariableInformation>()
-                                                                       {children[i - 1]}));
+                                                                       { children[i - 1] }));
 
                 children[i].GetCachedView().Returns(children[i]);
             }
 
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsPointer.Returns(true);
-            mockVarInfo.AssignmentValue.Returns("0x0000");
-            mockVarInfo.GetMemoryAddressAsHex().Returns("0x0000");
-            mockVarInfo.ValueAsync().Returns("0x0000");
-            mockVarInfo.GetChildAdapter()
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsPointer.Returns(true);
+            _mockVarInfo.AssignmentValue.Returns("0x0000");
+            _mockVarInfo.GetMemoryAddressAsHex().Returns("0x0000");
+            _mockVarInfo.ValueAsync().Returns("0x0000");
+            _mockVarInfo.GetChildAdapter()
                 .Returns(new ListChildAdapter.Factory().Create(new List<IVariableInformation>()
-                                                                   {children[numChildren - 1]}));
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+                                                                   { children[numChildren - 1] }));
 
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue, Is.EqualTo("0x0000 {0x0002 {0x0001 {0}}}"));
         }
@@ -548,7 +522,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             const string value = "1234567891011121314151617181920212223242526";
             const int numChildren = 3;
-            var children = new IVariableInformation[]
+            var children = new[]
             {
                 Substitute.For<IVariableInformation>(),
                 Substitute.For<IVariableInformation>(),
@@ -570,29 +544,27 @@ namespace YetiVSI.Test.DebugEngine
                 children[i].ValueAsync().Returns($"{value}");
                 children[i].IsPointer.Returns(true);
                 children[i].MightHaveChildren().Returns(true);
-                children[i]
-                    .GetChildAdapter()
+                children[i].GetChildAdapter()
                     .Returns(new ListChildAdapter.Factory().Create(new List<IVariableInformation>()
-                                                                       {children[i - 1]}));
+                                                                       { children[i - 1] }));
 
                 children[i].GetCachedView().Returns(children[i]);
             }
 
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsPointer.Returns(true);
-            mockVarInfo.AssignmentValue.Returns($"{value}");
-            mockVarInfo.GetMemoryAddressAsHex().Returns($"{value}");
-            mockVarInfo.ValueAsync().Returns($"{value}");
-            mockVarInfo.GetChildAdapter()
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsPointer.Returns(true);
+            _mockVarInfo.AssignmentValue.Returns($"{value}");
+            _mockVarInfo.GetMemoryAddressAsHex().Returns($"{value}");
+            _mockVarInfo.ValueAsync().Returns($"{value}");
+            _mockVarInfo.GetChildAdapter()
                 .Returns(new ListChildAdapter.Factory().Create(new List<IVariableInformation>()
-                                                                   {children[numChildren - 1]}));
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+                                                                   { children[numChildren - 1] }));
 
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue, Is.EqualTo($"{value} {{{value} {{...}}}}"));
         }
@@ -616,18 +588,17 @@ namespace YetiVSI.Test.DebugEngine
                 children[i].GetCachedView().Returns(children[i]);
             }
 
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsPointer.Returns(false);
-            mockVarInfo.AssignmentValue.Returns("");
-            mockVarInfo.ValueAsync().Returns("");
-            mockVarInfo.GetChildAdapter().Returns(new ListChildAdapter.Factory().Create(children));
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsPointer.Returns(false);
+            _mockVarInfo.AssignmentValue.Returns("");
+            _mockVarInfo.ValueAsync().Returns("");
+            _mockVarInfo.GetChildAdapter().Returns(new ListChildAdapter.Factory().Create(children));
 
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue, Is.EqualTo("{test1=1 test2=2 test3=3}"));
         }
@@ -652,18 +623,17 @@ namespace YetiVSI.Test.DebugEngine
                 children[i].GetCachedView().Returns(children[i]);
             }
 
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsPointer.Returns(false);
-            mockVarInfo.AssignmentValue.Returns("");
-            mockVarInfo.ValueAsync().Returns("");
-            mockVarInfo.GetChildAdapter().Returns(new ListChildAdapter.Factory().Create(children));
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsPointer.Returns(false);
+            _mockVarInfo.AssignmentValue.Returns("");
+            _mockVarInfo.ValueAsync().Returns("");
+            _mockVarInfo.GetChildAdapter().Returns(new ListChildAdapter.Factory().Create(children));
 
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue, Is.EqualTo("{test1=1 test2=2 test3=3 ...}"));
         }
@@ -688,17 +658,16 @@ namespace YetiVSI.Test.DebugEngine
                 children[i].GetCachedView().Returns(children[i]);
             }
 
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.AssignmentValue.Returns("");
-            mockVarInfo.ValueAsync().Returns("");
-            mockVarInfo.GetChildAdapter().Returns(new ListChildAdapter.Factory().Create(children));
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.AssignmentValue.Returns("");
+            _mockVarInfo.ValueAsync().Returns("");
+            _mockVarInfo.GetChildAdapter().Returns(new ListChildAdapter.Factory().Create(children));
 
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             string result = $"{{testVariable1={value} testVariable2={value} ...}}";
             Assert.That(propertyInfo.bstrValue, Is.EqualTo(result));
@@ -714,25 +683,25 @@ namespace YetiVSI.Test.DebugEngine
             natvisChild.ValueAsync().Returns("natvisVal");
             natvisChild.GetCachedView().Returns(natvisChild);
 
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsPointer.Returns(false);
-            mockVarInfo.AssignmentValue.Returns("");
-            mockVarInfo.GetMemoryAddressAsHex().Returns("");
-            mockVarInfo.ValueAsync().Returns("");
-            mockVarInfo.DisplayName.Returns("name");
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsPointer.Returns(false);
+            _mockVarInfo.AssignmentValue.Returns("");
+            _mockVarInfo.GetMemoryAddressAsHex().Returns("");
+            _mockVarInfo.ValueAsync().Returns("");
+            _mockVarInfo.DisplayName.Returns("name");
 
             var adapter = Substitute.For<INatvisEntity>();
-            adapter.GetChildrenAsync(0, 1).Returns(new List<IVariableInformation>() {natvisChild});
+            adapter.GetChildrenAsync(0, 1)
+                .Returns(new List<IVariableInformation>() { natvisChild });
             adapter.CountChildrenAsync().Returns(1);
 
-            mockVarInfo.GetChildAdapter().Returns(adapter);
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+            _mockVarInfo.GetChildAdapter().Returns(adapter);
 
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue, Is.Empty);
         }
@@ -746,24 +715,24 @@ namespace YetiVSI.Test.DebugEngine
             natvisChild.ValueAsync().Returns("natvisVal");
             natvisChild.GetCachedView().Returns(natvisChild);
 
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsPointer.Returns(false);
-            mockVarInfo.AssignmentValue.Returns("DisplayString");
-            mockVarInfo.ValueAsync().Returns("DisplayString");
-            mockVarInfo.DisplayName.Returns("name");
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsPointer.Returns(false);
+            _mockVarInfo.AssignmentValue.Returns("DisplayString");
+            _mockVarInfo.ValueAsync().Returns("DisplayString");
+            _mockVarInfo.DisplayName.Returns("name");
 
             var adapter = Substitute.For<INatvisEntity>();
-            adapter.GetChildrenAsync(0, 1).Returns(new List<IVariableInformation>() {natvisChild});
+            adapter.GetChildrenAsync(0, 1)
+                .Returns(new List<IVariableInformation>() { natvisChild });
             adapter.CountChildrenAsync().Returns(1);
 
-            mockVarInfo.GetChildAdapter().Returns(adapter);
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+            _mockVarInfo.GetChildAdapter().Returns(adapter);
 
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue, Is.EqualTo("DisplayString"));
         }
@@ -790,20 +759,19 @@ namespace YetiVSI.Test.DebugEngine
 
             natvisVar.GetChildAdapter().Returns(natvisChildAdapter);
 
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsPointer.Returns(false);
-            mockVarInfo.AssignmentValue.Returns("");
-            mockVarInfo.ValueAsync().Returns("");
-            mockVarInfo.GetChildAdapter()
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsPointer.Returns(false);
+            _mockVarInfo.AssignmentValue.Returns("");
+            _mockVarInfo.ValueAsync().Returns("");
+            _mockVarInfo.GetChildAdapter()
                 .Returns(new ListChildAdapter.Factory().Create(new List<IVariableInformation>()
-                                                                   {natvisVar}));
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+                                                                   { natvisVar }));
 
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue, Is.EqualTo("{natvisVarName=DisplayString}"));
         }
@@ -825,7 +793,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var natvisChildAdapter = Substitute.For<INatvisEntity>();
             natvisChildAdapter.GetChildrenAsync(0, 1)
-                .Returns(new List<IVariableInformation>() {natvisChildInfo});
+                .Returns(new List<IVariableInformation>() { natvisChildInfo });
             natvisChildAdapter.CountChildrenAsync().Returns(1);
 
             natvisVar.GetChildAdapter().Returns(natvisChildAdapter);
@@ -836,20 +804,19 @@ namespace YetiVSI.Test.DebugEngine
             nonNatvisVar.ValueAsync().Returns("nonNatvisVal");
             nonNatvisVar.GetCachedView().Returns(nonNatvisVar);
 
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsPointer.Returns(false);
-            mockVarInfo.AssignmentValue.Returns("");
-            mockVarInfo.ValueAsync().Returns("");
-            mockVarInfo.GetChildAdapter()
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsPointer.Returns(false);
+            _mockVarInfo.AssignmentValue.Returns("");
+            _mockVarInfo.ValueAsync().Returns("");
+            _mockVarInfo.GetChildAdapter()
                 .Returns(new ListChildAdapter.Factory().Create(new List<IVariableInformation>()
-                                                                   {natvisVar, nonNatvisVar}));
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+                                                                   { natvisVar, nonNatvisVar }));
 
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue,
                         Is.EqualTo("{natvisVarName={...} nonNatvisName=nonNatvisVal}"));
@@ -858,20 +825,19 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoPointerPointerValueNotEqualsAssignmentValue()
         {
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(false);
-            mockVarInfo.IsReadOnly.Returns(false);
-            mockVarInfo.IsPointer.Returns(true);
-            mockVarInfo.AssignmentValue.Returns("0xDEADBEEF");
-            mockVarInfo.GetMemoryAddressAsHex().Returns("0xDEADBEEF");
-            mockVarInfo.ValueAsync().Returns("\"foobar\"");
-
-            DEBUG_PROPERTY_INFO propertyInfo;
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(false);
+            _mockVarInfo.IsReadOnly.Returns(false);
+            _mockVarInfo.IsPointer.Returns(true);
+            _mockVarInfo.AssignmentValue.Returns("0xDEADBEEF");
+            _mockVarInfo.GetMemoryAddressAsHex().Returns("0xDEADBEEF");
+            _mockVarInfo.ValueAsync().Returns("\"foobar\"");
 
             // Display both the pointer value and the value representation.
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue, Is.EqualTo("0xDEADBEEF \"foobar\""));
 
@@ -883,22 +849,21 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoPointerValueWithoutChildren()
         {
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsPointer.Returns(true);
-            mockVarInfo.AssignmentValue.Returns("0xDEADBEEF");
-            mockVarInfo.GetMemoryAddressAsHex().Returns("0xDEADBEEF");
-            mockVarInfo.ValueAsync().Returns("0xDEADBEEF");
-            mockVarInfo.GetChildAdapter()
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsPointer.Returns(true);
+            _mockVarInfo.AssignmentValue.Returns("0xDEADBEEF");
+            _mockVarInfo.GetMemoryAddressAsHex().Returns("0xDEADBEEF");
+            _mockVarInfo.ValueAsync().Returns("0xDEADBEEF");
+            _mockVarInfo.GetChildAdapter()
                 .Returns(new ListChildAdapter.Factory().Create(new List<IVariableInformation>()));
-
-            DEBUG_PROPERTY_INFO propertyInfo;
 
             // Display both the pointer value and the value representation, but without children the
             // child value is not displayable.
             GetPropertyInfo(
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE |
-                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND, out propertyInfo);
+                enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND,
+                out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(propertyInfo.bstrValue, Is.EqualTo("0xDEADBEEF {???}"));
         }
@@ -915,15 +880,14 @@ namespace YetiVSI.Test.DebugEngine
             IDecorator factoryDecorator = decoratorUtil.CreateFactoryDecorator(
                 new ProxyGenerator(), new NoopAspect());
 
-            DebugAsyncProperty.Factory decoratedPropertyFactory =
-                factoryDecorator.Decorate(propertyFactory);
+            IGgpDebugPropertyFactory decoratedPropertyFactory =
+                factoryDecorator.Decorate(_propertyFactory);
 
-            IGgpAsyncDebugProperty decoratedDebugProperty =
-                decoratedPropertyFactory.Create(mockVarInfo);
+            IGgpDebugProperty decoratedDebugProperty =
+                decoratedPropertyFactory.Create(_mockVarInfo);
 
-            DEBUG_PROPERTY_INFO propertyInfo;
             decoratedDebugProperty.GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_PROP,
-                                                   out propertyInfo);
+                                                   out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(
                 propertyInfo.dwFields.HasFlag(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_PROP));
@@ -934,13 +898,13 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoAllAttrib()
         {
-            mockVarInfo.Error.Returns(true);
-            mockVarInfo.MightHaveChildren().Returns(true);
-            mockVarInfo.IsReadOnly.Returns(true);
-            mockVarInfo.StringView.Returns("randomValue");
+            _mockVarInfo.Error.Returns(true);
+            _mockVarInfo.MightHaveChildren().Returns(true);
+            _mockVarInfo.IsReadOnly.Returns(true);
+            _mockVarInfo.StringView.Returns("randomValue");
 
-            DEBUG_PROPERTY_INFO propertyInfo;
-            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB, out propertyInfo);
+            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB,
+                            out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(
                 propertyInfo.dwFields.HasFlag(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB));
@@ -961,12 +925,12 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetPropertyInfoNoAttrib()
         {
-            mockVarInfo.Error.Returns(false);
-            mockVarInfo.MightHaveChildren().Returns(false);
-            mockVarInfo.IsReadOnly.Returns(false);
+            _mockVarInfo.Error.Returns(false);
+            _mockVarInfo.MightHaveChildren().Returns(false);
+            _mockVarInfo.IsReadOnly.Returns(false);
 
-            DEBUG_PROPERTY_INFO propertyInfo;
-            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB, out propertyInfo);
+            GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB,
+                            out DEBUG_PROPERTY_INFO propertyInfo);
 
             Assert.That(
                 propertyInfo.dwFields.HasFlag(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB));
@@ -997,7 +961,7 @@ namespace YetiVSI.Test.DebugEngine
                 null, "", RemoteValueFormat.Default, ValueFormat.Default, remoteValue, "test",
                 CustomVisualizer.None, childAdapterFactory);
 
-            var debugProperty = createPropertyDelegate.Invoke(varInfo);
+            var debugProperty = _propertyFactory.Create(varInfo);
             var propertyInfos = new DEBUG_PROPERTY_INFO[1];
 
             // Radix 16 -> Int should be formatted as hex.
@@ -1023,9 +987,10 @@ namespace YetiVSI.Test.DebugEngine
         public void GetChildPropertyProviderTest()
         {
             var varInfo = Substitute.For<IVariableInformation>();
-            var property = (IGgpAsyncDebugProperty) createPropertyDelegate.Invoke(varInfo);
-            IAsyncDebugPropertyInfoProvider propertyInfoProvider;
-            int status = property.GetChildPropertyProvider(0, 0, 0, out propertyInfoProvider);
+            var property = _propertyFactory.Create(varInfo);
+            int status =
+                property.GetChildPropertyProvider(
+                    0, 0, 0, out IAsyncDebugPropertyInfoProvider propertyInfoProvider);
             Assert.AreEqual(VSConstants.S_OK, status);
             Assert.NotNull(propertyInfoProvider);
         }

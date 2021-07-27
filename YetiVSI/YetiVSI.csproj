@@ -281,10 +281,10 @@
     <Compile Include="DebugEngine\DebugDisassemblyStream.cs" />
     <Compile Include="DebugEngine\DebugProgram.cs" />
     <Compile Include="DebugEngine\DebugProgramNode.cs" />
-    <Compile Include="DebugEngine\DebugExpression.cs" />
-    <Compile Include="DebugEngine\DebugStackFrame.cs" />
-    <Compile Include="DebugEngine\DebugThread.cs" />
-    <Compile Include="DebugEngine\DebugProperty.cs" />
+    <Compile Include="DebugEngine\DebugAsyncExpression.cs" />
+    <Compile Include="DebugEngine\DebugAsyncStackFrame.cs" />
+    <Compile Include="DebugEngine\DebugAsyncThread.cs" />
+    <Compile Include="DebugEngine\DebugAsyncProperty.cs" />
     <Compile Include="DebugEngine\DebugWatchpointResolution.cs" />
     <Compile Include="DebugEngine\Interfaces\IBreakpointManager.cs" />
     <Compile Include="DebugEngine\Interfaces\ITransportSession.cs" />
