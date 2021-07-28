@@ -175,7 +175,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.VulkanDriverVariant = string.Empty;
             parameters.Rgp = false;
             parameters.Dive = true;
-            parameters.GameletEnvironmentVars = "LD_PRELOAD=mylib.so";
+            parameters.GameletEnvironmentVars = "";
 
             ConfigStatus status =
                 _target.ToLaunchGameRequest(parameters, out LaunchGameRequest request);
@@ -184,11 +184,36 @@ namespace YetiCommon.Tests.Cloud
             Assert.IsNotNull(request);
             Assert.That(request.EnvironmentVariablePairs,
                         Is.EqualTo(new Dictionary<string, string> {
-                            { "GGP_ENABLE_DIVE_CAPTURE_LAYER", "1" },
+                            { "VK_INSTANCE_LAYERS", "VK_LAYER_dive_capture" },
                             { "GGP_INTERNAL_LOAD_RGP", "1" },
                             { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
-                            { "LD_PRELOAD", "mylib.so:librgpserver.so" }
+                            { "LD_PRELOAD", "librgpserver.so" }
                         }));
+        }
+
+        [Test]
+        public void ToLaunchGameRequestDiveVariablesAppend()
+        {
+            LaunchParams parameters = ValidParams;
+            parameters.RenderDoc = false;
+            parameters.VulkanDriverVariant = string.Empty;
+            parameters.Rgp = false;
+            parameters.Dive = true;
+            parameters.GameletEnvironmentVars =
+                "LD_PRELOAD=mylib.so;VK_INSTANCE_LAYERS=VK_LAYER_non_existence";
+
+            ConfigStatus status =
+                _target.ToLaunchGameRequest(parameters, out LaunchGameRequest request);
+
+            Assert.That(status.IsOk, Is.EqualTo(true));
+            Assert.IsNotNull(request);
+            Assert.That(
+                request.EnvironmentVariablePairs, Is.EqualTo(new Dictionary<string, string> {
+                    { "VK_INSTANCE_LAYERS", "VK_LAYER_non_existence:VK_LAYER_dive_capture" },
+                    { "GGP_INTERNAL_LOAD_RGP", "1" },
+                    { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
+                    { "LD_PRELOAD", "mylib.so:librgpserver.so" }
+                }));
         }
 
         [Test]

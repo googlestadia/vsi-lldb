@@ -309,10 +309,6 @@ namespace YetiCommon.Cloud
                 flagEnvironmentVariables.Add("GGP_INTERNAL_LOAD_RGP", "1");
                 flagEnvironmentVariables.Add("RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log");
             }
-            if (parameters.Dive)
-            {
-                flagEnvironmentVariables.Add("GGP_ENABLE_DIVE_CAPTURE_LAYER", "1");
-            }
 
             foreach (string key in flagEnvironmentVariables.Keys)
             {
@@ -322,6 +318,17 @@ namespace YetiCommon.Cloud
                     continue;
                 }
                 variables.Add(key, flagEnvironmentVariables[key]);
+            }
+
+            if (parameters.Dive)
+            {
+                if (!variables.ContainsKey("VK_INSTANCE_LAYERS"))
+                {
+                    variables.Add("VK_INSTANCE_LAYERS", string.Empty);
+                }
+                variables["VK_INSTANCE_LAYERS"] +=
+                    (string.IsNullOrEmpty(variables["VK_INSTANCE_LAYERS"]) ? string.Empty : ":") +
+                    "VK_LAYER_dive_capture";
             }
 
             if (parameters.Rgp || parameters.Dive)

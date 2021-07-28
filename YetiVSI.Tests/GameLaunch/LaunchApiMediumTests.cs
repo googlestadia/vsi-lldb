@@ -216,7 +216,7 @@ namespace YetiVSI.Test.GameLaunch
                     {
                         { "GGP_INTERNAL_LOAD_RGP", "1" },
                         { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
-                        { "GGP_ENABLE_DIVE_CAPTURE_LAYER", "1" },
+                        { "VK_INSTANCE_LAYERS", "VK_LAYER_dive_capture" },
                         { "LD_PRELOAD", "librgpserver.so" }
                     }));
         }

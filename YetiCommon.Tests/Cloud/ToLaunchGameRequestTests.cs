@@ -130,7 +130,7 @@ namespace YetiCommon.Tests.Cloud
                             { "GGP_INTERNAL_LOAD_RGP", "1" },
                             { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
                             { "LD_PRELOAD", "librgpserver.so" },
-                            { "GGP_ENABLE_DIVE_CAPTURE_LAYER", "1" },
+                            { "VK_INSTANCE_LAYERS", "VK_LAYER_dive_capture" },
                             { "ENABLE_VK_LAYER_VULKAN_COLOR_TOOLS", "false" },
                             { "GGP_VK_AMDVLK_USE_LLPC", "0" },
                             { "ENABLE_GOOGLE_PIPELINE_DATA_EXPORT_LAYER", "1" },
@@ -172,7 +172,7 @@ namespace YetiCommon.Tests.Cloud
                             { "GGP_DEV_VK_DRIVER_VARIANT", "test_variant" },
                             { "GGP_INTERNAL_LOAD_RGP", "1" },
                             { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
-                            { "GGP_ENABLE_DIVE_CAPTURE_LAYER", "1" },
+                            { "VK_INSTANCE_LAYERS", "VK_LAYER_dive_capture" },
                             { "LD_PRELOAD", "librgpserver.so" }
                         }));
             Assert.That(request.SurfaceEnforcementMode, Is.EqualTo(SurfaceEnforcementSetting.Warn));
