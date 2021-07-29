@@ -83,7 +83,7 @@ namespace YetiVSI.Shared.Metrics
                         public StackTraceFrame Clone()
                         {
                             var clone = (StackTraceFrame) MemberwiseClone();
-                            clone.Method = Method.Clone();
+                            clone.Method = Method?.Clone();
 
                             return clone;
                         }
