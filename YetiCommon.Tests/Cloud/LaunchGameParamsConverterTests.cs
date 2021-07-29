@@ -390,66 +390,16 @@ namespace YetiCommon.Tests.Cloud
             Assert.That(request.EnableDeveloperResumeOffer, Is.EqualTo(enableOffer));
         }
 
-        [TestCase(Codec.Unspecified, VideoResolution.Unspecified, DynamicRange.Unspecified,
-            ConfigStatus.ErrorLevel.Ok, Codec.Unspecified, null, HdrMode.HdrUndefined,
-            TestName = "NoSettings")]
-        [TestCase(Codec.Unspecified, VideoResolution._1080P, DynamicRange.Sdr,
-            ConfigStatus.ErrorLevel.Ok, Codec.Unspecified, null, HdrMode.HdrOn,
-            TestName = "SdrAnd1080DoesNotSetCodec")]
-        [TestCase(Codec.Unspecified, VideoResolution._1440P, DynamicRange.Unspecified,
-            ConfigStatus.ErrorLevel.Ok, Codec.Vp9, "ExternalDecoder", HdrMode.HdrUndefined,
-            TestName = "1440SetsVp9")]
-        [TestCase(Codec.Unspecified, VideoResolution._4K, DynamicRange.Unspecified,
-            ConfigStatus.ErrorLevel.Ok, Codec.Vp9, "ExternalDecoder", HdrMode.HdrUndefined,
-            TestName = "4kSetsVp9")]
-        [TestCase(Codec.Unspecified, VideoResolution.Unspecified, DynamicRange.Hdr10,
-            ConfigStatus.ErrorLevel.Ok, Codec.Vp9, "ExternalDecoder", HdrMode.HdrOn,
-            TestName = "Hdr10SetsVp9")]
-        [TestCase(Codec.H264, VideoResolution.Unspecified, DynamicRange.Hdr10,
-            ConfigStatus.ErrorLevel.Error, Codec.H264, "ExternalDecoder", HdrMode.HdrOn,
-            TestName = "NoVp9CodecHdr10Error")]
-        [TestCase(Codec.H264, VideoResolution._1440P, DynamicRange.Unspecified,
-            ConfigStatus.ErrorLevel.Error, Codec.H264, "ExternalDecoder", HdrMode.HdrUndefined,
-            TestName = "NoVp9Codec1440Error")]
-        public void ValidateDisplaySettings(Codec codec, VideoResolution resolution,
-            DynamicRange range, ConfigStatus.ErrorLevel expected, Codec expectedCodec,
-            string expectedDecoder, HdrMode expectedHdr)
+        [Test]
+        public void SimplifiedOverrides()
         {
             _queryParametersParser = MockQueryParametersParser((d, r) =>
             {
-                r.OverridePreferredCodec = codec;
-                r.OverrideClientResolution = resolution;
-                r.OverrideDynamicRange = range;
-                return ConfigStatus.OkStatus();
-            });
-            _target = new LaunchGameParamsConverter(_queryParametersParser);
-
-            ConfigStatus status = _target.ToLaunchGameRequest(
-                ValidParams, out LaunchGameRequest request);
-
-            Assert.AreEqual(expected, status.SeverityLevel);
-            Assert.AreEqual(expectedCodec, request.OverridePreferredCodec);
-            Assert.AreEqual(expectedDecoder, request.OverrideSystemVideoDecoderType);
-            Assert.AreEqual(range, request.OverrideSystemDynamicRange);
-            Assert.AreEqual(expectedHdr, request.OverrideDeviceSettingsHdr);
-        }
-
-        [TestCase(VideoResolution.Unspecified, null, null, BandwidthPreference.BandwidthUndefined,
-            TestName = "NoResolution")]
-        [TestCase(VideoResolution._720P, 720, 1280, BandwidthPreference.BandwidthUnlimited,
-            TestName = "Resolution720")]
-        [TestCase(VideoResolution._1080P, 1080, 1920, BandwidthPreference.BandwidthUnlimited,
-            TestName = "Resolution1080")]
-        [TestCase(VideoResolution._1440P, 1440, 2560, BandwidthPreference.BandwidthUnlimited,
-            TestName = "Resolution1440")]
-        [TestCase(VideoResolution._4K, 2160, 3840, BandwidthPreference.BandwidthUnlimited,
-            TestName = "Resolution4K")]
-        public void PixelsSetWhenResolutionSet(VideoResolution resolution, int? expectedHeight,
-            int? expectedWidth, BandwidthPreference expectedBandwidth)
-        {
-            _queryParametersParser = MockQueryParametersParser((d, r) =>
-            {
-                r.OverrideClientResolution = resolution;
+                r.OverridePreferredCodec = Codec.Vp9;
+                r.OverrideClientResolution = VideoResolution._4K;
+                r.OverrideDynamicRange = DynamicRange.Hdr10;
+                r.OverrideAudioChannelMode = ChannelMode.Stereo;
+                r.OverrideDisplayPixelDensity = PixelDensity.XxHigh;
                 return ConfigStatus.OkStatus();
             });
             _target = new LaunchGameParamsConverter(_queryParametersParser);
@@ -458,36 +408,11 @@ namespace YetiCommon.Tests.Cloud
                 ValidParams, out LaunchGameRequest request);
 
             Assert.AreEqual(ConfigStatus.ErrorLevel.Ok, status.SeverityLevel);
-            Assert.AreEqual(expectedHeight, request.OverrideScreenHeightPixels);
-            Assert.AreEqual(expectedWidth, request.OverrideScreenWidthPixels);
-            Assert.AreEqual(expectedBandwidth, request.OverrideDeviceSettingsBandwidth);
-        }
-
-        [TestCase(ChannelMode.Mono, AudioPlaybackPreference.PreferenceAutomatic,
-            TestName = "Mono")]
-        [TestCase(ChannelMode.Stereo, AudioPlaybackPreference.PreferenceAutomatic,
-            TestName = "Stereo")]
-        [TestCase(ChannelMode.Surround51, AudioPlaybackPreference.PreferenceAutomatic,
-            TestName = "Surround51")]
-        [TestCase(ChannelMode.Surround51True, AudioPlaybackPreference.PreferenceAutomatic,
-            TestName = "Surround51True")]
-        [TestCase(ChannelMode.Unspecified, AudioPlaybackPreference.PreferenceUndefined,
-            TestName = "Unspecified")]
-        public void AudioPlaybackPreferenceSetWhenAudioChannelSet(
-            ChannelMode channel, AudioPlaybackPreference expectedPref)
-        {
-            _queryParametersParser = MockQueryParametersParser((d, r) =>
-            {
-                r.OverrideAudioChannelMode = channel;
-                return ConfigStatus.OkStatus();
-            });
-            _target = new LaunchGameParamsConverter(_queryParametersParser);
-
-            ConfigStatus status = _target.ToLaunchGameRequest(
-                ValidParams, out LaunchGameRequest request);
-
-            Assert.AreEqual(ConfigStatus.ErrorLevel.Ok, status.SeverityLevel);
-            Assert.AreEqual(expectedPref, request.OverrideDeviceSettingsAudioPlaybackPreference);
+            Assert.AreEqual(Codec.Vp9, request.SimplifiedOverrideCodec);
+            Assert.AreEqual(VideoResolution._4K, request.SimplifiedOverrideMaxEncodeResolution);
+            Assert.AreEqual(DynamicRange.Hdr10, request.SimplifiedOverrideDynamicRange);
+            Assert.AreEqual(ChannelMode.Stereo, request.SimplifiedOverrideChannelMode);
+            Assert.AreEqual(PixelDensity.XxHigh, request.SimplifiedOverridePixelDensity);
         }
 
         IQueryParametersParser MockQueryParametersParser(
