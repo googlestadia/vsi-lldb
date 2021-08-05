@@ -60,6 +60,9 @@ namespace YetiCommon
         public const int GGP_RSYNC_FIRST = 44450;
         public const int GGP_RSYNC_LAST = 44459;
 
+        // Reserve port 44460 for use by Log Manager.
+        public const int LOG_MANAGER = 44460;
+
         // Reserve ports 19999, 27300, 38920 for rgp and renderdoc.
         public const int DIVE_LOCAL = 19999;
         public const int RGP_LOCAL = 27300;
