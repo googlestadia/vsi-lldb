@@ -452,11 +452,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 if (ExactTypeMatchCount != other.ExactTypeMatchCount)
                 {
                     // Since higher is better, do this.CompareTo(other).
-                    return other.ExactTypeMatchCount.CompareTo(ExactTypeMatchCount);
+                    return ExactTypeMatchCount.CompareTo(other.ExactTypeMatchCount);
                 }
 
                 // Since lower is better, do other.CompareTo(this).
-                return ArgCountDifference.CompareTo(other.ArgCountDifference);
+                return other.ArgCountDifference.CompareTo(ArgCountDifference);
             }
         }
     }

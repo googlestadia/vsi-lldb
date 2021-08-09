@@ -275,8 +275,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             // TODO: Ordering is a bit brittle, consider using another way to make
             // CustomVisualizers overridable, e.g. priority, a custom built-in flag or storing
             // built-in Natvis in a file that can be changed by users.
-            _visualizerCache[varTypeName] = null;
-            var matches = new List<Tuple<TypeName.MatchScore, TypeInfo>>();
+            TypeInfo bestMatch = null;
+            TypeName.MatchScore bestScore = null;
             for (int index = _typeVisualizers.Count - 1; index >= 0; --index)
             {
                 FileInfo fileInfo = _typeVisualizers[index];
@@ -287,17 +287,17 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     var score = new TypeName.MatchScore();
                     if (v.ParsedName.Match(typeNameToFind, score))
                     {
-                        matches.Add(new Tuple<TypeName.MatchScore, TypeInfo>(score, v));
+                        if (bestScore == null || score.CompareTo(bestScore) > 0)
+                        {
+                            bestScore = score;
+                            bestMatch = v;
+                        }
                     }
                 }
             }
 
-            if (matches.Count > 0)
-            {
-                matches = matches.OrderBy(scoreAndTypeInfo => scoreAndTypeInfo.Item1).ToList();
-                _visualizerCache[varTypeName] =
-                    new VisualizerInfo(matches[0].Item2.Visualizer, typeNameToFind);
-            }
+            _visualizerCache[varTypeName] =
+                bestMatch != null ? new VisualizerInfo(bestMatch.Visualizer, typeNameToFind) : null;
 
             return _visualizerCache[varTypeName];
         }

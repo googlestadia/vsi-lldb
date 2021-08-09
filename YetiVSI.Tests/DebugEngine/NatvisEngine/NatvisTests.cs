@@ -324,10 +324,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var t4 = CreateVarInfo(
                 RemoteValueFakeUtil.CreateClass("Tuple<int, int, int>", "t4", "value"));
 
-            Assert.That(await t1.ValueAsync(), Does.Contain("int"));
-            Assert.That(await t2.ValueAsync(), Does.Contain("*"));
-            Assert.That(await t3.ValueAsync(), Does.Contain("*,*"));
-            Assert.That(await t4.ValueAsync(), Does.Contain("*,*"));
+            Assert.That(await t1.ValueAsync(), Is.EqualTo("int"));
+            Assert.That(await t2.ValueAsync(), Is.EqualTo("*"));
+            Assert.That(await t3.ValueAsync(), Is.EqualTo("*,*"));
+            Assert.That(await t4.ValueAsync(), Is.EqualTo("*,*"));
         }
 
 #endregion
