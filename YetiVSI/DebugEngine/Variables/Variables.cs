@@ -126,7 +126,7 @@ namespace YetiVSI.DebugEngine.Variables
         /// If the variable is a pointer or reference, the method returns all inherited types
         /// of the pointee.
         /// </summary>
-        IEnumerable<string> GetAllInheritedTypes();
+        IEnumerable<SbType> GetAllInheritedTypes();
 
         bool Error { get; }
 
@@ -292,8 +292,7 @@ namespace YetiVSI.DebugEngine.Variables
 
         public virtual IChildAdapter GetChildAdapter() => VarInfo.GetChildAdapter();
 
-        public virtual IEnumerable<string> GetAllInheritedTypes() =>
-            VarInfo.GetAllInheritedTypes();
+        public virtual IEnumerable<SbType> GetAllInheritedTypes() => VarInfo.GetAllInheritedTypes();
 
         public IVariableInformation GetValueForExpressionPath(VsExpression vsExpression) =>
             VarInfo.GetValueForExpressionPath(vsExpression);
@@ -446,7 +445,7 @@ namespace YetiVSI.DebugEngine.Variables
         public IVariableInformation FindChildByName(string name) =>
             throw new NotImplementedException();
 
-        public IEnumerable<string> GetAllInheritedTypes() => throw new NotImplementedException();
+        public IEnumerable<SbType> GetAllInheritedTypes() => throw new NotImplementedException();
 
         public bool MightHaveChildren() => false;
 
@@ -566,7 +565,7 @@ namespace YetiVSI.DebugEngine.Variables
                                                                               _varInfoBuilder,
                                                                               FormatSpecifier);
 
-        public IEnumerable<string> GetAllInheritedTypes()
+        public IEnumerable<SbType> GetAllInheritedTypes()
         {
             SbType typeInfo = _remoteValue.GetTypeInfo();
             if (typeInfo == null)
@@ -591,7 +590,7 @@ namespace YetiVSI.DebugEngine.Variables
             while (typeQueue.Count > 0)
             {
                 SbType curType = typeQueue.Dequeue();
-                yield return curType.GetName();
+                yield return curType;
                 uint numDirectBaseClasses = curType.GetNumberOfDirectBaseClasses();
                 for (uint i = 0; i < numDirectBaseClasses; i++)
                 {
@@ -868,7 +867,7 @@ namespace YetiVSI.DebugEngine.Variables
 
         public IChildAdapter GetChildAdapter() => _childAdapter;
         public CustomVisualizer CustomVisualizer => CustomVisualizer.None;
-        public IEnumerable<string> GetAllInheritedTypes() => Enumerable.Empty<string>();
+        public IEnumerable<SbType> GetAllInheritedTypes() => Enumerable.Empty<SbType>();
 
         public bool Error => false;
         public string ErrorMessage => null;

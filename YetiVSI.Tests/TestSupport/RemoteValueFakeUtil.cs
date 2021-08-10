@@ -134,6 +134,27 @@ namespace YetiVSI.Test.TestSupport
             return remoteValue;
         }
 
+        public static RemoteValueFake CreateClassAlias(string aliasTypeName,
+                                                       string canonicalTypeName, string name,
+                                                       string value)
+        {
+            var remoteValue = new RemoteValueFake(name, value);
+            var typeFlags = TypeFlags.IS_CLASS;
+            if (aliasTypeName.Contains("*"))
+            {
+                typeFlags |= TypeFlags.IS_POINTER;
+            }
+            if (aliasTypeName.Contains("&"))
+            {
+                typeFlags |= TypeFlags.IS_REFERENCE;
+            }
+            var type = new SbTypeStub(aliasTypeName, typeFlags);
+            var canonicalType = new SbTypeStub(canonicalTypeName, typeFlags);
+            type.SetCanonicalType(canonicalType);
+            remoteValue.SetTypeInfo(type);
+            return remoteValue;
+        }
+
         public static RemoteValueFake CreatePointer(string typeName, string name, string value)
         {
             if (!IsHex(value))

@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using DebuggerApi;
 using Microsoft.VisualStudio.Threading;
 using YetiVSI.DebugEngine.Variables;
 using YetiVSI.Util;
@@ -221,20 +222,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             uint count = 0;
-            foreach (string typeName in variable.GetAllInheritedTypes())
+            foreach (SbType type in variable.GetAllInheritedTypes())
             {
-                var parsedName = TypeName.Parse(typeName);
-                if (parsedName == null)
-                {
-                    break;
-                }
-
-                _logger.Verbose(
-                    () => $"Scanning for Natvis Visualizer for type '{parsedName.BaseName}' for " +
-                        $"variable of type '{initialTypeName}'");
-
-                VisualizerInfo visualizer = Scan(initialTypeName, parsedName);
-
+                VisualizerInfo visualizer = ScanForAliasOrCanonicalType(initialTypeName, type);
                 if (visualizer != null)
                 {
                     _logger.Verbose(
@@ -259,6 +249,50 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             _logger.Verbose($"No Natvis Visualizer found for type '{initialTypeName}'");
             return null;
+        }
+
+        private VisualizerInfo ScanForAliasOrCanonicalType(string initialTypeName, SbType type)
+        {
+            var typeName = type.GetName();
+            var parsedName = TypeName.Parse(typeName);
+            if (parsedName == null)
+            {
+                return null;
+            }
+
+            _logger.Verbose(
+                () => $"Scanning for Natvis Visualizer for type '{parsedName.BaseName}' for " +
+                      $"variable of type '{initialTypeName}'");
+
+            VisualizerInfo visualizer = Scan(initialTypeName, parsedName);
+            if (visualizer != null)
+            {
+                return visualizer;
+            }
+
+            // Fallback to canonical type. `typeName` could be alias for another type (e.g.
+            // `using MyType = CanonicalType` or `typedef CanonicalType MyType`). If there's no
+            // visualizer for the given type, try to find a visualizer for its canonical type.
+            // NOTE: This Natvis implementation differs from Visual Studio's native Natvis, which
+            // doesn't support type aliases (it canonicalizes types by default).
+            var canonicalTypeName = type.GetCanonicalType().GetName();
+            if (canonicalTypeName == typeName)
+            {
+                // The given type is canonicalized. There is no need for additional scan.
+                return null;
+            }
+
+            var parsedCanonicalName = TypeName.Parse(canonicalTypeName);
+            if (parsedCanonicalName == null)
+            {
+                return null;
+            }
+
+            _logger.Verbose(() => $"Scanning for Natvis Visualizer for canonical type " +
+                                  $"'{parsedCanonicalName.BaseName}' for variable of type " +
+                                  $"'{initialTypeName}'");
+
+            return Scan(initialTypeName, parsedCanonicalName);
         }
 
         void InitDataStructures()

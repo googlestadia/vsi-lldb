@@ -75,7 +75,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
             remoteValue.SetTypeInfo(new SbTypeStub("MyType", TypeFlags.NONE));
             var varInfo = CreateVarInfo(remoteValue, "dummyDisplayName");
 
-            var inheritedTypes = varInfo.GetAllInheritedTypes();
+            var inheritedTypes = varInfo.GetAllInheritedTypes().Select(t => t.GetName());
 
             Assert.That(inheritedTypes, Is.EqualTo(new[] { "MyType" }));
         }
@@ -92,7 +92,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
 
             var varInfo = CreateVarInfo(derivedVar, "dummyDisplayName");
 
-            var inheritedTypes = varInfo.GetAllInheritedTypes();
+            var inheritedTypes = varInfo.GetAllInheritedTypes().Select(t => t.GetName());
 
             Assert.That(inheritedTypes, Is.EqualTo(new[] { "DerivedType", "BaseType" }));
         }
@@ -142,7 +142,7 @@ namespace YetiVSI.Test.DebugEngine.Variables
             remoteValue.SetTypeInfo(type_001);
 
             var varInfo = CreateVarInfo(remoteValue, "dummyDisplayName");
-            var inheritedTypes = varInfo.GetAllInheritedTypes().ToList();
+            var inheritedTypes = varInfo.GetAllInheritedTypes().Select(t => t.GetName()).ToList();
 
             Func<string, int> indexOf = typeName => inheritedTypes.IndexOf(typeName);
 

@@ -17,6 +17,7 @@ using DebuggerApi;
 using NUnit.Framework;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using TestsCommon.TestSupport;
 using TestsCommon.TestSupport.CastleAspects;
@@ -332,7 +333,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
 #endregion
 
-        #region AlternativeType
+#region AlternativeType
 
         [Test]
         public async Task AlternativeTypeWithSimpleTypesAsync()
@@ -9070,9 +9071,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 list.AddValueFromExpression(
                     "index",
                     RemoteValueFakeUtil.CreateSimpleInt("tmp", i));
-                list.AddValueFromExpression(
-                    "index += 1",
-                    RemoteValueFakeUtil.CreateSimpleInt("tmp", i+1));
+                list.AddValueFromExpression("index += 1",
+                                            RemoteValueFakeUtil.CreateSimpleInt("tmp", i + 1));
             }
             list.AddValueFromExpression(
                 "index < 100",
@@ -9083,11 +9083,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(children.Length, Is.EqualTo(21));
 
-            for (int i = 0; i < children.Length-1; i++)
+            for (int i = 0; i < children.Length - 1; i++)
             {
                 Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
             }
-            Assert.That(children[children.Length-1].DisplayName, Is.EqualTo("[More]"));
+            Assert.That(children[children.Length - 1].DisplayName, Is.EqualTo("[More]"));
 
             // Check that only the requested number of elements was evaluated.
             Assert.That(list.ExpressionValues["index"].Count, Is.EqualTo(79));
@@ -9455,7 +9455,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("type_0"));
 
-            Assert.That(varInfo.GetAllInheritedTypes(), Does.Contain("type_200"));
+            Assert.That(varInfo.GetAllInheritedTypes().Select(t => t.GetName()),
+                        Does.Contain("type_200"));
         }
 
         [Test]
@@ -9500,9 +9501,63 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await varInfo.ValueAsync(), Is.EqualTo("Custom Display String"));
         }
 
-        #endregion
+        [Test]
+        public async Task FallbackToCanonicalTypeVisualizerAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""CanonicalType"">
+    <DisplayString>Display Canonical Type</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
 
-        #region MultiLevelExpansion
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClassAlias("TypeAlias", "CanonicalType", "myVar", "");
+            var varInfo = CreateVarInfo(remoteValue);
+
+            Assert.That(varInfo.TypeName, Is.EqualTo("TypeAlias"));
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("Display Canonical Type"));
+
+            string logs = nLogSpy.GetOutput();
+            Assert.That(logs, Does.Not.Contain("ERROR"));
+            Assert.That(logs, Does.Contain("Natvis Visualizer for type 'TypeAlias'"));
+            Assert.That(logs, Does.Contain("Natvis Visualizer for canonical type 'CanonicalType'"));
+        }
+
+        [Test]
+        public async Task PreferAliasToCanonicalTypeNameAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""CanonicalType"">
+    <DisplayString>Display Canonical Type</DisplayString>
+  </Type>
+  <Type Name=""TypeAlias"">
+    <DisplayString>Display Type Alias</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClassAlias("TypeAlias", "CanonicalType", "myVar", "");
+            var varInfo = CreateVarInfo(remoteValue);
+
+            Assert.That(varInfo.TypeName, Is.EqualTo("TypeAlias"));
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("Display Type Alias"));
+
+            string logs = nLogSpy.GetOutput();
+            Assert.That(logs, Does.Not.Contain("ERROR"));
+            Assert.That(logs, Does.Contain("Natvis Visualizer for type 'TypeAlias'"));
+            Assert.That(logs,
+                        Does.Not.Contain("Natvis Visualizer for canonical type 'CanonicalType'"));
+        }
+
+#endregion
+
+#region MultiLevelExpansion
 
         [Test]
         public async Task MultipleLevelExpansionAsync()
