@@ -44,15 +44,32 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void GetName()
+        public void ConstructorDoesNotFetchName()
         {
-            const string threadName = "thread-name";
             var lldbThread = Substitute.For<RemoteThread>();
-            lldbThread.GetName().Returns(threadName);
-            IDebugThread thread =
+            _debugThreadFactory.CreateForTesting(_stackFramesProvider, lldbThread);
+
+            lldbThread.Received(1).GetThreadId();
+            lldbThread.DidNotReceive().GetName();
+        }
+
+        [Test]
+        public void GetNameNotCached()
+        {
+            var lldbThread = Substitute.For<RemoteThread>();
+            IDebugThread debugThreadImpl =
                 _debugThreadFactory.CreateForTesting(_stackFramesProvider, lldbThread);
-            thread.GetName(out string debugThreadName);
-            Assert.AreEqual(threadName, debugThreadName);
+            Assert.Multiple(() =>
+            {
+                foreach (string expectedName in new[] { "thread-name-1",
+                                                        "thread-name-2",
+                                                        "thread-name-3" })
+                {
+                    lldbThread.GetName().Returns(expectedName);
+                    debugThreadImpl.GetName(out string debugThreadName);
+                    Assert.AreEqual(expectedName, debugThreadName);
+                }
+            });
         }
 
         [Test]
@@ -205,11 +222,11 @@ namespace YetiVSI.Test.DebugEngine
             }
 
             mockCodeContext
-                .GetInfo(contextInfoFields, Arg.Do((System.Action<CONTEXT_INFO[]>) SetContextInfo))
+                .GetInfo(contextInfoFields, Arg.Do((System.Action<CONTEXT_INFO[]>)SetContextInfo))
                 .Returns(VSConstants.S_OK);
-            ((IDebugMemoryContext2) mockCodeContext)
+            ((IDebugMemoryContext2)mockCodeContext)
                 .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(),
-                         Arg.Do((System.Action<CONTEXT_INFO[]>) SetContextInfo))
+                         Arg.Do((System.Action<CONTEXT_INFO[]>)SetContextInfo))
                 .Returns(VSConstants.S_OK);
             var mockFrame = Substitute.For<RemoteFrame>();
             mockFrame.GetPC().Returns(address);
@@ -319,11 +336,11 @@ namespace YetiVSI.Test.DebugEngine
             mockCodeContext
                 .GetInfo(
                     enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS | enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
-                    Arg.Do((System.Action<CONTEXT_INFO[]>) SetContextInfo))
+                    Arg.Do((System.Action<CONTEXT_INFO[]>)SetContextInfo))
                 .Returns(VSConstants.S_OK);
-            ((IDebugMemoryContext2) mockCodeContext)
+            ((IDebugMemoryContext2)mockCodeContext)
                 .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(),
-                         Arg.Do((System.Action<CONTEXT_INFO[]>) SetContextInfo))
+                         Arg.Do((System.Action<CONTEXT_INFO[]>)SetContextInfo))
                 .Returns(VSConstants.S_OK);
 
             mockCodeContext.GetDocumentContext(out IDebugDocumentContext2 _).Returns(x =>
@@ -408,11 +425,11 @@ namespace YetiVSI.Test.DebugEngine
 
             mockCodeContext
                 .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(),
-                         Arg.Do((System.Action<CONTEXT_INFO[]>) SetContext))
+                         Arg.Do((System.Action<CONTEXT_INFO[]>)SetContext))
                 .Returns(VSConstants.S_OK);
-            ((IDebugMemoryContext2) mockCodeContext)
+            ((IDebugMemoryContext2)mockCodeContext)
                 .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(),
-                         Arg.Do((System.Action<CONTEXT_INFO[]>) SetContext))
+                         Arg.Do((System.Action<CONTEXT_INFO[]>)SetContext))
                 .Returns(VSConstants.S_OK);
 
             const string dir = "path\\to";

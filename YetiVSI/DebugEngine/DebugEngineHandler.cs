@@ -170,50 +170,8 @@ namespace YetiVSI.DebugEngine
             }
 
             Guid eventIid = evnt.Iid;
-            DebugLogSend(evnt, program, thread, attributes);
             return _eventCallback.Event(_debugEngine, null, program, thread, evnt, ref eventIid,
                                         attributes);
-        }
-
-        void DebugLogSend(IDebugEvent2 eventObject, IGgpDebugProgram program, IDebugThread2 thread,
-                          uint attributes) =>
-            Trace.WriteLine("Sending event " + eventObject + " with attribute " +
-                            Enum.GetName(typeof(enum_EVENTATTRIBUTES), attributes) + ", program " +
-                            GetProgramDisplay(program) + ", and thread " +
-                            GetThreadDisplay(thread));
-
-        string GetProgramDisplay(IGgpDebugProgram program)
-        {
-            if (program.GetName(out string programDisplay) != VSConstants.S_OK)
-            {
-                programDisplay = program.ToString();
-            }
-
-            if (program.GetProgramId(out Guid programId) == VSConstants.S_OK)
-            {
-                programDisplay += " id:" + programId;
-            }
-
-            return programDisplay;
-        }
-
-        string GetThreadDisplay(IDebugThread2 thread)
-        {
-            string threadDisplay = "[null]";
-            if (thread != null)
-            {
-                if (thread.GetName(out threadDisplay) != VSConstants.S_OK)
-                {
-                    threadDisplay = thread.ToString();
-                }
-
-                if (thread.GetThreadId(out uint threadId) == VSConstants.S_OK)
-                {
-                    threadDisplay += " id:" + threadId;
-                }
-            }
-
-            return threadDisplay;
         }
     }
 }

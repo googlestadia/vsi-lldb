@@ -77,10 +77,8 @@ namespace YetiVSI.DebugEngine
         }
 
         // Main thread required to provide name and ID for debugger to fully attach
-        readonly string _name;
         readonly uint _id;
         readonly RemoteThread _remoteThread;
-
         readonly ITaskExecutor _taskExecutor;
         readonly StackFramesProvider _stackFramesProvider;
 
@@ -88,8 +86,7 @@ namespace YetiVSI.DebugEngine
                                    StackFramesProvider stackFramesProvider, RemoteThread lldbThread)
         {
             _remoteThread = lldbThread;
-            _name = lldbThread.GetName();
-            _id = (uint) lldbThread.GetThreadId();
+            _id = (uint)lldbThread.GetThreadId();
             _taskExecutor = taskExecutor;
             _stackFramesProvider = stackFramesProvider;
         }
@@ -156,7 +153,7 @@ namespace YetiVSI.DebugEngine
 
         public int GetName(out string name)
         {
-            name = _name;
+            name = _remoteThread.GetName();
             return VSConstants.S_OK;
         }
 
@@ -204,7 +201,7 @@ namespace YetiVSI.DebugEngine
 
             if ((enum_THREADPROPERTY_FIELDS.TPF_NAME & fields) != 0)
             {
-                properties.bstrName = _name;
+                properties.bstrName = _remoteThread.GetName();
                 properties.dwFields |= enum_THREADPROPERTY_FIELDS.TPF_NAME;
             }
 

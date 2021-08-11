@@ -106,12 +106,6 @@ namespace YetiVSI.Test.DebugEngine
 
             var id = Arg.Any<Guid>();
             callback.Received(1).Event(debugEngine, null, program, thread, evnt, ref id, 5);
-
-            var output = logSpy.GetOutput();
-            Assert.That(output, Does.Contain(programName));
-            Assert.That(output, Does.Contain(programId.ToString()));
-            Assert.That(output, Does.Contain(threadName));
-            Assert.That(output, Does.Contain(threadId.ToString()));
         }
 
         [Test]
@@ -131,13 +125,6 @@ namespace YetiVSI.Test.DebugEngine
 
             var id = Arg.Any<Guid>();
             callback.Received(1).Event(debugEngine, null, program, thread, evnt, ref id, 5);
-
-            var output = logSpy.GetOutput();
-            Assert.That(output, Does.Not.Contain(programName));
-            Assert.That(output, Does.Contain(program.ToString()));
-            Assert.That(output, Does.Contain(programId.ToString()));
-            Assert.That(output, Does.Contain(threadName));
-            Assert.That(output, Does.Contain(threadId.ToString()));
         }
 
         [Test]
@@ -156,12 +143,6 @@ namespace YetiVSI.Test.DebugEngine
 
             var id = Arg.Any<Guid>();
             callback.Received(1).Event(debugEngine, null, program, thread, evnt, ref id, 5);
-
-            var output = logSpy.GetOutput();
-            Assert.That(output, Does.Contain(programName));
-            Assert.That(output, Does.Not.Contain(programId.ToString()));
-            Assert.That(output, Does.Contain(threadName));
-            Assert.That(output, Does.Contain(threadId.ToString()));
         }
 
         [Test]
@@ -172,11 +153,6 @@ namespace YetiVSI.Test.DebugEngine
 
             var id = Arg.Any<Guid>();
             callback.Received(1).Event(debugEngine, null, program, null, evnt, ref id, 5);
-
-            var output = logSpy.GetOutput();
-            Assert.That(output, Does.Contain(programName));
-            Assert.That(output, Does.Contain(programId.ToString()));
-            Assert.That(output, Does.Contain($"thread [null]"));
         }
 
         [Test]
@@ -195,12 +171,6 @@ namespace YetiVSI.Test.DebugEngine
 
             var id = Arg.Any<Guid>();
             callback.Received(1).Event(debugEngine, null, program, thread, evnt, ref id, 5);
-
-            var output = logSpy.GetOutput();
-            Assert.That(output, Does.Contain(programName));
-            Assert.That(output, Does.Contain(programId.ToString()));
-            Assert.That(output, Does.Contain(threadName));
-            Assert.That(output, Does.Not.Contain(threadId.ToString()));
         }
 
         [Test]
@@ -214,12 +184,6 @@ namespace YetiVSI.Test.DebugEngine
 
             var id = Arg.Any<Guid>();
             callback.Received(1).Event(debugEngine, null, program, thread, evnt, ref id, 5);
-
-            var output = logSpy.GetOutput();
-            Assert.That(output, Does.Contain(programName));
-            Assert.That(output, Does.Contain(programId.ToString()));
-            Assert.That(output, Does.Contain(threadName));
-            Assert.That(output, Does.Contain(threadId.ToString()));
         }
     }
 
