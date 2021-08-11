@@ -9207,9 +9207,256 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             }
         }
 
-        #endregion
+        [Test]
+        public async Task CustomListItemsSizeAttributeAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""List"">
+    <Expand HideRawView=""true"">
+      <CustomListItems>
+        <Variable Name=""index"" InitialValue=""0"" />
+        <Size>5</Size>
+        <Loop>
+          <Item>index</Item>
+          <Exec>index += 1</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
 
-        #region VisualizerType
+            var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
+
+            RemoteValue indexVar = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", indexVar);
+            list.AddValueFromExpression("index", indexVar);
+
+            list.AddValueFromExpression("5", RemoteValueFakeUtil.CreateSimpleInt("size", 5));
+
+            for (int i = 0; i < 5; i++)
+            {
+                list.AddValueFromExpression("index", RemoteValueFakeUtil.CreateSimpleInt("tmp", i));
+                list.AddValueFromExpression("index += 1",
+                                            RemoteValueFakeUtil.CreateSimpleInt("tmp", i + 1));
+            }
+
+            var varInfo = CreateVarInfo(list);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            Assert.That(children.Length, Is.EqualTo(5));
+            for (int i = 0; i < children.Length; i++)
+            {
+                Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
+            }
+        }
+
+        [Test]
+        public async Task CustomListItemsSizeWithConditionsAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""List"">
+    <Expand HideRawView=""true"">
+      <CustomListItems>
+        <Variable Name=""index"" InitialValue=""0"" />
+        <Size Condition=""false"">5</Size>
+        <Size Condition=""true"">6</Size>
+        <Loop>
+          <Item>index</Item>
+          <Exec>index += 1</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
+
+            RemoteValue indexVar = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", indexVar);
+            list.AddValueFromExpression("index", indexVar);
+
+            // Conditions and size
+            list.AddValueFromExpression("false",
+                                        RemoteValueFakeUtil.CreateSimpleBool("false", false));
+            list.AddValueFromExpression("true", RemoteValueFakeUtil.CreateSimpleBool("true", true));
+            list.AddValueFromExpression("6", RemoteValueFakeUtil.CreateSimpleInt("size", 6));
+
+            for (int i = 0; i < 6; i++)
+            {
+                list.AddValueFromExpression("index", RemoteValueFakeUtil.CreateSimpleInt("tmp", i));
+                list.AddValueFromExpression("index += 1",
+                                            RemoteValueFakeUtil.CreateSimpleInt("tmp", i + 1));
+            }
+
+            var varInfo = CreateVarInfo(list);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            Assert.That(children.Length, Is.EqualTo(6));
+            for (int i = 0; i < children.Length; i++)
+            {
+                Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
+            }
+        }
+
+        [Test]
+        public async Task CustomListItemsUnsatisfiableSizeConditionsAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""List"">
+    <Expand HideRawView=""true"">
+      <CustomListItems MaxItemsPerView=""20"">
+        <Variable Name=""index"" InitialValue=""0"" />
+        <Size Condition=""cond1"">5</Size>
+        <Size Condition=""cond2"">6</Size>
+        <Loop>
+          <Item>index</Item>
+          <Exec>index += 1</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
+
+            RemoteValue indexVar = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", indexVar);
+            list.AddValueFromExpression("index", indexVar);
+
+            list.AddValueFromExpression("cond1",
+                                        RemoteValueFakeUtil.CreateSimpleBool("false", false));
+            list.AddValueFromExpression("cond2",
+                                        RemoteValueFakeUtil.CreateSimpleBool("false", false));
+
+            for (int i = 0; i < 20; i++)
+            {
+                list.AddValueFromExpression("index", RemoteValueFakeUtil.CreateSimpleInt("tmp", i));
+                list.AddValueFromExpression("index += 1",
+                                            RemoteValueFakeUtil.CreateSimpleInt("tmp", i + 1));
+            }
+
+            var varInfo = CreateVarInfo(list);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            Assert.That(children.Length, Is.EqualTo(21));
+            for (int i = 0; i < 20; i++)
+            {
+                Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
+            }
+            Assert.That(children[20].DisplayName, Is.EqualTo("[More]"));
+        }
+
+        [Test]
+        public async Task CustomListItemsInvalidSizeExpressionAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""List"">
+    <Expand HideRawView=""true"">
+      <CustomListItems>
+        <Variable Name=""index"" InitialValue=""0"" />
+        <Size>invalidSizeExpr</Size>
+        <Loop>
+          <Item>index</Item>
+          <Exec>index += 1</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
+
+            RemoteValue indexVar = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", indexVar);
+            list.AddValueFromExpression("index", indexVar);
+
+            list.AddValueFromExpression("invalidSizeExpr",
+                                        RemoteValueFakeUtil.CreateError("error message"));
+
+            var varInfo = CreateVarInfo(list);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            Assert.That(children.Length, Is.EqualTo(2));
+            Assert.That(children[0].Error, Is.EqualTo(true));
+            Assert.That(await children[0].ValueAsync(), Does.Contain("error message"));
+            Assert.That(await children[1].ValueAsync(), Is.EqualTo("myValue")); // raw view
+        }
+
+        [Test]
+        public async Task CustomListItemsBreakBeforeReachingSizeLimitAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""List"">
+    <Expand HideRawView=""true"">
+      <CustomListItems MaxItemsPerView=""3"">
+        <Variable Name=""index"" InitialValue=""0"" />
+        <Size>4</Size>
+        <Loop Condition=""index &lt; 2"">
+          <Item>index</Item>
+          <Exec>index += 1</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
+
+            RemoteValue indexVar = RemoteValueFakeUtil.CreateSimpleInt("index", 0);
+            list.AddValueFromExpression("auto index=0; index", indexVar);
+            list.AddValueFromExpression("index", indexVar);
+
+            list.AddValueFromExpression("4", RemoteValueFakeUtil.CreateSimpleInt("size", 4));
+
+            for (int i = 0; i < 2; i++)
+            {
+                list.AddValueFromExpression("index < 2",
+                                            RemoteValueFakeUtil.CreateSimpleBool("tmp", true));
+                list.AddValueFromExpression("index", RemoteValueFakeUtil.CreateSimpleInt("tmp", i));
+                list.AddValueFromExpression("index += 1",
+                                            RemoteValueFakeUtil.CreateSimpleInt("tmp", i + 1));
+            }
+
+            list.AddValueFromExpression("index < 2",
+                                        RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
+
+            var varInfo = CreateVarInfo(list);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            Assert.That(children.Length, Is.EqualTo(4));
+            Assert.That(await children[0].ValueAsync(), Is.EqualTo("0"));
+            Assert.That(await children[1].ValueAsync(), Is.EqualTo("1"));
+            Assert.That(children[2].Error, Is.True);
+            Assert.That(await children[2].ValueAsync(), Does.Contain("only 2 item(s) found"));
+            Assert.That(children[3].DisplayName, Is.EqualTo("[More]"));
+
+            var moreChildren = await children[3].GetAllChildrenAsync();
+            Assert.That(moreChildren.Length, Is.EqualTo(1));
+            Assert.That(moreChildren[0].Error, Is.True);
+            Assert.That(await moreChildren[0].ValueAsync(), Does.Contain("only 2 item(s) found"));
+
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
+        }
+
+#endregion
+
+#region VisualizerType
 
         [Test]
         public async Task VisualizerTypeWithIncludeViewAttributeAsync()

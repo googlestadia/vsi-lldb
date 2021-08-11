@@ -24,6 +24,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         public NatvisScope NatvisScope { get; }
         public int ItemAutoIndex { get; set; }
 
+        // This size refers to a <Size> element.
+        public uint? Size { get; set; }
+
         public CustomListItemsContext(NatvisScope natvisScope, IVariableInformation variable)
         {
             NatvisScope = natvisScope;

@@ -930,7 +930,7 @@ namespace YetiVSI.DebugEngine
                 new TreeItemsEntity.Factory(GetNatvisDiagnosticLogger(), evaluator, sizeParser);
 
             var customListItemsFactory = new CustomListItemsEntity.Factory(
-                GetNatvisDiagnosticLogger(), evaluator, GetVariableNameTransformer());
+                GetNatvisDiagnosticLogger(), evaluator, GetVariableNameTransformer(), sizeParser);
 
             return new NatvisCollectionEntity.Factory(
                 itemFactory, syntheticItemFactory, expandedItemFactory, indexListItemsFactory,

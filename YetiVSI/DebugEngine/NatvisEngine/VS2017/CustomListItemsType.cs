@@ -54,6 +54,9 @@
         [System.Xml.Serialization.XmlElementAttribute("Item", typeof(CustomListItemType))]
 
         public object[] CodeBlock { get; set; }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlElementAttribute("Size")] public SizeType[] Size { get; set; }
     }
 
     [System.SerializableAttribute()]

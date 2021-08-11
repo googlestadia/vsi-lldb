@@ -29,8 +29,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
     //           </If>
     //           <Item>arr[index]</Item>
     //           <Exec>index++</ Exec >
-    //           </Loop>
-    //         </CustomListItems>
+    //         </Loop>
+    //       </CustomListItems>
     public class CustomListItemsEntity : LeafEntity
     {
         public class Factory
@@ -38,6 +38,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             readonly NatvisDiagnosticLogger _logger;
             readonly NatvisExpressionEvaluator _evaluator;
             readonly IVariableNameTransformer _nameTransformer;
+            readonly NatvisSizeParser _sizeParser;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
             public Factory()
@@ -45,23 +46,25 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             public Factory(NatvisDiagnosticLogger logger, NatvisExpressionEvaluator evaluator,
-                           IVariableNameTransformer nameTransformer)
+                           IVariableNameTransformer nameTransformer, NatvisSizeParser sizeParser)
             {
                 _logger = logger;
                 _evaluator = evaluator;
                 _nameTransformer = nameTransformer;
+                _sizeParser = sizeParser;
             }
 
             public INatvisEntity Create(IVariableInformation variable, NatvisScope natvisScope,
                                         CustomListItemsType customListItems) =>
                 new CustomListItemsEntity(variable, natvisScope, customListItems, _logger,
                                           new NatvisEntityStore(), _evaluator, _nameTransformer,
-                                          new CodeBlockParser(_evaluator));
+                                          new CodeBlockParser(_evaluator), _sizeParser);
         }
 
         readonly CustomListItemsType _customList;
         readonly NatvisEntityStore _store;
         readonly IVariableNameTransformer _nameTransformer;
+        readonly NatvisSizeParser _sizeParser;
         readonly CodeBlockParser _parser;
 
         bool _initialized;
@@ -69,6 +72,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         int _lastIndex;
         ICodeBlock _blocks;
+        ErrorVariableInformation _emptyErrorNode;
 
         CustomListItemsContext _ctx;
 
@@ -81,13 +85,15 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         CustomListItemsEntity(IVariableInformation variable, NatvisScope natvisScope,
                               CustomListItemsType customList, NatvisDiagnosticLogger logger,
                               NatvisEntityStore store, NatvisExpressionEvaluator evaluator,
-                              IVariableNameTransformer nameTransformer, CodeBlockParser parser)
+                              IVariableNameTransformer nameTransformer, CodeBlockParser parser,
+                              NatvisSizeParser sizeParser)
             : base(variable, logger, evaluator, natvisScope)
         {
             _customList = customList;
             _store = store;
             _nameTransformer = nameTransformer;
             _parser = parser;
+            _sizeParser = sizeParser;
         }
 
         #region INatvisEntity functions
@@ -129,6 +135,13 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         protected override async Task<int> InitChildrenCountAsync()
         {
+            await InitContextAsync();
+
+            if (_ctx.Size != null)
+            {
+                return (int)_ctx.Size;
+            }
+
             await EvaluateUpToAsync(ChildrenLimit);
             return _lastIndex;
         }
@@ -154,21 +167,46 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                         _lastIndex++;
                     }
                 }
+
+                // If execution of <CustomListItems> reached end before reaching the specified
+                // <Size> limit, fill the remaining children with error nodes.
+                if (_blocks.State == BlockState.Done && _ctx.Size != null)
+                {
+                    while (_lastIndex < to)
+                    {
+                        if (_emptyErrorNode == null)
+                        {
+                            _logger.Warning("<CustomListItems> declared a size of " +
+                                            $"{_ctx.Size} but only {_lastIndex} item(s) found.");
+
+                            _emptyErrorNode = new ErrorVariableInformation(
+                                "<Error>",
+                                $"Size declared as {_ctx.Size} but only {_lastIndex} item(s) found.");
+                        }
+
+                        _store.SaveVariable(_lastIndex, _emptyErrorNode);
+                        _lastIndex++;
+                    }
+                }
             }
             catch (ExpressionEvaluationFailed ex)
             {
-                ErrorVariableInformation error =
-                    NatvisErrorUtils.LogAndGetExpandChildrenValidationError(
-                        Optional ? NatvisLoggingLevel.WARNING : NatvisLoggingLevel.ERROR, _logger,
-                        VisualizerName, _variable?.TypeName, ex.Message);
+                HandleExpressionEvaluationError(ex);
+            }
+        }
+        private void HandleExpressionEvaluationError(ExpressionEvaluationFailed ex)
+        {
+            ErrorVariableInformation error =
+                NatvisErrorUtils.LogAndGetExpandChildrenValidationError(
+                    Optional ? NatvisLoggingLevel.WARNING : NatvisLoggingLevel.ERROR, _logger,
+                    VisualizerName, _variable?.TypeName, ex.Message);
 
-                _hasEvaluationError = true;
+            _hasEvaluationError = true;
 
-                if (_lastIndex != 0 || !Optional)
-                {
-                    _store.SaveVariable(_lastIndex, error);
-                    _lastIndex++;
-                }
+            if (_lastIndex != 0 || !Optional)
+            {
+                _store.SaveVariable(_lastIndex, error);
+                _lastIndex++;
             }
         }
 
@@ -195,12 +233,37 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             _ctx = new CustomListItemsContext(new NatvisScope(_natvisScope), _variable);
 
-            foreach (var varType in _customList.Variable ?? Enumerable.Empty<VariableType>())
+            // Handle <Variable> children.
+            try
             {
-                _ctx.NatvisScope.AddScopedName(varType.Name,
-                                               _nameTransformer.TransformName(varType.Name));
-                await _evaluator.DeclareVariableAsync(_variable, varType.Name, varType.InitialValue,
-                                                      _ctx.NatvisScope);
+                foreach (var varType in _customList.Variable ?? Enumerable.Empty<VariableType>())
+                {
+                    _ctx.NatvisScope.AddScopedName(varType.Name,
+                                                   _nameTransformer.TransformName(varType.Name));
+
+                    await _evaluator.DeclareVariableAsync(_variable, varType.Name,
+                                                          varType.InitialValue, _ctx.NatvisScope);
+                }
+            }
+            catch (ExpressionEvaluationFailed ex)
+            {
+                HandleExpressionEvaluationError(ex);
+            }
+
+            // Handle <Size> children.
+            try
+            {
+                _ctx.Size =
+                    await _sizeParser.ParseSizeAsync(_customList.Size, _variable, _ctx.NatvisScope);
+            }
+            catch (InvalidOperationException)
+            {
+                // InvalidOperationException is thrown if there's no valid <Size> attribute.
+                // Since <Size> is optional in <CustomListItems>, ignore this exception.
+            }
+            catch (ExpressionEvaluationFailed ex)
+            {
+                HandleExpressionEvaluationError(ex);
             }
 
             _blocks = new MultipleInstructionsBlock(
