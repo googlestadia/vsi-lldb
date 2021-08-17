@@ -34,8 +34,16 @@ namespace YetiCommon
                 ? "Default"
                 : profileDirectory;
 
-            StartProcess(workingDirectory, $"start chrome \"{url}\"", "--new-window",
-                         $"--profile-directory=\"{profileDirectory}\"");
+            if (profileDirectory == "vsitest:incognito")
+            {
+                StartProcess(workingDirectory, $"start chrome \"{url}\"", "--new-window",
+                    "--incognito", "--profile-directory=Default");
+            }
+            else
+            {
+                StartProcess(workingDirectory, $"start chrome \"{url}\"", "--new-window",
+                    $"--profile-directory=\"{profileDirectory}\"");
+            }
         }
 
         void StartProcess(string workingDirectory, string command, params string[] args) =>
