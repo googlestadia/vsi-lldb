@@ -461,6 +461,10 @@ namespace YetiVSI.Test.DebugEngine
                 new DebugCodeContext.Factory(new DebugMemoryContext.Factory());
 
             var debugDocumentContextFactory = new DebugDocumentContext.Factory();
+            var threadsEnumFactory = new ThreadEnumFactory();
+            var moduleEnumFactory = new ModuleEnumFactory();
+            var frameEnumFactory = new FrameEnumFactory();
+            var codeContextEnumFactory = new CodeContextEnumFactory();
 
             var lldbModuleUtil = new LldbModuleUtil();
             var moduleFileFinder = Substitute.For<IModuleFileFinder>();
@@ -472,16 +476,19 @@ namespace YetiVSI.Test.DebugEngine
             var symbolSettingsProvider = Substitute.For<ISymbolSettingsProvider>();
             var attachedProgramFactory = new LldbAttachedProgram.Factory(
                 taskContext, new DebugEngineHandler.Factory(taskContext), taskExecutor,
-                new LldbEventManager.Factory(taskContext),
+                new LldbEventManager.Factory(new BoundBreakpointEnumFactory(), taskContext),
                 new DebugProgram.Factory(taskContext,
                                          new DebugDisassemblyStream.Factory(
                                              debugCodeContextFactory, debugDocumentContextFactory),
-                                         debugDocumentContextFactory, debugCodeContextFactory),
+                                         debugDocumentContextFactory, debugCodeContextFactory,
+                                         threadsEnumFactory, moduleEnumFactory,
+                                         codeContextEnumFactory),
                 new DebugModuleCache.Factory(new SynchronousDispatcher()),
                 new DebugModule.Factory(
                     FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false),
                     actionRecorder, moduleFileLoadRecorderFactory, lldbModuleUtil,
-                    symbolSettingsProvider), new DebugAsyncThread.Factory(taskExecutor),
+                    symbolSettingsProvider), new DebugAsyncThread.Factory(taskExecutor,
+                                                                          frameEnumFactory),
                 new DebugAsyncStackFrame.Factory(debugDocumentContextFactory,
                                                  new ChildrenProvider.Factory(),
                                                  debugCodeContextFactory,
@@ -495,10 +502,14 @@ namespace YetiVSI.Test.DebugEngine
                                                       new DebugBoundBreakpoint.Factory(
                                                           debugDocumentContextFactory,
                                                           debugCodeContextFactory,
-                                                          new DebugBreakpointResolution.Factory())),
+                                                          new DebugBreakpointResolution.Factory()),
+                                                      new BreakpointErrorEnumFactory(),
+                                                      new BoundBreakpointEnumFactory()),
                                                   new DebugWatchpoint.Factory(
                                                       taskContext,
-                                                      new DebugWatchpointResolution.Factory())),
+                                                      new DebugWatchpointResolution.Factory(),
+                                                      new BreakpointErrorEnumFactory(),
+                                                      new BoundBreakpointEnumFactory())),
                 new SymbolLoader.Factory(lldbModuleUtil, mockBinaryFileUtil, moduleFileFinder),
                 new BinaryLoader.Factory(lldbModuleUtil, moduleFileFinder),
                 Substitute.For<IModuleFileLoaderFactory>());

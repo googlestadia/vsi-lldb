@@ -71,9 +71,11 @@ namespace YetiVSI.DebugEngine
         public static void OnBreakpointBound(
             this IDebugEngineHandler handler, IPendingBreakpoint pendingBreakpoint,
             IEnumerable<IDebugBoundBreakpoint2> newlyBoundBreakpoints,
+            BoundBreakpointEnumFactory breakpointBoundEnumFactory,
             IGgpDebugProgram program) =>
             handler.SendEvent(
-                new BreakpointBoundEvent(pendingBreakpoint, newlyBoundBreakpoints), program);
+                new BreakpointBoundEvent(pendingBreakpoint, newlyBoundBreakpoints,
+                                         breakpointBoundEnumFactory), program);
 
         /// <summary>
         /// Send a watchpoint bound event to the SDM.

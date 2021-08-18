@@ -205,12 +205,14 @@ namespace YetiVSI.DebugEngine
 
         public void EmitBreakpointBoundEvent(
             IPendingBreakpoint breakpoint,
-            IEnumerable<IDebugBoundBreakpoint2> newlyBoundBreakpoints)
+            IEnumerable<IDebugBoundBreakpoint2> newlyBoundBreakpoints,
+            BoundBreakpointEnumFactory breakpointBoundEnumFactory)
         {
             if (breakpoint.GetId() != -1)
             {
                 debugEngineHandler.OnBreakpointBound(
-                    breakpoint, newlyBoundBreakpoints, debugProgram);
+                    breakpoint, newlyBoundBreakpoints,
+                    breakpointBoundEnumFactory, debugProgram);
             }
         }
     }

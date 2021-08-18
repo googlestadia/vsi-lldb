@@ -275,8 +275,9 @@ namespace YetiVSI.DebugEngine
                                                  varInfoEnumFactory, registerSetsBuilderFactory,
                                                  GetTaskExecutor()));
 
+            var frameEnumFactory = GetFactoryDecorator().Decorate(new FrameEnumFactory());
             var debugThreadAsyncFactory = GetFactoryDecorator()
-                .Decorate(new DebugAsyncThread.Factory(_taskExecutor));
+                .Decorate(new DebugAsyncThread.Factory(_taskExecutor, frameEnumFactory));
             var gameletFactory = GetGameletClientFactory();
             var launchParamsConverter =
                 new LaunchGameParamsConverter(new QueryParametersParser());
@@ -287,19 +288,28 @@ namespace YetiVSI.DebugEngine
                     GetJoinableTaskContext(),
                     GetFactoryDecorator().Decorate(new DebugDisassemblyStream.Factory(
                         debugCodeContextFactory, debugDocumentContextFactory)),
-                    debugDocumentContextFactory, debugCodeContextFactory));
+                    debugDocumentContextFactory, debugCodeContextFactory,
+                    GetFactoryDecorator().Decorate(new ThreadEnumFactory()),
+                    GetFactoryDecorator().Decorate(new ModuleEnumFactory()),
+                    GetFactoryDecorator().Decorate(new CodeContextEnumFactory())));
+            var breakpointErrorEnumFactory =
+                GetFactoryDecorator().Decorate(new BreakpointErrorEnumFactory());
+            var boundBreakpointEnumFactory =
+                GetFactoryDecorator().Decorate(new BoundBreakpointEnumFactory());
             var breakpointManagerFactory = new LldbBreakpointManager.Factory(
                 GetJoinableTaskContext(),
                 GetFactoryDecorator().Decorate(new DebugPendingBreakpoint.Factory(
                     GetJoinableTaskContext(),
                     GetFactoryDecorator().Decorate(new DebugBoundBreakpoint.Factory(
                         debugDocumentContextFactory, debugCodeContextFactory,
-                        GetFactoryDecorator().Decorate(new DebugBreakpointResolution.Factory()))))),
+                        GetFactoryDecorator().Decorate(new DebugBreakpointResolution.Factory()))),
+                    breakpointErrorEnumFactory, boundBreakpointEnumFactory)),
                 GetFactoryDecorator().Decorate(new DebugWatchpoint.Factory(
                     GetJoinableTaskContext(),
-                    GetFactoryDecorator().Decorate(new DebugWatchpointResolution.Factory()))));
+                    GetFactoryDecorator().Decorate(new DebugWatchpointResolution.Factory()),
+                    breakpointErrorEnumFactory, boundBreakpointEnumFactory)));
             var eventManagerFactory =
-                new LldbEventManager.Factory(GetJoinableTaskContext());
+                new LldbEventManager.Factory(boundBreakpointEnumFactory, GetJoinableTaskContext());
             var lldbDebuggerFactory = new GrpcDebuggerFactory();
             var lldbListenerFactory = new GrpcListenerFactory();
             var lldbPlatformShellCommandFactory = new GrpcPlatformShellCommandFactory();

@@ -84,7 +84,8 @@ namespace YetiVSI.Test
             mockLldbWatchpoint.GetId().Returns(EXPECTED_ID);
             SetBreakpointType(enum_BP_LOCATION_TYPE.BPLT_DATA_STRING);
 
-            watchpointFactory = new DebugWatchpoint.Factory(taskContext, mockResolutionFactory);
+            watchpointFactory = new DebugWatchpoint.Factory(taskContext, mockResolutionFactory,
+                new BreakpointErrorEnumFactory(), new BoundBreakpointEnumFactory());
             watchpoint = watchpointFactory.Create(mockBreakpointManager, mockBreakpointRequest,
                 mockTarget, mockProgram, mockMarshal);
         }

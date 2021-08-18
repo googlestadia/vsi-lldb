@@ -21,6 +21,15 @@ using YetiVSI.DebugEngine.AsyncOperations;
 
 namespace YetiVSI.DebugEngine
 {
+    public class FrameEnumFactory
+    {
+        public virtual IEnumDebugFrameInfo2 Create(StackFramesProvider stackFramesProvider,
+            enum_FRAMEINFO_FLAGS fieldSpec, IDebugThread debugThread)
+        {
+            return new FrameInfoEnum(stackFramesProvider, fieldSpec, debugThread);
+        }
+    }
+
     /// <summary>
     /// Holds current stack of frames and lazy-loads them.
     /// We are aware of two ways Visual Studio uses this implementation:

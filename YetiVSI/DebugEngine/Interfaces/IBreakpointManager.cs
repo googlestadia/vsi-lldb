@@ -99,6 +99,7 @@ namespace YetiVSI.DebugEngine.Interfaces
         /// </summary>
         void EmitBreakpointBoundEvent(
             IPendingBreakpoint breakpoint,
-            IEnumerable<IDebugBoundBreakpoint2> newlyBoundBreakpoints);
+            IEnumerable<IDebugBoundBreakpoint2> newlyBoundBreakpoints,
+            BoundBreakpointEnumFactory breakpointBoundEnumFactory);
     }
 }

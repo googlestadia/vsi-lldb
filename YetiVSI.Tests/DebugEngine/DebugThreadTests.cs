@@ -40,7 +40,8 @@ namespace YetiVSI.Test.DebugEngine
             _taskExecutor = Substitute.ForPartsOf<FakeTaskExecutor>();
             _stackFramesProvider =
                 Substitute.ForPartsOf<StackFramesProvider>(null, null, null, null, null);
-            _debugThreadFactory = new DebugAsyncThread.Factory(_taskExecutor);
+            _debugThreadFactory = new DebugAsyncThread.Factory(_taskExecutor,
+                                                               new FrameEnumFactory());
         }
 
         [Test]
