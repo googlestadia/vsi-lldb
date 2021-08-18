@@ -39,7 +39,6 @@ namespace Google.VisualStudioFake.Internal.Jobs
         readonly IJobQueue _jobQueue;
         readonly JoinableTaskContext _taskContext;
         readonly ObserveAndNotifyJob.Factory _observeAndNotifyJobFactory;
-        readonly LaunchAndAttachJob.Factory _launchAndAttachJobFactory;
 
         public LaunchAndAttachFlow(BindPendingBreakpointsHandler bindPendingBreakpoints,
                                    Func<IDebugEngine2> createDebugEngine,
@@ -47,8 +46,7 @@ namespace Google.VisualStudioFake.Internal.Jobs
                                    IDebugSessionContext debugSessionContext,
                                    IProjectAdapter projectAdapter, ITargetAdapter targetAdapter,
                                    IJobQueue jobQueue, JoinableTaskContext taskContext,
-                                   ObserveAndNotifyJob.Factory observeAndNotifyJobFactory,
-                                   LaunchAndAttachJob.Factory launchAndAttachJobFactory)
+                                   ObserveAndNotifyJob.Factory observeAndNotifyJobFactory)
         {
             _bindPendingBreakpoints = bindPendingBreakpoints;
             _createDebugEngine = createDebugEngine;
@@ -59,13 +57,12 @@ namespace Google.VisualStudioFake.Internal.Jobs
             _jobQueue = jobQueue;
             _taskContext = taskContext;
             _observeAndNotifyJobFactory = observeAndNotifyJobFactory;
-            _launchAndAttachJobFactory = launchAndAttachJobFactory;
         }
 
-        public void Start() => _jobQueue.Push(_launchAndAttachJobFactory.Create(LaunchAndAttach));
+        public void Start() => _jobQueue.Push(new GenericJob(LaunchAndAttach));
 
         public void StartSuspended() =>
-            _jobQueue.Push(_launchAndAttachJobFactory.Create(LaunchSuspended));
+            _jobQueue.Push(new GenericJob(LaunchSuspended));
 
         public void HandleDebugProgramCreated(DebugEventArgs args)
         {

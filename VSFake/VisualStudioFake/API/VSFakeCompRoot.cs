@@ -132,8 +132,6 @@ namespace Google.VisualStudioFake.API
                                                  _watchWindowExpandBatchSize);
 
                 var variableEntryFactory = new VariableEntry.Factory(GetJobQueue(),
-                                                                     new RefreshVariableJob.
-                                                                         Factory(),
                                                                      GetDebugSessionContext(),
                                                                      variableExpanderFactory);
 
@@ -217,7 +215,6 @@ namespace Google.VisualStudioFake.API
                 jobOrchestrator = new JobOrchestrator(GetDebugSessionContext(), GetJobQueue(),
                                                       new ProgramStoppedJob.Factory(
                                                           taskContext, GetBreakpointViewInternal()),
-                                                      new BroadcastDebugEventJob.Factory(),
                                                       new ProgramTerminatedJob.Factory(
                                                           taskContext));
             }
@@ -238,8 +235,7 @@ namespace Google.VisualStudioFake.API
                 launchAndAttachFlow = new LaunchAndAttachFlow(
                     GetBreakpointViewInternal().BindPendingBreakpoints, createDebugEngine, callback,
                     GetDebugSessionContext(), GetProjectAdapter(), GetTargetAdapter(),
-                    GetJobQueue(), taskContext, new ObserveAndNotifyJob.Factory(GetJobQueue()),
-                    new LaunchAndAttachJob.Factory());
+                    GetJobQueue(), taskContext, new ObserveAndNotifyJob.Factory(GetJobQueue()));
                 GetJobOrchestrator().DebugEvent += launchAndAttachFlow.HandleDebugProgramCreated;
             }
 
@@ -260,9 +256,7 @@ namespace Google.VisualStudioFake.API
         {
             if (breakpointViewInternal == null)
             {
-                breakpointViewInternal = new BreakpointView(new BindBreakpointJob.Factory(),
-                                                            new BreakpointDeleteJob.Factory(),
-                                                            GetDebugSessionContext(), GetJobQueue(),
+                breakpointViewInternal = new BreakpointView(GetDebugSessionContext(), GetJobQueue(),
                                                             taskContext);
             }
 

@@ -28,18 +28,15 @@ namespace Google.VisualStudioFake.Internal.Jobs
         readonly IDebugSessionContext _debugSessionContext;
         readonly IJobQueue _queue;
         readonly ProgramStoppedJob.Factory _programStoppedJobFactory;
-        readonly BroadcastDebugEventJob.Factory _broadcastDebugEventJobFactory;
         readonly ProgramTerminatedJob.Factory _programTerminatedJobFactory;
 
         public JobOrchestrator(IDebugSessionContext debugSessionContext, IJobQueue queue,
                                ProgramStoppedJob.Factory programStoppedJobFactory,
-                               BroadcastDebugEventJob.Factory broadcastDebugEventJobFactory,
                                ProgramTerminatedJob.Factory programTerminatedJobFactory)
         {
             _debugSessionContext = debugSessionContext;
             _queue = queue;
             _programStoppedJobFactory = programStoppedJobFactory;
-            _broadcastDebugEventJobFactory = broadcastDebugEventJobFactory;
             _programTerminatedJobFactory = programTerminatedJobFactory;
         }
 
@@ -71,7 +68,7 @@ namespace Google.VisualStudioFake.Internal.Jobs
                     $"{nameof(IDebugProgram3)} but is of type {pProgram.GetType()}");
             }
 
-            _queue.Push(_broadcastDebugEventJobFactory.Create(() =>
+            _queue.Push(new GenericJob(() =>
             {
                 DebugEventHandler handler = DebugEvent;
                 handler?.Invoke(new DebugEventArgs
@@ -82,7 +79,7 @@ namespace Google.VisualStudioFake.Internal.Jobs
                     Thread = pThread,
                     Event = pEvent
                 });
-            }, pEvent));
+            }, $"{{eventType:\"{pEvent.GetType()}\"}}"));
 
             return VSConstants.S_OK;
         }

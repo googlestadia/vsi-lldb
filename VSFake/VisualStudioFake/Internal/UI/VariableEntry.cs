@@ -43,42 +43,36 @@ namespace Google.VisualStudioFake.Internal.UI
         public class Factory
         {
             readonly IJobQueue _jobQueue;
-            readonly RefreshVariableJob.Factory _refreshVariableJobFactory;
             readonly IDebugSessionContext _debugSessionContext;
             readonly VariableExpander.Factory _variableExpanderFactory;
 
             public Factory(IJobQueue jobQueue,
-                RefreshVariableJob.Factory refreshVariableJobFactory,
                 IDebugSessionContext debugSessionContext,
                 VariableExpander.Factory variableExpanderFactory)
             {
                 _jobQueue = jobQueue;
-                _refreshVariableJobFactory = refreshVariableJobFactory;
                 _debugSessionContext = debugSessionContext;
                 _variableExpanderFactory = variableExpanderFactory;
             }
 
             public virtual IVariableEntryInternal Create(IVariableDataSource dataSource) =>
-                new VariableEntry(dataSource, _jobQueue, _refreshVariableJobFactory,
+                new VariableEntry(dataSource, _jobQueue,
                     _debugSessionContext, _variableExpanderFactory.Create());
         }
 
         readonly IVariableDataSource _dataSource;
         readonly IJobQueue _jobQueue;
-        readonly RefreshVariableJob.Factory _refreshVariableJobFactory;
         readonly IDebugSessionContext _debugSessionContext;
         readonly IVariableExpander _variableExpander;
 
         DEBUG_PROPERTY_INFO _propertyInfo;
 
         VariableEntry(IVariableDataSource dataSource, IJobQueue jobQueue,
-            RefreshVariableJob.Factory refreshVariableJobFactory,
             IDebugSessionContext debugSessionContext,
             IVariableExpander variableExpander)
         {
             _dataSource = dataSource;
             _jobQueue = jobQueue;
-            _refreshVariableJobFactory = refreshVariableJobFactory;
             _debugSessionContext = debugSessionContext;
             _variableExpander = variableExpander;
         }
@@ -107,7 +101,7 @@ namespace Google.VisualStudioFake.Internal.UI
             }
 
             State = VariableState.Pending;
-            _jobQueue.Push(_refreshVariableJobFactory.Create(
+            _jobQueue.Push(new GenericJob(
                 () => _dataSource.GetCurrentState(this, CurrentStateRetrievalCallback)));
             return this;
         }

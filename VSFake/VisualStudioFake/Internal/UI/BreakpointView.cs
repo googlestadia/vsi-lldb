@@ -98,21 +98,15 @@ namespace Google.VisualStudioFake.Internal.UI
         readonly IList<Breakpoint> _breakpoints = new List<Breakpoint>();
         readonly IDictionary<IDebugPendingBreakpoint2, Breakpoint> _pendingToBreakpoint =
             new Dictionary<IDebugPendingBreakpoint2, Breakpoint>();
-        readonly BindBreakpointJob.Factory _bindBreakpointJobFactory;
-        readonly BreakpointDeleteJob.Factory _breakpointDeleteJobFactory;
         readonly IDebugSessionContext _debugSessionContext;
         readonly IJobQueue _jobQueue;
         readonly JoinableTaskContext _taskContext;
 
         IBreakpoint _firedBreakpoint;
 
-        public BreakpointView(BindBreakpointJob.Factory bindBreakpointJobFactory,
-            BreakpointDeleteJob.Factory breakpointDeleteJobFactory,
-            IDebugSessionContext debugSessionContext, IJobQueue jobQueue,
+        public BreakpointView(IDebugSessionContext debugSessionContext, IJobQueue jobQueue,
             JoinableTaskContext taskContext)
         {
-            _bindBreakpointJobFactory = bindBreakpointJobFactory;
-            _breakpointDeleteJobFactory = breakpointDeleteJobFactory;
             _debugSessionContext = debugSessionContext;
             _jobQueue = jobQueue;
             _taskContext = taskContext;
@@ -249,7 +243,7 @@ namespace Google.VisualStudioFake.Internal.UI
             if (_debugSessionContext.ProgramState == ProgramState.Running ||
                 _debugSessionContext.ProgramState == ProgramState.AtBreak)
             {
-                _jobQueue.Push(_bindBreakpointJobFactory.Create(() => Bind(breakpoint)));
+                _jobQueue.Push(new GenericJob(() => Bind(breakpoint)));
             }
             return breakpoint;
         }
@@ -282,7 +276,7 @@ namespace Google.VisualStudioFake.Internal.UI
                 breakpoint.State == BreakpointState.Disabled ||
                 breakpoint.State == BreakpointState.Enabled;
             breakpoint.State = BreakpointState.Pending;
-            _jobQueue.Push(_breakpointDeleteJobFactory.Create(() =>
+            _jobQueue.Push(new GenericJob(() =>
             {
                 if (shouldDeleteInteropBreakpoint)
                 {
