@@ -21,8 +21,8 @@ namespace Google.VisualStudioFake.API
         IDebugSessionContext Context { get; }
         IControlFlowView ControlFlowView { get; }
         IBreakpointView BreakpointView { get; }
-        IThreadView ThreadView { get; }
-        IStackFrameView StackFrameView { get; }
+        IThreadsWindow ThreadsWindow { get; }
+        ICallStackWindow CallStackWindow { get; }
         IWatchWindow WatchWindow { get; }
     }
 }

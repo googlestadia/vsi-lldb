@@ -100,7 +100,7 @@ namespace Google.VisualStudioFake.Internal.UI
 
         void SetRunningState()
         {
-            // We don't set DebugProgram to null becase it is needed by ::Pause().
+            // We don't set DebugProgram to null because it is needed by ::Pause().
             _debugSessionContext.SelectedThread = null;
             _debugSessionContext.SelectedStackFrame = null;
             _debugSessionContext.ProgramState = ProgramState.Running;

@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿namespace Google.VisualStudioFake.API.UI
+namespace Google.VisualStudioFake.API.UI
 {
-    public interface IStackFrameView
+    public interface IThread
     {
+        uint ThreadId { get; }
+        uint SuspendCount { get; }
+        uint ThreadState { get; }
+        string Priority { get; }
+        string Name { get; }
+        string Location { get; }
+
+        /// <summary>
+        /// Sets this thread as selected thread, so that the call stack window
+        /// shows call stacks of this thread.
+        /// </summary>
+        void Select();
     }
 }

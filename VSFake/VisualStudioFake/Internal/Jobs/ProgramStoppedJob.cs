@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API;
+using Google.VisualStudioFake.API;
 using Google.VisualStudioFake.Internal.UI;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
@@ -30,59 +30,49 @@ namespace Google.VisualStudioFake.Internal.Jobs
         public new class Factory : SynchronousJob.Factory
         {
             readonly IFiredBreakpointSetter _firedBreakpointSetter;
+            readonly IJobQueue _jobQueue;
 
             public Factory(JoinableTaskContext taskContext,
-                IFiredBreakpointSetter firedBreakpointSetter)
-                : base(taskContext)
+                           IFiredBreakpointSetter firedBreakpointSetter, IJobQueue jobQueue) : base(
+                taskContext)
             {
                 _firedBreakpointSetter = firedBreakpointSetter;
+                _jobQueue = jobQueue;
             }
 
             public ProgramStoppedJob Create(IDebugEngine2 debugEngine, IDebugEvent2 evnt,
-                IDebugSessionContext debugSessionContext, IDebugThread2 thread)
+                                            IDebugSessionContext debugSessionContext,
+                                            IDebugThread2 thread)
             {
                 return new ProgramStoppedJob(taskContext, debugEngine, evnt, debugSessionContext,
-                    thread, _firedBreakpointSetter);
+                                             thread, _firedBreakpointSetter, _jobQueue);
             }
         }
 
         readonly IDebugSessionContext _debugSessionContext;
         readonly IDebugThread2 _thread;
         readonly IFiredBreakpointSetter _firedBreakpointSetter;
+        readonly IJobQueue _jobQueue;
 
         public ProgramStoppedJob(JoinableTaskContext taskContext, IDebugEngine2 debugEngine,
-            IDebugEvent2 evnt, IDebugSessionContext debugSessionContext, IDebugThread2 thread,
-            IFiredBreakpointSetter firedBreakpointSetter)
-            : base(taskContext, debugEngine, evnt)
+                                 IDebugEvent2 evnt, IDebugSessionContext debugSessionContext,
+                                 IDebugThread2 thread, IFiredBreakpointSetter firedBreakpointSetter,
+                                 IJobQueue jobQueue) : base(taskContext, debugEngine, evnt)
         {
             _debugSessionContext = debugSessionContext;
             _thread = thread;
             _firedBreakpointSetter = firedBreakpointSetter;
+            _jobQueue = jobQueue;
         }
 
         protected override void RunJobTasks()
         {
             _debugSessionContext.SelectedThread = _thread;
-            _debugSessionContext.SelectedStackFrame = GetFrames().FirstOrDefault();
             _firedBreakpointSetter.Set(GetBoundBreakpointsFired());
-            _debugSessionContext.ProgramState = ProgramState.AtBreak;
-        }
-
-        IEnumerable<IDebugStackFrame2> GetFrames()
-        {
-            IEnumDebugFrameInfo2 enumFrames;
-            var result = _thread.EnumFrameInfo(enum_FRAMEINFO_FLAGS.FIF_FRAME, 0, out enumFrames);
-            HResultChecker.Check(result);
-
-            uint count;
-            result = enumFrames.GetCount(out count);
-            HResultChecker.Check(result);
-
-            var frames = new FRAMEINFO[count];
-            uint numFetched = 0;
-            result = enumFrames.Next(count, frames, ref numFetched);
-            HResultChecker.Check(result);
-            return frames.Select(f => f.m_pFrame);
+            // Queue a sub-job since setting SelectedThread will
+            // queue a job to update the selected frame.
+            _jobQueue.Push(
+                new GenericJob(() => _debugSessionContext.ProgramState = ProgramState.AtBreak));
         }
 
         IEnumerable<IDebugBoundBreakpoint2> GetBoundBreakpointsFired()
@@ -104,8 +94,9 @@ namespace Google.VisualStudioFake.Internal.Jobs
             if (actual != count)
             {
                 throw new VSFakeException("Could not fetch all bound breakpoints. " +
-                    $"Expected: {count}, got: {actual}");
+                                          $"Expected: {count}, got: {actual}");
             }
+
             return boundBreakpoints;
         }
     }

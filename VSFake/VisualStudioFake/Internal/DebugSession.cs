@@ -12,22 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API;
+using Google.VisualStudioFake.API;
 using Google.VisualStudioFake.API.UI;
 
 namespace Google.VisualStudioFake.Internal
 {
     /// <summary>
-    /// This class manages models and views for the debug session
+    /// This class manages models and views for the debug session.
     /// </summary>
     public class DebugSession : IDebugSession
     {
         public DebugSession(IDebugSessionContext context, IBreakpointView breakpointView,
-            IControlFlowView controlFlowView, IWatchWindow watchWindow)
+                            IControlFlowView controlFlowView, IThreadsWindow threadsWindow,
+                            ICallStackWindow callStackWindow, IWatchWindow watchWindow)
         {
             Context = context;
             BreakpointView = breakpointView;
             ControlFlowView = controlFlowView;
+            ThreadsWindow = threadsWindow;
+            CallStackWindow = callStackWindow;
             WatchWindow = watchWindow;
         }
 
@@ -37,8 +40,8 @@ namespace Google.VisualStudioFake.Internal
 
         public IBreakpointView BreakpointView { get; }
         public IControlFlowView ControlFlowView { get; }
-        public IStackFrameView StackFrameView { get; }
-        public IThreadView ThreadView { get; }
+        public IThreadsWindow ThreadsWindow { get; }
+        public ICallStackWindow CallStackWindow { get; }
         public IWatchWindow WatchWindow { get; }
 
         #endregion

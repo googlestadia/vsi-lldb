@@ -137,6 +137,10 @@ namespace Google.VisualStudioFake.API
 
                 variableExpanderFactory.SetVariableEntryFactory(variableEntryFactory);
 
+                var threadsWindow = new ThreadsWindow(GetDebugSessionContext(), GetJobQueue());
+
+                var callStackWindow = new CallStackWindow(GetDebugSessionContext(), GetJobQueue());
+
                 var watchWindow = new SyncWatchWindow(GetDebugSessionContext(),
                                                       variableEntryFactory);
 
@@ -144,7 +148,8 @@ namespace Google.VisualStudioFake.API
                     new ControlFlowView(GetDebugSessionContext()));
 
                 debugSession = new DebugSession(GetDebugSessionContext(), GetBreakpointView(),
-                                                controlFlowView, watchWindow);
+                                                controlFlowView, threadsWindow, callStackWindow,
+                                                watchWindow);
             }
 
             return debugSession;
@@ -214,7 +219,8 @@ namespace Google.VisualStudioFake.API
             {
                 jobOrchestrator = new JobOrchestrator(GetDebugSessionContext(), GetJobQueue(),
                                                       new ProgramStoppedJob.Factory(
-                                                          taskContext, GetBreakpointViewInternal()),
+                                                          taskContext, GetBreakpointViewInternal(),
+                                                          GetJobQueue()),
                                                       new ProgramTerminatedJob.Factory(
                                                           taskContext));
             }

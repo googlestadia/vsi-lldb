@@ -27,8 +27,24 @@ namespace Google.VisualStudioFake.Internal
 
         public IDebugEngine2 DebugEngine { get; set; }
         public IDebugProgram3 DebugProgram { get; set; }
-        public IDebugThread2 SelectedThread { get; set; }
         public IDebugProcess2 Process { get; set; }
+
+        public IDebugThread2 SelectedThread
+        {
+            get => _selectedThread;
+            set
+            {
+                if (_selectedThread == value)
+                {
+                    return;
+                }
+
+                _selectedThread = value;
+                SelectedThreadChanged?.Invoke();
+            }
+        }
+        IDebugThread2 _selectedThread;
+        public event Action SelectedThreadChanged;
 
         public IDebugStackFrame2 SelectedStackFrame
         {

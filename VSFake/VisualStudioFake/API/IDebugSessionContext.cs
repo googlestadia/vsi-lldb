@@ -45,6 +45,11 @@ namespace Google.VisualStudioFake.API
         bool HexadecimalDisplay { get; set; }
 
         /// <summary>
+        /// Notifies listeners that the selected thread has changed.
+        /// </summary>
+        event Action SelectedThreadChanged;
+
+        /// <summary>
         /// Notifies listeners that the selected stack frame has changed.
         /// </summary>
         event Action SelectedStackFrameChanged;
