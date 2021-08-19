@@ -32,6 +32,9 @@ namespace YetiCommon.Tests.PerformanceTracing.TestSupport
         public long GetDurationUs(long timestampTicks1, long timestampTicks2) =>
             ConvertTicksToUs(Math.Abs(timestampTicks2 - timestampTicks1));
 
+        public double GetDurationMs(long timestampTicks1, long timestampTicks2) =>
+            GetDurationUs(timestampTicks2, timestampTicks1) / 1000.0;
+
         public long GetTimestampTicks() => TimestampTicks += TicksPerUs;
 
         public long GetTimestampUs() => ConvertTicksToUs(GetTimestampTicks());

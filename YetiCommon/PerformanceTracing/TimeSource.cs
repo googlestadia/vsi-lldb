@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Diagnostics;
 
 namespace YetiCommon.PerformanceTracing
@@ -43,6 +43,11 @@ namespace YetiCommon.PerformanceTracing
         /// Returns the duration in microseconds of two timestamps, which are in ticks.
         /// </summary>
         long GetDurationUs(long timestampTicks1, long timestampTicks2);
+
+        /// <summary>
+        /// Returns the duration in milliseconds of two timestamps, which are in ticks.
+        /// </summary>
+        double GetDurationMs(long timestampTicks1, long timestampTicks2);
     }
 
     /// <summary>
@@ -64,5 +69,8 @@ namespace YetiCommon.PerformanceTracing
 
         public long GetDurationUs(long timestampTicks1, long timestampTicks2) =>
             ConvertTicksToUs(Math.Abs(timestampTicks1 - timestampTicks2));
+
+        public double GetDurationMs(long timestampTicks1, long timestampTicks2) =>
+            GetDurationUs(timestampTicks1, timestampTicks2) / 1000.0;
     }
 }
