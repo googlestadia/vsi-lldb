@@ -22,12 +22,12 @@ namespace Google.VisualStudioFake.Internal
     /// </summary>
     public class DebugSession : IDebugSession
     {
-        public DebugSession(IDebugSessionContext context, IBreakpointView breakpointView,
+        public DebugSession(IDebugSessionContext context, IBreakpointsWindow breakpointsWindow,
                             IControlFlowView controlFlowView, IThreadsWindow threadsWindow,
                             ICallStackWindow callStackWindow, IWatchWindow watchWindow)
         {
             Context = context;
-            BreakpointView = breakpointView;
+            BreakpointsWindow = breakpointsWindow;
             ControlFlowView = controlFlowView;
             ThreadsWindow = threadsWindow;
             CallStackWindow = callStackWindow;
@@ -38,7 +38,7 @@ namespace Google.VisualStudioFake.Internal
 
         #region UI elements
 
-        public IBreakpointView BreakpointView { get; }
+        public IBreakpointsWindow BreakpointsWindow { get; }
         public IControlFlowView ControlFlowView { get; }
         public IThreadsWindow ThreadsWindow { get; }
         public ICallStackWindow CallStackWindow { get; }

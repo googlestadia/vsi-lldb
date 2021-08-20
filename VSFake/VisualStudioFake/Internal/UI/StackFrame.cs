@@ -44,5 +44,12 @@ namespace Google.VisualStudioFake.Internal.UI
         public void Select() => _debugSessionContext.SelectedStackFrame = _frame.m_pFrame;
 
         #endregion
+
+        public override string ToString()
+        {
+            return string.IsNullOrEmpty(FuncName)
+                ? "<invalid>"
+                : FuncName;
+        }
     }
 }

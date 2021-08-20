@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.Internal.ExecutionSyncPoint;
+using Google.VisualStudioFake.Internal.ExecutionSyncPoint;
 using System.Collections.Generic;
 
 namespace Google.VisualStudioFake.API.UI
 {
-    public interface IBreakpointView
+    public interface IBreakpointsWindow
     {
         /// <summary>
         /// Adds a new breakpoint specified by a filename and a line number.
@@ -26,7 +26,7 @@ namespace Google.VisualStudioFake.API.UI
         /// <exception cref="System.InvalidOperationException">
         /// Thrown if the program execution has already terminated.
         /// </exception>
-        [SyncPoint(ExecutionSyncPoint.IDLE, Timeout=VSFakeTimeout.Medium)]
+        [SyncPoint(ExecutionSyncPoint.IDLE, Timeout = VSFakeTimeout.Medium)]
         IBreakpoint Add(string filename, int lineNumber);
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace Google.VisualStudioFake.API.UI
         /// Gets the breakpoint that fired at the current code location.
         /// Returns null if no breakpoint was fired. For instance, this will return null if called
         /// after a user pause at a location with no breakpoint, or if a step is performed after
-        /// a breapoint stop and ends up at a location that does not trigger any new breakpoints.
+        /// a breakpoint stop and ends up at a location that does not trigger any new breakpoints.
         /// Additionally, this property returns a null value if the program is not at a break.
         /// </summary>
         IBreakpoint FiredBreakpoint { get; }

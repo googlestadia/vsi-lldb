@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API;
+using Google.VisualStudioFake.API;
 using Google.VisualStudioFake.API.UI;
 using Google.VisualStudioFake.Internal.Interop;
 using Google.VisualStudioFake.Internal.Jobs;
@@ -38,86 +38,32 @@ namespace Google.VisualStudioFake.Internal.UI
         void Set(IEnumerable<IDebugBoundBreakpoint2> boundBreakpoints);
     }
 
-    public class BreakpointView : IBreakpointView, IFiredBreakpointSetter
+    public class BreakpointsWindow : IBreakpointsWindow, IFiredBreakpointSetter
     {
-        class Breakpoint : IBreakpoint
-        {
-            readonly Func<IBreakpointRequest> _requestCreator;
-            readonly string _description;
-            readonly BreakpointView _breakpointView;
-
-            public Breakpoint(Func<IBreakpointRequest> requestCreator, string description,
-                BreakpointView breakpointView)
-            {
-                _requestCreator = requestCreator;
-                _description = description;
-                _breakpointView = breakpointView;
-            }
-
-            #region IBreakpoint
-
-            public BreakpointState State { get; set; } = BreakpointState.RequestedPreSession;
-
-            public IDebugPendingBreakpoint2 PendingBreakpoint { get; set; }
-
-            public string Error { get; set; }
-
-            public bool Ready
-            {
-                get
-                {
-                    switch (State)
-                    {
-                        case BreakpointState.Deleted:
-                        case BreakpointState.Disabled:
-                        case BreakpointState.Enabled:
-                        case BreakpointState.Error:
-                            return true;
-                        case BreakpointState.RequestedPreSession:
-                        case BreakpointState.Pending:
-                            return false;
-                        default:
-                            throw CreateInvalidStateException();
-                    }
-                }
-            }
-
-            public void DeleteAll() => _breakpointView.DeleteAll(this);
-
-            #endregion
-
-            public IBreakpointRequest CreateRequest() => _requestCreator();
-
-            public override string ToString() => _description;
-
-            InvalidOperationException CreateInvalidStateException() =>
-                new InvalidOperationException($"The breakpoint state ({State}) cannot be " +
-                    $"handled by {nameof(Breakpoint)} class.");
-        }
-
         readonly IList<Breakpoint> _breakpoints = new List<Breakpoint>();
+
         readonly IDictionary<IDebugPendingBreakpoint2, Breakpoint> _pendingToBreakpoint =
             new Dictionary<IDebugPendingBreakpoint2, Breakpoint>();
+
         readonly IDebugSessionContext _debugSessionContext;
         readonly IJobQueue _jobQueue;
         readonly JoinableTaskContext _taskContext;
 
         IBreakpoint _firedBreakpoint;
 
-        public BreakpointView(IDebugSessionContext debugSessionContext, IJobQueue jobQueue,
-            JoinableTaskContext taskContext)
+        public BreakpointsWindow(IDebugSessionContext debugSessionContext, IJobQueue jobQueue,
+                                 JoinableTaskContext taskContext)
         {
             _debugSessionContext = debugSessionContext;
             _jobQueue = jobQueue;
             _taskContext = taskContext;
         }
 
-        #region IBreakpointView
+        #region IBreakpointsWindow
 
         public IBreakpoint Add(string filename, int lineNumber) =>
-            Add(new Breakpoint(
-                () => new FileLineBreakpointRequest(filename, lineNumber),
-                $"Breakpoint at {filename}:{lineNumber}", this));
+            Add(new Breakpoint(() => new FileLineBreakpointRequest(filename, lineNumber),
+                               $"Breakpoint at {filename}:{lineNumber}", _jobQueue));
 
         public IList<IBreakpoint> GetBreakpoints() => new List<IBreakpoint>(_breakpoints);
 
@@ -132,13 +78,11 @@ namespace Google.VisualStudioFake.Internal.UI
         {
             get
             {
-                return _debugSessionContext.ProgramState == ProgramState.AtBreak ?
-                    _firedBreakpoint : null;
+                return _debugSessionContext.ProgramState == ProgramState.AtBreak
+                    ? _firedBreakpoint
+                    : null;
             }
-            private set
-            {
-                _firedBreakpoint = value;
-            }
+            private set { _firedBreakpoint = value; }
         }
 
         #endregion
@@ -157,11 +101,11 @@ namespace Google.VisualStudioFake.Internal.UI
         {
             if (args.Event is IDebugBreakpointBoundEvent2)
             {
-                HandleBoundEvent((IDebugBreakpointBoundEvent2)args.Event);
+                HandleBoundEvent((IDebugBreakpointBoundEvent2) args.Event);
             }
             else if (args.Event is IDebugBreakpointErrorEvent2)
             {
-                HandleErrorEvent((IDebugBreakpointErrorEvent2)args.Event);
+                HandleErrorEvent((IDebugBreakpointErrorEvent2) args.Event);
             }
         }
 
@@ -178,8 +122,8 @@ namespace Google.VisualStudioFake.Internal.UI
             }
 
             IDebugPendingBreakpoint2 pendingBreakpoint;
-            HResultChecker.Check(
-                boundBreakpoints.First().GetPendingBreakpoint(out pendingBreakpoint));
+            HResultChecker.Check(boundBreakpoints.First()
+                                     .GetPendingBreakpoint(out pendingBreakpoint));
             FiredBreakpoint = _pendingToBreakpoint[pendingBreakpoint];
         }
 
@@ -204,7 +148,7 @@ namespace Google.VisualStudioFake.Internal.UI
                 errorBreakpoint.GetBreakpointResolution(out errorBreakpointResolution));
             var errorResolutionInfo = new BP_ERROR_RESOLUTION_INFO[1];
             HResultChecker.Check(errorBreakpointResolution.GetResolutionInfo(
-                enum_BPERESI_FIELDS.BPERESI_MESSAGE, errorResolutionInfo));
+                                     enum_BPERESI_FIELDS.BPERESI_MESSAGE, errorResolutionInfo));
             IDebugPendingBreakpoint2 pendingBreakpoint;
             HResultChecker.Check(errorBreakpoint.GetPendingBreakpoint(out pendingBreakpoint));
             var breakpoint = _pendingToBreakpoint[pendingBreakpoint];
@@ -218,16 +162,19 @@ namespace Google.VisualStudioFake.Internal.UI
             {
                 IDebugPendingBreakpoint2 pendingBreakpoint = null;
                 _taskContext.RunOnMainThread(() => HResultChecker.Check(
-                    _debugSessionContext.DebugEngine.CreatePendingBreakpoint(
-                        breakpointRequest, out pendingBreakpoint)));
+                                                 _debugSessionContext.DebugEngine
+                                                     .CreatePendingBreakpoint(
+                                                         breakpointRequest,
+                                                         out pendingBreakpoint)));
                 breakpoint.PendingBreakpoint = pendingBreakpoint;
                 _pendingToBreakpoint[pendingBreakpoint] = breakpoint;
                 HResultChecker.Check(pendingBreakpoint.Enable(1));
                 if (pendingBreakpoint.Virtualize(1) != VSConstants.E_NOTIMPL)
                 {
                     throw new InvalidOperationException("VSFake should be updated to handle " +
-                        $"{nameof(pendingBreakpoint.Virtualize)}.");
+                                                        $"{nameof(pendingBreakpoint.Virtualize)}.");
                 }
+
                 pendingBreakpoint.Bind();
             }
         }
@@ -239,12 +186,14 @@ namespace Google.VisualStudioFake.Internal.UI
                 throw new InvalidOperationException(
                     "Breakpoint cannot be added because the program has terminated.");
             }
+
             _breakpoints.Add(breakpoint);
             if (_debugSessionContext.ProgramState == ProgramState.Running ||
                 _debugSessionContext.ProgramState == ProgramState.AtBreak)
             {
                 _jobQueue.Push(new GenericJob(() => Bind(breakpoint)));
             }
+
             return breakpoint;
         }
 
@@ -272,8 +221,7 @@ namespace Google.VisualStudioFake.Internal.UI
                     $"Cannot delete breakpoint ({breakpoint}); state = {breakpoint.State}.");
             }
 
-            bool shouldDeleteInteropBreakpoint =
-                breakpoint.State == BreakpointState.Disabled ||
+            bool shouldDeleteInteropBreakpoint = breakpoint.State == BreakpointState.Disabled ||
                 breakpoint.State == BreakpointState.Enabled;
             breakpoint.State = BreakpointState.Pending;
             _jobQueue.Push(new GenericJob(() =>
@@ -282,6 +230,7 @@ namespace Google.VisualStudioFake.Internal.UI
                 {
                     HResultChecker.Check(breakpoint.PendingBreakpoint.Delete());
                 }
+
                 breakpoint.State = BreakpointState.Deleted;
                 _breakpoints.Remove(breakpoint);
             }, $"{{{breakpoint}}}"));

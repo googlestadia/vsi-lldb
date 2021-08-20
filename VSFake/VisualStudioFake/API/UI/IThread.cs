@@ -28,5 +28,10 @@ namespace Google.VisualStudioFake.API.UI
         /// shows call stacks of this thread.
         /// </summary>
         void Select();
+
+        /// <summary>
+        /// Returns true if this thread is the currently selected thread.
+        /// </summary>
+        bool IsSelected { get; }
     }
 }

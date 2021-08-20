@@ -58,8 +58,8 @@ namespace Google.VisualStudioFake.API
         IDebugSession debugSession;
         Decorator apiDecorator;
         IDebugSessionContext debugSessionContext;
-        BreakpointView breakpointViewInternal;
-        IBreakpointView breakpointView;
+        BreakpointsWindow breakpointsWindowInternal;
+        IBreakpointsWindow breakpointsWindow;
         JobOrchestrator jobOrchestrator;
         LaunchAndAttachFlow launchAndAttachFlow;
         SyncPointInterceptor syncPointInterceptor;
@@ -87,7 +87,7 @@ namespace Google.VisualStudioFake.API
             var solutionExplorer = new SolutionExplorerFake();
             GetProjectAdapter().ProjectLoaded += solutionExplorer.HandleProjectLoaded;
 
-            GetJobOrchestrator().DebugEvent += breakpointViewInternal.HandleBindResultEvent;
+            GetJobOrchestrator().DebugEvent += breakpointsWindowInternal.HandleBindResultEvent;
 
             return GetAPIDecorator().Decorate<IVSFake>(
                 new VSFake(GetTargetAdapter(), GetProjectAdapter(), GetSessionDebugManager(),
@@ -147,7 +147,7 @@ namespace Google.VisualStudioFake.API
                 var controlFlowView = GetAPIDecorator().Decorate<IControlFlowView>(
                     new ControlFlowView(GetDebugSessionContext()));
 
-                debugSession = new DebugSession(GetDebugSessionContext(), GetBreakpointView(),
+                debugSession = new DebugSession(GetDebugSessionContext(), GetBreakpointsWindow(),
                                                 controlFlowView, threadsWindow, callStackWindow,
                                                 watchWindow);
             }
@@ -202,15 +202,15 @@ namespace Google.VisualStudioFake.API
             return debugSessionContext;
         }
 
-        public virtual IBreakpointView GetBreakpointView()
+        public virtual IBreakpointsWindow GetBreakpointsWindow()
         {
-            if (breakpointView == null)
+            if (breakpointsWindow == null)
             {
-                breakpointView = GetAPIDecorator()
-                    .Decorate<IBreakpointView>(GetBreakpointViewInternal());
+                breakpointsWindow = GetAPIDecorator()
+                    .Decorate<IBreakpointsWindow>(GetBreakpointsWindowInternal());
             }
 
-            return breakpointView;
+            return breakpointsWindow;
         }
 
         public virtual JobOrchestrator GetJobOrchestrator()
@@ -219,7 +219,8 @@ namespace Google.VisualStudioFake.API
             {
                 jobOrchestrator = new JobOrchestrator(GetDebugSessionContext(), GetJobQueue(),
                                                       new ProgramStoppedJob.Factory(
-                                                          taskContext, GetBreakpointViewInternal(),
+                                                          taskContext,
+                                                          GetBreakpointsWindowInternal(),
                                                           GetJobQueue()),
                                                       new ProgramTerminatedJob.Factory(
                                                           taskContext));
@@ -239,8 +240,8 @@ namespace Google.VisualStudioFake.API
             {
                 var callback = new EventCallbackFake(GetJobOrchestrator());
                 launchAndAttachFlow = new LaunchAndAttachFlow(
-                    GetBreakpointViewInternal().BindPendingBreakpoints, createDebugEngine, callback,
-                    GetDebugSessionContext(), GetProjectAdapter(), GetTargetAdapter(),
+                    GetBreakpointsWindowInternal().BindPendingBreakpoints, createDebugEngine,
+                    callback, GetDebugSessionContext(), GetProjectAdapter(), GetTargetAdapter(),
                     GetJobQueue(), taskContext, new ObserveAndNotifyJob.Factory(GetJobQueue()));
                 GetJobOrchestrator().DebugEvent += launchAndAttachFlow.HandleDebugProgramCreated;
             }
@@ -258,15 +259,15 @@ namespace Google.VisualStudioFake.API
             return syncPointInterceptor;
         }
 
-        BreakpointView GetBreakpointViewInternal()
+        BreakpointsWindow GetBreakpointsWindowInternal()
         {
-            if (breakpointViewInternal == null)
+            if (breakpointsWindowInternal == null)
             {
-                breakpointViewInternal = new BreakpointView(GetDebugSessionContext(), GetJobQueue(),
-                                                            taskContext);
+                breakpointsWindowInternal =
+                    new BreakpointsWindow(GetDebugSessionContext(), GetJobQueue(), taskContext);
             }
 
-            return breakpointViewInternal;
+            return breakpointsWindowInternal;
         }
     }
 }

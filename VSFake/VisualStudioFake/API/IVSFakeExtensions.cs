@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API.UI;
+using Google.VisualStudioFake.API.UI;
 using System;
 using System.Collections.Generic;
 
@@ -171,35 +171,35 @@ namespace Google.VisualStudioFake.API
 
         #endregion
 
-        #region IBreakpointView
+        #region IBreakpointsWindow
 
         /// <summary>
         /// Adds a new breakpoint specified by a filename and a line number.
         /// </summary>
         /// <remarks>
-        /// Convenience function that calls IBreakpointView.Add().
+        /// Convenience function that calls IBreakpointsWindow.Add().
         /// </remarks>
-        public static IBreakpoint AddBreakpoint(
-            this IVSFake vsFake, string filename, int lineNumber) =>
-            vsFake.DebugSession.BreakpointView.Add(filename, lineNumber);
+        public static IBreakpoint AddBreakpoint(this IVSFake vsFake, string filename,
+                                                int lineNumber) =>
+            vsFake.DebugSession.BreakpointsWindow.Add(filename, lineNumber);
 
         /// <summary>
         /// Gets the breakpoints currently managed by the breakpoint view.
         /// </summary>
         /// <remarks>
-        /// Convenience function that calls IBreakpointView.GetBreakpoints().
+        /// Convenience function that calls IBreakpointsWindow.GetBreakpoints().
         /// </remarks>
         public static IList<IBreakpoint> GetBreakpoints(this IVSFake vsFake) =>
-            vsFake.DebugSession.BreakpointView.GetBreakpoints();
+            vsFake.DebugSession.BreakpointsWindow.GetBreakpoints();
 
         /// <summary>
         /// Deletes all the breakpoints currently managed by the breakpoint view.
         /// </summary>
         /// <remarks>
-        /// Convenience function that calls IBreakpointView.DeleteAllBreakpoints().
+        /// Convenience function that calls IBreakpointsWindow.DeleteAllBreakpoints().
         /// </remarks>
         public static IList<IBreakpoint> DeleteAllBreakpoints(this IVSFake vsFake) =>
-            vsFake.DebugSession.BreakpointView.DeleteAllBreakpoints();
+            vsFake.DebugSession.BreakpointsWindow.DeleteAllBreakpoints();
 
         #endregion
 

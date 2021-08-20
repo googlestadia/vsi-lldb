@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API.UI;
+using Google.VisualStudioFake.API.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +23,7 @@ namespace Google.VisualStudioFake.API
     {
         public static Func<bool> AllVarsReady(IVariableEntry var1, params IVariableEntry[] vars)
         {
-            return AllVarsReady(new [] { var1 }.Concat(vars));
+            return AllVarsReady(new[] { var1 }.Concat(vars));
         }
 
         public static Func<bool> AllVarsReady(IEnumerable<IVariableEntry> vars)
@@ -33,7 +33,7 @@ namespace Google.VisualStudioFake.API
 
         public static Func<bool> NoBreakpoints(IVSFake vsFake)
         {
-            return () => !vsFake.DebugSession.BreakpointView.GetBreakpoints().Any();
+            return () => !vsFake.DebugSession.BreakpointsWindow.GetBreakpoints().Any();
         }
     }
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using Google.VisualStudioFake.API;
 using Google.VisualStudioFake.API.UI;
 using Microsoft.VisualStudio.Debugger.Interop;
@@ -41,6 +42,11 @@ namespace Google.VisualStudioFake.Internal.UI
         public string Name => _props.bstrName;
         public string Location => _props.bstrLocation;
         public void Select() => _debugSessionContext.SelectedThread = _thread;
+        public bool IsSelected => _debugSessionContext.SelectedThread == _thread;
+
+        public override string ToString() => string.IsNullOrEmpty(Name)
+            ? "<invalid>"
+            : Name;
 
         #endregion
     }

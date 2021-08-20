@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API.UI;
+using Google.VisualStudioFake.API.UI;
 
 namespace Google.VisualStudioFake.API
 {
@@ -20,7 +20,7 @@ namespace Google.VisualStudioFake.API
     {
         IDebugSessionContext Context { get; }
         IControlFlowView ControlFlowView { get; }
-        IBreakpointView BreakpointView { get; }
+        IBreakpointsWindow BreakpointsWindow { get; }
         IThreadsWindow ThreadsWindow { get; }
         ICallStackWindow CallStackWindow { get; }
         IWatchWindow WatchWindow { get; }

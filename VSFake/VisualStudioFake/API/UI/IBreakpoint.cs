@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Debugger.Interop;
 
 namespace Google.VisualStudioFake.API.UI
 {
@@ -25,6 +25,7 @@ namespace Google.VisualStudioFake.API.UI
         /// Transient state until a debug engine is available.
         /// </summary>
         RequestedPreSession,
+
         /// <summary>
         /// Transient state between the following events:
         ///   - Breakpoint gets added to view -> Gets bound or fails.
@@ -35,6 +36,29 @@ namespace Google.VisualStudioFake.API.UI
         Disabled,
         Enabled,
         Error,
+    }
+
+    public enum PasscountStyle
+    {
+        /// <summary>
+        /// Breakpoint always fires.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// Breakpoint fires when it is hit exactly N times.
+        /// </summary>
+        Equal,
+
+        /// <summary>
+        /// Breakpoint fires when it is hit N times or more.
+        /// </summary>
+        EqualOrGreater,
+
+        /// <summary>
+        /// Breakpoint fires when it is hit a multiple of N times.
+        /// </summary>
+        Mod,
     }
 
     public interface IBreakpoint
@@ -51,6 +75,15 @@ namespace Google.VisualStudioFake.API.UI
         IDebugPendingBreakpoint2 PendingBreakpoint { get; }
 
         /// <summary>
+        /// Sets the pass count on all bound breakpoints, i.e. the number of times that a breakpoint
+        /// must be passed before it is activated.
+        /// This method is run asynchronously.
+        /// </summary>
+        /// <param name="count">Pass count to set</param>
+        /// <param name="style">Determines when the breakpoint files depending on |count|</param>
+        void SetPassCount(uint count, PasscountStyle style);
+
+        /// <summary>
         /// Returns true if either the breakpoint has been bound or an error occured while doing so.
         /// </summary>
         bool Ready { get; }
@@ -61,10 +94,5 @@ namespace Google.VisualStudioFake.API.UI
         /// When no error occurs, this string should be null.
         /// </summary>
         string Error { get; }
-
-        /// <summary>
-        /// Deletes this breakpoint and all breakpoints bound from it.
-        /// </summary>
-        void DeleteAll();
     }
 }
