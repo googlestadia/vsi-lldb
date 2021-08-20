@@ -46,6 +46,8 @@ service SbProcessRpcService {
   }
   rpc WriteMemory(WriteMemoryRequest) returns (WriteMemoryResponse) {
   }
+  rpc SaveCore(SaveCoreRequest) returns (SaveCoreResponse) {
+  }
 }
 
 message GetNumThreadsRequest {
@@ -152,4 +154,13 @@ message WriteMemoryRequest {
 message WriteMemoryResponse {
   uint64 size = 1;
   Common.GrpcSbError error = 2;
+}
+
+message SaveCoreRequest {
+  Common.GrpcSbProcess process = 1;
+  string dumpPath = 2;
+}
+
+message SaveCoreResponse {
+  Common.GrpcSbError error = 1;
 }
