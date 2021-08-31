@@ -95,13 +95,4 @@
         DISABLED,
         ENABLED,
     }
-
-    /// <summary>
-    /// Indicates if game launches via the Launch Game API.
-    /// </summary>
-    public enum LaunchGameApiFlow
-    {
-        DISABLED,
-        ENABLED
-    }
 }

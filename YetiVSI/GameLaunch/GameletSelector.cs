@@ -29,6 +29,24 @@ using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.GameLaunch
 {
+    public interface IGameletSelector
+    {
+        /// <summary>
+        /// Selects a gamelet from the given list and prepares it for running a game.
+        /// </summary>
+        /// <exception cref="InvalidStateException">
+        /// Thrown when the selected gamelet is in an unexpected state.</exception>
+        /// <exception cref="ConfigurationException">
+        /// Thrown if there is no gamelet reserved</exception>
+        /// <exception cref="CloudException">Thrown if there are any RPC errors.</exception>
+        /// <returns>True if the gamelet was prepared successfully, false otherwise.</returns>
+        bool TrySelectAndPrepareGamelet(string targetPath,
+                                        DeployOnLaunchSetting deployOnLaunchSetting,
+                                        List<Gamelet> gamelets,
+                                        TestAccount testAccount, string devAccount,
+                                        out Gamelet gamelet);
+    }
+
     /// <summary>
     /// GameletSelector is responsible for selecting and preparing a gamelet
     /// for launch when the Game Launch API is enabled.

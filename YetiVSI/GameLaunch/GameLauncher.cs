@@ -19,7 +19,6 @@ using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using YetiCommon;
 using YetiCommon.Cloud;
-using YetiVSI.DebugEngine;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
 
@@ -30,8 +29,6 @@ namespace YetiVSI.GameLaunch
     /// </summary>
     public interface IGameLauncher
     {
-        bool LaunchGameApiEnabled { get; }
-
         /// <summary>
         /// Requests the backend to create a game launch synchronously.
         /// Shows warning and error messages if something goes wrong.
@@ -65,9 +62,6 @@ namespace YetiVSI.GameLaunch
             _dialogUtil = dialogUtil;
             _vsiLaunchFactory = vsiLaunchFactory;
         }
-
-        public bool LaunchGameApiEnabled =>
-            _vsiService.Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
 
         public IVsiGameLaunch CreateLaunch(LaunchParams launchParams)
         {

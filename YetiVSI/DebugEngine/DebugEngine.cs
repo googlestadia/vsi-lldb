@@ -27,7 +27,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using YetiCommon;
-using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.NatvisEngine;
@@ -965,20 +964,10 @@ namespace YetiVSI.DebugEngine
                 _diveEnabled = chromeLauncher.LaunchParams.Dive;
                 _renderDocEnabled = chromeLauncher.LaunchParams.RenderDoc;
 
-                if (_gameLauncher.LaunchGameApiEnabled ||
-                    chromeLauncher.LaunchParams.Endpoint == StadiaEndpoint.PlayerEndpoint ||
-                    chromeLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint ||
-                    !string.IsNullOrEmpty(chromeLauncher.LaunchParams.ExternalAccount))
+                LaunchGame(chromeLauncher);
+                if (_vsiGameLaunch == null)
                 {
-                    LaunchGame(chromeLauncher);
-                    if (_vsiGameLaunch == null)
-                    {
-                        return VSConstants.E_FAIL;
-                    }
-                }
-                else
-                {
-                    LegacyLaunchFlow(chromeLauncher);
+                    return VSConstants.E_FAIL;
                 }
             }
 
@@ -1011,27 +1000,6 @@ namespace YetiVSI.DebugEngine
             }
 
             _vsiGameLaunch?.LaunchInChrome(chromeClientsLauncher, _workingDirectory);
-        }
-
-        //TODO: remove the legacy launch flow.
-        void LegacyLaunchFlow(IChromeClientsLauncher chromeClientsLauncher)
-        {
-            ConfigStatus urlBuildStatus =
-                chromeClientsLauncher.MakeLegacyLaunchUrl(out string launchUrl);
-
-            if (urlBuildStatus.IsWarningLevel)
-            {
-                _dialogUtil.ShowWarning(urlBuildStatus.WarningMessage);
-            }
-            else if (!urlBuildStatus.IsOk)
-            {
-                // The status severity can not be higher than Warning in this case.
-                throw new NotImplementedException();
-            }
-
-            // Start Chrome Client. We are starting it as early as possible, so we can
-            // initialize the debugger and start the game in parallel.
-            chromeClientsLauncher.LaunchGame(launchUrl, _workingDirectory);
         }
 
         /// <summary>

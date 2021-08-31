@@ -18,7 +18,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using YetiCommon;
-using YetiCommon.Cloud;
 using YetiVSI.ProjectSystem.Abstractions;
 
 namespace ChromeClientLauncher
@@ -43,50 +42,32 @@ namespace ChromeClientLauncher
                                                 new ChromeLauncher(new BackgroundProcess.Factory()))
                                        .Create(args[0]);
 
-                // new launch api is enabled.
-                if (args.Length == 2)
+                string launchName = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
+                string launchUrl;
+                if (gameLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
                 {
-                    string launchName = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
-                    string launchUrl;
-                    if (gameLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
-                    {
-                        return;
-                    }
-
-                    switch (gameLauncher.LaunchParams.Endpoint)
-                    {
-                        case StadiaEndpoint.TestClient:
-                        {
-                            launchUrl = gameLauncher.MakeTestClientUrl(launchName);
-                            break;
-                        }
-                        case StadiaEndpoint.PlayerEndpoint:
-                        {
-                            string launchId = launchName.Split('/').Last();
-                            launchUrl = gameLauncher.MakePlayerClientUrl(launchId);
-                            break;
-                        }
-                        default:
-                            throw new ArgumentOutOfRangeException(
-                                "Endpoint is not supported: " + gameLauncher.LaunchParams.Endpoint);
-                    }
-
-                    gameLauncher.LaunchGame(launchUrl, Directory.GetCurrentDirectory());
+                    return;
                 }
-                else
+
+                switch (gameLauncher.LaunchParams.Endpoint)
                 {
-                    ConfigStatus urlBuildStatus = gameLauncher.MakeLegacyLaunchUrl(out string launchUrl);
-                    if (urlBuildStatus.IsWarningLevel)
+                    case StadiaEndpoint.TestClient:
                     {
-                        Console.WriteLine($"Warning: {urlBuildStatus.WarningMessage}");
+                        launchUrl = gameLauncher.MakeTestClientUrl(launchName);
+                        break;
                     }
-                    else if (!urlBuildStatus.IsOk)
+                    case StadiaEndpoint.PlayerEndpoint:
                     {
-                        throw new NotImplementedException();
+                        string launchId = launchName.Split('/').Last();
+                        launchUrl = gameLauncher.MakePlayerClientUrl(launchId);
+                        break;
                     }
-
-                    gameLauncher.LaunchGame(launchUrl, Directory.GetCurrentDirectory());
+                    default:
+                        throw new ArgumentOutOfRangeException(
+                            "Endpoint is not supported: " + gameLauncher.LaunchParams.Endpoint);
                 }
+
+                gameLauncher.LaunchGame(launchUrl, Directory.GetCurrentDirectory());
             }
             catch (Exception ex) when (LogException(ex))
             {

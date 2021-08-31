@@ -209,7 +209,7 @@ namespace YetiVSI.Test.GameLaunch
         {
             _remoteCommand
                 .When(m => m.RunWithSuccessAsync(new SshTarget(_gamelet1),
-                    GameletSelectorLegacyFlow.ClearLogsCmd))
+                    GameletSelector.ClearLogsCmd))
                 .Do(c => { throw new ProcessException("Oops!"); });
             SetupGameletClientApi(_gamelet1);
 

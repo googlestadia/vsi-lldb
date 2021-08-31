@@ -149,7 +149,6 @@ namespace YetiVSI.Test
             var options = Substitute.For<IExtensionOptions>();
             var debuggerOptions = new YetiVSI.DebuggerOptions.DebuggerOptions();
             _yetiVsiService.DebuggerOptions.Returns(debuggerOptions);
-            options.LaunchGameApiFlow.Returns(LaunchGameApiFlow.ENABLED);
             _yetiVsiService.Options.Returns(options);
             _metrics = Substitute.For<IMetrics>();
             _metrics.NewDebugSessionId().Returns(_testDebugSessionId);
@@ -158,14 +157,13 @@ namespace YetiVSI.Test
                                               new CloudConnection(), new GgpSDKUtil());
             _gameletSelector = Substitute.For<IGameletSelector>();
             _gameletSelectorFactory = Substitute.For<IGameletSelectorFactory>();
-            _gameletSelectorFactory.Create(Arg.Any<bool>(), Arg.Any<ActionRecorder>())
+            _gameletSelectorFactory.Create(Arg.Any<ActionRecorder>())
                 .Returns(_gameletSelector);
             var serializer = new JsonUtil();
             _launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             _paramsFactory = new YetiVSI.DebugEngine.DebugEngine.Params.Factory(serializer);
 
             _gameLauncher = Substitute.For<IGameLauncher>();
-            _gameLauncher.LaunchGameApiEnabled.Returns(false);
             _gameLaunch = Substitute.For<IVsiGameLaunch>();
             _gameLaunch.LaunchName.Returns("launch_name");
 
@@ -189,50 +187,6 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public async Task LaunchNoDebugLegacyFlowAsync([Values(false, true)] bool renderdoc,
-                                                       [Values(false, true)] bool rgp,
-                                                       [Values(false, true)] bool dive,
-                                                       [Values(null, "optprintasserts")]
-                                                       string vulkanDriverVariant)
-        {
-            _project.GetLaunchRenderDocAsync().Returns(renderdoc);
-            _project.GetLaunchRgpAsync().Returns(rgp);
-            _project.GetLaunchDiveAsync().Returns(dive);
-            _project.GetVulkanDriverVariantAsync().Returns(vulkanDriverVariant);
-            Gamelet gamelet = SetupReservedGamelet();
-
-            var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
-            Assert.AreEqual(1, launchSettings.Count);
-            Assert.AreEqual(DebugLaunchOptions.NoDebug | DebugLaunchOptions.MergeEnvironment,
-                            launchSettings[0].LaunchOptions);
-            Assert.AreEqual(_testProjectDir, launchSettings[0].CurrentDirectory);
-            Assert.AreEqual(Environment.SystemDirectory + "\\cmd.exe",
-                            launchSettings[0].Executable);
-
-            _launchCommandFormatter.Parse(launchSettings[0].Arguments,
-                                          out LaunchParams launchParams, out _);
-            Assert.AreEqual(await _project.GetTargetFileNameAsync(), launchParams.Cmd);
-            Assert.AreEqual(renderdoc, launchParams.RenderDoc);
-            Assert.AreEqual(rgp, launchParams.Rgp);
-            Assert.AreEqual(dive, launchParams.Dive);
-            Assert.AreEqual(_testApplicationName, launchParams.ApplicationName);
-            Assert.AreEqual(_testGameletName, launchParams.GameletName);
-            Assert.AreEqual(_testAccount, launchParams.Account);
-            Assert.IsFalse(launchParams.Debug);
-            Assert.AreEqual(_sdkVersionString, launchParams.SdkVersion);
-            Assert.AreEqual(launchParams.VulkanDriverVariant, vulkanDriverVariant);
-            Assert.AreEqual(launchParams.QueryParams, _customQueryParams);
-
-            await _remoteDeploy.Received().DeployGameExecutableAsync(
-                _project, new SshTarget(gamelet), Arg.Any<ICancelable>(), Arg.Any<IAction>());
-
-            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
-                                 DeveloperEventStatus.Types.Code.Success);
-            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDeployBinary,
-                                 DeveloperEventStatus.Types.Code.Success);
-        }
-
-        [Test]
         public async Task LaunchNoDebugAsync([Values(false, true)] bool renderdoc,
                                              [Values(false, true)] bool rgp,
                                              [Values(false, true)] bool dive,
@@ -250,7 +204,6 @@ namespace YetiVSI.Test
             _project.GetEndpointAsync().Returns(endpoint);
             Gamelet gamelet = SetupReservedGamelet();
 
-            _gameLauncher.LaunchGameApiEnabled.Returns(true);
             _gameLauncher.CreateLaunch(Arg.Any<LaunchParams>())
                 .Returns(_gameLaunch);
 
@@ -298,7 +251,6 @@ namespace YetiVSI.Test
 
             SetupReservedGamelet();
 
-            _gameLauncher.LaunchGameApiEnabled.Returns(true);
             _gameLauncher.CreateLaunch(Arg.Any<LaunchParams>())
                 .Returns((IVsiGameLaunch) null);
 

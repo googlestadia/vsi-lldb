@@ -46,14 +46,6 @@ namespace YetiVSI
         [Description("Disabled")] DISABLED = 2,
     }
 
-    public enum LaunchGameApiFlowFlag
-    {
-        [Description("Default - Enabled")] [EnumValueAlias(ENABLED)]
-        DEFAULT = 0,
-        [Description("Enabled")] ENABLED = 1,
-        [Description("Disabled - Deprecated")] DISABLED = 2,
-    }
-
     public enum ShowOption
     {
         [Description("Default - Ask for each dialog")]
@@ -205,7 +197,6 @@ namespace YetiVSI
         string SelectedAccount { get; }
         LLDBVisualizerSupport LLDBVisualizerSupport { get; }
         SymbolServerSupport SymbolServerSupport { get; }
-        LaunchGameApiFlow LaunchGameApiFlow { get; }
         NatvisLoggingLevel NatvisLoggingLevel { get; }
         FastExpressionEvaluation FastExpressionEvaluation { get; }
         ExpressionEvaluationStrategy ExpressionEvaluationStrategy { get; }
@@ -266,15 +257,6 @@ namespace YetiVSI
         [TypeConverter(typeof(FeatureFlagConverter))]
         [DefaultValue(SymbolServerFeatureFlag.DEFAULT)]
         public SymbolServerFeatureFlag SymbolServerSupport { get; set; }
-
-        [Category("Game launch")]
-        [DisplayName("Enable new launch flow")]
-        [Description("If enabled, the game is launched via the new Launch Game API. " +
-            "This option will be removed in 1.69 and the new Launch Game API " +
-            "will be enabled for all launches.")]
-        [TypeConverter(typeof(FeatureFlagConverter))]
-        [DefaultValue(LaunchGameApiFlowFlag.DEFAULT)]
-        public LaunchGameApiFlowFlag LaunchGameApiFlow { get; set; }
 
         [Category("Game launch")]
         [DisplayName("SDK incompatibility warning")]
@@ -392,10 +374,6 @@ namespace YetiVSI
         SymbolServerSupport IExtensionOptions.SymbolServerSupport =>
             EnumValueAliasAttribute.GetAliasOrValue(SymbolServerSupport)
                 .ConvertTo<SymbolServerSupport>();
-
-        LaunchGameApiFlow IExtensionOptions.LaunchGameApiFlow =>
-            EnumValueAliasAttribute.GetAliasOrValue(LaunchGameApiFlow)
-                .ConvertTo<LaunchGameApiFlow>();
 
         NatvisLoggingLevel IExtensionOptions.NatvisLoggingLevel =>
             EnumValueAliasAttribute.GetAliasOrValue(NatvisLoggingLevel)

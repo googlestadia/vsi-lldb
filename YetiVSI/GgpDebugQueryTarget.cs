@@ -158,11 +158,8 @@ namespace YetiVSI
 
                 DeployOnLaunchSetting deployOnLaunchAsync = await project.GetDeployOnLaunchAsync();
                 launchParams.Account = _credentialManager.LoadAccount();
-
-                bool launchGameApiEnabled =
-                    _yetiVsiService.Options.LaunchGameApiFlow == LaunchGameApiFlow.ENABLED;
                 IGameletSelector gameletSelector =
-                    _gameletSelectorFactory.Create(launchGameApiEnabled, actionRecorder);
+                    _gameletSelectorFactory.Create(actionRecorder);
                 if (!gameletSelector.TrySelectAndPrepareGamelet(
                     targetPath, deployOnLaunchAsync, setupQueriesResult.Gamelets,
                     setupQueriesResult.TestAccount, launchParams.Account, out Gamelet gamelet))
@@ -207,45 +204,34 @@ namespace YetiVSI
 
                 if (launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
                 {
-                    if (_gameLauncher.LaunchGameApiEnabled ||
-                        launchParams.Endpoint == StadiaEndpoint.PlayerEndpoint ||
-                        launchParams.Endpoint == StadiaEndpoint.AnyEndpoint ||
-                        !string.IsNullOrEmpty(launchParams.ExternalAccount))
+                    IVsiGameLaunch launch = _gameLauncher.CreateLaunch(launchParams);
+                    if (launch != null)
                     {
-                        IVsiGameLaunch launch = _gameLauncher.CreateLaunch(launchParams);
-                        if (launch != null)
+                        if (launchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
                         {
-                            if (launchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
-                            {
-                                // We dont need to start the ChromeClientLauncher,
-                                // as we won't open a Chrome window.
-                                debugLaunchSettings.Arguments = "/c exit";
-                                await _taskContext.Factory.SwitchToMainThreadAsync();
-                                string message =
-                                    string.IsNullOrWhiteSpace(launchParams.ExternalAccount)
-                                        ? TaskMessages.LaunchingDeferredGameRunFlow
-                                        : TaskMessages.LaunchingDeferredGameWithExternalId(
-                                            launchParams.ApplicationId);
-                                _dialogUtil.ShowMessage(
-                                    message, TaskMessages.LaunchingDeferredGameTitle);
-                            }
-                            else
-                            {
-                                debugLaunchSettings.Arguments =
-                                    _launchCommandFormatter.CreateWithLaunchName(
-                                        launchParams, launch.LaunchName);
-                            }
+                            // We dont need to start the ChromeClientLauncher,
+                            // as we won't open a Chrome window.
+                            debugLaunchSettings.Arguments = "/c exit";
+                            await _taskContext.Factory.SwitchToMainThreadAsync();
+                            string message =
+                                string.IsNullOrWhiteSpace(launchParams.ExternalAccount)
+                                    ? TaskMessages.LaunchingDeferredGameRunFlow
+                                    : TaskMessages.LaunchingDeferredGameWithExternalId(
+                                        launchParams.ApplicationId);
+                            _dialogUtil.ShowMessage(
+                                message, TaskMessages.LaunchingDeferredGameTitle);
                         }
                         else
                         {
-                            Trace.WriteLine("Unable to retrieve launch name from the launch api.");
-                            return new IDebugLaunchSettings[] { };
+                            debugLaunchSettings.Arguments =
+                                _launchCommandFormatter.CreateWithLaunchName(
+                                    launchParams, launch.LaunchName);
                         }
                     }
                     else
                     {
-                        debugLaunchSettings.Arguments =
-                            _launchCommandFormatter.CreateFromParams(launchParams);
+                        Trace.WriteLine("Unable to retrieve launch name from the launch api.");
+                        return new IDebugLaunchSettings[] { };
                     }
 
                     debugLaunchSettings.Executable =

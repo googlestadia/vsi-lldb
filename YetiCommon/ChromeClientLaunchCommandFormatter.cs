@@ -43,12 +43,6 @@ namespace YetiCommon
         /// <summary>
         /// Create a launch command that can execute using Cmd.exe
         /// </summary>
-        public string CreateFromParams(LaunchParams launchParams)
-            => $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)}\"";
-
-        /// <summary>
-        /// Create a launch command that can execute using Cmd.exe
-        /// </summary>
         public string CreateWithLaunchName(LaunchParams launchParams,
                                            string launchName) =>
             $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)} " +

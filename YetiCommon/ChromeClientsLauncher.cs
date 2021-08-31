@@ -15,12 +15,7 @@
 using GgpGrpc.Models;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Linq;
-using System.Net;
-using System.Web;
-using YetiCommon.Cloud;
 using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiCommon
@@ -44,11 +39,8 @@ namespace YetiCommon
         string MakeTestClientUrl(string launchName);
 
         /// <summary>
-        /// Create a url that can be used to launch the game in the Test Client using the
-        /// legacy launch flow (without using the Launch API).
+        /// Launch game by opening the url in a Chrome window.
         /// </summary>
-        ConfigStatus MakeLegacyLaunchUrl(out string url);
-
         void LaunchGame(string url, string workingDirectory);
     }
 
@@ -138,137 +130,6 @@ namespace YetiCommon
                                  (string.IsNullOrWhiteSpace(LaunchParams.QueryParams) ? "" : "&") +
                                  LaunchParams.QueryParams;
             return $"{testClientUrl}?{queryString}{fragmentString}";
-        }
-
-        // TODO: remove the legacy launch flow.
-        public ConfigStatus MakeLegacyLaunchUrl(out string url)
-        {
-            var portalUrl = SdkConfig.PartnerPortalUrlOrDefault;
-            string chromeUrl = $"{portalUrl}/organizations/{SdkConfig.OrganizationId}/stream";
-
-            var queryParams = new List<QueryParam> {
-                QueryParam.Create("cmd", WebUtility.UrlEncode(LaunchParams.Cmd)),
-                QueryParam.Create("application_name",
-                                  Uri.EscapeDataString(
-                                      LaunchParams.ApplicationName ?? string.Empty)),
-                QueryParam.Create("gamelet_name",
-                                  Uri.EscapeDataString(LaunchParams.GameletName ?? string.Empty)),
-                QueryParam.Create("test_account", LaunchParams.TestAccount),
-                QueryParam.Create("vars",
-                                  WebUtility.UrlEncode(
-                                      string.Join(
-                                        ";",
-                                        (LaunchParams.GameletEnvironmentVars ?? string.Empty)
-                                        .Split(';').Select(v => v.Trim())))),
-                QueryParam.Create("renderdoc", LaunchParams.RenderDoc.ToString().ToLower()),
-                QueryParam.Create("rgp", LaunchParams.Rgp.ToString().ToLower()),
-                QueryParam.Create("dive", LaunchParams.Dive.ToString().ToLower()),
-                QueryParam.Create("sdk_version", WebUtility.UrlEncode(LaunchParams.SdkVersion)),
-                QueryParam.Create("vulkan_driver_variant", LaunchParams.VulkanDriverVariant),
-                QueryParam.Create("surface_enforcement_mode",
-                                  LaunchParams.SurfaceEnforcementMode.ToString().ToLower()),
-                QueryParam.Create("debug_mode", GetDebugMode())
-            };
-
-            string fragment =
-                string.IsNullOrEmpty(LaunchParams.Account) ? "" : $"Email={LaunchParams.Account}";
-
-            ConfigStatus status = TryMergeCustomQueryString(
-                queryParams, out IEnumerable<QueryParam> mergedQueryParams);
-            string queryString =
-                mergedQueryParams.Select(p => p.ToString()).Aggregate((a, b) => $"{a}&{b}");
-            string fragmentString = string.IsNullOrEmpty(fragment) ? "" : "#" + fragment;
-
-            url = $"{chromeUrl}?{queryString}{fragmentString}";
-            return status;
-        }
-
-        /// <summary>
-        /// Merge the custom query string into the given set of parameters. If there is a parameter
-        /// collision, the custom parameter will be selected.
-        /// </summary>
-        ConfigStatus TryMergeCustomQueryString(IEnumerable<QueryParam> queryParams,
-                                               out IEnumerable<QueryParam> outParams)
-        {
-            var paramsByName = queryParams.Where(p => p != null).ToDictionary(p => p.Name);
-            ConfigStatus status = TryParseQueryString(
-                LaunchParams.QueryParams, out IEnumerable<QueryParam> customQueryParams);
-            if (status.IsOk)
-            {
-                foreach (QueryParam customParam in customQueryParams)
-                {
-                    if (paramsByName.ContainsKey(customParam.Name))
-                    {
-                        Trace.WriteLine("Warning: Custom query parameter is replacing previous " +
-                                        $"value. Param: {customParam.Name}, " +
-                                        $"Previous value: {paramsByName[customParam.Name]}, " +
-                                        $"New Value: {customParam.Value}");
-                        paramsByName[customParam.Name] = customParam;
-                    }
-                    else
-                    {
-                        paramsByName.Add(customParam.Name, customParam);
-                    }
-                }
-            }
-
-            outParams = paramsByName.Values;
-            return status;
-        }
-
-        ConfigStatus TryParseQueryString(string queryString, out IEnumerable<QueryParam> outParams)
-        {
-            if (string.IsNullOrEmpty(queryString))
-            {
-                outParams = Enumerable.Empty<QueryParam>();
-                return ConfigStatus.OkStatus();
-            }
-
-            try
-            {
-                NameValueCollection nameValueCollection;
-                try
-                {
-                    // May throw an exception when maximum number of keys is exceeded.
-                    nameValueCollection = HttpUtility.ParseQueryString(queryString);
-                }
-                catch (Exception e)
-                {
-                    throw new ApplicationException(e.Message);
-                }
-
-                var queryParams = new List<QueryParam>();
-                foreach (string key in nameValueCollection.AllKeys)
-                {
-                    if (string.IsNullOrWhiteSpace(key))
-                    {
-                        throw new ApplicationException("Parameter 'Key' can not be empty.");
-                    }
-
-                    queryParams.Add(
-                        new QueryParam() { Name = key, Value = nameValueCollection.Get(key) });
-                }
-
-                LogQueryString(queryString, queryParams);
-                outParams = queryParams;
-                return ConfigStatus.OkStatus();
-            }
-            catch (ApplicationException e)
-            {
-                Trace.TraceWarning($"Error happened while parsing query string. {e.Message}");
-                outParams = null;
-                return ConfigStatus.WarningStatus(ErrorStrings.QueryParametersWrongFormat);
-            }
-        }
-
-        string GetDebugMode() => LaunchParams.Debug ? _debugModeValue : "";
-
-        void LogQueryString(string queryString, List<QueryParam> queryParams)
-        {
-            string parsedQueryParams =
-                queryParams.Select(p => $"({p.Name},{p.Value})").Aggregate((a, b) => $"{a},{b}");
-            Trace.WriteLine($"Parsed ChromeClient query string: {queryString} resulted in" +
-                            $"parameter collection: '{parsedQueryParams}'");
         }
 
         class QueryParam

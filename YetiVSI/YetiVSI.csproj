@@ -231,7 +231,7 @@
     <Compile Include="NativeMethods.cs" />
     <Compile Include="NoSourceWindowHider.cs" />
     <Compile Include="OptionPageGrid.cs" />
-    <Compile Include="GameLaunch\GameletSelectorLegacyFlow.cs" />
+    <Compile Include="GameLaunch\GameletSelectorFactory.cs" />
     <Compile Include="GgpDebugQueryTarget.cs" />
     <Compile Include="Metrics\Action.cs" />
     <Compile Include="Metrics\BatchEventAggregator.cs" />
