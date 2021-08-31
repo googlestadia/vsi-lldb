@@ -270,7 +270,7 @@ namespace YetiVSI
         [Category("Game launch")]
         [DisplayName("Enable new launch flow")]
         [Description("If enabled, the game is launched via the new Launch Game API. " +
-            "This option will be removed in 1.68 and the new Launch Game API " +
+            "This option will be removed in 1.69 and the new Launch Game API " +
             "will be enabled for all launches.")]
         [TypeConverter(typeof(FeatureFlagConverter))]
         [DefaultValue(LaunchGameApiFlowFlag.DEFAULT)]
