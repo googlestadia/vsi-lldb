@@ -46,7 +46,7 @@ namespace YetiVSI.Test
         const string _testApplicationId = "test_application_id";
         const string _testApplicationName = "test/application/name";
         const string _platformName = "platform_name";
-        const string _testAccount = "test.account@sparklingsunset.com";
+        const string _testAccount = "test@account.com";
         const string _testDebugSessionId = "abc123";
         const string _testProjectId = "project123";
         const string _testOrganizationId = "organization123";
