@@ -110,6 +110,10 @@ namespace Google.VisualStudioFake.Internal.Jobs
             if (resume)
             {
                 HResultChecker.Check(debugEngineLauncher.ResumeProcess(process));
+
+                // Note: This normally returns a failure since not all symbols can be loaded, but
+                // it is ignored by Visual Studio.
+                ((IDebugEngine3)debugEngine).LoadSymbols();
             }
         }
 
