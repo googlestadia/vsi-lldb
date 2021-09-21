@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 using System.Runtime.InteropServices;
 using YetiVSI.DebugEngine.CastleAspects;
@@ -76,162 +76,108 @@ namespace YetiVSI.DebugEngine
             debugEngine.SessionEnding += DebugEngine_SessionEnding;
             debugEngine.SessionEnded += DebugEngine_SessionEnded;
 
-            var debugEngineManager = compRoot.CreateServiceManager().GetGlobalService(
-                        typeof(SDebugEngineManager)) as IDebugEngineManager;
+            var debugEngineManager =
+                compRoot.CreateServiceManager().GetGlobalService(typeof(SDebugEngineManager)) as
+                    IDebugEngineManager;
             debugEngineManager?.AddDebugEngine(this);
         }
 
         #region IDebugEngine3
 
         public int Attach(IDebugProgram2[] rgpPrograms, IDebugProgramNode2[] rgpProgramNodes,
-            uint celtPrograms, IDebugEventCallback2 pCallback, enum_ATTACH_REASON dwReason)
-        {
-            return debugEngine.Attach(rgpPrograms, rgpProgramNodes, celtPrograms, pCallback,
-                dwReason);
-        }
+                          uint celtPrograms, IDebugEventCallback2 pCallback,
+                          enum_ATTACH_REASON dwReason) =>
+            debugEngine.Attach(rgpPrograms, rgpProgramNodes, celtPrograms, pCallback, dwReason);
 
-        public int CauseBreak()
-        {
-            return debugEngine.CauseBreak();
-        }
+        public int CauseBreak() => debugEngine.CauseBreak();
 
-        public int ContinueFromSynchronousEvent(IDebugEvent2 pEvent)
-        {
-            return debugEngine.ContinueFromSynchronousEvent(pEvent);
-        }
+        public int ContinueFromSynchronousEvent(IDebugEvent2 pEvent) =>
+            debugEngine.ContinueFromSynchronousEvent(pEvent);
 
         public int CreatePendingBreakpoint(IDebugBreakpointRequest2 pBPRequest,
-            out IDebugPendingBreakpoint2 ppPendingBP)
-        {
-            return debugEngine.CreatePendingBreakpoint(pBPRequest, out ppPendingBP);
-        }
+                                           out IDebugPendingBreakpoint2 ppPendingBP) =>
+            debugEngine.CreatePendingBreakpoint(pBPRequest, out ppPendingBP);
 
-        public int DestroyProgram(IDebugProgram2 pProgram)
-        {
-            return debugEngine.DestroyProgram(pProgram);
-        }
+        public int DestroyProgram(IDebugProgram2 pProgram) => debugEngine.DestroyProgram(pProgram);
 
-        public int EnumPrograms(out IEnumDebugPrograms2 ppEnum)
-        {
-            return debugEngine.EnumPrograms(out ppEnum);
-        }
+        public int EnumPrograms(out IEnumDebugPrograms2 ppEnum) =>
+            debugEngine.EnumPrograms(out ppEnum);
 
-        public int GetEngineId(out Guid pguidEngine)
-        {
-            return debugEngine.GetEngineId(out pguidEngine);
-        }
+        public int GetEngineId(out Guid pguidEngine) => debugEngine.GetEngineId(out pguidEngine);
 
-        public int LoadSymbols()
-        {
-            return debugEngine.LoadSymbols();
-        }
+        public int LoadSymbols() => debugEngine.LoadSymbols();
 
-        public int RemoveAllSetExceptions(ref Guid guidType)
-        {
-            return debugEngine.RemoveAllSetExceptions(ref guidType);
-        }
+        public int RemoveAllSetExceptions(ref Guid guidType) =>
+            debugEngine.RemoveAllSetExceptions(ref guidType);
 
-        public int RemoveSetException(EXCEPTION_INFO[] pException)
-        {
-            return debugEngine.RemoveSetException(pException);
-        }
+        public int RemoveSetException(EXCEPTION_INFO[] pException) =>
+            debugEngine.RemoveSetException(pException);
 
-        public int SetAllExceptions(enum_EXCEPTION_STATE dwState)
-        {
-            return debugEngine.SetAllExceptions(dwState);
-        }
+        public int SetAllExceptions(enum_EXCEPTION_STATE dwState) =>
+            debugEngine.SetAllExceptions(dwState);
 
-        public int SetEngineGuid(ref Guid guidEngine)
-        {
-            return debugEngine.SetEngineGuid(ref guidEngine);
-        }
+        public int SetEngineGuid(ref Guid guidEngine) => debugEngine.SetEngineGuid(ref guidEngine);
 
-        public int SetEngineGuidImpl(Guid guidEngine)
-        {
-            return debugEngine.SetEngineGuidImpl(guidEngine);
-        }
+        public int SetEngineGuidImpl(Guid guidEngine) => debugEngine.SetEngineGuidImpl(guidEngine);
 
-        public int SetException(EXCEPTION_INFO[] pException)
-        {
-            return debugEngine.SetException(pException);
-        }
+        public int SetException(EXCEPTION_INFO[] pException) =>
+            debugEngine.SetException(pException);
 
-        public int SetJustMyCodeState(int fUpdate, uint dwModules, JMC_CODE_SPEC[] rgJMCSpec)
-        {
-            return debugEngine.SetJustMyCodeState(fUpdate, dwModules, rgJMCSpec);
-        }
+        public int SetJustMyCodeState(int fUpdate, uint dwModules, JMC_CODE_SPEC[] rgJMCSpec) =>
+            debugEngine.SetJustMyCodeState(fUpdate, dwModules, rgJMCSpec);
 
-        public int SetLocale(ushort wLangID)
-        {
-            return debugEngine.SetLocale(wLangID);
-        }
+        public int SetLocale(ushort wLangID) => debugEngine.SetLocale(wLangID);
 
-        public int SetMetric(string pszMetric, object varValue)
-        {
-            return debugEngine.SetMetric(pszMetric, varValue);
-        }
+        public int SetMetric(string pszMetric, object varValue) =>
+            debugEngine.SetMetric(pszMetric, varValue);
 
-        public int SetRegistryRoot(string pszRegistryRoot)
-        {
-            return debugEngine.SetRegistryRoot(pszRegistryRoot);
-        }
+        public int SetRegistryRoot(string pszRegistryRoot) =>
+            debugEngine.SetRegistryRoot(pszRegistryRoot);
 
-        public int SetSymbolPath(string szSymbolSearchPath, string szSymbolCachePath, uint Flags)
-        {
-            return debugEngine.SetSymbolPath(szSymbolSearchPath, szSymbolCachePath, Flags);
-        }
+        public int SetSymbolPath(string szSymbolSearchPath, string szSymbolCachePath, uint Flags) =>
+            debugEngine.SetSymbolPath(szSymbolSearchPath, szSymbolCachePath, Flags);
 
         #endregion
 
         #region IDebugEngineLaunch2
 
-        public int CanTerminateProcess(IDebugProcess2 pProcess)
-        {
-            return debugEngine.CanTerminateProcess(pProcess);
-        }
+        public int CanTerminateProcess(IDebugProcess2 pProcess) =>
+            debugEngine.CanTerminateProcess(pProcess);
 
         public int LaunchSuspended(string pszServer, IDebugPort2 pPort, string pszExe,
-            string pszArgs, string pszDir, string bstrEnv, string pszOptions,
-            enum_LAUNCH_FLAGS dwLaunchFlags, uint hStdInput, uint hStdOutput, uint hStdError,
-            IDebugEventCallback2 pCallback, out IDebugProcess2 ppProcess)
-        {
-            return debugEngine.LaunchSuspended(pszServer, pPort, pszExe, pszArgs, pszDir, bstrEnv,
-                pszOptions, dwLaunchFlags, hStdInput, hStdOutput, hStdError, pCallback,
-                out ppProcess);
-        }
+                                   string pszArgs, string pszDir, string bstrEnv, string pszOptions,
+                                   enum_LAUNCH_FLAGS dwLaunchFlags, uint hStdInput, uint hStdOutput,
+                                   uint hStdError, IDebugEventCallback2 pCallback,
+                                   out IDebugProcess2 ppProcess) =>
+            debugEngine.LaunchSuspended(pszServer, pPort, pszExe, pszArgs, pszDir, bstrEnv,
+                                        pszOptions, dwLaunchFlags, hStdInput, hStdOutput, hStdError,
+                                        pCallback, out ppProcess);
 
-        public int ResumeProcess(IDebugProcess2 pProcess)
-        {
-            return debugEngine.ResumeProcess(pProcess);
-        }
+        public int ResumeProcess(IDebugProcess2 pProcess) => debugEngine.ResumeProcess(pProcess);
 
-        public int TerminateProcess(IDebugProcess2 pProcess)
-        {
-            return debugEngine.TerminateProcess(pProcess);
-        }
+        public int TerminateProcess(IDebugProcess2 pProcess) =>
+            debugEngine.TerminateProcess(pProcess);
 
         #endregion
 
-        public Guid Id { get { return debugEngine.Id; } }
+        #region IGgpDebugEngine
 
-        public IDebugEngineCommands DebugEngineCommands
-        {
-            get
-            {
-                return debugEngine.DebugEngineCommands;
-            }
-        }
+        public Guid Id => debugEngine.Id;
+
+        public IDebugEngineCommands DebugEngineCommands => debugEngine.DebugEngineCommands;
 
         void DebugEngine_SessionEnding(object sender, EventArgs args)
         {
-            ((IGgpDebugEngine)sender).SessionEnding -= DebugEngine_SessionEnding;
+            ((IGgpDebugEngine) sender).SessionEnding -= DebugEngine_SessionEnding;
             SessionEnding?.Invoke(this, args);
         }
 
         void DebugEngine_SessionEnded(object sender, EventArgs args)
         {
-            ((IGgpDebugEngine)sender).SessionEnded -= DebugEngine_SessionEnded;
+            ((IGgpDebugEngine) sender).SessionEnded -= DebugEngine_SessionEnded;
             SessionEnded?.Invoke(this, args);
         }
+
+        #endregion
     }
 }

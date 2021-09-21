@@ -98,20 +98,27 @@ namespace YetiVSI.DebugEngine
         }
 
         public abstract int Attach(IDebugProgram2[] rgpPrograms,
-            IDebugProgramNode2[] rgpProgramNodes, uint celtPrograms, IDebugEventCallback2 pCallback,
-            enum_ATTACH_REASON dwReason);
+                                   IDebugProgramNode2[] rgpProgramNodes, uint celtPrograms,
+                                   IDebugEventCallback2 pCallback, enum_ATTACH_REASON dwReason);
+
         public abstract int CanTerminateProcess(IDebugProcess2 pProcess);
         public abstract int CauseBreak();
         public abstract int ContinueFromSynchronousEvent(IDebugEvent2 pEvent);
+
         public abstract int CreatePendingBreakpoint(IDebugBreakpointRequest2 pBPRequest,
-            out IDebugPendingBreakpoint2 ppPendingBP);
+                                                    out IDebugPendingBreakpoint2 ppPendingBP);
+
         public abstract int DestroyProgram(IDebugProgram2 pProgram);
         public abstract int EnumPrograms(out IEnumDebugPrograms2 ppEnum);
         public abstract int GetEngineId(out Guid pguidEngine);
+
         public abstract int LaunchSuspended(string pszServer, IDebugPort2 pPort, string pszExe,
-            string pszArgs, string pszDir, string bstrEnv, string pszOptions,
-            enum_LAUNCH_FLAGS dwLaunchFlags, uint hStdInput, uint hStdOutput, uint hStdError,
-            IDebugEventCallback2 pCallback, out IDebugProcess2 ppProcess);
+                                            string pszArgs, string pszDir, string bstrEnv,
+                                            string pszOptions, enum_LAUNCH_FLAGS dwLaunchFlags,
+                                            uint hStdInput, uint hStdOutput, uint hStdError,
+                                            IDebugEventCallback2 pCallback,
+                                            out IDebugProcess2 ppProcess);
+
         public abstract int LoadSymbols();
         public abstract int RemoveAllSetExceptions(ref Guid guidType);
         public abstract int RemoveSetException(EXCEPTION_INFO[] pException);
@@ -119,13 +126,17 @@ namespace YetiVSI.DebugEngine
         public abstract int SetAllExceptions(enum_EXCEPTION_STATE dwState);
         public abstract int SetEngineGuidImpl(Guid guidEngine);
         public abstract int SetException(EXCEPTION_INFO[] pException);
+
         public abstract int SetJustMyCodeState(int fUpdate, uint dwModules,
-            JMC_CODE_SPEC[] rgJMCSpec);
+                                               JMC_CODE_SPEC[] rgJMCSpec);
+
         public abstract int SetLocale(ushort wLangID);
         public abstract int SetMetric(string pszMetric, object varValue);
         public abstract int SetRegistryRoot(string pszRegistryRoot);
+
         public abstract int SetSymbolPath(string szSymbolSearchPath, string szSymbolCachePath,
-            uint flags);
+                                          uint flags);
+
         public abstract int TerminateProcess(IDebugProcess2 pProcess);
     }
 
@@ -226,23 +237,26 @@ namespace YetiVSI.DebugEngine
                 _taskContext.ThrowIfNotOnMainThread();
 
                 var vsiService =
-                    (YetiVSIService)_serviceManager.RequireGlobalService(typeof(YetiVSIService));
+                    (YetiVSIService) _serviceManager.RequireGlobalService(typeof(YetiVSIService));
                 var envDteService =
-                    (EnvDTE.DTE)_serviceManager.GetGlobalService(typeof(EnvDTE.DTE));
+                    (EnvDTE.DTE) _serviceManager.GetGlobalService(typeof(EnvDTE.DTE));
                 var extensionOptions = vsiService.Options;
                 var debuggerOptions = vsiService.DebuggerOptions;
-                var sessionNotifier = _serviceManager.GetGlobalService(
-                    typeof(SSessionNotifier)) as ISessionNotifier;
-                return new DebugEngine(
-                    self, Guid.NewGuid(), extensionOptions, debuggerOptions, _debugSessionMetrics,
-                    _taskContext, _natvisLogListener, _solutionExplorer, _cancelableTaskFactory,
-                    _dialogUtil, _yetiTransport, _actionRecorder, _symbolServerHttpClient,
-                    _moduleFileLoadRecorderFactory, _moduleFileFinder, _testClientLauncherFactory,
-                    _natvisExpander, _natvisLogger, _exitDialogUtil, _preflightBinaryChecker,
-                    _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
-                    _debugEngineCommands, _debugEventCallbackDecorator, envDteService?.RegistryRoot,
-                    sessionNotifier, _symbolSettingsProvider, _deployLldbServer,
-                    _gameLauncher, _debugEventRecorder, _expressionEvaluationRecorder);
+                var sessionNotifier =
+                    _serviceManager.GetGlobalService(typeof(SSessionNotifier)) as ISessionNotifier;
+
+                return new DebugEngine(self, Guid.NewGuid(), extensionOptions, debuggerOptions,
+                                       _debugSessionMetrics, _taskContext, _natvisLogListener,
+                                       _solutionExplorer, _cancelableTaskFactory, _dialogUtil,
+                                       _yetiTransport, _actionRecorder, _symbolServerHttpClient,
+                                       _moduleFileLoadRecorderFactory, _moduleFileFinder,
+                                       _testClientLauncherFactory, _natvisExpander, _natvisLogger,
+                                       _exitDialogUtil, _preflightBinaryChecker,
+                                       _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
+                                       _debugEngineCommands, _debugEventCallbackDecorator,
+                                       envDteService?.RegistryRoot, sessionNotifier,
+                                       _symbolSettingsProvider, _deployLldbServer, _gameLauncher,
+                                       _debugEventRecorder, _expressionEvaluationRecorder);
             }
         }
 
@@ -344,32 +358,34 @@ namespace YetiVSI.DebugEngine
 
         // Attached program is set after successfully attaching.
         ILldbAttachedProgram _attachedProgram;
+
         // Timer that is started after successfully attaching.
         ITimer _attachedTimer;
 
         ISessionNotifier _sessionNotifier;
 
-        public DebugEngine(
-            IGgpDebugEngine self, Guid id, IExtensionOptions extensionOptions,
-            DebuggerOptions.DebuggerOptions debuggerOptions,
-            DebugSessionMetrics debugSessionMetrics, JoinableTaskContext taskContext,
-            NatvisLoggerOutputWindowListener natvisLogListener, ISolutionExplorer solutionExplorer,
-            CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
-            YetiDebugTransport yetiTransport, ActionRecorder actionRecorder,
-            HttpClient symbolServerHttpClient,
-            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
-            IModuleFileFinder moduleFileFinder,
-            ChromeClientsLauncher.Factory testClientLauncherFactory, NatvisExpander natvisExpander,
-            NatvisDiagnosticLogger natvisLogger, ExitDialogUtil exitDialogUtil,
-            PreflightBinaryChecker preflightBinaryChecker,
-            IDebugSessionLauncherFactory debugSessionLauncherFactory, Params.Factory paramsFactory,
-            IRemoteDeploy remoteDeploy, IDebugEngineCommands debugEngineCommands,
-            DebugEventCallbackTransform debugEventCallbackDecorator, string vsRegistryRoot,
-            ISessionNotifier sessionNotifier, ISymbolSettingsProvider symbolSettingsProvider,
-            bool deployLldbServer, IGameLauncher gameLauncher,
-            DebugEventRecorder debugEventRecorder,
-            ExpressionEvaluationRecorder expressionEvaluationRecorder)
-            : base(self)
+        public DebugEngine(IGgpDebugEngine self, Guid id, IExtensionOptions extensionOptions,
+                           DebuggerOptions.DebuggerOptions debuggerOptions,
+                           DebugSessionMetrics debugSessionMetrics, JoinableTaskContext taskContext,
+                           NatvisLoggerOutputWindowListener natvisLogListener,
+                           ISolutionExplorer solutionExplorer,
+                           CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
+                           YetiDebugTransport yetiTransport, ActionRecorder actionRecorder,
+                           HttpClient symbolServerHttpClient,
+                           ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
+                           IModuleFileFinder moduleFileFinder,
+                           ChromeClientsLauncher.Factory testClientLauncherFactory,
+                           NatvisExpander natvisExpander, NatvisDiagnosticLogger natvisLogger,
+                           ExitDialogUtil exitDialogUtil,
+                           PreflightBinaryChecker preflightBinaryChecker,
+                           IDebugSessionLauncherFactory debugSessionLauncherFactory,
+                           Params.Factory paramsFactory, IRemoteDeploy remoteDeploy,
+                           IDebugEngineCommands debugEngineCommands,
+                           DebugEventCallbackTransform debugEventCallbackDecorator,
+                           string vsRegistryRoot, ISessionNotifier sessionNotifier,
+                           ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
+                           IGameLauncher gameLauncher, DebugEventRecorder debugEventRecorder,
+                           ExpressionEvaluationRecorder expressionEvaluationRecorder) : base(self)
         {
             taskContext.ThrowIfNotOnMainThread();
 
@@ -418,6 +434,7 @@ namespace YetiVSI.DebugEngine
             {
                 _natvisLogger.NatvisLogEvent += natvisLogListener.OnNatvisLogEvent;
             }
+
             if (_extensionOptions.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED)
             {
                 _natvisExpander.VisualizerScanner.LoadProjectFiles();
@@ -460,7 +477,8 @@ namespace YetiVSI.DebugEngine
         // Called automatically during IDebugPortNotify2.AddProgramNode,
         // which we call during ResumeProcess.
         public override int Attach(IDebugProgram2[] programs, IDebugProgramNode2[] programNodes,
-            uint numPrograms, IDebugEventCallback2 callback, enum_ATTACH_REASON reason)
+                                   uint numPrograms, IDebugEventCallback2 callback,
+                                   enum_ATTACH_REASON reason)
         {
             _taskContext.ThrowIfNotOnMainThread();
 
@@ -500,6 +518,7 @@ namespace YetiVSI.DebugEngine
                     _dialogUtil.ShowError(ErrorStrings.NoGameletsFound);
                     return VSConstants.E_ABORT;
                 }
+
                 _debugSessionMetrics.DebugSessionId = debugPort?.DebugSessionId;
             }
 
@@ -561,29 +580,34 @@ namespace YetiVSI.DebugEngine
                     {
                         case LaunchOption.LaunchGame:
                             var remoteTargetPath = Path.Combine(YetiConstants.RemoteDeployPath,
-                                _executableFileName);
+                                                                _executableFileName);
                             _cancelableTaskFactory.Create(TaskMessages.CheckingBinaries,
-                                async _ => await _preflightBinaryChecker.
-                                    CheckLocalAndRemoteBinaryOnLaunchAsync(libPaths,
-                                    _executableFileName, _target, remoteTargetPath,
-                                    preflightCheckAction))
-                                    .RunAndRecord(preflightCheckAction);
+                                                          async _ =>
+                                                              await _preflightBinaryChecker
+                                                                  .CheckLocalAndRemoteBinaryOnLaunchAsync(
+                                                                      libPaths, _executableFileName,
+                                                                      _target, remoteTargetPath,
+                                                                      preflightCheckAction))
+                                .RunAndRecord(preflightCheckAction);
                             break;
                         case LaunchOption.AttachToGame:
                             attachPid = GetProcessId(process);
                             if (attachPid.HasValue)
                             {
                                 _cancelableTaskFactory.Create(TaskMessages.CheckingRemoteBinary,
-                                    async _ => await _preflightBinaryChecker
-                                        .CheckRemoteBinaryOnAttachAsync(attachPid.Value, _target,
-                                            preflightCheckAction))
-                                            .RunAndRecord(preflightCheckAction);
+                                                              async _ =>
+                                                                  await _preflightBinaryChecker
+                                                                      .CheckRemoteBinaryOnAttachAsync(
+                                                                          attachPid.Value, _target,
+                                                                          preflightCheckAction))
+                                    .RunAndRecord(preflightCheckAction);
                             }
                             else
                             {
                                 Trace.WriteLine("Failed to get target process ID; skipping " +
-                                    "remote build id check");
+                                                "remote build id check");
                             }
+
                             break;
                     }
                 }
@@ -607,8 +631,9 @@ namespace YetiVSI.DebugEngine
             var startAction = _actionRecorder.CreateToolAction(ActionType.DebugStart);
             startAction.UpdateEvent(new DeveloperLogEvent { GameLaunchData = glData });
 
-            var attachTask =
-                _cancelableTaskFactory.Create(TaskMessages.AttachingToProcess, async task => {
+            Func<ICancelable, Task<ILldbAttachedProgram>> attachTaskDelegate =
+                async delegate(ICancelable task)
+                {
                     if (lldbDeployTask != null)
                     {
                         using (new TestBenchmark("WaitForLLDBDeploy", TestBenchmarkScope.Recorder))
@@ -619,9 +644,10 @@ namespace YetiVSI.DebugEngine
 
                     // Attempt to start the transport. Pass on to the transport if our attach reason
                     // indicates we need to launch the main debugged process ourselves.
-                    _yetiTransport.StartPreGame(
-                        _launchOption, _rgpEnabled, _diveEnabled, _renderDocEnabled, _target,
-                        out GrpcConnection grpcConnection, out ITransportSession transportSession);
+                    _yetiTransport.StartPreGame(_launchOption, _rgpEnabled, _diveEnabled,
+                                                _renderDocEnabled, _target,
+                                                out GrpcConnection grpcConnection,
+                                                out ITransportSession transportSession);
 
                     SafeErrorUtil.SafelyLogError(
                         () => RecordParameters(startAction, _extensionOptions, _debuggerOptions),
@@ -633,20 +659,20 @@ namespace YetiVSI.DebugEngine
                     ILldbAttachedProgram program;
                     using (new TestBenchmark("Launch", TestBenchmarkScope.Recorder))
                     {
-                        program = await launcher.LaunchAsync(task, process, programId, attachPid,
-                                                             _debuggerOptions, libPaths,
-                                                             grpcConnection,
-                                                             transportSession
-                                                                 ?.GetLocalDebuggerPort() ?? 0,
-                                                             _target?.IpAddress, _target?.Port ?? 0,
-                                                             callback);
+                        program = await launcher.LaunchAsync(
+                            task, process, programId, attachPid, _debuggerOptions, libPaths,
+                            grpcConnection, transportSession?.GetLocalDebuggerPort() ?? 0,
+                            _target?.IpAddress, _target?.Port ?? 0, callback);
                     }
 
                     // Launch processes that need the game process id.
                     _yetiTransport.StartPostGame(_launchOption, _target, program.RemotePid);
 
                     return program;
-                });
+                };
+
+            var attachTask = _cancelableTaskFactory.Create(TaskMessages.AttachingToProcess,
+                                                           attachTaskDelegate);
             _attachOperation = attachTask;
             try
             {
@@ -741,22 +767,24 @@ namespace YetiVSI.DebugEngine
                     NumBoundBreakpoints = (int) numBound
                 };
                 SafeErrorUtil.SafelyLogError(
-                    () => _actionRecorder.RecordToolAction(
-                        ActionType.DebugContinueAfterAttach, _attachedTimer,
-                        new DeveloperLogEvent {BoundBreakpointsData = bpData}),
+                    () => _actionRecorder.RecordToolAction(ActionType.DebugContinueAfterAttach,
+                                                           _attachedTimer,
+                                                           new DeveloperLogEvent
+                                                               { BoundBreakpointsData = bpData }),
                     "Recording attach-to-continue time");
                 return VSConstants.S_OK;
             }
             else if (evnt is ProgramDestroyEvent)
             {
-                var programDestroyEvent = (ProgramDestroyEvent)evnt;
+                var programDestroyEvent = (ProgramDestroyEvent) evnt;
                 EndDebugSession(programDestroyEvent.ExitInfo);
             }
+
             return VSConstants.S_OK;
         }
 
         public override int CreatePendingBreakpoint(IDebugBreakpointRequest2 breakpointRequest,
-            out IDebugPendingBreakpoint2 pendingBreakpoint)
+                                                    out IDebugPendingBreakpoint2 pendingBreakpoint)
         {
             _taskContext.ThrowIfNotOnMainThread();
 
@@ -803,10 +831,11 @@ namespace YetiVSI.DebugEngine
         {
             if (_attachedProgram == null)
             {
-                Trace.WriteLine("WARNING: SetException was called without a program attached. "
-                    + "Exception state will not be set.");
+                Trace.WriteLine("WARNING: SetException was called without a program attached. " +
+                                "Exception state will not be set.");
                 return VSConstants.E_FAIL;
             }
+
             _attachedProgram.SetExceptions(exceptions);
             return VSConstants.S_OK;
         }
@@ -827,6 +856,7 @@ namespace YetiVSI.DebugEngine
             {
                 _natvisExpander.VisualizerScanner.LoadFromRegistry(registryRoot);
             }
+
             return VSConstants.S_OK;
         }
 
@@ -843,7 +873,7 @@ namespace YetiVSI.DebugEngine
             // explicitly ask to load symbols e.g. via symbols settings page in Run mode (works
             // as expected in Attach / Dump debugging).
             _symbolSettingsProvider.GetStorePaths(out string storeSearchPaths,
-                                                 out string storeCache);
+                                                  out string storeCache);
             _moduleFileFinder.SetSearchPaths(
                 SymbolUtils.GetCombinedLookupPaths(storeSearchPaths, storeCache));
             return VSConstants.S_OK;
@@ -864,17 +894,22 @@ namespace YetiVSI.DebugEngine
             var inclusionSettings = _symbolSettingsProvider.GetInclusionSettings();
             var isSymbolServerEnabled = _symbolSettingsProvider.IsSymbolServerEnabled;
 
-            var loadSymbolsTask = _cancelableTaskFactory.Create("Loading symbols...", task => {
-                return _attachedProgram.LoadModuleFilesAsync(
-                    inclusionSettings, isSymbolServerEnabled, task,
-                    _moduleFileLoadRecorderFactory.Create(action));
-            });
+            var loadSymbolsTask = _cancelableTaskFactory.Create(
+                "Loading symbols...",
+                task =>
+                {
+                    return _attachedProgram.LoadModuleFilesAsync(
+                        inclusionSettings, isSymbolServerEnabled, task,
+                        _moduleFileLoadRecorderFactory.Create(action));
+                });
             var completed = loadSymbolsTask.RunAndRecord(action);
-            return completed ? loadSymbolsTask.Result : VSConstants.E_ABORT;
+            return completed
+                ? loadSymbolsTask.Result
+                : VSConstants.E_ABORT;
         }
 
         public override int SetJustMyCodeState(int fUpdate, uint dwModules,
-            JMC_CODE_SPEC[] rgJmcSpec)
+                                               JMC_CODE_SPEC[] rgJmcSpec)
         {
             return VSConstants.E_NOTIMPL;
         }
@@ -1045,12 +1080,13 @@ namespace YetiVSI.DebugEngine
                 return VSConstants.E_FAIL;
             }
 
-            IDebugDefaultPort2 defaultPort = (IDebugDefaultPort2)port;
+            IDebugDefaultPort2 defaultPort = (IDebugDefaultPort2) port;
             if (defaultPort == null)
             {
                 Trace.WriteLine("Resume failed. Could not get the default port supplier");
                 return VSConstants.E_FAIL;
             }
+
             if (defaultPort.GetPortNotify(out IDebugPortNotify2 portNotify) != 0)
             {
                 Trace.WriteLine("Resume failed. Could not get the port notifier");
@@ -1129,6 +1165,7 @@ namespace YetiVSI.DebugEngine
                         Trace.WriteLine($"Warning: Unable to delete {_coreFilePath}");
                         break;
                     }
+
                     try
                     {
                         File.Delete(_coreFilePath);
@@ -1138,7 +1175,8 @@ namespace YetiVSI.DebugEngine
                         Trace.WriteLine($"Warning: Deletion failed with exception: {exception}");
                         Trace.WriteLine($"Retrying in {_deleteTimeout.TotalSeconds} seconds.");
                     }
-                    Thread.Sleep((int)_deleteTimeout.TotalMilliseconds);
+
+                    Thread.Sleep((int) _deleteTimeout.TotalMilliseconds);
                 }
             }
         }
@@ -1181,6 +1219,7 @@ namespace YetiVSI.DebugEngine
             {
                 _extensionOptions.PropertyChanged -= OptionsGrid_PropertyChanged;
             }
+
             if (_debuggerOptions != null)
             {
                 _debuggerOptions.ValueChanged -= OnDebuggerOptionChanged;
@@ -1190,6 +1229,7 @@ namespace YetiVSI.DebugEngine
             {
                 _natvisLogger.NatvisLogEvent -= _natvisLogListener.OnNatvisLogEvent;
             }
+
             RaiseSessionEnded(new EventArgs());
         }
 
@@ -1200,23 +1240,25 @@ namespace YetiVSI.DebugEngine
         /// <param name="exitInfo">details about why the session ended</param>
         void RecordDebugEnd(ExitInfo exitInfo)
         {
-            exitInfo.HandleResult(
-                onNormal: reason =>
-                {
-                    DebugSessionEndData.Types.EndReason exitReason = MapExitReason(reason);
-                    DeveloperLogEvent endData = CreateDebugSessionEndData(exitReason);
-                    _actionRecorder.RecordSuccess(ActionType.DebugEnd, endData);
+            exitInfo.HandleResult(onNormal: reason =>
+                                  {
+                                      DebugSessionEndData.Types.EndReason exitReason =
+                                          MapExitReason(reason);
+                                      DeveloperLogEvent endData =
+                                          CreateDebugSessionEndData(exitReason);
+                                      _actionRecorder.RecordSuccess(ActionType.DebugEnd, endData);
 
-                    if (_vsiGameLaunch != null)
-                    {
-                        SafeErrorUtil.SafelyLogErrorAndForget(
-                            _vsiGameLaunch.WaitForGameLaunchEndedAndRecordAsync,
-                            "Failed to retrieve game launch end status.");
-                    }
-                },
-                onError: ex => _actionRecorder.RecordFailure(ActionType.DebugEnd, ex,
-                    CreateDebugSessionEndData(
-                        DebugSessionEndData.Types.EndReason.DebuggerError)));
+                                      if (_vsiGameLaunch != null)
+                                      {
+                                          SafeErrorUtil.SafelyLogErrorAndForget(
+                                              _vsiGameLaunch.WaitForGameLaunchEndedAndRecordAsync,
+                                              "Failed to retrieve game launch end status.");
+                                      }
+                                  },
+                                  onError: ex => _actionRecorder.RecordFailure(
+                                      ActionType.DebugEnd, ex,
+                                      CreateDebugSessionEndData(
+                                          DebugSessionEndData.Types.EndReason.DebuggerError)));
         }
 
         static DeveloperLogEvent CreateDebugSessionEndData(
@@ -1239,7 +1281,7 @@ namespace YetiVSI.DebugEngine
                 case ExitReason.ProcessDetached:
                     return DebugSessionEndData.Types.EndReason.ProcessDetached;
                 case ExitReason.AttachCanceled:
-                    // We are not interested in the attach workflow.
+                // We are not interested in the attach workflow.
                 case ExitReason.Unknown:
                 default:
                     return DebugSessionEndData.Types.EndReason.UnknownEndReason;
@@ -1257,8 +1299,8 @@ namespace YetiVSI.DebugEngine
                 Result = result;
             }
 
-            public AttachException(int result, string message, Exception inner)
-                : base(message, inner)
+            public AttachException(int result, string message, Exception inner) : base(
+                message, inner)
             {
                 Result = result;
             }
@@ -1291,15 +1333,14 @@ namespace YetiVSI.DebugEngine
                 {
                     outputDirectory = project.OutputDirectory;
                 }
-                catch (Exception ex) when (
-                    ex is Microsoft.VisualStudio.ProjectSystem.ProjectException
-                    || ex is NullReferenceException
-                    || ex is COMException)
+                catch (Exception ex) when (ex is Microsoft.VisualStudio.ProjectSystem
+                    .ProjectException || ex is NullReferenceException || ex is COMException)
                 {
                     Trace.WriteLine("WARNING: Unable to get project output directory." +
-                        $"{Environment.NewLine}{ex.ToString()}");
+                                    $"{Environment.NewLine}{ex.ToString()}");
                     outputDirectory = "";
                 }
+
                 if (!string.IsNullOrEmpty(outputDirectory))
                 {
                     libPaths.Add(outputDirectory);
@@ -1310,24 +1351,25 @@ namespace YetiVSI.DebugEngine
                 {
                     targetDirectory = project.TargetDirectory;
                 }
-                catch (Exception ex) when (
-                    ex is Microsoft.VisualStudio.ProjectSystem.ProjectException
-                    || ex is NullReferenceException
-                    || ex is COMException)
+                catch (Exception ex) when (ex is Microsoft.VisualStudio.ProjectSystem
+                    .ProjectException || ex is NullReferenceException || ex is COMException)
                 {
                     Trace.WriteLine("WARNING: Unable to get project target directory." +
-                        $"{Environment.NewLine}{ex.ToString()}");
+                                    $"{Environment.NewLine}{ex.ToString()}");
                     targetDirectory = "";
                 }
+
                 if (!string.IsNullOrEmpty(targetDirectory))
                 {
                     libPaths.Add(targetDirectory);
                 }
             }
+
             foreach (var path in libPaths)
             {
                 Trace.WriteLine("Adding LLDB search path: " + path);
             }
+
             return libPaths;
         }
 
@@ -1339,33 +1381,29 @@ namespace YetiVSI.DebugEngine
             debugParams.ExperimentalOptions.AddRange(BuildExperimentalOptions(debuggerOptions));
 
             // Update action with all the parameters.
-            action.UpdateEvent(new DeveloperLogEvent {DebugParameters = debugParams});
+            action.UpdateEvent(new DeveloperLogEvent { DebugParameters = debugParams });
         }
 
         IEnumerable<VSIDebugParameters.Types.EnumOption> BuildExtensionOptions(
-            IExtensionOptions extensionOptions)
-            => extensionOptions.Options
-                // Note that EnumOption can store only enums or bools.
-                // To store other types of options, add different option types to the log protos.
-                .Where(o => o.Type.IsEnum || o.Type.Equals(typeof(bool)))
-                .Select(option =>
-                    new VSIDebugParameters.Types.EnumOption
-                    {
-                        Name = option.Name,
-                        Value = Convert.ToUInt32(option.Value),
-                        IsDefaultValue = option.IsDefaultValue
-                    });
+            IExtensionOptions extensionOptions) => extensionOptions.Options
+            // Note that EnumOption can store only enums or bools.
+            // To store other types of options, add different option types to the log protos.
+            .Where(o => o.Type.IsEnum || o.Type.Equals(typeof(bool))).Select(
+                option => new VSIDebugParameters.Types.EnumOption
+                {
+                    Name = option.Name,
+                    Value = Convert.ToUInt32(option.Value),
+                    IsDefaultValue = option.IsDefaultValue
+                });
 
         IEnumerable<VSIDebugParameters.Types.EnumOption> BuildExperimentalOptions(
-            DebuggerOptions.DebuggerOptions debuggerOptions)
-            => debuggerOptions
-                // Note: all these options are enums.
-                .Select(option =>
-                    new VSIDebugParameters.Types.EnumOption
-                    {
-                        Name = option.Key.ToString(),
-                        Value = Convert.ToUInt32(option.Value),
-                        IsDefaultValue = option.Value.Equals(Defaults[option.Key])
-                    });
+            DebuggerOptions.DebuggerOptions debuggerOptions) => debuggerOptions
+            // Note: all these options are enums.
+            .Select(option => new VSIDebugParameters.Types.EnumOption
+            {
+                Name = option.Key.ToString(),
+                Value = Convert.ToUInt32(option.Value),
+                IsDefaultValue = option.Value.Equals(Defaults[option.Key])
+            });
     }
 }

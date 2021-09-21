@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using System;
 using YetiVSI.DebugEngine;
 using Microsoft.VisualStudio.Debugger.Interop;
@@ -25,11 +25,13 @@ namespace YetiVSI.Test.DebugEngine
     {
         static Guid DEBUG_ENGINE_ID = Guid.Parse("deadc0de-dead-c0de-dead-c0dedeadc0de");
 
-        private class DebugEngineStub : GgpDebugEngine
+        class DebugEngineStub : GgpDebugEngine
         {
-            private Guid id;
+            Guid id;
 
-            public DebugEngineStub() : base(null) { }
+            public DebugEngineStub() : base(null)
+            {
+            }
 
             public void EndSession()
             {
@@ -37,13 +39,7 @@ namespace YetiVSI.Test.DebugEngine
                 RaiseSessionEnded(new EventArgs());
             }
 
-            public override Guid Id
-            {
-                get
-                {
-                    return id;
-                }
-            }
+            public override Guid Id => id;
 
             public void SetId(Guid id)
             {
@@ -52,131 +48,83 @@ namespace YetiVSI.Test.DebugEngine
 
             #region NotImplemented
 
-            public override IDebugEngineCommands DebugEngineCommands
-            {
-                get
-                {
-                    throw new NotImplementedTestDoubleException();
-                }
-            }
+            public override IDebugEngineCommands DebugEngineCommands =>
+                throw new NotImplementedTestDoubleException();
 
             public override int Attach(IDebugProgram2[] rgpPrograms,
-                IDebugProgramNode2[] rgpProgramNodes, uint celtPrograms,
-                IDebugEventCallback2 pCallback, enum_ATTACH_REASON dwReason)
-            {
+                                       IDebugProgramNode2[] rgpProgramNodes, uint celtPrograms,
+                                       IDebugEventCallback2 pCallback,
+                                       enum_ATTACH_REASON dwReason) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int CanTerminateProcess(IDebugProcess2 pProcess)
-            {
+            public override int CanTerminateProcess(IDebugProcess2 pProcess) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int CauseBreak()
-            {
-                throw new NotImplementedTestDoubleException();
-            }
+            public override int CauseBreak() => throw new NotImplementedTestDoubleException();
 
-            public override int ContinueFromSynchronousEvent(IDebugEvent2 pEvent)
-            {
+            public override int ContinueFromSynchronousEvent(IDebugEvent2 pEvent) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
             public override int CreatePendingBreakpoint(IDebugBreakpointRequest2 pBPRequest,
-                out IDebugPendingBreakpoint2 ppPendingBP)
-            {
+                                                        out IDebugPendingBreakpoint2 ppPendingBP) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int DestroyProgram(IDebugProgram2 pProgram)
-            {
+            public override int DestroyProgram(IDebugProgram2 pProgram) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int EnumPrograms(out IEnumDebugPrograms2 ppEnum)
-            {
+            public override int EnumPrograms(out IEnumDebugPrograms2 ppEnum) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int GetEngineId(out Guid pguidEngine)
-            {
+            public override int GetEngineId(out Guid pguidEngine) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
             public override int LaunchSuspended(string pszServer, IDebugPort2 pPort, string pszExe,
-                string pszArgs, string pszDir, string bstrEnv, string pszOptions,
-                enum_LAUNCH_FLAGS dwLaunchFlags, uint hStdInput, uint hStdOutput, uint hStdError,
-                IDebugEventCallback2 pCallback, out IDebugProcess2 ppProcess)
-            {
+                                                string pszArgs, string pszDir, string bstrEnv,
+                                                string pszOptions, enum_LAUNCH_FLAGS dwLaunchFlags,
+                                                uint hStdInput, uint hStdOutput, uint hStdError,
+                                                IDebugEventCallback2 pCallback,
+                                                out IDebugProcess2 ppProcess) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int LoadSymbols()
-            {
-                throw new NotImplementedTestDoubleException();
-            }
+            public override int LoadSymbols() => throw new NotImplementedTestDoubleException();
 
-            public override int RemoveAllSetExceptions(ref Guid guidType)
-            {
+            public override int RemoveAllSetExceptions(ref Guid guidType) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int RemoveSetException(EXCEPTION_INFO[] pException)
-            {
+            public override int RemoveSetException(EXCEPTION_INFO[] pException) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int ResumeProcess(IDebugProcess2 pProcess)
-            {
+            public override int ResumeProcess(IDebugProcess2 pProcess) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int SetAllExceptions(enum_EXCEPTION_STATE dwState)
-            {
+            public override int SetAllExceptions(enum_EXCEPTION_STATE dwState) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int SetEngineGuidImpl(Guid guidEngine)
-            {
+            public override int SetEngineGuidImpl(Guid guidEngine) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int SetException(EXCEPTION_INFO[] pException)
-            {
+            public override int SetException(EXCEPTION_INFO[] pException) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
             public override int SetJustMyCodeState(int fUpdate, uint dwModules,
-                JMC_CODE_SPEC[] rgJMCSpec)
-            {
+                                                   JMC_CODE_SPEC[] rgJMCSpec) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int SetLocale(ushort wLangID)
-            {
+            public override int SetLocale(ushort wLangID) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int SetMetric(string pszMetric, object varValue)
-            {
+            public override int SetMetric(string pszMetric, object varValue) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int SetRegistryRoot(string pszRegistryRoot)
-            {
+            public override int SetRegistryRoot(string pszRegistryRoot) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
             public override int SetSymbolPath(string szSymbolSearchPath, string szSymbolCachePath,
-                uint Flags)
-            {
+                                              uint Flags) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
-            public override int TerminateProcess(IDebugProcess2 pProcess)
-            {
+            public override int TerminateProcess(IDebugProcess2 pProcess) =>
                 throw new NotImplementedTestDoubleException();
-            }
 
             #endregion
         }
