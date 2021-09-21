@@ -606,11 +606,15 @@ namespace YetiVSI.DebugEngine
 
             var startAction = _actionRecorder.CreateToolAction(ActionType.DebugStart);
             startAction.UpdateEvent(new DeveloperLogEvent { GameLaunchData = glData });
+
             var attachTask =
                 _cancelableTaskFactory.Create(TaskMessages.AttachingToProcess, async task => {
                     if (lldbDeployTask != null)
                     {
-                        await lldbDeployAction.RecordAsync(lldbDeployTask.JoinAsync());
+                        using (new TestBenchmark("WaitForLLDBDeploy", TestBenchmarkScope.Recorder))
+                        {
+                            await lldbDeployAction.RecordAsync(lldbDeployTask.JoinAsync());
+                        }
                     }
 
                     // Attempt to start the transport. Pass on to the transport if our attach reason
@@ -626,10 +630,17 @@ namespace YetiVSI.DebugEngine
                         Self, _launchOption, _coreFilePath, _executableFileName,
                         _executableFullPath, _vsiGameLaunch);
 
-                    ILldbAttachedProgram program = await launcher.LaunchAsync(
-                        task, process, programId, attachPid, _debuggerOptions, libPaths,
-                        grpcConnection, transportSession?.GetLocalDebuggerPort() ?? 0,
-                        _target?.IpAddress, _target?.Port ?? 0, callback);
+                    ILldbAttachedProgram program;
+                    using (new TestBenchmark("Launch", TestBenchmarkScope.Recorder))
+                    {
+                        program = await launcher.LaunchAsync(task, process, programId, attachPid,
+                                                             _debuggerOptions, libPaths,
+                                                             grpcConnection,
+                                                             transportSession
+                                                                 ?.GetLocalDebuggerPort() ?? 0,
+                                                             _target?.IpAddress, _target?.Port ?? 0,
+                                                             callback);
+                    }
 
                     // Launch processes that need the game process id.
                     _yetiTransport.StartPostGame(_launchOption, _target, program.RemotePid);
@@ -1015,7 +1026,11 @@ namespace YetiVSI.DebugEngine
 
             if (_vsiGameLaunch != null)
             {
-                bool status = _vsiGameLaunch.WaitUntilGameLaunched();
+                bool status;
+                using (new TestBenchmark("WaitUntilGameLaunched", TestBenchmarkScope.Recorder))
+                {
+                    status = _vsiGameLaunch.WaitUntilGameLaunched();
+                }
 
                 if (!status)
                 {
@@ -1044,11 +1059,14 @@ namespace YetiVSI.DebugEngine
 
             // The SDM will call Attach. Attach sends EngineCreate and ProgramCreate events.
             // When Program Create event is finished, the process is actually resumed.
-            if (portNotify.AddProgramNode(new DebugProgramNode(_taskContext, process)) !=
-                VSConstants.S_OK)
+            using (new TestBenchmark("AddProgramNode", TestBenchmarkScope.Recorder))
             {
-                Trace.WriteLine("Resume failed. Could not add a program node");
-                return VSConstants.E_FAIL;
+                if (portNotify.AddProgramNode(new DebugProgramNode(_taskContext, process)) !=
+                    VSConstants.S_OK)
+                {
+                    Trace.WriteLine("Resume failed. Could not add a program node");
+                    return VSConstants.E_FAIL;
+                }
             }
 
             // If the attach returned an error, ensure we also return an error here or else the SDM

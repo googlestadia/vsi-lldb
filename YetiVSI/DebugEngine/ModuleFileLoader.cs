@@ -150,43 +150,47 @@ namespace YetiVSI.DebugEngine
                 SbModule module = modules[i];
                 TextWriter searchLog = new StringWriter();
                 string name = module.GetPlatformFileSpec()?.GetFilename() ?? "<unknown>";
-
-                try
+                using (new TestBenchmark(name, TestBenchmarkScope.Recorder))
                 {
-                    task.ThrowIfCancellationRequested();
-
-                    if (SkipModule(name, symbolSettings))
+                    try
                     {
-                        await searchLog.WriteLineAsync(
-                            SymbolInclusionSettings.ModuleExcludedMessage);
-                        continue;
+                        task.ThrowIfCancellationRequested();
+
+                        if (SkipModule(name, symbolSettings))
+                        {
+                            await searchLog.WriteLineAsync(
+                                SymbolInclusionSettings.ModuleExcludedMessage);
+                            continue;
+                        }
+
+                        task.Progress.Report($"Loading binary for {name} ({i}/{modules.Count})");
+
+                        (SbModule newModule, bool ok) =
+                            await _binaryLoader.LoadBinaryAsync(module, searchLog);
+                        if (!ok)
+                        {
+                            result = VSConstants.E_FAIL;
+                            continue;
+                        }
+
+                        module = newModule;
+
+                        task.ThrowIfCancellationRequested();
+                        task.Progress.Report($"Loading symbols for {name} ({i}/{modules.Count})");
+                        var loaded =
+                            await _symbolLoader.LoadSymbolsAsync(
+                                module, searchLog, useSymbolStores);
+                        if (!loaded)
+                        {
+                            result = VSConstants.E_FAIL;
+                            continue;
+                        }
                     }
-
-                    task.Progress.Report($"Loading binary for {name} ({i}/{modules.Count})");
-
-                    (SbModule newModule, bool ok) =
-                        await _binaryLoader.LoadBinaryAsync(module, searchLog);
-                    if (!ok)
+                    finally
                     {
-                        result = VSConstants.E_FAIL;
-                        continue;
+                        _moduleSearchLogHolder.SetSearchLog(module, searchLog.ToString());
+                        modules[i] = module;
                     }
-                    module = newModule;
-
-                    task.ThrowIfCancellationRequested();
-                    task.Progress.Report($"Loading symbols for {name} ({i}/{modules.Count})");
-                    var loaded =
-                        await _symbolLoader.LoadSymbolsAsync(module, searchLog, useSymbolStores);
-                    if (!loaded)
-                    {
-                        result = VSConstants.E_FAIL;
-                        continue;
-                    }
-                }
-                finally
-                {
-                    _moduleSearchLogHolder.SetSearchLog(module, searchLog.ToString());
-                    modules[i] = module;
                 }
             }
 

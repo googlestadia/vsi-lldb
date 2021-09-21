@@ -118,7 +118,8 @@ namespace YetiVSI
                 var gameletCommand = (targetFileName + " " +
                     await project.GetGameletLaunchArgumentsAsync()).Trim();
 
-                var launchParams = new LaunchParams() {
+                var launchParams = new LaunchParams()
+                {
                     Cmd = gameletCommand,
                     RenderDoc = await project.GetLaunchRenderDocAsync(),
                     Rgp = await project.GetLaunchRgpAsync(),
@@ -134,10 +135,13 @@ namespace YetiVSI
                     launchParams.SdkVersion = _sdkVersion.ToString();
                 }
 
-                if (!TrySetupQueries(project, actionRecorder,
-                                     out SetupQueriesResult setupQueriesResult))
+                SetupQueriesResult setupQueriesResult;
+                using (new TestBenchmark("QueryProjectInfo", TestBenchmarkScope.Recorder))
                 {
-                    return new IDebugLaunchSettings[] { };
+                    if (!TrySetupQueries(project, actionRecorder, out setupQueriesResult))
+                    {
+                        return new IDebugLaunchSettings[] { };
+                    }
                 }
 
                 launchParams.ApplicationName = setupQueriesResult.Application.Name;
@@ -160,11 +164,15 @@ namespace YetiVSI
                 launchParams.Account = _credentialManager.LoadAccount();
                 IGameletSelector gameletSelector =
                     _gameletSelectorFactory.Create(actionRecorder);
-                if (!gameletSelector.TrySelectAndPrepareGamelet(
-                    targetPath, deployOnLaunchAsync, setupQueriesResult.Gamelets,
-                    setupQueriesResult.TestAccount, launchParams.Account, out Gamelet gamelet))
+                Gamelet gamelet;
+                using (new TestBenchmark("SelectAndPrepareGamelet", TestBenchmarkScope.Recorder))
                 {
-                    return new IDebugLaunchSettings[] { };
+                    if (!gameletSelector.TrySelectAndPrepareGamelet(
+                        targetPath, deployOnLaunchAsync, setupQueriesResult.Gamelets,
+                        setupQueriesResult.TestAccount, launchParams.Account, out gamelet))
+                    {
+                        return new IDebugLaunchSettings[] { };
+                    }
                 }
 
                 launchParams.GameletName = gamelet.Name;
@@ -191,10 +199,19 @@ namespace YetiVSI
                 bool isDeployed = _cancelableTaskFactory.Create(
                     TaskMessages.DeployingExecutable, async task =>
                     {
-                        await _remoteDeploy.DeployGameExecutableAsync(
-                            project, new SshTarget(gamelet), task, action);
+                        using (new TestBenchmark("DeployGameExecutable",
+                                                 TestBenchmarkScope.Recorder))
+                        {
+                            await _remoteDeploy.DeployGameExecutableAsync(
+                                project, new SshTarget(gamelet), task, action);
+                        }
+
                         task.Progress.Report(TaskMessages.CustomDeployCommand);
-                        await _remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
+                        using (new TestBenchmark("ExecuteCustomCommand",
+                                                 TestBenchmarkScope.Recorder))
+                        {
+                            await _remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
+                        }
                     }).RunAndRecord(action);
 
                 if (!isDeployed)
@@ -286,16 +303,15 @@ namespace YetiVSI
                 ICloudRunner runner = _cloudRunner.Intercept(action);
                 Task<Application> loadApplicationTask =
                     LoadApplicationAsync(runner, await project.GetApplicationAsync());
-                Task<List<Gamelet>> loadGameletsTask =
-                    _gameletClientFactory.Create(runner).ListGameletsAsync();
+                Task<List<Gamelet>> loadGameletsTask;
+                loadGameletsTask = _gameletClientFactory.Create(runner).ListGameletsAsync();
                 Task<TestAccount> loadTestAccountTask = LoadTestAccountAsync(
                     runner, sdkConfig.OrganizationId, sdkConfig.ProjectId,
                     await project.GetTestAccountAsync(), await project.GetEndpointAsync(),
                     await project.GetExternalIdAsync());
-                Task<Player> loadExternalAccountTask =
-                    LoadExternalAccountAsync(runner, loadApplicationTask,
-                                             await project.GetExternalIdAsync(),
-                                             await project.GetEndpointAsync());
+                Task<Player> loadExternalAccountTask = LoadExternalAccountAsync(
+                    runner, loadApplicationTask, await project.GetExternalIdAsync(),
+                    await project.GetEndpointAsync());
 
                 return new SetupQueriesResult
                 {
@@ -363,12 +379,12 @@ namespace YetiVSI
             }
 
             bool testAccountSupportedWithEndpoint = endpoint != StadiaEndpoint.PlayerEndpoint &&
-                 endpoint != StadiaEndpoint.AnyEndpoint;
+                endpoint != StadiaEndpoint.AnyEndpoint;
             if (!testAccountSupportedWithEndpoint)
             {
                 await _taskContext.Factory.SwitchToMainThreadAsync();
-                _dialogUtil.ShowWarning(YetiCommon.ErrorStrings.TestAccountsNotSupported(
-                    testAccount));
+                _dialogUtil.ShowWarning(
+                    YetiCommon.ErrorStrings.TestAccountsNotSupported(testAccount));
                 return null;
             }
 
@@ -406,8 +422,7 @@ namespace YetiVSI
         /// </exception>
         async Task<Player> LoadExternalAccountAsync(ICloudRunner runner,
                                                     Task<Application> applicationTask,
-                                                    string externalAccount,
-                                                    StadiaEndpoint endpoint)
+                                                    string externalAccount, StadiaEndpoint endpoint)
         {
             if (string.IsNullOrEmpty(externalAccount))
             {
@@ -423,8 +438,8 @@ namespace YetiVSI
             bool externalAccountSupportedWithEndpoint = endpoint != StadiaEndpoint.PlayerEndpoint;
             if (!externalAccountSupportedWithEndpoint)
             {
-                throw new ConfigurationException(
-                    YetiCommon.ErrorStrings.LaunchOnWebNotSupportedForExternalId);
+                throw new ConfigurationException(YetiCommon.ErrorStrings
+                                                     .LaunchOnWebNotSupportedForExternalId);
             }
 
             var externalAccounts =

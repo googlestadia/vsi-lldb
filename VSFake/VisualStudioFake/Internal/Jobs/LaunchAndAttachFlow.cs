@@ -20,6 +20,8 @@ using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
+using YetiCommon;
 
 namespace Google.VisualStudioFake.Internal.Jobs
 {
@@ -61,8 +63,7 @@ namespace Google.VisualStudioFake.Internal.Jobs
 
         public void Start() => _jobQueue.Push(new GenericJob(LaunchAndAttach));
 
-        public void StartSuspended() =>
-            _jobQueue.Push(new GenericJob(LaunchSuspended));
+        public void StartSuspended() => _jobQueue.Push(new GenericJob(LaunchSuspended));
 
         public void HandleDebugProgramCreated(DebugEventArgs args)
         {
@@ -88,32 +89,46 @@ namespace Google.VisualStudioFake.Internal.Jobs
             IDebugEngineLaunch2 debugEngineLauncher = (IDebugEngineLaunch2) debugEngine;
 
             // TODO: Use the correct DebugLaunchOptions value.
-            var launchSettings =
-                _targetAdapter.QueryDebugTargets(_projectAdapter.Project, 0).First();
+            IDebugLaunchSettings launchSettings;
+            using (new TestBenchmark("QueryDebugTargets", TestBenchmarkScope.Recorder))
+            {
+                launchSettings = _targetAdapter.QueryDebugTargets(_projectAdapter.Project, 0)
+                    .First();
+            }
 
             var port = _targetAdapter.InitializePort(_debugEventCallback, debugEngine);
-            HResultChecker.Check(debugEngineLauncher.LaunchSuspended("", // server
-                                                                     port,
-                                                                     launchSettings.Executable,
-                                                                     launchSettings.Arguments,
-                                                                     "", // dir,
-                                                                     "", // env
-                                                                     launchSettings.Options,
-                                                                     default(enum_LAUNCH_FLAGS),
-                                                                     0, // stdinput,
-                                                                     0, // stdoutput,
-                                                                     0, // stderr,
-                                                                     _debugEventCallback,
-                                                                     out IDebugProcess2 process));
+            IDebugProcess2 process;
+            using (new TestBenchmark("LaunchSuspended", TestBenchmarkScope.Recorder))
+            {
+                HResultChecker.Check(debugEngineLauncher.LaunchSuspended("", // server
+                                                                         port,
+                                                                         launchSettings.Executable,
+                                                                         launchSettings.Arguments,
+                                                                         "", // dir,
+                                                                         "", // env
+                                                                         launchSettings.Options,
+                                                                         default(enum_LAUNCH_FLAGS),
+                                                                         0, // stdinput,
+                                                                         0, // stdoutput,
+                                                                         0, // stderr,
+                                                                         _debugEventCallback,
+                                                                         out process));
+            }
+
             _debugSessionContext.Process = process;
             _debugSessionContext.ProgramState = ProgramState.LaunchSuspended;
             if (resume)
             {
-                HResultChecker.Check(debugEngineLauncher.ResumeProcess(process));
-
-                // Note: This normally returns a failure since not all symbols can be loaded, but
-                // it is ignored by Visual Studio.
-                ((IDebugEngine3)debugEngine).LoadSymbols();
+                using (new TestBenchmark("ResumeProcess", TestBenchmarkScope.Recorder))
+                {
+                    HResultChecker.Check(debugEngineLauncher.ResumeProcess(process));
+                }
+                using (new TestBenchmark("LoadSymbols", TestBenchmarkScope.Recorder))
+                {
+                    // Note: This normally returns a failure since not all symbols can be loaded,
+                    // but it is ignored by Visual Studio.
+                    ((IDebugEngine3)debugEngine).LoadSymbols();
+                }
             }
         }
 

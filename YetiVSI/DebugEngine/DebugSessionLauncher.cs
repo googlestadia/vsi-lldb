@@ -230,7 +230,6 @@ namespace YetiVSI.DebugEngine
             var launchSucceeded = false;
             Stopwatch launchTimer = Stopwatch.StartNew();
 
-
             // This should be the first request to the DebuggerGrpcServer.  Providing a retry wait
             // time allows us to connect to a DebuggerGrpcServer that is slow to start. Note that
             // we postpone sourcing .lldbinit until we are done with our initialization so that
@@ -346,17 +345,20 @@ namespace YetiVSI.DebugEngine
             task.Progress.Report("Debugger is attaching (this can take a while)");
 
             RemoteTarget lldbTarget = null;
-            if (_launchOption == LaunchOption.LaunchGame &&
-                !string.IsNullOrEmpty(_executableFullPath))
+            using (new TestBenchmark("CreateTarget", TestBenchmarkScope.Recorder))
             {
-                var createExecutableTargetAction =
-                    _actionRecorder.CreateToolAction(ActionType.DebugCreateExecutableTarget);
-                createExecutableTargetAction.Record(
-                    () => lldbTarget = CreateTarget(lldbDebugger, _executableFullPath));
-            }
-            else
-            {
-                lldbTarget = CreateTarget(lldbDebugger, "");
+                if (_launchOption == LaunchOption.LaunchGame &&
+                    !string.IsNullOrEmpty(_executableFullPath))
+                {
+                    var createExecutableTargetAction =
+                        _actionRecorder.CreateToolAction(ActionType.DebugCreateExecutableTarget);
+                    createExecutableTargetAction.Record(
+                        () => lldbTarget = CreateTarget(lldbDebugger, _executableFullPath));
+                }
+                else
+                {
+                    lldbTarget = CreateTarget(lldbDebugger, "");
+                }
             }
 
             var lldbListener = CreateListener(grpcConnection);
@@ -440,13 +442,17 @@ namespace YetiVSI.DebugEngine
                         _moduleFileLoadRecorderFactory.Create(debugAttachAction);
                     moduleFileLoadRecorder.RecordBeforeLoad(Array.Empty<SbModule>());
 
-                    debuggerProcess = lldbTarget.AttachToProcessWithID(lldbListener, processId,
-                                                                       out SbError lldbError);
-                    if (lldbError.Fail())
+                    using (new TestBenchmark("AttachToProcessWithID", TestBenchmarkScope.Recorder))
                     {
-                        throw new AttachException(
-                            VSConstants.E_ABORT,
-                            GetLldbAttachErrorDetails(lldbError, lldbPlatform, processId));
+                        debuggerProcess = lldbTarget.AttachToProcessWithID(lldbListener, processId,
+                                                                           out SbError lldbError);
+
+                        if (lldbError.Fail())
+                        {
+                            throw new AttachException(
+                                VSConstants.E_ABORT,
+                                GetLldbAttachErrorDetails(lldbError, lldbPlatform, processId));
+                        }
                     }
 
                     RecordModules(lldbTarget, moduleFileLoadRecorder);

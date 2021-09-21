@@ -17,14 +17,34 @@ using System;
 namespace YetiCommon
 {
     /// <summary>
-    /// Used to record simple benchmarks during performance tests from inside the DebugEngine and
-    /// in performance tests.
+    /// Records simple benchmarks during performance tests.
     /// </summary>
     public interface ITestBenchmarksRecorder
     {
+        /// <summary>
+        /// Starts a new performance benchmark.
+        /// </summary>
+        /// <param name="metricName">Name of the benchmark.</param>
         void StartMetricRecording(string metricName);
+
+        /// <summary>
+        /// Ends an existing performance benchmark.
+        /// </summary>
+        /// <param name="metricName">Name of the benchmark.</param>
         void EndMetricRecording(string metricName);
 
+        /// <summary>
+        /// Adds generic additional information to a test benchmark metric.
+        /// </summary>
+        /// <param name="metricName">
+        /// Name of the metric to attach information to.
+        /// </param>
+        /// <param name="additionalInfoKey">
+        /// Name of the information to add.
+        /// </param>
+        /// <param name="additionalInfoValue">
+        /// Value of the information to add.
+        /// </param>
         void AddAdditionalInfo(string metricName, string additionalInfoKey,
                                string additionalInfoValue);
 
@@ -35,29 +55,70 @@ namespace YetiCommon
     }
 
     /// <summary>
-    /// Scoped metric for test benchmarks recording. All metrics inside this scope will have the
-    /// parent metric name prefixed, e.g. "ParentMetric - ChildMetric - GrandChildMetric".
+    /// Sets a global ITestBenchmarksRecorder on construction that can be by the debug engine to
+    /// produce fine-grained performance benchmarks. Restores the previous recorder on disposal.
+    /// Usage:
+    /// 
+    ///   // This code lives in a performance test.
+    ///   using (new TestBenchmarkScope(recorder)) {
+    ///     // Call into debug engine.
+    ///   }
+    ///
+    ///   // This code lives anywhere in the debug engine.
+    ///   void SomeWorkInDebugEngine() {
+    ///     using (new TestBenchmark("MyMetric", TestBenchmarkScope.Recorder)) {
+    ///     {
+    ///       // Do work
+    ///     }
+    ///   }
+    /// 
+    /// TestBenchmarkScopes should only be created in performance tests. By default,
+    /// TestBenchmarkScope.Recorder is null and TestBenchmark is a no-op for a null recorder.
+    /// This is the case in production code.
+    ///
+    /// All TestBenchmarks created in a TestBenchmarkScope must be disposed in the same scope.
+    /// This is usually not an issue and enforced by the use of 'using' statements.
+    /// </summary>
+    public class TestBenchmarkScope : IDisposable
+    {
+        public static ITestBenchmarksRecorder Recorder { get; private set; }
+
+        readonly ITestBenchmarksRecorder _prevRecorder;
+
+        public TestBenchmarkScope(ITestBenchmarksRecorder recorder)
+        {
+            _prevRecorder = recorder;
+            Recorder = recorder;
+        }
+
+        public void Dispose()
+        {
+            Recorder = _prevRecorder;
+        }
+    }
+
+    /// <summary>
+    /// Scoped metric for test benchmarks recording. All metrics inside this scope have the parent
+    /// metric name prefixed, e.g. "ParentMetric - ChildMetric - GrandChildMetric".
+    /// 
     /// Automatically calls StartMetricRecording() and EndMetricRecording() if used with a "using"
-    /// statement.
+    /// statement. See TestBenchmarkScope for a usage example.
     /// </summary>
     public class TestBenchmark : IDisposable
     {
-        readonly ITestBenchmarksRecorder _recorder;
         readonly string _metricName;
         readonly string _parentPrefix;
+        readonly ITestBenchmarksRecorder _recorder;
 
         /// <summary>
-        /// Creates a new scoped test benchmark metric.
+        /// Creates a new scoped TestBenchmark.
         /// </summary>
-        /// <param name="recorder">Recorder to use. If null, no benchmark is recorded.</param>
-        /// <param name="metricName">
-        /// The metric name to use. Gets prepended by the parent scope's name, e.g.
-        /// "ParentMetric - ChildMetric".
-        /// </param>
-        public TestBenchmark(ITestBenchmarksRecorder recorder, string metricName)
+        /// <param name="metricName">Name of the metric to create.</param>
+        /// <param name="recorder">Benchmarks recorder to use.</param>
+        public TestBenchmark(string metricName, ITestBenchmarksRecorder recorder)
         {
-            _recorder = recorder;
             _metricName = metricName;
+            _recorder = recorder;
 
             if (_recorder == null)
             {
