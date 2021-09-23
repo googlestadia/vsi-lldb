@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -67,23 +67,36 @@ namespace YetiVSITestsCommon
         }
 
         readonly List<Message> _messages = new List<Message>();
-        readonly List<ConfiguredResponse> _responses;
+        readonly List<ConfiguredResponse> _configuredResponses;
+        readonly List<string> _silencedWarningFragments;
 
-        public DialogUtilFake(params ConfiguredResponse[] responses)
+        public DialogUtilFake(List<ConfiguredResponse> configuredResponses = null,
+                              List<string> silencedWarningFragments = null)
         {
-            _responses = new List<ConfiguredResponse>(responses);
+            _configuredResponses = configuredResponses;
+            _silencedWarningFragments = silencedWarningFragments;
         }
 
         public void ShowMessage(string message) => RecordMessage(message, null, MessageType.Info);
 
         public void ShowWarning(string message, string details = null)
         {
+            if (_silencedWarningFragments.Exists(message.Contains))
+            {
+                return;
+            }
+
             RecordMessage(message, details, MessageType.Warning);
             Trace.WriteLine($"{message} \n\n {details}");
         }
 
         public bool ShowOkNoMoreDisplayWarning(string message, string[] settingPath)
         {
+            if (_silencedWarningFragments.Exists(message.Contains))
+            {
+                return false;
+            }
+
             RecordMessage(message, null, MessageType.Warning);
             Trace.WriteLine(message);
             return true;
@@ -99,7 +112,7 @@ namespace YetiVSITestsCommon
 
         public bool ShowYesNo(string message, string caption)
         {
-            ConfiguredResponse response = _responses.FirstOrDefault(
+            ConfiguredResponse response = _configuredResponses.FirstOrDefault(
                 r => message.Contains(r.QuestionFragment) ||
                     caption?.Contains(r.QuestionFragment) == true);
             if (response != null)
