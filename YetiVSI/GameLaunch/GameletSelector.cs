@@ -19,7 +19,6 @@ using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using YetiCommon;
@@ -40,18 +39,16 @@ namespace YetiVSI.GameLaunch
         /// Thrown if there is no gamelet reserved</exception>
         /// <exception cref="CloudException">Thrown if there are any RPC errors.</exception>
         /// <returns>True if the gamelet was prepared successfully, false otherwise.</returns>
-        bool TrySelectAndPrepareGamelet(string targetPath,
-                                        DeployOnLaunchSetting deployOnLaunchSetting,
-                                        List<Gamelet> gamelets,
-                                        TestAccount testAccount, string devAccount,
-                                        out Gamelet gamelet);
+        bool TrySelectAndPrepareGamelet(DeployOnLaunchSetting deployOnLaunchSetting,
+                                        List<Gamelet> gamelets, TestAccount testAccount,
+                                        string devAccount, out Gamelet gamelet);
     }
 
     /// <summary>
     /// GameletSelector is responsible for selecting and preparing a gamelet
     /// for launch when the Game Launch API is enabled.
     /// </summary>
-    public class GameletSelector: IGameletSelector
+    public class GameletSelector : IGameletSelector
     {
         public const string ClearLogsCmd = "rm -f /var/game/stdout /var/game/stderr";
 
@@ -97,8 +94,7 @@ namespace YetiVSI.GameLaunch
         /// Thrown if there is no gamelet reserved</exception>
         /// <exception cref="CloudException">Thrown if there are any RPC errors.</exception>
         /// <returns>True if the gamelet was prepared successfully, false otherwise.</returns>
-        public bool TrySelectAndPrepareGamelet(string targetPath,
-                                               DeployOnLaunchSetting deployOnLaunchSetting,
+        public bool TrySelectAndPrepareGamelet(DeployOnLaunchSetting deployOnLaunchSetting,
                                                List<Gamelet> gamelets, TestAccount testAccount,
                                                string devAccount, out Gamelet gamelet)
         {
@@ -125,7 +121,7 @@ namespace YetiVSI.GameLaunch
                 return false;
             }
 
-            if (!ValidateMountConfiguration(targetPath, deployOnLaunchSetting, gamelet))
+            if (!ValidateMountConfiguration(deployOnLaunchSetting, gamelet))
             {
                 return false;
             }
@@ -165,6 +161,7 @@ namespace YetiVSI.GameLaunch
             {
                 return false;
             }
+
             gamelet = StopGameOnGamelet(gamelet);
             return gamelet != null;
         }
@@ -175,22 +172,24 @@ namespace YetiVSI.GameLaunch
         Gamelet StopGameOnGamelet(Gamelet gamelet)
         {
             IAction action = _actionRecorder.CreateToolAction(ActionType.GameletStop);
-            ICancelableTask stopTask =
-                _cancelableTaskFactory.Create(TaskMessages.WaitingForGameStop, async (task) => {
+            ICancelableTask stopTask = _cancelableTaskFactory.Create(
+                TaskMessages.WaitingForGameStop, async (task) =>
+                {
                     IGameletClient gameletClient =
                         _gameletClientFactory.Create(_runner.Intercept(action));
                     try
                     {
                         await gameletClient.StopGameAsync(gamelet.Id);
                     }
-                    catch (CloudException e) when ((e.InnerException as RpcException)
-                        ?.StatusCode == StatusCode.FailedPrecondition)
+                    catch (CloudException e) when ((e.InnerException as RpcException)?.StatusCode ==
+                        StatusCode.FailedPrecondition)
                     {
                         // FailedPreconditions likely means there is no game session to stop.
                         // For details see (internal).
                         Trace.WriteLine("Potential race condition while stopping game; " +
                                         $"ignoring RPC error: {e.InnerException.Message}");
                     }
+
                     while (!task.IsCanceled)
                     {
                         gamelet = await gameletClient.GetGameletByNameAsync(gamelet.Name);
@@ -198,6 +197,7 @@ namespace YetiVSI.GameLaunch
                         {
                             break;
                         }
+
                         await Task.Delay(1000);
                     }
                 });
@@ -205,12 +205,12 @@ namespace YetiVSI.GameLaunch
             {
                 return gamelet;
             }
+
             return null;
         }
 
-        bool StopGameLaunchIfPresent(TestAccount testAccount,
-                                     string devAccount, List<Gamelet> gamelets,
-                                     Gamelet selectedGamelet)
+        bool StopGameLaunchIfPresent(TestAccount testAccount, string devAccount,
+                                     List<Gamelet> gamelets, Gamelet selectedGamelet)
         {
             IAction getExistingAction =
                 _actionRecorder.CreateToolAction(ActionType.GameLaunchGetExisting);
@@ -249,8 +249,8 @@ namespace YetiVSI.GameLaunch
 
         bool PromptToDeleteLaunch(GgpGrpc.Models.GameLaunch currentGameLaunch,
                                   List<Gamelet> gamelets, Gamelet selectedGamelet,
-                                  ActionRecorder actionRecorder,
-                                  string testAccount, string devAccount)
+                                  ActionRecorder actionRecorder, string testAccount,
+                                  string devAccount)
         {
             if (currentGameLaunch.GameLaunchState == GameLaunchState.IncompleteLaunch)
             {
@@ -324,10 +324,9 @@ namespace YetiVSI.GameLaunch
             try
             {
                 IAction action = _actionRecorder.CreateToolAction(ActionType.GameletEnableSsh);
-                ICancelableTask enableSshTask =
-                    _cancelableTaskFactory.Create(TaskMessages.EnablingSSH, async _ => {
-                        await _sshManager.EnableSshAsync(gamelet, action);
-                    });
+                ICancelableTask enableSshTask = _cancelableTaskFactory.Create(
+                    TaskMessages.EnablingSSH,
+                    async _ => { await _sshManager.EnableSshAsync(gamelet, action); });
                 return enableSshTask.RunAndRecord(action);
             }
             catch (Exception e) when (e is CloudException || e is SshKeyException)
@@ -338,96 +337,45 @@ namespace YetiVSI.GameLaunch
             }
         }
 
-        const string _mountConfigurationDialogCaption = "Mount configuration";
-
         /// <summary>
         /// Check whether the deployment configuration of the binary works correctly
         /// with the mount configuration of the gamelet.
         /// </summary>
-        /// <param name="targetPath">Path to the generated binary.</param>
         /// <param name="deployOnLaunchSetting">Project's "Deploy On Launch" value.</param>
         /// <param name="gamelet">Gamelet to connect to.</param>
         /// <returns>True if no issues found or the user decided to proceed.</returns>
-        bool ValidateMountConfiguration(string targetPath,
-                                        DeployOnLaunchSetting deployOnLaunchSetting,
+        bool ValidateMountConfiguration(DeployOnLaunchSetting deployOnLaunchSetting,
                                         Gamelet gamelet)
         {
             MountConfiguration configuration =
                 _mountChecker.GetConfiguration(gamelet, _actionRecorder);
 
-            string targetPathNormalized = GetNormalizedFullPath(targetPath);
-            Trace.WriteLine($"TargetPath is set to {targetPathNormalized}");
-            // If the /srv/game/assets folder is detached from /mnt/developer then
-            // binaries generated by VS won't be used during the run/debug process.
+            // If VS copies binaries to /mnt/developer, but the /srv/game/assets folder is detached
+            // from /mnt/developer, then binaries won't be used during the run/debug process.
             // Notify the user and let them decide whether this is expected behaviour or not.
-            if (_mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration))
+            if (_mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration) &&
+                deployOnLaunchSetting != DeployOnLaunchSetting.FALSE)
             {
                 // 'Yes' - continue; 'No' - interrupt (gamelet validation fails).
                 return _dialogUtil.ShowYesNo(
-                    ErrorStrings.MountConfigurationWarning(YetiConstants.GameAssetsMountingPoint,
-                                                           YetiConstants.DeveloperMountingPoint),
-                    _mountConfigurationDialogCaption);
+                    ErrorStrings.NoInstanceStorageOverlayWarning(
+                        YetiConstants.GameAssetsMountingPoint,
+                        YetiConstants.DeveloperMountingPoint), ErrorStrings.MountConfiguration);
             }
 
-            if (_mountChecker.IsAssetStreamingActivated(configuration))
+            // Also, if the /srv/game/assets folder is detached from /mnt/developer and asset
+            // streaming is not active, then binaries won't be used during the run/debug process.
+            // Notify the user and let them decide whether this is expected behaviour or not.
+            if (_mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration) &&
+                !configuration.HasFlag(MountConfiguration.LocalDirMounted))
             {
-                var sshChannels = new SshTunnels();
-                IEnumerable<string> commandLines = sshChannels.GetSshCommandLines();
-                string[] mountPoints = sshChannels.ExtractMountingPoints(commandLines).ToArray();
-
-                if (mountPoints.Length == 0)
-                {
-                    // If asset streaming is set up on the gamelet but there is no ssh tunnels
-                    // between the workstation and the gamelet then the connection was
-                    // probably lost (or asset streaming is set to a different machine, and
-                    // then it's ok).
-                    // 'Yes' - continue; 'No' - interrupt (gamelet validation fails).
-                    return _dialogUtil.ShowYesNo(ErrorStrings.AssetStreamingBrokenWarning(),
-                                                _mountConfigurationDialogCaption);
-                }
-
-                if (deployOnLaunchSetting != DeployOnLaunchSetting.FALSE)
-                {
-                    foreach (string mountPoint in mountPoints)
-                    {
-                        string mountPointNormalized = GetNormalizedFullPath(mountPoint);
-                        if (targetPathNormalized.StartsWith($@"{mountPointNormalized}\"))
-                        {
-                            // The mount point folder matches the output folder for the binaries;
-                            // VS will try to upload the binaries to the gamelet and this might lead
-                            // to an exception during 'scp' call. Instead, asset streaming should
-                            // take care of uploading the generated data to the gamelet. 'Yes' -
-                            // continue; 'No' - interrupt (gamelet validation fails).
-                            string current = GgpDeployOnLaunchToDisplayName(deployOnLaunchSetting);
-                            string expected =
-                                GgpDeployOnLaunchToDisplayName(DeployOnLaunchSetting.FALSE);
-                            return _dialogUtil.ShowYesNo(
-                                ErrorStrings.AssetStreamingDeployWarning(mountPointNormalized,
-                                                                         current, expected),
-                                _mountConfigurationDialogCaption);
-                        }
-                    }
-                }
+                // 'Yes' - continue; 'No' - interrupt (gamelet validation fails).
+                return _dialogUtil.ShowYesNo(
+                    ErrorStrings.NoAssetStreamingWarning(
+                        YetiConstants.GameAssetsMountingPoint), ErrorStrings.MountConfiguration);
             }
 
             return true;
-
-            string GetNormalizedFullPath(string path)
-            {
-                if (string.IsNullOrWhiteSpace(path))
-                {
-                    return path;
-                }
-
-                string normalizedPath = FileUtil.GetNormalizedPath(path);
-                if (File.Exists(normalizedPath) && FileUtil.IsPathSymlink(normalizedPath))
-                {
-                    string symlinkTarget = NativeMethods.GetTargetPathName(path);
-                    return FileUtil.GetNormalizedPath(symlinkTarget);
-                }
-
-                return normalizedPath;
-            }
         }
 
         string GgpDeployOnLaunchToDisplayName(DeployOnLaunchSetting enumValue)
@@ -451,10 +399,10 @@ namespace YetiVSI.GameLaunch
         /// </summary>
         bool ClearLogs(Gamelet gamelet)
         {
-            ICancelableTask clearLogsTask =
-                _cancelableTaskFactory.Create(TaskMessages.ClearingInstanceLogs,
-                                             async _ => await _remoteCommand.RunWithSuccessAsync(
-                                                 new SshTarget(gamelet), ClearLogsCmd));
+            ICancelableTask clearLogsTask = _cancelableTaskFactory.Create(
+                TaskMessages.ClearingInstanceLogs,
+                async _ => await _remoteCommand.RunWithSuccessAsync(
+                    new SshTarget(gamelet), ClearLogsCmd));
             try
             {
                 return clearLogsTask.RunAndRecord(_actionRecorder, ActionType.GameletClearLogs);
@@ -463,7 +411,7 @@ namespace YetiVSI.GameLaunch
             {
                 Trace.WriteLine($"Error clearing instance logs: {e.Message}");
                 _dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message),
-                                     e.ToString());
+                                      e.ToString());
                 return false;
             }
         }

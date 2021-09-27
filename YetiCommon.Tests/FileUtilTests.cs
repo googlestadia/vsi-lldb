@@ -20,21 +20,6 @@ namespace YetiCommon.Tests
     [TestFixture]
     public class FileUtilTests
     {
-        [TestCase(@"\\?\c:\Program Files\test data")]
-        [TestCase("c:/src/test/../../ProgRam Files/test data/")]
-        [TestCase(@"C:/Program Files/test data\")]
-        [TestCase(@"\""c:/Program Files/test data\""")]
-        // (internal)
-        // [TestCase(@"C:\Progra~1\test data")]
-        [TestCase(@"""c:/Program Files/test data\""")]
-        [TestCase(@"\'c:/Program Files/test data\'")]
-        [TestCase(@"'c:/Program Files/test data\'")]
-        public void GetNormalizedPathReturnsSameValueForDifferentNotations(string path)
-        {
-            var normalized = FileUtil.GetNormalizedPath(path);
-            Assert.That(normalized, Is.EqualTo(@"c:\program files\test data"));
-        }
-
         [TestCase(@"C:\test", @"C:\", @"C:\test")]
         [TestCase(@"test", @"C:\", @"C:\test")]
         [TestCase(@"..\test", @"C:\test2", @"C:\test")]

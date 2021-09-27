@@ -69,7 +69,7 @@ namespace YetiVSI.Test
         IGameletSelectorFactory _gameletSelectorFactory;
         ChromeClientLaunchCommandFormatter _launchCommandFormatter;
         YetiVSI.DebugEngine.DebugEngine.Params.Factory _paramsFactory;
-        readonly int _outVariableIndex = 5;
+        readonly int _outVariableIndex = 4;
         IAsyncProject _project;
         string _targetPath;
         string _outputDirectory;
@@ -116,8 +116,7 @@ namespace YetiVSI.Test
             credentialManager.LoadAccount().Returns(_testAccount);
 
             var taskContext = new JoinableTaskContext();
-            var cancelableTaskFactory =
-                FakeCancelableTask.CreateFactory(taskContext, false);
+            var cancelableTaskFactory = FakeCancelableTask.CreateFactory(taskContext, false);
 
             _applicationClient = Substitute.For<IApplicationClient>();
             var application = new Application
@@ -157,8 +156,7 @@ namespace YetiVSI.Test
                                               new CloudConnection(), new GgpSDKUtil());
             _gameletSelector = Substitute.For<IGameletSelector>();
             _gameletSelectorFactory = Substitute.For<IGameletSelectorFactory>();
-            _gameletSelectorFactory.Create(Arg.Any<ActionRecorder>())
-                .Returns(_gameletSelector);
+            _gameletSelectorFactory.Create(Arg.Any<ActionRecorder>()).Returns(_gameletSelector);
             var serializer = new JsonUtil();
             _launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
             _paramsFactory = new YetiVSI.DebugEngine.DebugEngine.Params.Factory(serializer);
@@ -169,7 +167,7 @@ namespace YetiVSI.Test
 
             _projectPropertiesParser = Substitute.For<IProjectPropertiesMetricsParser>();
             _projectPropertiesParser.GetStadiaProjectPropertiesAsync(Arg.Any<IAsyncProject>())
-                .Returns(Task.FromResult((VSIProjectProperties)null));
+                .Returns(Task.FromResult((VSIProjectProperties) null));
 
             _ggpDebugQueryTarget = new GgpDebugQueryTarget(fileSystem, sdkConfigFactory,
                                                            gameletClientFactory,
@@ -204,8 +202,7 @@ namespace YetiVSI.Test
             _project.GetEndpointAsync().Returns(endpoint);
             Gamelet gamelet = SetupReservedGamelet();
 
-            _gameLauncher.CreateLaunch(Arg.Any<LaunchParams>())
-                .Returns(_gameLaunch);
+            _gameLauncher.CreateLaunch(Arg.Any<LaunchParams>()).Returns(_gameLaunch);
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
             Assert.That(launchSettings.Count, Is.EqualTo(1));
@@ -222,18 +219,15 @@ namespace YetiVSI.Test
             else
             {
                 _launchCommandFormatter.Parse(launchSettings[0].Arguments,
-                                              out LaunchParams launchParams,
-                                              out string launchName);
+                                              out LaunchParams launchParams, out string launchName);
                 Assert.That(launchParams.Account, Is.EqualTo(_testAccount));
                 Assert.That(launchParams.SdkVersion, Is.EqualTo(_sdkVersionString));
                 Assert.That(launchParams.Endpoint, Is.EqualTo(endpoint));
                 Assert.That(launchName, Is.EqualTo(_gameLaunch.LaunchName));
             }
 
-            await _remoteDeploy.Received()
-                .DeployGameExecutableAsync(_project, new SshTarget(gamelet),
-                                           Arg.Any<ICancelable>(),
-                                           Arg.Any<IAction>());
+            await _remoteDeploy.Received().DeployGameExecutableAsync(
+                _project, new SshTarget(gamelet), Arg.Any<ICancelable>(), Arg.Any<IAction>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.Success);
@@ -251,8 +245,7 @@ namespace YetiVSI.Test
 
             SetupReservedGamelet();
 
-            _gameLauncher.CreateLaunch(Arg.Any<LaunchParams>())
-                .Returns((IVsiGameLaunch) null);
+            _gameLauncher.CreateLaunch(Arg.Any<LaunchParams>()).Returns((IVsiGameLaunch) null);
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
             Assert.That(launchSettings.Count, Is.EqualTo(0));
@@ -264,8 +257,7 @@ namespace YetiVSI.Test
             Gamelet gamelet = SetupReservedGamelet();
 
             _remoteDeploy
-                .DeployGameExecutableAsync(_project, new SshTarget(gamelet),
-                                           Arg.Any<ICancelable>(),
+                .DeployGameExecutableAsync(_project, new SshTarget(gamelet), Arg.Any<ICancelable>(),
                                            Arg.Any<IAction>())
                 .Returns(x => throw new DeployException("deploy exception",
                                                         new ProcessException("ssh failed")));
@@ -451,8 +443,10 @@ namespace YetiVSI.Test
                                  DeveloperEventStatus.Types.Code.InvalidConfiguration);
         }
 
-        [TestCase(StadiaEndpoint.PlayerEndpoint, TestName = "PlayerEndpoint")]
-        [TestCase(StadiaEndpoint.AnyEndpoint, TestName = "AnyEndpoint")]
+        [TestCase(StadiaEndpoint.PlayerEndpoint,
+                  TestName = "LaunchTestAccountNotSupportedWithPlayerEndpoint")]
+        [TestCase(StadiaEndpoint.AnyEndpoint,
+                  TestName = "LaunchTestAccountNotSupportedWithAnyEndpoint")]
         public async Task LaunchTestAccountNotSupportedWithEndpointAsync(StadiaEndpoint endpoint)
         {
             const string testTestAccountGamerTagName = "test";
@@ -476,9 +470,10 @@ namespace YetiVSI.Test
             var launchSettings = await QueryDebugTargetsAsync(0);
             Assert.AreEqual(1, launchSettings.Count);
             _dialogUtil.Received(1).ShowWarning(Arg.Is<string>(
-                s => s.Contains("Test accounts are not supported")));
-            LaunchParams launchParams = _launchCommandFormatter.DecodeLaunchParams(
-                launchSettings[0].Arguments);
+                                                    s => s.Contains(
+                                                        "Test accounts are not supported")));
+            LaunchParams launchParams =
+                _launchCommandFormatter.DecodeLaunchParams(launchSettings[0].Arguments);
             Assert.IsNull(launchParams.TestAccount);
             Assert.IsNull(launchParams.TestAccountGamerName);
 
@@ -554,10 +549,11 @@ namespace YetiVSI.Test
 
             var launchSettings = await QueryDebugTargetsAsync(0);
             Assert.AreEqual(1, launchSettings.Count);
-            _dialogUtil.Received(1).ShowWarning(Arg.Is<string>(
-                s => s.Contains("test accounts aren't compatible with external IDs")));
-            LaunchParams launchParams = _launchCommandFormatter.DecodeLaunchParams(
-                launchSettings[0].Arguments);
+            _dialogUtil.Received(1).ShowWarning(
+                Arg.Is<string>(
+                    s => s.Contains("test accounts aren't compatible with external IDs")));
+            LaunchParams launchParams =
+                _launchCommandFormatter.DecodeLaunchParams(launchSettings[0].Arguments);
             Assert.IsNull(launchParams.TestAccount);
             Assert.IsNull(launchParams.TestAccountGamerName);
 
@@ -601,8 +597,7 @@ namespace YetiVSI.Test
             _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
 
             Gamelet gamelet;
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                        Arg.Any<DeployOnLaunchSetting>(), gamelets,
+            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<DeployOnLaunchSetting>(), gamelets,
                                                         Arg.Any<TestAccount>(), Arg.Any<string>(),
                                                         out gamelet).Returns(false);
 
@@ -630,7 +625,7 @@ namespace YetiVSI.Test
 
             Gamelet gamelet;
             _gameletSelector.When(g => g.TrySelectAndPrepareGamelet(
-                                      Arg.Any<string>(), Arg.Any<DeployOnLaunchSetting>(), gamelets,
+                                      Arg.Any<DeployOnLaunchSetting>(), gamelets,
                                       Arg.Any<TestAccount>(), Arg.Any<string>(), out gamelet))
                 .Throw(c => new Exception("Oops!"));
 
@@ -665,15 +660,14 @@ namespace YetiVSI.Test
             };
             _gameletClient.ListGameletsAsync().Returns(
                 Task.FromResult(new List<Gamelet> { gamelet }));
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<string>(),
-                                                       Arg.Any<DeployOnLaunchSetting>(),
-                                                       Arg.Any<List<Gamelet>>(),
-                                                       Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                       out Gamelet _).Returns(x =>
-                                                       {
-                                                           x[_outVariableIndex] = gamelet;
-                                                           return true;
-                                                       });
+            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<DeployOnLaunchSetting>(),
+                                                        Arg.Any<List<Gamelet>>(),
+                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
+                                                        out Gamelet _).Returns(x =>
+            {
+                x[_outVariableIndex] = gamelet;
+                return true;
+            });
             return gamelet;
         }
     }

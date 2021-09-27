@@ -187,9 +187,9 @@ namespace YetiVSI
 
         public static string BuildIdCheckDetails(IEnumerable<string> matchedFiles,
                                                  IEnumerable<string> searchedPaths) =>
-            $"Executables matched by name: " + Environment.NewLine +
+            "Executables matched by name: " + Environment.NewLine +
             string.Join(Environment.NewLine, matchedFiles) + Environment.NewLine +
-            $"Library search paths: " + Environment.NewLine +
+            "Library search paths: " + Environment.NewLine +
             string.Join(Environment.NewLine, searchedPaths);
 
         public static string ErrorQueryingCoreFiles(string message) =>
@@ -202,13 +202,13 @@ namespace YetiVSI
             $"Error running custom deploy command.{Environment.NewLine}{message}";
 
         public static string ExecutableCheckDetails(IEnumerable<string> searchedPaths) =>
-            $"Library search paths: " + Environment.NewLine +
+            "Library search paths: " + Environment.NewLine +
             string.Join(Environment.NewLine, searchedPaths);
 
         public static string FailedToCheckRemoteBuildIdWithExplanation(string message) =>
             $"{message}{Environment.NewLine}" +
-            $"A Build ID is required for various features of the GGP Debugger to work properly. " +
-            $"For more information about Build IDs, see the document 'Debug in Visual Studio'.";
+            "A Build ID is required for various features of the GGP Debugger to work properly. " +
+            "For more information about Build IDs, see the document 'Debug in Visual Studio'.";
 
         public static string FailedToDeployExecutable(string message) =>
             $"Failed to deploy executable to your instance.{Environment.NewLine}{message}";
@@ -220,7 +220,7 @@ namespace YetiVSI
             $"Failed to enable SSH on your instance.{Environment.NewLine}{message}";
 
         public static string FailedToStartRequiredProcess(string message) =>
-            $"Failed to start a process required by the GGP Instance Debugger." +
+            "Failed to start a process required by the GGP Instance Debugger." +
             $"{Environment.NewLine}{message}";
 
         public static string FailedToAttachToProcess(string lldbError) =>
@@ -242,8 +242,8 @@ namespace YetiVSI
 
         public static string FailedToConnectDebugger(string url) =>
             $"Failed to connect to the remote debugger at {url}. " +
-            $"Check your firewall and proxy settings to make sure this port isn't being blocked " +
-            $"or proxied.";
+            "Check your firewall and proxy settings to make sure this port isn't being blocked " +
+            "or proxied.";
 
         public static string FailedToLoadCore(string coreFilePath) =>
             $"Failed to load core file: '{coreFilePath}'";
@@ -269,8 +269,8 @@ namespace YetiVSI
 
         public static string FileNotOnFilesystem(string fileUrl) =>
             $"Unable to load file. '{fileUrl}' must be cached in a filesystem " +
-            $"location. Ensure that a valid cache directory is set in 'Tools -> Options -> " +
-            $"Debugging -> Symbols'.";
+            "location. Ensure that a valid cache directory is set in 'Tools -> Options -> " +
+            "Debugging -> Symbols'.";
 
         public static string GameletInUnexpectedState(Gamelet gamelet) =>
             $"Game cannot be launched as instance '{gamelet.DisplayName}' with ID '{gamelet.Id}' " +
@@ -305,51 +305,48 @@ namespace YetiVSI
         public static string MoreThanOneTestAccount(string stadiaName) =>
             $"More than one test account exists with the chosen Stadia Name {stadiaName}. Run " +
             $"'ggp test-account describe {stadiaName}' to list all test accounts with this name, " +
-            $"and set the 'Test Account' field in the 'Debugging' page in your project " +
-            $"properties using either an ID or Stadia Name with its numerical ID.";
+            "and set the 'Test Account' field in the 'Debugging' page in your project " +
+            "properties using either an ID or Stadia Name with its numerical ID.";
 
         public static string UnableToFindExecutable(string executable) =>
             $"Failed to find executable '{executable}'. This can cause longer than normal " +
-            $"launch times and missing symbols. Please make sure your 'Output Directory' and " +
-            $"'Target Name' or NMake 'Output' project properties are set correctly.";
+            "launch times and missing symbols. Please make sure your 'Output Directory' and " +
+            "'Target Name' or NMake 'Output' project properties are set correctly.";
 
         public static string UnableToFindExecutableMatchingRemoteBinary(string executable,
             string remotePath) =>
             $"Could not find a local copy of {executable} matching the build ID of the remote " +
             $"binary '{remotePath}'.{Environment.NewLine} " +
-            $"This can cause longer than normal launch times and missing symbols. Please make " +
-            $"sure your 'Output Directory' and 'Target Name' or NMake 'Output' project " +
-            $"properties are set correctly. This could also indicate a problem with any custom " +
+            "This can cause longer than normal launch times and missing symbols. Please make " +
+            "sure your 'Output Directory' and 'Target Name' or NMake 'Output' project " +
+            "properties are set correctly. This could also indicate a problem with any custom " +
             $"deploy scripts that you may be using.{Environment.NewLine}" +
-            $"For more information about Build IDs, see the document 'Debug in Visual Studio'.";
+            "For more information about Build IDs, see the document 'Debug in Visual Studio'.";
 
         public static string UnableToFindTargetExecutable(string targetPath) =>
             $"Failed to find executable: {targetPath}{Environment.NewLine}Make sure that the " +
-            $"'Output Directory' and 'Target Name' project properties are set correctly, the " +
-            $"'Target Extension' project property is blank, and the executable has the correct " +
-            $"permissions.";
+            "'Output Directory' and 'Target Name' project properties are set correctly, the " +
+            "'Target Extension' project property is blank, and the executable has the correct " +
+            "permissions.";
 
-        public static string MountConfigurationWarning(string gameAssetsPath,
-                                                       string developerMountPath) =>
-            $"The game directory {gameAssetsPath} contains a mounted package. As a result, " +
-            $"any binary uploaded to the upload directory {developerMountPath} " +
-            $"will be ignored.{Environment.NewLine}If this is unintended please run " +
-            "'ggp instance unmount' to reset the gamelet mount configuration." +
-            $"{Environment.NewLine}Do you wish to continue?";
+        public static string MountConfiguration = "Mount configuration";
 
-        public static string AssetStreamingBrokenWarning() =>
-            "This gamelet has asset streaming activated, but no corresponding asset streaming " +
-            "service appears to be running. Please validate the connection and restart asset " +
-            $"streaming if needed.{Environment.NewLine}Continue launch anyway?";
+        public static string NoInstanceStorageOverlayWarning(string gameAssetsPath,
+                                                             string developerMountPath) =>
+            "A package or local workstation directory has been mounted on the instance, but no " +
+            "instance storage overlay has been specified. As a result, any binary uploaded to " +
+            $"the developer directory {developerMountPath} will not be accessible from the " +
+            $"game directory {gameAssetsPath}." +
+            $"{Environment.NewLine}If this is unintended, please run 'ggp instance unmount' to " +
+            $"reset the instance mount configuration.{Environment.NewLine}Do you wish to continue?";
 
-        public static string AssetStreamingDeployWarning(string folder, string current,
-                                                         string expected) =>
-            $"This gamelet is streaming assets from the folder: '{folder}' which is also " +
-            $"used as binary output folder, and automatic deployment is set to '{current}'. " +
-            $"Please consider changing automatic deployment to '{expected}' in the project " +
-            "properties to avoid issues during the deployment process (please see " +
-            "'Properties'->'Configuration Properties'->'Debugging'->'Deploy Executable on " +
-            $"Launch').{Environment.NewLine}Continue launch anyway?";
+        public static string NoAssetStreamingWarning(string gameAssetsPath) =>
+            "A package has been mounted on the instance, but neither a local workstation " +
+            "directory is streamed nor an instance storage overlay has been specified. As a " +
+            "result, any binary built by Visual Studio will not be accessible from the " +
+            $"game directory {gameAssetsPath}." +
+            $"{Environment.NewLine}If this is unintended, please run 'ggp instance unmount' to " +
+            $"reset the instance mount configuration.{Environment.NewLine}Do you wish to continue?";
 
         public static string DontShowAgainSettingHint(string[] settingPath) =>
             $"This can be edited in '{string.Join(" -> ", settingPath.Select(p => $"'{p}'"))}'.";

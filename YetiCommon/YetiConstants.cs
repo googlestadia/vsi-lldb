@@ -64,6 +64,7 @@ namespace YetiCommon
         public static readonly string RemoteDeployPath = "/mnt/developer/";
 
         public static readonly string DeveloperMountingPoint = "/mnt/developer";
+        public static readonly string WorkstationMountingPoint = "/mnt/workstation";
         public static readonly string PackageMountingPoint = "/mnt/package";
         public static readonly string GameAssetsMountingPoint = "/srv/game/assets";
         public static readonly string LldbDir = Path.Combine(RootDir, "LLDB");

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using GgpGrpc.Models;
+using GgpGrpc.Models;
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
@@ -32,54 +32,107 @@ namespace YetiVSI.Test
         readonly Gamelet _gamelet = new Gamelet();
         readonly IDialogUtil _dialogUtil = Substitute.For<IDialogUtil>();
         IRemoteCommand _remoteCommand;
+
         CancelableTask.Factory _cancelableTaskFactory =
             FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
+
         ActionRecorder _actionRecorder;
 
-        readonly List<string> _cleanGamelet = new List<string> {
-            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=size_in_k,mode=700,uid=1000,gid=1000 0 0",
+        // ggp instance unmount
+        readonly List<string> _unmounted = new List<string>
+        {
+            "/dev/sde6 /srv/game/assets ext4 ro,relatime 0 0",
             "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
-            "/dev/sde6 /srv/game/assets ext4 ro,relatime,norecovery 0 0"
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
-        readonly List<string> _corruptedFile = new List<string> {
-            "/dev/sde6 /mnt/developer",     // this won't be processed because fields are missing
-            "/dev/sde6 /srv/game/assets 2", // this won't be processed because fields are missing,
-            "/dev/sde6 /srv/game/assets 2 a d" // this won't be processed because of extra fields
+        readonly List<string> _corruptedProcMountFile = new List<string>
+        {
+            "/dev/sde6 /mnt/developer", // this won't be processed because fields are missing
+            "/dev/sde6 /srv/game/assets ext4 ro", // this won't be processed because fields are missing,
+            "/dev/sde6 /srv/game/assets ext4 ro 0 0 0" // this won't be processed because of extra fields
         };
 
-        readonly List<string> _mountedWithNoOverlay = new List<string> {
-            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=size_in_k,mode=700,uid=1000,gid=1000 0 0",
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /srv/game/assets ext4 ro,relatime,norecovery 0 0"
-        };
-
-        readonly List<string> _mountedWithOverlay = new List<string> {
-            "/dev/sde4 /mnt/localssd/saves ext4 rw,relatime 0 0",
+        // ggp instance mount --package
+        readonly List<string> _mountedPackage = new List<string>
+        {
             "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
             "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
-            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/package 0 0"
+            "/dev/mapper/cryptfs-disk-0129389243020 /srv/game/assets ext4 ro,relatime,norecovery 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
-        readonly List<string> _packageRanDirectly = new List<string> {
-            "tmpfs /run/user/0 tmpfs rw,nosuid,nodev,relatime,size=size_in_k,mode=700 0 0",
-            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=size_in_k,mode=700,uid=1000,gid=1000 0 0",
+        // ggp instance mount --package --overlay-instance-storage
+        readonly List<string> _mountedPackageWithOverlay = new List<string>
+        {
             "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /srv/game/assets ext4 ro,relatime,norecovery 0 0"
+            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/package 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
-        readonly List<string> _localDirStreaming = new List<string> {
+        // ggp instance mount --local-dir with Asset Streaming 2.0
+        readonly List<string> _mountedLocalDirAS20 = new List<string>
+        {
+            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
             "machine@localhost:/ /mnt/workstation fuse.sshfs rw,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
-            "machine@localhost:/ /mnt/developer fuse.sshfs rw,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
             "machine@localhost:/ /srv/game/assets fuse.sshfs ro,relatime,user_id=1000,group_id=1000,allow_other 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
-        readonly List<string> _localDirStreamingAsOverlay = new List<string> {
-            "machine@localhost:/ /mnt/workstation fuse.sshfs rw,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
-            "machine@localhost:/ /mnt/developer fuse.sshfs rw,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
+        // ggp instance mount --local-dir with Asset Streaming 3.0
+        readonly List<string> _mountedLocalDirAS30 = new List<string>
+        {
+            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "cdc_fuse_fs /mnt/workstation fuse.cdc_fuse_fs ro,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
+            "cdc_fuse_fs /srv/game/assets fuse.cdc_fuse_fs ro,relatime,user_id=1000,group_id=1000,allow_other 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
+        };
+
+        // ggp instance mount --local-dir --overlay-instance-storage
+        readonly List<string> _mountedLocalDirWithOverlay = new List<string>
+        {
+            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "cdc_fuse_fs /mnt/workstation fuse.cdc_fuse_fs ro,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/workstation 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
+        };
+
+        // ggp instance mount --package --local-dir
+        readonly List<string> _mountedPackageAndLocalDir = new List<string>
+        {
+            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "cdc_fuse_fs /mnt/workstation fuse.cdc_fuse_fs ro,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
             "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
-            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/home/cloudcast/.overlayfs_workaround_layer:/mnt/developer:/mnt/package 0 0"
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/home/cloudcast/.overlayfs_workaround_layer:/mnt/workstation:/mnt/package 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
+        };
+
+        // ggp instance mount --package --local-dir --instance-storage-overlay
+        readonly List<string> _mountedPackageAndLocalDirWithOverlay = new List<string>
+        {
+            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "cdc_fuse_fs /mnt/workstation fuse.cdc_fuse_fs ro,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
+            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/workstation:/mnt/package 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
+        };
+
+        // ggp run --package
+        readonly List<string> _runFromPackage = new List<string>
+        {
+            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/mapper/cryptfs-content-asset-1-ad29163532d94905 /srv/game/assets ext4 ro,relatime,norecovery 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
+        };
+
+        // ggp instance mount --local-dir && ggp run --package
+        readonly List<string> _runFromPackageWithLeftOverFuse = new List<string>
+        {
+            "cdc_fuse_fs /mnt/workstation fuse.cdc_fuse_fs ro,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
+            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/mapper/cryptfs-content-asset-1-ad29163532d94905 /srv/game/assets ext4 ro,relatime,norecovery 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
         [SetUp]
@@ -104,10 +157,10 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void GetConfigurationForCleanGameletReturnsNone()
+        public void GetConfigurationForUnmountedGameletReturnsNone()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_cleanGamelet);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_unmounted);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
@@ -116,10 +169,10 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void GetConfigurationForMountedWithNoOverlayReturnsCorrectCombination()
+        public void GetConfigurationForMountedPackage()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedWithNoOverlay);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedPackage);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
@@ -128,23 +181,92 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void GetConfigurationForMountedWithOverlayReturnsCorrectCombination()
+        public void GetConfigurationForMountedPackageWithOverlay()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedWithOverlay);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedPackageWithOverlay);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
             Assert.That(configuration,
-                        Is.EqualTo(MountConfiguration.PackageMounted | MountConfiguration.Overlay));
+                        Is.EqualTo(MountConfiguration.PackageMounted |
+                                   MountConfiguration.InstanceStorageOverlay));
         }
 
         [Test]
-        public void GetConfigurationForPackageRanDirectlyReturnsCorrectCombination()
+        public void GetConfigurationForMountedLocalDirAS20()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_packageRanDirectly);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedLocalDirAS20);
+
+            MountConfiguration configuration =
+                mountChecker.GetConfiguration(_gamelet, _actionRecorder);
+
+            Assert.That(configuration, Is.EqualTo(MountConfiguration.LocalDirMounted));
+        }
+
+        [Test]
+        public void GetConfigurationForMountedLocalDirAS30()
+        {
+            GameletMountChecker mountChecker =
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedLocalDirAS30);
+
+            MountConfiguration configuration =
+                mountChecker.GetConfiguration(_gamelet, _actionRecorder);
+
+            Assert.That(configuration, Is.EqualTo(MountConfiguration.LocalDirMounted));
+        }
+
+        [Test]
+        public void GetConfigurationForMountedLocalDirWithOverlay()
+        {
+            GameletMountChecker mountChecker =
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedLocalDirWithOverlay);
+
+            MountConfiguration configuration =
+                mountChecker.GetConfiguration(_gamelet, _actionRecorder);
+
+            Assert.That(configuration,
+                        Is.EqualTo(MountConfiguration.InstanceStorageOverlay |
+                                   MountConfiguration.LocalDirMounted));
+        }
+
+        [Test]
+        public void GetConfigurationForMountedPackageAndLocalDir()
+        {
+            GameletMountChecker mountChecker =
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedPackageAndLocalDir);
+
+            MountConfiguration configuration =
+                mountChecker.GetConfiguration(_gamelet, _actionRecorder);
+
+            Assert.That(configuration,
+                        Is.EqualTo(MountConfiguration.PackageMounted |
+                                   MountConfiguration.LocalDirMounted));
+        }
+
+        [Test]
+        public void GetConfigurationForMountedPackageAndLocalDirWithOverlay()
+        {
+            GameletMountChecker mountChecker =
+                CreateMountCheckerWithSpecifiedProcMountsInfo(
+                    _mountedPackageAndLocalDirWithOverlay);
+
+            MountConfiguration configuration =
+                mountChecker.GetConfiguration(_gamelet, _actionRecorder);
+
+            Assert.That(configuration,
+                        Is.EqualTo(MountConfiguration.InstanceStorageOverlay |
+                                   MountConfiguration.PackageMounted |
+                                   MountConfiguration.LocalDirMounted));
+        }
+
+        [Test]
+        public void GetConfigurationForRunFromPackage()
+        {
+            GameletMountChecker mountChecker =
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_runFromPackage);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
@@ -153,36 +275,24 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void GetConfigurationForAssetStreamingReturnsCorrectCombination()
+        public void GetConfigurationForRunFromPackageWithLeftOverFuse()
         {
+            // The FUSE mounted to /mnt/workstation should be ignored since it is not visible
+            // in /srv/game/assets.
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_localDirStreaming);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_runFromPackageWithLeftOverFuse);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.LocalStreaming));
-        }
-
-        [Test]
-        public void GetConfigurationForMountedWithLocalFolderAsOverlayReturnsCorrectCombination()
-        {
-            GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_localDirStreamingAsOverlay);
-
-            MountConfiguration configuration =
-                mountChecker.GetConfiguration(_gamelet, _actionRecorder);
-
-            Assert.That(configuration,
-                        Is.EqualTo(MountConfiguration.PackageMounted | MountConfiguration.Overlay |
-                                   MountConfiguration.LocalStreaming));
+            Assert.That(configuration, Is.EqualTo(MountConfiguration.RunFromPackage));
         }
 
         [Test]
         public void GetConfigurationForCorruptedFileReturnsNone()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_corruptedFile);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_corruptedProcMountFile);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
@@ -191,103 +301,10 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void GetDevicesWhenReadingFailedReturnsEmpty()
-        {
-            var mountChecker = new GameletMountChecker(null, null, null);
-            var emptyContent = new List<string>();
-            Dictionary<string, GameletMountChecker.Device> devices =
-                mountChecker.GetDevices(emptyContent);
-            Assert.Multiple(() => {
-                Assert.That(devices[YetiConstants.PackageMountingPoint]?.Address, Is.EqualTo(null));
-                Assert.That(devices[YetiConstants.GameAssetsMountingPoint]?.Address,
-                            Is.EqualTo(null));
-                Assert.That(devices[YetiConstants.DeveloperMountingPoint]?.Address,
-                            Is.EqualTo(null));
-            });
-        }
-
-        [Test]
-        public void GetDevicesOnCleanGameletHasGameAssetsAndDeveloperMountSet()
-        {
-            var mountChecker = new GameletMountChecker(null, null, null);
-            Dictionary<string, GameletMountChecker.Device> devices =
-                mountChecker.GetDevices(_cleanGamelet);
-            Assert.Multiple(() => {
-                Assert.That(devices[YetiConstants.PackageMountingPoint]?.Address, Is.EqualTo(null));
-                Assert.That(devices[YetiConstants.GameAssetsMountingPoint]?.Address,
-                            Is.EqualTo("/dev/sde6"));
-                Assert.That(devices[YetiConstants.DeveloperMountingPoint]?.Address,
-                            Is.EqualTo("/dev/sde6"));
-            });
-        }
-
-        [Test]
-        public void GetDevicesOnGameletWithMountedPackageWithoutOverlay()
-        {
-            var mountChecker = new GameletMountChecker(null, null, null);
-            Dictionary<string, GameletMountChecker.Device> devices =
-                mountChecker.GetDevices(_mountedWithNoOverlay);
-            Assert.Multiple(() => {
-                Assert.That(devices[YetiConstants.PackageMountingPoint]?.Address,
-                            Is.EqualTo("/dev/mapper/cryptfs-disk-0129389243020"));
-                Assert.That(devices[YetiConstants.GameAssetsMountingPoint]?.Address,
-                            Is.EqualTo("/dev/mapper/cryptfs-disk-0129389243020"));
-                Assert.That(devices[YetiConstants.DeveloperMountingPoint]?.Address,
-                            Is.EqualTo("/dev/sde6"));
-            });
-        }
-
-        [Test]
-        public void GetDevicesOnGameletWithMountedPackageWithOverlay()
-        {
-            var mountChecker = new GameletMountChecker(null, null, null);
-            Dictionary<string, GameletMountChecker.Device> devices =
-                mountChecker.GetDevices(_mountedWithOverlay);
-            Assert.Multiple(() => {
-                Assert.That(devices[YetiConstants.PackageMountingPoint]?.Address,
-                            Is.EqualTo("/dev/mapper/cryptfs-disk-0129389243020"));
-                Assert.That(devices[YetiConstants.GameAssetsMountingPoint]?.Address,
-                            Is.EqualTo("overlay"));
-                Assert.That(devices[YetiConstants.DeveloperMountingPoint]?.Address,
-                            Is.EqualTo("/dev/sde6"));
-            });
-        }
-
-        [Test]
-        public void GetDevicesOnGameletAfterPackageRunHasGameAssetsAndDeveloperMountSet()
-        {
-            var mountChecker = new GameletMountChecker(null, null, null);
-            Dictionary<string, GameletMountChecker.Device> devices =
-                mountChecker.GetDevices(_packageRanDirectly);
-            Assert.Multiple(() => {
-                Assert.That(devices[YetiConstants.PackageMountingPoint]?.Address, Is.EqualTo(null));
-                Assert.That(devices[YetiConstants.GameAssetsMountingPoint]?.Address,
-                            Is.EqualTo("/dev/mapper/cryptfs-disk-0129389243020"));
-                Assert.That(devices[YetiConstants.DeveloperMountingPoint]?.Address,
-                            Is.EqualTo("/dev/sde6"));
-            });
-        }
-
-        [Test]
-        public void GetDevicesOnCorruptedFileReturnsEmpty()
-        {
-            var mountChecker = new GameletMountChecker(null, null, null);
-            Dictionary<string, GameletMountChecker.Device> devices =
-                mountChecker.GetDevices(_corruptedFile);
-            Assert.Multiple(() => {
-                Assert.That(devices[YetiConstants.PackageMountingPoint]?.Address, Is.EqualTo(null));
-                Assert.That(devices[YetiConstants.GameAssetsMountingPoint]?.Address,
-                            Is.EqualTo(null));
-                Assert.That(devices[YetiConstants.DeveloperMountingPoint]?.Address,
-                            Is.EqualTo(null));
-            });
-        }
-
-        [Test]
         public void IsGameAssetsDetachedFromDeveloperFolderForMountWithOverlayIsFalse()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedWithOverlay);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedPackageWithOverlay);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
@@ -300,7 +317,7 @@ namespace YetiVSI.Test
         public void IsGameAssetsDetachedFromDeveloperFolderForMountWithoutOverlayIsTrue()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedWithNoOverlay);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedPackage);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
@@ -310,10 +327,10 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void IsGameAssetsDetachedFromDeveloperFolderAfterPackageRunIsTrue()
+        public void IsGameAssetsDetachedFromDeveloperFolderForMountedPackageIsTrue()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_packageRanDirectly);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedPackage);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
@@ -323,10 +340,36 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void IsGameAssetsDetachedFromDeveloperFolderForCleanStateIsFalse()
+        public void IsGameAssetsDetachedFromDeveloperFolderForMountedLocalDirIsTrue()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_cleanGamelet);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedLocalDirAS30);
+
+            MountConfiguration configuration =
+                mountChecker.GetConfiguration(_gamelet, _actionRecorder);
+
+            Assert.That(mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration),
+                        Is.True);
+        }
+
+        [Test]
+        public void IsGameAssetsDetachedFromDeveloperFolderForMountedPackageAndLocalDirIsTrue()
+        {
+            GameletMountChecker mountChecker =
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedPackageAndLocalDir);
+
+            MountConfiguration configuration =
+                mountChecker.GetConfiguration(_gamelet, _actionRecorder);
+
+            Assert.That(mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration),
+                        Is.True);
+        }
+
+        [Test]
+        public void IsGameAssetsDetachedFromDeveloperFolderForUnmountedStateIsFalse()
+        {
+            GameletMountChecker mountChecker =
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_unmounted);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
@@ -336,10 +379,10 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void IsGameAssetsDetachedFromDeveloperFolderForStreamingAssetsIsFalse()
+        public void IsGameAssetsDetachedFromDeveloperFolderForMountedPackageWithOverlayIsFalse()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_localDirStreaming);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedPackageWithOverlay);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
@@ -349,10 +392,24 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void IsGameAssetsDetachedFromDeveloperFolderForPackageWithLocalDirAsOverlayIsFalse()
+        public void IsGameAssetsDetachedFromDeveloperFolderForMountedLocalDirWithOverlayIsFalse()
         {
             GameletMountChecker mountChecker =
-                CreateMountCheckerWithSpecifiedProcMountsInfo(_localDirStreamingAsOverlay);
+                CreateMountCheckerWithSpecifiedProcMountsInfo(_mountedLocalDirWithOverlay);
+
+            MountConfiguration configuration =
+                mountChecker.GetConfiguration(_gamelet, _actionRecorder);
+            Assert.That(mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration),
+                        Is.False);
+        }
+
+        [Test]
+        public void
+            IsGameAssetsDetachedFromDeveloperFolderForMountedPackageAndLocalDirWithOverlayIsFalse()
+        {
+            GameletMountChecker mountChecker =
+                CreateMountCheckerWithSpecifiedProcMountsInfo(
+                    _mountedPackageAndLocalDirWithOverlay);
 
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);

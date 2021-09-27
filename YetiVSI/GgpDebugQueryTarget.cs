@@ -160,7 +160,7 @@ namespace YetiVSI
                         setupQueriesResult.ExternalAccount.ExternalId;
                 }
 
-                DeployOnLaunchSetting deployOnLaunchAsync = await project.GetDeployOnLaunchAsync();
+                DeployOnLaunchSetting deployOnLaunch = await project.GetDeployOnLaunchAsync();
                 launchParams.Account = _credentialManager.LoadAccount();
                 IGameletSelector gameletSelector =
                     _gameletSelectorFactory.Create(actionRecorder);
@@ -168,8 +168,8 @@ namespace YetiVSI
                 using (new TestBenchmark("SelectAndPrepareGamelet", TestBenchmarkScope.Recorder))
                 {
                     if (!gameletSelector.TrySelectAndPrepareGamelet(
-                        targetPath, deployOnLaunchAsync, setupQueriesResult.Gamelets,
-                        setupQueriesResult.TestAccount, launchParams.Account, out gamelet))
+                        deployOnLaunch, setupQueriesResult.Gamelets, setupQueriesResult.TestAccount,
+                        launchParams.Account, out gamelet))
                     {
                         return new IDebugLaunchSettings[] { };
                     }

@@ -39,6 +39,24 @@ namespace YetiVSI.Test.GameLaunch
         const string _devAccount = "dev_account";
         const string _launchName = "test/launch/name";
 
+        // /proc/mounts result after 'ggp instance mount --package'.
+        readonly List<string> _mountedPackage = new List<string>
+        {
+            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
+            "/dev/mapper/cryptfs-disk-0129389243020 /srv/game/assets ext4 ro,relatime,norecovery 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
+        };
+
+        // /proc/mounts result after 'ggp instance mount --package <id> --overlay-instance-storage'
+        readonly List<string> _mountedPackageWithOverlay = new List<string>
+        {
+            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/package 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
+        };
+
         GameletSelector _gameletSelector;
 
         IMetrics _metrics;
@@ -53,7 +71,6 @@ namespace YetiVSI.Test.GameLaunch
         ActionRecorder _actionRecorder;
         IRemoteCommand _remoteCommand;
 
-        readonly string _targetPath = "";
         readonly DeployOnLaunchSetting _deploy = DeployOnLaunchSetting.ALWAYS;
 
         [SetUp]
@@ -130,8 +147,9 @@ namespace YetiVSI.Test.GameLaunch
             _instanceSelectionWindow.Run().Returns(_gamelet2);
             SetupGameletClientApi(_gamelet2);
 
-            var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                gamelets, null, _devAccount, out Gamelet gamelet);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null,
+                                                                     _devAccount,
+                                                                     out Gamelet gamelet);
 
             Assert.That(result, Is.True);
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
@@ -147,8 +165,9 @@ namespace YetiVSI.Test.GameLaunch
             var gamelets = new List<Gamelet> { _gamelet1 };
             SetupGameletClientApi(_gamelet1);
 
-            var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                gamelets, null, _devAccount, out Gamelet gamelet);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null,
+                                                                     _devAccount,
+                                                                     out Gamelet gamelet);
 
             Assert.That(result, Is.True);
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet1.Id));
@@ -162,8 +181,8 @@ namespace YetiVSI.Test.GameLaunch
         public void TestNoGameletsThrowsException()
         {
             var result = Assert.Throws<ConfigurationException>(
-                () => _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                    new List<Gamelet>(), null, _devAccount, out Gamelet _));
+                () => _gameletSelector.TrySelectAndPrepareGamelet(
+                    _deploy, new List<Gamelet>(), null, _devAccount, out Gamelet _));
 
             Assert.That(result.Message, Does.Contain(ErrorStrings.NoGameletsFound));
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsSelect,
@@ -177,8 +196,7 @@ namespace YetiVSI.Test.GameLaunch
 
             var result = Assert.Throws<InvalidStateException>(
                 () => _gameletSelector.TrySelectAndPrepareGamelet(
-                    _targetPath, _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount,
-                    out Gamelet _));
+                    _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _));
 
             Assert.That(result.Message,
                         Is.EqualTo(ErrorStrings.GameletInUnexpectedState(_gamelet1)));
@@ -195,8 +213,8 @@ namespace YetiVSI.Test.GameLaunch
                 .Do(c => throw new CloudException("Oops!"));
             SetupGameletClientApi(_gamelet1);
 
-            var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _);
 
             Assert.That(result, Is.False);
             _dialogUtil.Received(1).ShowError(Arg.Any<string>(), Arg.Any<string>());
@@ -204,17 +222,59 @@ namespace YetiVSI.Test.GameLaunch
                                  DeveloperEventStatus.Types.Code.InternalError);
         }
 
+        [TestCase(true, TestName = "TestInvalidMountSetupDeployingButDetachedYesStop")]
+        [TestCase(false, TestName = "TestInvalidMountSetupDeployingButDetachedNoStop")]
+        public void TestInvalidMountSetupDeployingButDetached(bool confirmStop)
+        {
+            SetupGetGameletApi(_gamelet1, GameletState.Reserved);
+            SetupProcMountsContent(_gamelet1, _mountedPackage);
+            SetupNoInstanceStorageOverlayDialog(confirmStop);
+
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _);
+
+            Assert.That(result, Is.EqualTo(confirmStop));
+        }
+
+        [TestCase(true, TestName = "TestInvalidMountSetupNotStreamingButDetachedYesStop")]
+        [TestCase(false, TestName = "TestInvalidMountSetupNotStreamingButDetachedNoStop")]
+        public void TestInvalidMountSetupNotStreamingButDetached(bool confirmStop)
+        {
+            SetupGetGameletApi(_gamelet1, GameletState.Reserved);
+            SetupProcMountsContent(_gamelet1, _mountedPackage);
+            SetupNoAssetStreamingDialog(confirmStop);
+
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(
+                DeployOnLaunchSetting.FALSE, new List<Gamelet> { _gamelet1 }, null, _devAccount,
+                out Gamelet _);
+
+            Assert.That(result, Is.EqualTo(confirmStop));
+        }
+
+        [Test]
+        public void TestValidMountSetup()
+        {
+            SetupGetGameletApi(_gamelet1, GameletState.Reserved);
+            SetupProcMountsContent(_gamelet1, _mountedPackageWithOverlay);
+
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount,
+                out Gamelet _);
+
+            Assert.That(result, Is.True);
+        }
+
         [Test]
         public void TestClearLogsFailsReturnsFalse()
         {
             _remoteCommand
                 .When(m => m.RunWithSuccessAsync(new SshTarget(_gamelet1),
-                    GameletSelector.ClearLogsCmd))
+                                                 GameletSelector.ClearLogsCmd))
                 .Do(c => { throw new ProcessException("Oops!"); });
             SetupGameletClientApi(_gamelet1);
 
-            var result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _);
 
             Assert.That(result, Is.False);
             _dialogUtil.ShowError(Arg.Any<string>(), Arg.Any<string>());
@@ -222,8 +282,8 @@ namespace YetiVSI.Test.GameLaunch
                                  DeveloperEventStatus.Types.Code.ExternalToolUnavailable);
         }
 
-        [TestCase(true, TestName="YesStop")]
-        [TestCase(false, TestName = "NoStop")]
+        [TestCase(true, TestName = "GameLaunchExistsForAccountYesStop")]
+        [TestCase(false, TestName = "GameLaunchExistsForAccountNoStop")]
         public void GameLaunchExistsForAccount(bool confirmStop)
         {
             var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
@@ -234,8 +294,9 @@ namespace YetiVSI.Test.GameLaunch
             SetupStopGameLaunchDialog(confirmStop);
             SetupDeleteGameLaunch(_gamelet1.Name, GameLaunchState.GameLaunchEnded, true);
 
-            bool result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                gamelets, null, _devAccount, out Gamelet gamelet);
+            bool result =
+                _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null, _devAccount,
+                                                            out Gamelet gamelet);
 
             Assert.That(result, Is.EqualTo(confirmStop));
             if (confirmStop)
@@ -247,8 +308,7 @@ namespace YetiVSI.Test.GameLaunch
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchGetExisting,
                                  DeveloperEventStatus.Types.Code.Success);
-            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchStopPrompt,
-                                 confirmStop
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchStopPrompt, confirmStop
                                      ? DeveloperEventStatus.Types.Code.Success
                                      : DeveloperEventStatus.Types.Code.Cancelled);
         }
@@ -264,8 +324,9 @@ namespace YetiVSI.Test.GameLaunch
             SetupStopGameLaunchDialog(true);
             SetupDeleteGameLaunch(_gamelet1.Name, GameLaunchState.GameLaunchEnded, true);
 
-            bool result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                gamelets, null, _devAccount, out Gamelet gamelet);
+            bool result =
+                _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null, _devAccount,
+                                                            out Gamelet gamelet);
 
             Assert.That(result, Is.EqualTo(true));
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
@@ -278,8 +339,8 @@ namespace YetiVSI.Test.GameLaunch
                                  DeveloperEventStatus.Types.Code.Success);
         }
 
-        [TestCase(true, TestName = "YesStop")]
-        [TestCase(false, TestName = "NoStop")]
+        [TestCase(true, TestName = "GameLaunchExistsOnGameletYesStop")]
+        [TestCase(false, TestName = "GameLaunchExistsOnGameletNoStop")]
         public void GameLaunchExistsOnGamelet(bool confirmStop)
         {
             var gamelets = new List<Gamelet> { _gamelet1, _gamelet2 };
@@ -290,8 +351,9 @@ namespace YetiVSI.Test.GameLaunch
             SetupGetCurrentGameLaunch(_testAccount, _gamelet1.Name);
             SetupStopGameletDialog(confirmStop);
 
-            bool result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                gamelets, null, _devAccount, out Gamelet gamelet);
+            bool result =
+                _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null, _devAccount,
+                                                            out Gamelet gamelet);
 
             Assert.That(result, Is.EqualTo(confirmStop));
             if (confirmStop)
@@ -303,8 +365,7 @@ namespace YetiVSI.Test.GameLaunch
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameLaunchGetExisting,
                                  DeveloperEventStatus.Types.Code.Success);
-            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsPrepare,
-                                 confirmStop
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsPrepare, confirmStop
                                      ? DeveloperEventStatus.Types.Code.Success
                                      : DeveloperEventStatus.Types.Code.Cancelled);
         }
@@ -319,8 +380,9 @@ namespace YetiVSI.Test.GameLaunch
             SetupGetCurrentGameLaunch(_testAccount, _gamelet1.Name);
             SetupDeleteGameLaunch(_gamelet1.Name, GameLaunchState.GameLaunchEnded, true);
 
-            bool result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                gamelets, null, _devAccount, out Gamelet gamelet);
+            bool result =
+                _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null, _devAccount,
+                                                            out Gamelet gamelet);
 
             Assert.That(result, Is.EqualTo(true));
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
@@ -343,8 +405,9 @@ namespace YetiVSI.Test.GameLaunch
             SetupStopGameletDialog(true);
             SetupStopGameLaunchDialog(true);
 
-            bool result = _gameletSelector.TrySelectAndPrepareGamelet(_targetPath, _deploy,
-                gamelets, null, _devAccount, out Gamelet gamelet);
+            bool result =
+                _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null, _devAccount,
+                                                            out Gamelet gamelet);
 
             Assert.That(result, Is.True);
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet1.Id));
@@ -360,15 +423,13 @@ namespace YetiVSI.Test.GameLaunch
                                  DeveloperEventStatus.Types.Code.Success);
         }
 
-
         // GameLaunch present for the same and another account on gamelet: yes stop
 
         void SetupStopGameLaunchDialog(bool confirm)
         {
             _dialogUtil
                 .ShowYesNo(
-                    Arg.Is<string>(
-                        m => m.Contains("An account can only play one game at a time")),
+                    Arg.Is<string>(m => m.Contains("An account can only play one game at a time")),
                     ErrorStrings.StopRunningGame).Returns(confirm);
         }
 
@@ -380,6 +441,28 @@ namespace YetiVSI.Test.GameLaunch
                         m => m.Contains(
                             "Another account is already playing a game on this instance")),
                     ErrorStrings.StopRunningGame).Returns(confirm);
+        }
+
+        void SetupNoInstanceStorageOverlayDialog(bool confirm)
+        {
+            _dialogUtil
+                .ShowYesNo(
+                    Arg.Is<string>(m => m.Contains(
+                                       "A package or local workstation directory has been " +
+                                       "mounted on the instance, but no instance storage overlay " +
+                                       "has been specified")), ErrorStrings.MountConfiguration)
+                .Returns(confirm);
+        }
+
+        void SetupNoAssetStreamingDialog(bool confirm)
+        {
+            _dialogUtil
+                .ShowYesNo(
+                    Arg.Is<string>(m => m.Contains(
+                                       "A package has been mounted on the instance, but neither " +
+                                       "a local workstation directory is streamed nor an " +
+                                       "instance storage overlay has been specified.")),
+                    ErrorStrings.MountConfiguration).Returns(confirm);
         }
 
         void SetupDeleteGameLaunch(string gameletName, GameLaunchState? deletedLaunchState,
@@ -421,21 +504,29 @@ namespace YetiVSI.Test.GameLaunch
                 .Returns(gameletCopies.First(), gameletCopies.Skip(1).ToArray());
         }
 
+        void SetupProcMountsContent(Gamelet gamelet, List<string> procMountsContent)
+        {
+            _remoteCommand
+                .RunWithSuccessCapturingOutputAsync(new SshTarget(gamelet),
+                                                    GameletMountChecker.ReadMountsCmd)
+                .Returns(Task.FromResult(procMountsContent));
+        }
+
         void AssertMetricRecorded(DeveloperEventType.Types.Type type,
                                   DeveloperEventStatus.Types.Code status)
         {
-            _metrics.Received().RecordEvent(type, Arg.Is<DeveloperLogEvent>(
-                p =>
-                    p.StatusCode == status &&
-                    p.DebugSessionIdStr == _testDebugSessionId
-                ));
+            _metrics.Received()
+                .RecordEvent(
+                    type,
+                    Arg.Is<DeveloperLogEvent>(p => p.StatusCode == status &&
+                                                  p.DebugSessionIdStr == _testDebugSessionId));
         }
 
         void SetupGameletClientApi(Gamelet gamelet)
         {
             SetupGetGameletApi(gamelet, GameletState.Reserved);
             _gameLaunchBeHelper.GetCurrentGameLaunchAsync(Arg.Any<string>(), Arg.Any<IAction>())
-                .Returns(Task.FromResult((GgpGrpc.Models.GameLaunch)null));
+                .Returns(Task.FromResult((GgpGrpc.Models.GameLaunch) null));
         }
     }
 }
