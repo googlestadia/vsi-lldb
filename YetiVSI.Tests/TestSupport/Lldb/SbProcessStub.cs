@@ -128,6 +128,11 @@ namespace YetiVSI.Test.TestSupport.Lldb
         {
             throw new NotImplementedTestDoubleException();
         }
+
+        public void SaveCore(string dumpPath, out SbError error)
+        {
+            throw new NotImplementedTestDoubleException();
+        }
         #endregion
     }
 }

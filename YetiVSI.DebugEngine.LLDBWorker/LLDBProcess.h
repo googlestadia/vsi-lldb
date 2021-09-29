@@ -56,7 +56,7 @@ ref class LLDBProcess sealed : SbProcess {
     [System::Runtime::InteropServices::Out] SbError ^ % out_error);
   virtual SbError ^ GetMemoryRegionInfo(uint64_t address,
     [System::Runtime::InteropServices::Out] SbMemoryRegionInfo ^ % memory_region);
-
+  virtual SbError ^ SaveCore(System::String ^ dumpPath);
 private:
   ManagedUniquePtr<lldb::SBProcess> ^ process_;
 };

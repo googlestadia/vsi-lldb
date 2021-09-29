@@ -71,5 +71,13 @@ namespace LldbApi
         // in |memoryRegion|.
         // Returns an error object which describes any error that occured while querying |address|.
         SbError GetMemoryRegionInfo(ulong address, out SbMemoryRegionInfo memoryRegion);
+
+        /// <summary>
+        /// Saves dump of a current process to |file_name|.
+        /// </summary>
+        /// <returns>
+        /// An error object that describes any error that occured during the process.
+        /// </returns>
+        SbError SaveCore(string file_name);
     }
 }

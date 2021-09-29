@@ -66,5 +66,16 @@ namespace DebuggerApi
         // Writes memory to the current process's address space and maintains any traps that might
         // be present due to software breakpoints.
         ulong WriteMemory(ulong address, byte[] buffer, ulong size, out SbError error);
+
+
+        /// <summary>
+        /// Dumps core to dumpUrl path and returns status of the operation.
+        /// </summary>
+        /// <param name="dumpUrl">The path where dump will be eventually saved.</param>
+        /// <param name="error">The resulting status of a dump saving.</param>
+        /// <returns>
+        /// Status in error parameter. Either success or error.
+        /// </returns>
+        void SaveCore(string dumpUrl, out SbError error);
     }
 }

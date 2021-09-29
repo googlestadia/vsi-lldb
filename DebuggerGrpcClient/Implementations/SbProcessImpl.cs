@@ -311,6 +311,31 @@ namespace DebuggerGrpcClient
             return 0;
         }
 
+        public void SaveCore(string dumpUrl, out SbError error)
+        {
+            SaveCoreResponse response = null;
+            if (connection.InvokeRpc(() =>
+            {
+                response = client.SaveCore(
+                    new SaveCoreRequest
+                    {
+                        Process = grpcSbProcess,
+                        DumpPath = dumpUrl
+                    });
+            }))
+            {
+                error = errorFactory.Create(response.Error);
+                return;
+            }
+            var grpcError = new GrpcSbError
+            {
+                Success = false,
+                Error = "Rpc error while calling SaveCore."
+            };
+            error = errorFactory.Create(grpcError);
+            return;
+        }
+
         #endregion
     }
 }

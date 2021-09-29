@@ -200,6 +200,23 @@ namespace DebuggerGrpcServer
             });
         }
 
+
+        public override Task<SaveCoreResponse> SaveCore(
+           SaveCoreRequest request, ServerCallContext context)
+        {
+            var sbProcess = GrpcLookupUtils.GetProcess(request.Process, processStore);
+            SbError error = sbProcess.SaveCore(request.DumpPath);
+            return Task.FromResult(new SaveCoreResponse
+            {
+                Error = new GrpcSbError
+                {
+                    Success = error.Success(),
+                    Error = error.GetCString()
+                },
+            });
+        }
+
+
         #endregion
     }
 }

@@ -116,6 +116,10 @@ namespace YetiVSI
             "Cannot proceed with the attach. Game is not running.";
 
         public const string CouldNotStartTheGame = "Could not start the game.";
+        public static string FailedToWriteDump(string errorMessage) =>
+            $"Error saving dump: {errorMessage}.";
+        public static string WritingDumpNotSupported(string errorMessage) =>
+            $"{FailedToWriteDump(errorMessage)} \nThis feature requires at least LLVM v.13.0.0-rc3.";
 
         public const string LaunchEndedTimeout = "Timed out waiting for the game to start. " +
             "Make sure that you're signed into your developer account in Chrome, and that the " +

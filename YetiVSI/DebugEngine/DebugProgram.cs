@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Windows;
 using YetiCommon;
 using YetiCommon.CastleAspects;
 using YetiVSI.DebugEngine.Exit;
@@ -475,7 +476,21 @@ namespace YetiVSI.DebugEngine
 
         public int WriteDump(enum_DUMPTYPE dumpType, string dumpUrl)
         {
-            return VSConstants.E_NOTIMPL;
+            _lldbProcess.SaveCore(dumpUrl, out SbError error);
+            if (error.Fail())
+            {
+                string errorMessage = error.GetCString();
+                string fullErrorDescription = errorMessage.Contains("no ObjectFile plugins")
+                    ? ErrorStrings.WritingDumpNotSupported(errorMessage)
+                    : ErrorStrings.FailedToWriteDump(errorMessage);
+                MessageBox.Show(fullErrorDescription,
+                    "Save Dump As...",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Trace.WriteLine($"Error: {errorMessage}");
+            }
+
+            return VSConstants.S_OK;
         }
 
         // Confusingly, at least in the Attach case with LLDB, the SDM calls

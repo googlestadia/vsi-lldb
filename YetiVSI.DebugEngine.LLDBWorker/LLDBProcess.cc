@@ -171,5 +171,11 @@ SbError ^ LLDBProcess::GetMemoryRegionInfo(uint64_t address,
   return gcnew LLDBError(error);
 }
 
+SbError ^ LLDBProcess::SaveCore(System::String ^ dumpPath) {
+  std::string file_name = msclr::interop::marshal_as<std::string>(dumpPath);
+  lldb::SBError error = process_->SaveCore(file_name.c_str());
+  return gcnew LLDBError(error);
+}
+
 }  // namespace DebugEngine
 }  // namespace YetiVSI
