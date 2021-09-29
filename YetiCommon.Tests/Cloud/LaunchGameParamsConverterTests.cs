@@ -94,6 +94,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.RenderDoc = false;
             parameters.Rgp = false;
             parameters.Dive = false;
+            parameters.Orbit = false;
             parameters.VulkanDriverVariant = string.Empty;
 
             ConfigStatus status =
@@ -152,6 +153,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.VulkanDriverVariant = string.Empty;
             parameters.Rgp = true;
             parameters.Dive = false;
+            parameters.Orbit = false;
             parameters.GameletEnvironmentVars = "LD_PRELOAD=mylib.so";
 
             ConfigStatus status =
@@ -175,6 +177,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.VulkanDriverVariant = string.Empty;
             parameters.Rgp = false;
             parameters.Dive = true;
+            parameters.Orbit = false;
             parameters.GameletEnvironmentVars = "";
 
             ConfigStatus status =
@@ -192,6 +195,27 @@ namespace YetiCommon.Tests.Cloud
         }
 
         [Test]
+        public void ToLaunchGameRequestOrbitVariables()
+        {
+            LaunchParams parameters = ValidParams;
+            parameters.RenderDoc = false;
+            parameters.VulkanDriverVariant = string.Empty;
+            parameters.Rgp = false;
+            parameters.Dive = false;
+            parameters.Orbit = true;
+            parameters.GameletEnvironmentVars = "";
+
+            ConfigStatus status =
+                _target.ToLaunchGameRequest(parameters, out LaunchGameRequest request);
+
+            Assert.That(status.IsOk, Is.EqualTo(true));
+            Assert.IsNotNull(request);
+            Assert.That(request.EnvironmentVariablePairs,
+                        Is.EqualTo(new Dictionary<string, string> { { "ENABLE_ORBIT_VULKAN_LAYER",
+                                                                      "1" } }));
+        }
+
+        [Test]
         public void ToLaunchGameRequestDiveVariablesAppend()
         {
             LaunchParams parameters = ValidParams;
@@ -199,6 +223,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.VulkanDriverVariant = string.Empty;
             parameters.Rgp = false;
             parameters.Dive = true;
+            parameters.Orbit = false;
             parameters.GameletEnvironmentVars =
                 "LD_PRELOAD=mylib.so;VK_INSTANCE_LAYERS=VK_LAYER_non_existence";
 
@@ -223,6 +248,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.GameletEnvironmentVars = string.Empty;
             parameters.Rgp = false;
             parameters.Dive = false;
+            parameters.Orbit = false;
             parameters.VulkanDriverVariant = string.Empty;
             parameters.RenderDoc = true;
 
@@ -247,6 +273,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.RenderDoc = false;
             parameters.Rgp = false;
             parameters.Dive = false;
+            parameters.Orbit = false;
             parameters.VulkanDriverVariant = "test_variant";
 
             ConfigStatus status =
@@ -268,6 +295,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.VulkanDriverVariant = "test_variant";
             parameters.Rgp = true;
             parameters.Dive = false;
+            parameters.Orbit = false;
             parameters.GameletEnvironmentVars =
                 "GGP_DEV_VK_DRIVER_VARIANT=otherVariant;RGP_DEBUG_LOG_FILE=my/path.log";
 
@@ -298,6 +326,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.Rgp = false;
             parameters.Dive = false;
             parameters.RenderDoc = false;
+            parameters.Orbit = false;
             parameters.VulkanDriverVariant = string.Empty;
 
             ConfigStatus status =

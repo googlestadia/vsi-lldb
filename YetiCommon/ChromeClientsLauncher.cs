@@ -187,6 +187,8 @@ namespace YetiCommon
 
         public bool Dive { get; set; }
 
+        public bool Orbit { get; set; }
+
         public string VulkanDriverVariant { get; set; }
 
         public SurfaceEnforcementSetting SurfaceEnforcementMode { get; set; } =

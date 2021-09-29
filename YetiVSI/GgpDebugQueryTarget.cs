@@ -118,12 +118,12 @@ namespace YetiVSI
                 var gameletCommand = (targetFileName + " " +
                     await project.GetGameletLaunchArgumentsAsync()).Trim();
 
-                var launchParams = new LaunchParams()
-                {
+                var launchParams = new LaunchParams() {
                     Cmd = gameletCommand,
                     RenderDoc = await project.GetLaunchRenderDocAsync(),
                     Rgp = await project.GetLaunchRgpAsync(),
                     Dive = await project.GetLaunchDiveAsync(),
+                    Orbit = await project.GetLaunchOrbitAsync(),
                     SurfaceEnforcementMode = await project.GetSurfaceEnforcementAsync(),
                     VulkanDriverVariant = await project.GetVulkanDriverVariantAsync(),
                     QueryParams = await project.GetQueryParamsAsync(),
@@ -193,6 +193,25 @@ namespace YetiVSI
                     parameters.TargetIp = new SshTarget(gamelet).GetString();
                     parameters.DebugSessionId = _metrics.DebugSessionId;
                     debugLaunchSettings.Options = _paramsFactory.Serialize(parameters);
+                }
+
+                if (launchParams.Orbit)
+                {
+                    IAction deployOrbitLayerAction =
+                        actionRecorder.CreateToolAction(ActionType.RemoteDeploy);
+                    bool isLayerDeployed =
+                        _cancelableTaskFactory
+                            .Create(TaskMessages.DeployingOrbitVulkanLayer,
+                                    async task => {
+                                        await _remoteDeploy.DeployOrbitVulkanLayerAsync(
+                                            project, new SshTarget(gamelet), task);
+                                    })
+                            .RunAndRecord(deployOrbitLayerAction);
+
+                    if (!isLayerDeployed)
+                    {
+                        return new IDebugLaunchSettings[] {};
+                    }
                 }
 
                 IAction action = actionRecorder.CreateToolAction(ActionType.RemoteDeploy);

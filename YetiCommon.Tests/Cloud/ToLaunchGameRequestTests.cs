@@ -46,6 +46,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.RenderDoc = false;
             parameters.Rgp = false;
             parameters.Dive = false;
+            parameters.Orbit = false;
             parameters.VulkanDriverVariant = string.Empty;
 
             ConfigStatus status =
@@ -100,6 +101,7 @@ namespace YetiCommon.Tests.Cloud
             parameters.RenderDoc = true;
             parameters.Rgp = true;
             parameters.Dive = true;
+            parameters.Orbit = true;
             parameters.GameletEnvironmentVars =
                 "RENDERDOC_TEMP=chrome/params/temp;RENDERDOC_DEBUG_LOG_FILE=chrome/params.log;" +
                 "GGP_DEV_VK_DRIVER_VARIANT=opt;GGP_VK_AMDVLK_USE_LLPC=0;Some_Var=12;other=9" +
@@ -131,6 +133,7 @@ namespace YetiCommon.Tests.Cloud
                             { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
                             { "LD_PRELOAD", "librgpserver.so" },
                             { "VK_INSTANCE_LAYERS", "VK_LAYER_dive_capture" },
+                            { "ENABLE_ORBIT_VULKAN_LAYER", "1" },
                             { "ENABLE_VK_LAYER_VULKAN_COLOR_TOOLS", "false" },
                             { "GGP_VK_AMDVLK_USE_LLPC", "0" },
                             { "ENABLE_GOOGLE_PIPELINE_DATA_EXPORT_LAYER", "1" },

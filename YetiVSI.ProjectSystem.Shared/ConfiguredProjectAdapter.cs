@@ -69,6 +69,11 @@ namespace YetiVSI.ProjectSystem
             return DeployOnLaunchSetting.DELTA;
         }
 
+        public bool GetDeployOrbitVulkanLayerOnLaunch()
+        {
+            return true;
+        }
+
         public async Task<SurfaceEnforcementSetting> GetSurfaceEnforcementAsync()
         {
             string surfaceEnforcementString = await userProperties.GetEvaluatedPropertyValueAsync(
@@ -126,6 +131,14 @@ namespace YetiVSI.ProjectSystem
                 ProjectPropertyName.GgpLaunchDive);
             bool.TryParse(launchDiveString, out bool launchDive);
             return launchDive;
+        }
+
+        public async Task<bool> GetLaunchOrbitAsync()
+        {
+            var launchOrbitString = await userProperties.GetEvaluatedPropertyValueAsync(
+                ProjectPropertyName.GgpLaunchOrbit);
+            bool.TryParse(launchOrbitString, out bool launchOrbit);
+            return launchOrbit;
         }
 
         public async Task<string> GetVulkanDriverVariantAsync()

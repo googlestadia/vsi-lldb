@@ -211,6 +211,10 @@ namespace YetiCommon.Cloud
                 flagEnvironmentVariables.Add("GGP_INTERNAL_LOAD_RGP", "1");
                 flagEnvironmentVariables.Add("RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log");
             }
+            if (parameters.Orbit)
+            {
+                flagEnvironmentVariables.Add("ENABLE_ORBIT_VULKAN_LAYER", "1");
+            }
 
             foreach (string key in flagEnvironmentVariables.Keys)
             {

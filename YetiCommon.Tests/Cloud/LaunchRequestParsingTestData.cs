@@ -22,26 +22,24 @@ namespace YetiCommon.Tests.Cloud
     public static class LaunchRequestParsingTestData
     {
         public static LaunchParams ValidParams =>
-            new LaunchParams
-            {
-                Account = "some_account",
-                ApplicationName = "test/app",
-                ApplicationId = "app-id",
-                Cmd = "some_bin arg1",
-                Debug = true,
-                GameletEnvironmentVars = "Var1=1;vAR2=3",
-                GameletName = "test/gamelet",
-                PoolId = "test_pool",
-                RenderDoc = true,
-                Rgp = false,
-                Dive = false,
-                SdkVersion = "1",
-                VulkanDriverVariant = "test_variant",
-                SurfaceEnforcementMode = SurfaceEnforcementSetting.Warn,
-                TestAccount = "some_test_account",
-                QueryParams = "",
-                Endpoint = StadiaEndpoint.TestClient
-            };
+            new LaunchParams { Account = "some_account",
+                               ApplicationName = "test/app",
+                               ApplicationId = "app-id",
+                               Cmd = "some_bin arg1",
+                               Debug = true,
+                               GameletEnvironmentVars = "Var1=1;vAR2=3",
+                               GameletName = "test/gamelet",
+                               PoolId = "test_pool",
+                               RenderDoc = true,
+                               Rgp = false,
+                               Dive = false,
+                               Orbit = false,
+                               SdkVersion = "1",
+                               VulkanDriverVariant = "test_variant",
+                               SurfaceEnforcementMode = SurfaceEnforcementSetting.Warn,
+                               TestAccount = "some_test_account",
+                               QueryParams = "",
+                               Endpoint = StadiaEndpoint.TestClient };
 
         public static LaunchParams ValidExternalParams =>
             new LaunchParams
@@ -95,14 +93,11 @@ namespace YetiCommon.Tests.Cloud
             };
 
         public static Dictionary<string, string> ValidParamsQueryParams =>
-            new Dictionary<string, string>
-            {
-                { "cmd", "  some_bin arg2" },
-                { "vars", "ParamsVar=val" },
-                { "renderdoc", "false" },
-                { "rgp", "1" },
-                { "dive", "1" }
-            };
+            new Dictionary<string, string> { { "cmd", "  some_bin arg2" },
+                                             { "vars", "ParamsVar=val" },
+                                             { "renderdoc", "false" },
+                                             { "rgp", "1" },
+                                             { "dive", "1" } };
 
         public static Dictionary<string, string> ValidRequestQueryParams =>
             new Dictionary<string, string>

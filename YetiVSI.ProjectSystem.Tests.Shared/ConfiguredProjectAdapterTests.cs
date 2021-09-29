@@ -364,6 +364,19 @@ namespace YetiVSI.ProjectSystem.Tests
         }
 
         [Test]
+        public async Task GetGgpLaunchOrbitAsync()
+        {
+            var projectPath = @"C:\GGP_project_path\";
+            var projectValues = new ProjectValues {
+                GgpLaunchOrbit = "true",
+            };
+
+            var configuredProject = CreateConfiguredProject(projectValues, projectPath);
+            IAsyncProject project = new ConfiguredProjectAdapter(configuredProject);
+            Assert.True(await project.GetLaunchOrbitAsync());
+        }
+
+        [Test]
         public async Task GetGgpVulkanDriverVariantAsync()
         {
             var projectPath = @"C:\GGP_project_path\";
@@ -462,6 +475,19 @@ namespace YetiVSI.ProjectSystem.Tests
             Assert.False(await project.GetLaunchDiveAsync());
         }
 
+        [Test]
+        public async Task CreateConfiguredProjectInvalidLaunchOrbitAsync()
+        {
+            var projectPath = @"C:\Yeti_project_path\";
+            var projectValues = new ProjectValues {
+                GgpLaunchOrbit = "invalid_bool",
+            };
+            var configuredProject = CreateConfiguredProject(projectValues, projectPath);
+
+            var project = new ConfiguredProjectAdapter(configuredProject);
+            Assert.False(await project.GetLaunchOrbitAsync());
+        }
+
         class ProjectValues
         {
             public string GgpGameletLaunchArguments { get; set; } = "";
@@ -473,6 +499,7 @@ namespace YetiVSI.ProjectSystem.Tests
             public string GgpLaunchRenderDoc { get; set; } = "";
             public string GgpLaunchRgp { get; set; } = "";
             public string GgpLaunchDive { get; set; } = "";
+            public string GgpLaunchOrbit { get; set; } = "";
             public string GgpVulkanDriverVariant { get; set; } = "";
             public string GgpTestAccount { get; set; } = "";
             public string GgpExternalId { get; set; } = "";
@@ -523,6 +550,8 @@ namespace YetiVSI.ProjectSystem.Tests
                 .Returns(projectValues.GgpLaunchRgp);
             userProperties.GetEvaluatedPropertyValueAsync("GgpLaunchDive")
                 .Returns(projectValues.GgpLaunchDive);
+            userProperties.GetEvaluatedPropertyValueAsync("GgpLaunchOrbit")
+                .Returns(projectValues.GgpLaunchOrbit);
             userProperties.GetEvaluatedPropertyValueAsync("GgpVulkanDriverVariant")
                 .Returns(projectValues.GgpVulkanDriverVariant);
             userProperties.GetEvaluatedPropertyValueAsync("GgpTestAccount")

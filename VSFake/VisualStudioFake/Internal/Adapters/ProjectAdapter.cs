@@ -177,6 +177,11 @@ namespace Google.VisualStudioFake.Internal
         public void SetDeployOnLaunch(DeployOnLaunchSetting deployOnLaunch) =>
             SetStringProperty(ProjectPropertyName.GgpDeployOnLaunch, deployOnLaunch.ToString());
 
+        public bool GetDeployOrbitVulkanLayerOnLaunch()
+        {
+            return false;
+        }
+
         public Task<SurfaceEnforcementSetting> GetSurfaceEnforcementAsync()
         {
             string surfaceEnforcementString =
@@ -211,6 +216,12 @@ namespace Google.VisualStudioFake.Internal
 
         public void SetLaunchDive(bool launchDive) =>
             SetBoolProperty(ProjectPropertyName.GgpLaunchDive, launchDive);
+
+        public Task<bool> GetLaunchOrbitAsync() =>
+            GetBoolPropertyAsync(ProjectPropertyName.GgpLaunchOrbit);
+
+        public void SetLaunchOrbit(bool launchOrbit) =>
+            SetBoolProperty(ProjectPropertyName.GgpLaunchOrbit, launchOrbit);
 
         public Task<string> GetExecutablePathAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.ExecutablePath);

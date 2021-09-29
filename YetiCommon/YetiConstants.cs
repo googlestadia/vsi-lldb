@@ -75,5 +75,11 @@ namespace YetiCommon
 #else
         public static readonly string LldbServerLinuxPath = "/usr/local/cloudcast/bin/";
 #endif
+        public static readonly string OrbitVulkanLayerLinuxPath =
+            "/var/game/.local/share/vulkan/implicit_layer.d";
+        public static readonly string OrbitVulkanLayerExecutable = "libOrbitVulkanLayer.so";
+        public static readonly string OrbitVulkanLayerManifest = "VkLayer_Orbit_implicit.json";
+        public static readonly string OrbitCollectorDir =
+            Path.Combine("tools", "Orbit", "collector");
     }
 }

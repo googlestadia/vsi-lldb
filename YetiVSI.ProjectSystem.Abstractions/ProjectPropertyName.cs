@@ -33,6 +33,7 @@ namespace YetiVSI.ProjectSystem.Abstractions
         public const string GgpLaunchRenderDoc = "GgpLaunchRenderDoc";
         public const string GgpLaunchRgp = "GgpLaunchRgp";
         public const string GgpLaunchDive = "GgpLaunchDive";
+        public const string GgpLaunchOrbit = "GgpLaunchOrbit";
         public const string GgpVulkanDriverVariant = "GgpVulkanDriverVariant";
         public const string GgpTestAccount = "GgpTestAccount";
         public const string GgpExternalId = "GgpExternalId";

@@ -113,8 +113,7 @@ namespace YetiCommon.Cloud
             QueryParamMapping.IgnoreParam("test_account"),
             // Parameters, which are removed from the query string and
             // are passed as request parameters.
-            QueryParamMapping.RequestOnly("renderdoc",
-                                          nameof(LaunchParams.RenderDoc),
+            QueryParamMapping.RequestOnly("renderdoc", nameof(LaunchParams.RenderDoc),
                                           typeof(LaunchParams)),
             QueryParamMapping.RequestOnly("rgp", nameof(LaunchParams.Rgp), typeof(LaunchParams)),
             QueryParamMapping.RequestOnly("dive", nameof(LaunchParams.Dive), typeof(LaunchParams)),
@@ -172,14 +171,14 @@ namespace YetiCommon.Cloud
             QueryParamMapping.RequestOnly("mount_dynamic_content",
                                           nameof(LaunchGameRequest.MountDynamicContent),
                                           typeof(LaunchGameRequest)),
-            QueryParamMapping.RequestOnly("add_instance_compatibility_requirements",
-                                          nameof(LaunchGameRequest
-                                              .AddInstanceCompatibilityRequirements),
-                                          typeof(LaunchGameRequest)),
-            QueryParamMapping.RequestOnly("remove_instance_compatibility_requirements",
-                                          nameof(LaunchGameRequest
-                                              .RemoveInstanceCompatibilityRequirements),
-                                          typeof(LaunchGameRequest)),
+            QueryParamMapping.RequestOnly(
+                "add_instance_compatibility_requirements",
+                nameof(LaunchGameRequest.AddInstanceCompatibilityRequirements),
+                typeof(LaunchGameRequest)),
+            QueryParamMapping.RequestOnly(
+                "remove_instance_compatibility_requirements",
+                nameof(LaunchGameRequest.RemoveInstanceCompatibilityRequirements),
+                typeof(LaunchGameRequest)),
             QueryParamMapping.RequestOnly("package_name", nameof(LaunchGameRequest.PackageName),
                                           typeof(LaunchGameRequest)),
             QueryParamMapping.RequestOnly("enable_retroactive_frame_dump",
@@ -191,8 +190,7 @@ namespace YetiCommon.Cloud
             QueryParamMapping.RequestOnly("pixel_density",
                                           nameof(LaunchGameRequest.OverrideDisplayPixelDensity),
                                           typeof(LaunchGameRequest)),
-            QueryParamMapping.RequestOnly("network_model",
-                                          nameof(LaunchGameRequest.NetworkModel),
+            QueryParamMapping.RequestOnly("network_model", nameof(LaunchGameRequest.NetworkModel),
                                           typeof(LaunchGameRequest)),
             QueryParamMapping.CustomParse(QueryParamMapping.Cmd),
             QueryParamMapping.CustomParse(QueryParamMapping.Vars),

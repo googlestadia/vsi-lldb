@@ -222,6 +222,25 @@ namespace YetiVSI.Test.GameLaunch
         }
 
         [Test]
+        public void LaunchOrbitIsPropagatedToLaunchRequest()
+        {
+            var launches = new List<LaunchGameRequest>();
+            var gameletClientFactory =
+                new GameletClientStub.Factory().WithSampleInstance().WithLaunchRequestsTracker(
+                    launches);
+            IVSFake vsFake = CreateVsFakeAndLoadProject(gameletClientFactory);
+
+            (vsFake.ProjectAdapter as ProjectAdapter)?.SetLaunchOrbit(true);
+
+            _taskContext.RunOnMainThread(() => vsFake.LaunchSuspended());
+
+            Assert.That(launches.Count, Is.EqualTo(1));
+            Assert.That(launches[0].EnvironmentVariablePairs,
+                        Is.EqualTo(new Dictionary<string, string> { { "ENABLE_ORBIT_VULKAN_LAYER",
+                                                                      "1" } }));
+        }
+
+        [Test]
         public void TestAccountIsPropagatedToLaunchRequest()
         {
             var launches = new List<LaunchGameRequest>();

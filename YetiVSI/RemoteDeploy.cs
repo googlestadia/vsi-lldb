@@ -61,6 +61,11 @@ namespace YetiVSI
         /// Copies lldb-server file to the gamelet.
         /// </summary>
         Task DeployLldbServerAsync(SshTarget target, Metrics.IAction action);
+
+        /// <summary>
+        /// Copies Orbit's Vulkan layer files to the gamelet.
+        /// </summary>
+        Task DeployOrbitVulkanLayerAsync(IAsyncProject project, SshTarget target, ICancelable task);
     }
 
     public class RemoteDeploy : IRemoteDeploy
@@ -238,6 +243,34 @@ namespace YetiVSI
                 Path.Combine(YetiConstants.LldbDir, "bin", YetiConstants.LldbServerLinuxExecutable);
 #endif
             return localLldbServerPath;
+        }
+
+        public async Task DeployOrbitVulkanLayerAsync(IAsyncProject project, SshTarget target,
+                                                      ICancelable task)
+        {
+            if (!project.GetDeployOrbitVulkanLayerOnLaunch())
+            {
+                return;
+            }
+            string localOrbitCollectorPath =
+                Path.Combine(SDKUtil.GetSDKPath(), YetiConstants.OrbitCollectorDir);
+            string localOrbitVulkanLayerManifestPath =
+                Path.Combine(localOrbitCollectorPath, YetiConstants.OrbitVulkanLayerManifest);
+            string localOrbitVulkanLayerExecutablePath =
+                Path.Combine(localOrbitCollectorPath, YetiConstants.OrbitVulkanLayerExecutable);
+
+            try
+            {
+                await _remoteFile.SyncAsync(target, localOrbitVulkanLayerManifestPath,
+                                            YetiConstants.OrbitVulkanLayerLinuxPath, task, false);
+                await _remoteFile.SyncAsync(target, localOrbitVulkanLayerExecutablePath,
+                                            YetiConstants.OrbitVulkanLayerLinuxPath, task, false);
+            }
+            catch (ProcessException exception)
+            {
+                throw new DeployException(ErrorStrings.FailedToDeployExecutable(exception.Message),
+                                          exception);
+            }
         }
 
         // Helper class to record various metrics about the remote deploy operation. This helps to

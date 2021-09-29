@@ -138,6 +138,11 @@ namespace YetiVSI.ProjectSystem.Abstractions
         Task<bool> GetLaunchDiveAsync();
 
         /// <summary>
+        /// Get true when the game should be launched with Orbit.
+        /// </summary>
+        Task<bool> GetLaunchOrbitAsync();
+
+        /// <summary>
         /// Get Vulkan driver variant to load on launch.
         /// </summary>
         Task<string> GetVulkanDriverVariantAsync();
@@ -167,6 +172,11 @@ namespace YetiVSI.ProjectSystem.Abstractions
         /// Get raw 'Deploy executable on launch' property value.
         /// </summary>
         Task<string> GetDeployExecutableOnLaunchRawAsync();
+
+        /// <summary>
+        /// Returns whether Orbit's Vulkan layer should be deployed at launch.
+        /// </summary>
+        bool GetDeployOrbitVulkanLayerOnLaunch();
 
         /// <summary>
         /// Get raw 'Stadia instance surface enforcement' property value.

@@ -38,6 +38,7 @@ namespace YetiCommon
             $"endpoint and launch using application ID {appId}.";
 
         public const string LookingForTheCurrentLaunch = "Looking for the current launch...";
+        public const string DeployingOrbitVulkanLayer = "Deploying Orbit's Vulkan layer...";
         public const string DeployingExecutable = "Deploying executable...";
         public const string CustomDeployCommand = "Running custom deploy command...";
         public const string DeltaDeployEncode = "Computing executable diff...";

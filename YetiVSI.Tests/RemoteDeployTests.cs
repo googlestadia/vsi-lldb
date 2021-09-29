@@ -16,6 +16,7 @@ using GgpGrpc.Models;
 using NSubstitute;
 using NUnit.Framework;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Threading.Tasks;
 using YetiCommon;
@@ -316,6 +317,78 @@ namespace YetiVSI.Test
         }
 
         [Test]
+        public async Task DeployVulkanLayerDeploysExecutableAndManifestAsync()
+        {
+            string remotePath = YetiConstants.OrbitVulkanLayerLinuxPath;
+            (IRemoteFile file, IRemoteCommand command, RemoteDeploy deploy, _) = GetTestObjects();
+            string localOrbitCollectorDir =
+                Path.Combine(SDKUtil.GetSDKPath(), YetiConstants.OrbitCollectorDir);
+            string localManifestPath =
+                Path.Combine(localOrbitCollectorDir, YetiConstants.OrbitVulkanLayerManifest);
+            string localLayerPath =
+                Path.Combine(localOrbitCollectorDir, YetiConstants.OrbitVulkanLayerExecutable);
+            (SshTarget target, IAction _, ICancelable task) = GetDeploymentArguments();
+
+            var project = GetProjectWithOrbitVulkanLayerDeployMode(true);
+            await deploy.DeployOrbitVulkanLayerAsync(project, target, task);
+
+            Assert.Multiple(async () => {
+                await file.Received(1).SyncAsync(target, localManifestPath, remotePath, task);
+                await file.Received(1).SyncAsync(target, localLayerPath, remotePath, task);
+            });
+        }
+
+        [Test]
+        public async Task DeployVulkanLayerDoesNotDeploysExecutableAndManifestIfDisabledAsync()
+        {
+            (IRemoteFile file, IRemoteCommand command, RemoteDeploy deploy, _) = GetTestObjects();
+            (SshTarget target, IAction _, ICancelable task) = GetDeploymentArguments();
+
+            var project = GetProjectWithOrbitVulkanLayerDeployMode(false);
+            await deploy.DeployOrbitVulkanLayerAsync(project, target, task);
+
+            Assert.Multiple(() => { file.Received(0); });
+        }
+
+        [Test]
+        public void DeployVulkanLAyerThrowsExceptionOnFailureInManifestDeployment()
+        {
+            string localManifestPath =
+                Path.Combine(SDKUtil.GetSDKPath(), YetiConstants.OrbitCollectorDir,
+                             YetiConstants.OrbitVulkanLayerManifest);
+            (SshTarget target, IAction _, ICancelable task) = GetDeploymentArguments();
+            (IRemoteFile file, _, RemoteDeploy deploy, _) = GetTestObjects();
+            file.SyncAsync(target, localManifestPath, Arg.Any<string>(), task, Arg.Any<bool>())
+                .Returns(_ => throw new ProcessException(_rsyncFailed));
+
+            var project = GetProjectWithOrbitVulkanLayerDeployMode(true);
+            var error = Assert.ThrowsAsync<DeployException>(
+                async () => await deploy.DeployOrbitVulkanLayerAsync(project, target, task));
+
+            string expectedError = ErrorStrings.FailedToDeployExecutable(_rsyncFailed);
+            Assert.That(error.Message, Is.EqualTo(expectedError));
+        }
+
+        [Test]
+        public void DeployVulkanLAyerThrowsExceptionOnFailureInExecutableDeployment()
+        {
+            string localLayerPath =
+                Path.Combine(SDKUtil.GetSDKPath(), YetiConstants.OrbitCollectorDir,
+                             YetiConstants.OrbitVulkanLayerExecutable);
+            (SshTarget target, IAction _, ICancelable task) = GetDeploymentArguments();
+            (IRemoteFile file, _, RemoteDeploy deploy, _) = GetTestObjects();
+            file.SyncAsync(target, localLayerPath, Arg.Any<string>(), task, Arg.Any<bool>())
+                .Returns(_ => throw new ProcessException(_rsyncFailed));
+
+            var project = GetProjectWithOrbitVulkanLayerDeployMode(true);
+            var error = Assert.ThrowsAsync<DeployException>(
+                async () => await deploy.DeployOrbitVulkanLayerAsync(project, target, task));
+
+            string expectedError = ErrorStrings.FailedToDeployExecutable(_rsyncFailed);
+            Assert.That(error.Message, Is.EqualTo(expectedError));
+        }
+
+        [Test]
         public async Task ExecuteCustomCommandWhenRunsSuccessfullyAsync()
         {
             string command = "ls '/mnt/developer'";
@@ -378,6 +451,13 @@ namespace YetiVSI.Test
             var project = Substitute.For<IAsyncProject>();
             project.GetDeployOnLaunchAsync().Returns(deployOnLaunchSetting);
             project.GetTargetPathAsync().Returns(localPath);
+            return project;
+        }
+
+        IAsyncProject GetProjectWithOrbitVulkanLayerDeployMode(bool deployOrbitVulkanLayerOnLaunch)
+        {
+            var project = Substitute.For<IAsyncProject>();
+            project.GetDeployOrbitVulkanLayerOnLaunch().Returns(deployOrbitVulkanLayerOnLaunch);
             return project;
         }
 
