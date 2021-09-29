@@ -74,12 +74,10 @@ namespace YetiVSI.DebugEngine
         /// Look for a local copy of the binary based on the name and build id. Log messages and
         /// record metrics to indicate the result of the checks.
         /// </summary>
-        /// <remarks>
-        /// It is assumed the remote binary is at YetiConstants.RemoteDeployPath.
-        /// </remarks>
         /// <param name="libPaths">LLDB search paths to check for local binaries</param>
         /// <param name="executable">Name of the binary to look for locally and remotely</param>
         /// <param name="target">The machine that should have a valid remote binary</param>
+        /// <param name="remoteTargetPath">Remote path where the binary is expected to be</param>
         public async Task CheckLocalAndRemoteBinaryOnLaunchAsync(
             IEnumerable<string> libPaths, string executable, SshTarget target,
             string remoteTargetPath, IAction action)

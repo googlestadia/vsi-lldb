@@ -579,8 +579,8 @@ namespace YetiVSI.DebugEngine
                     switch (_launchOption)
                     {
                         case LaunchOption.LaunchGame:
-                            var remoteTargetPath = Path.Combine(YetiConstants.RemoteDeployPath,
-                                                                _executableFileName);
+                            var remoteTargetPath =
+                                Path.Combine(YetiConstants.RemoteGamePath, _executableFileName);
                             _cancelableTaskFactory.Create(TaskMessages.CheckingBinaries,
                                                           async _ =>
                                                               await _preflightBinaryChecker

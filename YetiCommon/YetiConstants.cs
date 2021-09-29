@@ -62,6 +62,7 @@ namespace YetiCommon
             "/usr/local/cloudcast/bin/llvm-objdump";
         public static readonly string RemoteToolsBinDir = "/opt/developer/tools/bin/";
         public static readonly string RemoteDeployPath = "/mnt/developer/";
+        public static readonly string RemoteGamePath = "/srv/game/assets/";
 
         public static readonly string DeveloperMountingPoint = "/mnt/developer";
         public static readonly string WorkstationMountingPoint = "/mnt/workstation";
