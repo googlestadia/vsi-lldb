@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
+using System.Linq;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio;
@@ -88,6 +89,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             EPF_ALLPROJECTS = (EPF_ALLINSOLUTION | EPF_ALLVIRTUAL),
         };
 
+        private enum LoadingMethod
+        {
+            // Matches ".natvis" files under VS project.
+            ByExtension,
+            // Matches files with internal property "C++ debugger visualization file".
+            ByItemType,
+        }
+
         private void FindNatvisInSolutionImpl(List<string> paths)
         {
             taskContext.ThrowIfNotOnMainThread();
@@ -113,7 +122,13 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             uint count;
             while (VSConstants.S_OK == enumProjects.Next(1, proj, out count))
             {
-                LoadNatvisFromProject(proj[0], paths, solutionLevel: false);
+                List<string> projectPaths = new List<string>();
+                // Load files by ".natvis" extension.
+                LoadNatvisFromProject(proj[0], projectPaths, LoadingMethod.ByExtension);
+                // Load files tagged as "C++ debugger visualization file" in VS project.
+                LoadNatvisFromProject(proj[0], projectPaths, LoadingMethod.ByItemType);
+                // Filter out duplicates in the case the same file was loaded twice.
+                paths.AddRange(projectPaths.Distinct().ToList());
             }
 
             // Also, look for natvis files in top-level solution items
@@ -128,12 +143,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             while (VSConstants.S_OK == enumProjects.Next(1, proj, out count))
             {
-                LoadNatvisFromProject(proj[0], paths, solutionLevel: true);
+                // On a solution level there is no information about file type (e.g. "C++ debugger
+                // visualization file"). Only load files by extension.
+                LoadNatvisFromProject(proj[0], paths, LoadingMethod.ByExtension);
             }
         }
 
         private void LoadNatvisFromProject(IVsHierarchy hier, List<string> paths,
-            bool solutionLevel)
+                                           LoadingMethod loadingMethod)
         {
             taskContext.ThrowIfNotOnMainThread();
 
@@ -149,7 +166,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             uint cActual;
             uint[] itemIds = new uint[10];
 
-            if (!GetNatvisFiles(solutionLevel, proj, 10, itemIds, out cActual))
+            if (!GetNatvisFiles(loadingMethod, proj, 10, itemIds, out cActual))
             {
                 return;
             }
@@ -159,7 +176,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             if (cActual > 10)
             {
                 itemIds = new uint[cActual];
-                if (!GetNatvisFiles(solutionLevel, proj, cActual, itemIds, out cActual))
+                if (!GetNatvisFiles(loadingMethod, proj, cActual, itemIds, out cActual))
                 {
                     return;
                 }
@@ -176,21 +193,23 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
         }
 
-        private bool GetNatvisFiles(bool solutionLevel, IVsProject4 proj, uint celt,
-            uint[] rgitemids, out uint cActual)
+        private bool GetNatvisFiles(LoadingMethod loadingMethod, IVsProject4 proj, uint celt,
+                                    uint[] rgitemids, out uint cActual)
         {
             taskContext.ThrowIfNotOnMainThread();
 
-            if (solutionLevel)
+            int status = loadingMethod == LoadingMethod.ByExtension
+                             ? proj.GetFilesEndingWith(".natvis", celt, rgitemids, out cActual)
+                             : proj.GetFilesWithItemType("natvis", celt, rgitemids, out cActual);
+
+            if (status != VSConstants.S_OK)
             {
-                return VSConstants.S_OK == proj.GetFilesEndingWith(".natvis", celt, rgitemids,
-                    out cActual);
+                Trace.WriteLine($"WARNING: Failed to load Natvis files in solution. " +
+                                $"Method: {loadingMethod}, error code: {status}");
+                return false;
             }
-            else
-            {
-                return VSConstants.S_OK == proj.GetFilesWithItemType("natvis", celt, rgitemids,
-                    out cActual);
-            }
+
+            return true;
         }
     }
 }
