@@ -34,6 +34,7 @@
 #include "LLDBThread.h"
 #include "LLDBValue.h"
 #include "ValueTypeUtil.h"
+#include "ValueUtil.h"
 
 #using < system.dll >
 
@@ -81,6 +82,9 @@ SbValue ^ LLDBStackFrame::GetValueForVariablePath(System::String ^ varPath) {
   auto value = frame_->GetValueForVariablePath(
       msclr::interop::marshal_as<std::string>(varPath).c_str());
   if (value.IsValid()) {
+    // Try converting the result to dynamic type. That way the VSI extension
+    // will be able to pick up the correct Natvis visualization.
+    value = ConvertToDynamicValue(value);
     return gcnew LLDBValue(value);
   }
   return nullptr;
@@ -145,6 +149,9 @@ SbValue ^ LLDBStackFrame::EvaluateExpression(System::String ^ text,
   if (!value.IsValid()) {
     return nullptr;
   }
+  // Try converting the result to dynamic type. That way the VSI extension will
+  // be able to pick up the correct Natvis visualization.
+  value = ConvertToDynamicValue(value);
   return gcnew LLDBValue(value);
 }
 

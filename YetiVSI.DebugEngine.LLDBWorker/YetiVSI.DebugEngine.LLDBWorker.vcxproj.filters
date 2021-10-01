@@ -44,6 +44,7 @@
     <ClCompile Include="LLDBExpressionOptions.cc" />
     <ClCompile Include="LLDBBroadcaster.cc" />
     <ClCompile Include="LLDBBreakpointApi.cc" />
+    <ClCompile Include="ValueUtil.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LLDBCommandInterpreter.h" />
@@ -91,6 +92,7 @@
     <ClInclude Include="LLDBExpressionOptions.h" />
     <ClInclude Include="LLDBBroadcaster.h" />
     <ClInclude Include="LLDBBreakpointApi.h" />
+    <ClInclude Include="ValueUtil.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source.def" />

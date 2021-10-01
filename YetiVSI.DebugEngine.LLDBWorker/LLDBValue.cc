@@ -20,6 +20,7 @@
 #include "LLDBExpressionOptions.h"
 #include "LLDBType.h"
 #include "ValueTypeUtil.h"
+#include "ValueUtil.h"
 
 #include "lldb/API/SBError.h"
 #include "lldb/API/SBProcess.h"
@@ -340,6 +341,9 @@ SbValue ^ LLDBValue::EvaluateExpression(System::String ^ expression,
       msclr::interop::marshal_as<std::string>(expression).c_str(),
       lldbExpressionOptions->GetNativeObject());
   if (expressionValue.IsValid()) {
+    // Try converting the result to dynamic type. That way the VSI extension
+    // will be able to pick up the correct Natvis visualization.
+    expressionValue = ConvertToDynamicValue(expressionValue);
     return gcnew LLDBValue(expressionValue);
   }
   return nullptr;

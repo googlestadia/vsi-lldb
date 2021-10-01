@@ -24,6 +24,7 @@
 #include "lldb-eval/api.h"
 #include "lldb/API/SBFrame.h"
 #include "lldb/API/SBValue.h"
+#include "ValueUtil.h"
 
 namespace YetiVSI {
 namespace DebugEngine {
@@ -45,6 +46,10 @@ SbValue ^
   lldb::SBError error;
   lldb::SBValue value =
       lldb_eval::EvaluateExpression(sbFrame, expr.c_str(), opts, error);
+
+  // Try converting the result to dynamic type. That way the VSI extension will
+  // be able to pick up the correct Natvis visualization.
+  value = ConvertToDynamicValue(value);
 
   return gcnew LLDBValue(value, error);
 }
@@ -75,6 +80,10 @@ SbValue ^
   lldb::SBError error;
   lldb::SBValue result =
       lldb_eval::EvaluateExpression(sbValue, expr.c_str(), opts, error);
+
+  // Try converting the result to dynamic type. That way the VSI extension will
+  // be able to pick up the correct Natvis visualization.
+  result = ConvertToDynamicValue(result);
 
   return gcnew LLDBValue(result, error);
 }

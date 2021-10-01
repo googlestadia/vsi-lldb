@@ -57,6 +57,7 @@
     <ClInclude Include="ManagedUniquePtr.h" />
     <ClInclude Include="ReturnStatusUtil.h" />
     <ClInclude Include="ValueTypeUtil.h" />
+    <ClInclude Include="ValueUtil.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LLDBAddress.cc" />
@@ -102,6 +103,7 @@
     <ClCompile Include="ReturnStatusUtil.cc" />
     <ClCompile Include="ValueTypeUtil.cc" />
     <ClCompile Include="LLDBWatchpoint.cc" />
+    <ClCompile Include="ValueUtil.cc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source.def" />
