@@ -26,7 +26,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         static readonly Regex IDENTIFIER_REGEX = new Regex("^[a-zA-Z$_][a-zA-Z$_0-9]*");
 
         // only decimal constants
-        static readonly Regex NUMERIC_REGEX = new Regex("^[0-9]+");
+        static readonly Regex NUMERIC_REGEX = new Regex("^-?[0-9]+");
 
         // helper patterns
         const string SIGN_PATTERN = @"(signed|unsigned)";

@@ -9611,6 +9611,72 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
+        public async Task RecursiveTemplateTypeWildcardLookupAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""ContainerType&lt;*,ContainerType&lt;*,*&gt;&gt;"">
+    <DisplayString>{($T1)($T2)($T3)data}</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var data = RemoteValueFakeUtil.CreateSimpleInt("$1", 7);
+            var remoteValue = RemoteValueFakeUtil.CreateClass(
+                "ContainerType<int, ContainerType<char, float>>", "container", "");
+            remoteValue.AddValueFromExpression("(int)(char)(float)data", data);
+
+            var varInfo = CreateVarInfo(remoteValue);
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("7"));
+        }
+
+        [Test]
+        public async Task TemplateTypeSkipKnownTypenameAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""ContainerType&lt;*,char,*&gt;"">
+    <DisplayString>{($T1)($T2)data}</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var data = RemoteValueFakeUtil.CreateSimpleInt("$1", 7);
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClass("ContainerType<int, char, float>", "container", "");
+            remoteValue.AddValueFromExpression("(int)(float)data", data);
+
+            var varInfo = CreateVarInfo(remoteValue);
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("7"));
+        }
+
+        [Test]
+        public async Task TemplateTypeAcceptNegativeConstantAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""ContainerType&lt;*&gt;"">
+    <DisplayString>{$T1}</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var data = RemoteValueFakeUtil.CreateSimpleInt("$1", -15);
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClass("ContainerType<-15>", "container", "");
+            remoteValue.AddValueFromExpression("-15", data);
+
+            var varInfo = CreateVarInfo(remoteValue);
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("-15"));
+        }
+
+        [Test]
         public async Task DerivedTypeUsesBaseTypeAsync()
         {
             var xml = @"

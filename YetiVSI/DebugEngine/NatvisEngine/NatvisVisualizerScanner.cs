@@ -331,7 +331,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             _visualizerCache[varTypeName] =
-                bestMatch != null ? new VisualizerInfo(bestMatch.Visualizer, typeNameToFind) : null;
+                bestMatch != null ? new VisualizerInfo(bestMatch, typeNameToFind) : null;
 
             return _visualizerCache[varTypeName];
         }

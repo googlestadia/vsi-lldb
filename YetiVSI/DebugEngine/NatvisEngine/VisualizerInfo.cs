@@ -22,14 +22,17 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         public VisualizerType Visualizer { get; }
         public NatvisScope NatvisScope { get; }
 
-        public VisualizerInfo(VisualizerType viz, TypeName name)
+        public VisualizerInfo(NatvisVisualizerScanner.TypeInfo info, TypeName name)
         {
-            Visualizer = viz;
-            // add the template parameter macro values
+            Visualizer = info.Visualizer;
+
+            // Resolve wildcards (i.e. find replacements for "*" template arguments).
+            List<string> resolvedWildcards = new List<string>();
+            ResolveWildcards(info.ParsedName, name, resolvedWildcards);
             NatvisScope = new NatvisScope();
-            for (int i = 0; i < name.Args.Count; ++i)
+            for (int i = 0; i < resolvedWildcards.Count; ++i)
             {
-                NatvisScope.AddScopedName($"$T{i + 1}", name.Args[i].FullyQualifiedName);
+                NatvisScope.AddScopedName($"$T{i + 1}", resolvedWildcards[i]);
             }
         }
 
@@ -46,5 +49,30 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// <returns>Returns the SmartPointerType child or null if it doesn't exist.</returns>
         public SmartPointerType GetSmartPointerType() =>
             Visualizer.Items?.OfType<SmartPointerType>().FirstOrDefault();
+
+        /// <summary>
+        /// Recursively matches type wildcards (i.e. "*" in NatVis).
+        /// </summary>
+        /// <param name="vizType">NatVis type specification (might contain wildcards).</param>
+        /// <param name="exactType">Exact type matched.</param>
+        /// <param name="resolvedWildcards">
+        /// List were types that replace wildcards in vizType are added to.
+        /// </param>
+        private void ResolveWildcards(TypeName vizType, TypeName exactType,
+                                      List<string> resolvedWildcards)
+        {
+            if (vizType.IsWildcard)
+            {
+                resolvedWildcards.Add(exactType.FullyQualifiedName);
+                return;
+            }
+
+            // At this point, the `exactType` should be matched to the Natvis visualizer `vizType`.
+            // Therefore, it's assumed that it holds `vizType.Args.Count == exactType.Args.Count`.
+            for (int i = 0; i < vizType.Args.Count; ++i)
+            {
+                ResolveWildcards(vizType.Args[i], exactType.Args[i], resolvedWildcards);
+            }
+        }
     }
 }
