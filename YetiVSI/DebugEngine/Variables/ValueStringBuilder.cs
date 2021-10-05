@@ -15,6 +15,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YetiVSI.DebugEngine.NatvisEngine;
 
@@ -23,6 +24,12 @@ namespace YetiVSI.DebugEngine.Variables
     public static class ValueStringBuilder
     {
         const int _maxValueStringLength = 80;
+
+        static readonly string _cvPattern = "(const|volatile|const volatile|volatile const)";
+
+        // Matches (possibly CV-qualified) void pointer types.
+        static readonly Regex _voidPointerRegex =
+            new Regex($"^({_cvPattern} )?void ?\\* ?{_cvPattern}?$");
 
         // TODO: Consider enabling preview for Natvis variables.
         public static async Task<string> BuildAsync(IVariableInformation varInfo,
@@ -143,6 +150,12 @@ namespace YetiVSI.DebugEngine.Variables
             if (value != "" && plainValue != value)
             {
                 return addressPrefix + value;
+            }
+
+            // Void pointers can't be unwrapped.
+            if (_voidPointerRegex.IsMatch(varInfo.TypeName))
+            {
+                return memoryAddress;
             }
 
             if (varInfo.IsNullPointer())

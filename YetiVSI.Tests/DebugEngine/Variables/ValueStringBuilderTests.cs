@@ -103,7 +103,6 @@ namespace YetiVSI.Test.DebugEngine.Variables
         [Test]
         public async Task Build_PointerClassValueAsync()
         {
-            string address = $"0x{_pointerAddress:x16}";
             RemoteValueFake pointer =
                 RemoteValueFakeUtil.CreatePointer("C*", "pc", _pointerAddress.ToString());
             pointer.AddChild(RemoteValueFakeUtil.CreateSimpleInt("f", 42));
@@ -123,6 +122,38 @@ namespace YetiVSI.Test.DebugEngine.Variables
                 result,
                 Is.EqualTo(
                     $"0x{_pointerAddress:x16} {{20, 21, 22, 23, 24, <invalid>, <invalid>}}"));
+        }
+
+        [TestCase("void *")]
+        [TestCase("void*")]
+        [TestCase("const volatile void*")]
+        [TestCase("const void *const")]
+        [TestCase("void* const")]
+        [TestCase("void*const")]
+        public async Task Build_VoidPointerAsync(string type)
+        {
+            RemoteValueFake pointer =
+                RemoteValueFakeUtil.CreatePointer(type, "vp", _pointerAddress.ToString());
+            IVariableInformation varInfo = CreateVarInfo(pointer, "");
+            string result = await ValueStringBuilder.BuildAsync(varInfo);
+            Assert.That(result, Is.EqualTo($"0x{_pointerAddress:x16}"));
+        }
+
+        [TestCase("void**")]
+        [TestCase("void * *")]
+        [TestCase("void *const *")]
+        public async Task Build_PointerToVoidPointerAsync(string type)
+        {
+            string address = $"0x{_pointerAddress:x16}";
+            RemoteValueFake voidPtr =
+                RemoteValueFakeUtil.CreatePointer("void *", "", _pointerAddress.ToString());
+            RemoteValueFake voidPtrPtr =
+                RemoteValueFakeUtil.CreatePointer(type, "vpp", _pointerAddress.ToString());
+            voidPtrPtr.AddChild(voidPtr);
+
+            IVariableInformation varInfo = CreateVarInfo(voidPtrPtr, "");
+            string result = await ValueStringBuilder.BuildAsync(varInfo);
+            Assert.That(result, Is.EqualTo($"{address} {{{address}}}"));
         }
 
         IVariableInformation CreateVarInfo(RemoteValue remoteValue, string formatSpecifier) =>
