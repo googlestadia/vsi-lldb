@@ -23,7 +23,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -58,45 +57,53 @@ namespace YetiVSI.CoreAttach
 
         public CoreAttachWindow(IServiceProvider serviceProvider)
         {
-            var serviceManager = new ServiceManager();
-            _taskContext = serviceManager.GetJoinableTaskContext();
+            try
+            {
+                var serviceManager = new ServiceManager();
+                _taskContext = serviceManager.GetJoinableTaskContext();
 
-            _dialogUtil = new DialogUtil();
-            IExtensionOptions options =
-                ((YetiVSIService) serviceManager.RequireGlobalService(typeof(YetiVSIService)))
-                .Options;
-            var managedProcessFactory = new ManagedProcess.Factory();
-            var progressDialogFactory = new ProgressDialog.Factory();
-            _cancelableTaskFactory =
-                new CancelableTask.Factory(_taskContext, progressDialogFactory);
-            _coreListRequest = new CoreListRequest.Factory().Create();
-            var jsonUtil = new JsonUtil();
-            var credentialConfigFactory = new CredentialConfig.Factory(jsonUtil);
-            var accountOptionLoader = new VsiAccountOptionLoader(options);
-            var credentialManager =
-                new CredentialManager(credentialConfigFactory, accountOptionLoader);
-            _developerAccount = credentialManager.LoadAccount();
-            IRemoteCommand remoteCommand = new RemoteCommand(managedProcessFactory);
-            _remoteFile = new RemoteFile(managedProcessFactory);
-            var cloudConnection = new CloudConnection();
-            var sdkConfigFactory = new SdkConfig.Factory(jsonUtil);
-            // NOTE: the lifetime of this CloudRunner is limited to the current CoreAttachWindow.
-            _cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager, cloudConnection,
-                                           new GgpSDKUtil());
-            _gameletClientFactory = new GameletClient.Factory();
-            var sshKeyLoader = new SshKeyLoader(managedProcessFactory);
-            var sshKnownHostsWriter = new SshKnownHostsWriter();
-            _sshManager = new SshManager(_gameletClientFactory, _cloudRunner, sshKeyLoader,
-                                         sshKnownHostsWriter, remoteCommand);
-            _debugSessionMetrics = new DebugSessionMetrics(
-                serviceProvider.GetService(typeof(SMetrics)) as IMetrics);
-            _debugSessionMetrics.UseNewDebugSessionId();
-            _actionRecorder = new ActionRecorder(_debugSessionMetrics);
+                _dialogUtil = new DialogUtil();
+                IExtensionOptions options =
+                    ((YetiVSIService)serviceManager.RequireGlobalService(typeof(YetiVSIService)))
+                    .Options;
+                var managedProcessFactory = new ManagedProcess.Factory();
+                var progressDialogFactory = new ProgressDialog.Factory();
+                _cancelableTaskFactory =
+                    new CancelableTask.Factory(_taskContext, progressDialogFactory);
+                _coreListRequest = new CoreListRequest.Factory().Create();
+                var jsonUtil = new JsonUtil();
+                var credentialConfigFactory = new CredentialConfig.Factory(jsonUtil);
+                var accountOptionLoader = new VsiAccountOptionLoader(options);
+                var credentialManager =
+                    new CredentialManager(credentialConfigFactory, accountOptionLoader);
+                _developerAccount = credentialManager.LoadAccount();
+                IRemoteCommand remoteCommand = new RemoteCommand(managedProcessFactory);
+                _remoteFile = new RemoteFile(managedProcessFactory);
+                var cloudConnection = new CloudConnection();
+                var sdkConfigFactory = new SdkConfig.Factory(jsonUtil);
+                // NOTE: the lifetime of this CloudRunner is limited to the current CoreAttachWindow.
+                _cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager, cloudConnection,
+                                               new GgpSDKUtil());
+                _gameletClientFactory = new GameletClient.Factory();
+                var sshKeyLoader = new SshKeyLoader(managedProcessFactory);
+                var sshKnownHostsWriter = new SshKnownHostsWriter();
+                _sshManager = new SshManager(_gameletClientFactory, _cloudRunner, sshKeyLoader,
+                                             sshKnownHostsWriter, remoteCommand);
+                _debugSessionMetrics = new DebugSessionMetrics(
+                    serviceProvider.GetService(typeof(SMetrics)) as IMetrics);
+                _debugSessionMetrics.UseNewDebugSessionId();
+                _actionRecorder = new ActionRecorder(_debugSessionMetrics);
 
-            InitializeComponent();
-            _instanceSelectionWindowFactory = new ProjectInstanceSelection.Factory();
-            _paramsFactory = new DebugEngine.DebugEngine.Params.Factory(jsonUtil);
-            SelectInstanceOnInit();
+                InitializeComponent();
+                _instanceSelectionWindowFactory = new ProjectInstanceSelection.Factory();
+                _paramsFactory = new DebugEngine.DebugEngine.Params.Factory(jsonUtil);
+                SelectInstanceOnInit();
+            } 
+            catch (Exception exception)
+            {
+                Trace.WriteLine(exception);
+                throw;
+            }
         }
 
         void SelectInstanceOnInit()
