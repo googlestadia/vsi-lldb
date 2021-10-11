@@ -98,7 +98,7 @@ namespace YetiVSI.CoreAttach
                 _instanceSelectionWindowFactory = new ProjectInstanceSelection.Factory();
                 _paramsFactory = new DebugEngine.DebugEngine.Params.Factory(jsonUtil);
                 SelectInstanceOnInit();
-            } 
+            }
             catch (Exception exception)
             {
                 Trace.WriteLine(exception);
@@ -138,12 +138,15 @@ namespace YetiVSI.CoreAttach
             }
 
             SortInstancesByReserver(instances);
-            _instance = _instanceSelectionWindowFactory.Create(instances).Run();
-            if (_instance == null)
+
+            var selected = _instanceSelectionWindowFactory.Create(instances).Run();
+            // The operation was canceled.
+            if (selected == null)
             {
                 return;
             }
 
+            _instance = selected;
             RefreshInstanceLabel();
 
             if (!EnableSsh())
@@ -256,12 +259,9 @@ namespace YetiVSI.CoreAttach
         }
         void RefreshInstanceLabel()
         {
-            if (_instance != null)
-            {
-                InstanceLabel.Content = "Instance: " + (string.IsNullOrEmpty(_instance.DisplayName)
-                                                            ? _instance.Id
-                                                            : _instance.DisplayName);
-            }
+            InstanceLabel.Content = "Instance: " + (string.IsNullOrEmpty(_instance?.DisplayName)
+                                                        ? _instance?.Id
+                                                        : _instance.DisplayName);
         }
 
         void CoreListSelectionChanged(object sender, SelectionChangedEventArgs e)
