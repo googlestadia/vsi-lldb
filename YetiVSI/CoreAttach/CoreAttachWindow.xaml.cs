@@ -119,13 +119,7 @@ namespace YetiVSI.CoreAttach
                 $"({ownedInstances.Count} reserved):";
             if (ownedInstances.Count == 1)
             {
-                _instance = ownedInstances[0];
-                if (!EnableSsh())
-                {
-                    _instance = null;
-                    return;
-                }
-                RefreshInstanceLabel();
+                SetCurrentInstance(ownedInstances[0]);
             }
         }
 
@@ -146,14 +140,18 @@ namespace YetiVSI.CoreAttach
                 return;
             }
 
-            _instance = selected;
-            RefreshInstanceLabel();
-
+            SetCurrentInstance(selected);
+        }
+        
+        void SetCurrentInstance(Gamelet instance)
+        {
+            _instance = instance;
             if (!EnableSsh())
             {
-                return;
+                _instance = null;
             }
-
+            GameletMessageTextBox.Text = "";
+            RefreshInstanceLabel();
             RefreshCoreList();
         }
 
@@ -161,6 +159,7 @@ namespace YetiVSI.CoreAttach
         {
             if (_instance == null)
             {
+                CoreList.ItemsSource = new List<CoreListEntry>();
                 return;
             }
 
