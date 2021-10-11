@@ -9,6 +9,9 @@
         Title="Error" MinHeight="100" MinWidth="250" MaxWidth="525" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
     <DockPanel LastChildFill="True" Margin="4">
         <TextBlock DockPanel.Dock="Top" x:Name="Message" Margin="4" Text="Error message" TextWrapping="Wrap"></TextBlock>
+        <TextBlock DockPanel.Dock="Top" Margin="4" TextWrapping="Wrap" x:Name="DocumentationBlock">
+            <Hyperlink Click="DocumentationLinkClick"><TextBlock x:Name="DocumentationText"></TextBlock></Hyperlink>
+        </TextBlock>
         <DockPanel DockPanel.Dock="Bottom">
             <Button DockPanel.Dock="Right" x:Name="Ok" Content="OK" Click="OkClick" Width="100" Margin="4"/>
             <Button DockPanel.Dock="Right" x:Name="DontShowAgain" Content="Do not show again"

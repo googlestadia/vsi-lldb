@@ -82,9 +82,22 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Load the symbols. Skips modules that already have their symbols loaded.
         /// </summary>
-        Task<int> LoadModuleFilesAsync(SymbolInclusionSettings symbolsSettings,
-                                       bool useSymbolsStores, ICancelable task,
-                                       IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
+        /// <param name="useSymbolStores">
+        /// If true, then during loading the module the method will try to lookup module in
+        /// symbol stores by the name extracted from module.
+        /// <see cref="SymbolLoader.GetSymbolFileDirAndNameAsync"/>
+        /// </param>
+        /// <param name="isStadiaSymbolsServerUsed">
+        /// If true, then the method will not return suggestion to enable symbol store server.
+        /// A <see cref="LoadModuleFilesResult.SuggestToEnableSymbolStore"/>.
+        /// </param>
+        /// <returns>
+        /// A <see cref="LoadModuleFilesResult"/>.
+        /// </returns>
+        Task<LoadModuleFilesResult> LoadModuleFilesAsync(
+            SymbolInclusionSettings symbolsSettings,
+            bool useSymbolsStores, bool isStadiaSymbolsServerUsed, ICancelable task,
+            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
 
         /// <summary>
         /// Get the modules with the specified name.
@@ -103,6 +116,22 @@ namespace YetiVSI.DebugEngine
         /// Returns the process id of the remote process being debugged.
         /// </summary>
         uint RemotePid { get; }
+    }
+
+    /// <summary>
+    /// Represents the result of a nidykes loading operation.
+    /// </summary>
+    public class LoadModuleFilesResult
+    {
+        /// <summary>
+        /// S_OK if all binaries and symbols are loaded, E_FAIL otherwise.
+        /// </summary>
+        public int ResultCode { get; set; }
+
+        /// <summary>
+        /// True if load operation can be fixed by symbol store configuration.
+        /// </summary>
+        public bool SuggestToEnableSymbolStore { get; set; }
     }
 
     public interface ILldbAttachedProgramFactory
@@ -183,6 +212,7 @@ namespace YetiVSI.DebugEngine
                 var binaryLoader = _binaryLoaderFactory.Create(target);
                 var symbolLoader = _symbolLoaderFactory.Create(commandInterpreter);
                 var moduleFileLoader = _moduleFileLoaderFactory.Create(symbolLoader, binaryLoader,
+                                                                       isCoreAttach,
                                                                        moduleSearchLogHolder);
 
                 var debugModuleCache = _debugModuleCacheFactory.Create(
@@ -363,8 +393,9 @@ namespace YetiVSI.DebugEngine
         /// Load missing binaries and symbols. Skips modules that already have their symbols loaded
         /// or that are excluded via Include / Exclude options on symbols settings page.
         /// </summary>
-        public Task<int> LoadModuleFilesAsync(
-            SymbolInclusionSettings symbolsSettings, bool useSymbolStores, ICancelable task,
+        public Task<LoadModuleFilesResult> LoadModuleFilesAsync(
+            SymbolInclusionSettings symbolsSettings, bool useSymbolStores,
+            bool isStadiaSymbolsServerUsed, ICancelable task,
             IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
         {
             return _moduleFileLoader.LoadModuleFilesAsync(
@@ -372,7 +403,8 @@ namespace YetiVSI.DebugEngine
                     .Select(_target.GetModuleAtIndex)
                     .Where(m => m != null)
                     .ToList(),
-                symbolsSettings, useSymbolStores, task, moduleFileLoadRecorder);
+                symbolsSettings, useSymbolStores, isStadiaSymbolsServerUsed, task,
+                moduleFileLoadRecorder);
         }
 
         public IList<IDebugModule3> GetModulesByName(string moduleName)

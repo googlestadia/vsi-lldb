@@ -17,6 +17,8 @@ using Microsoft.VisualStudio;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YetiCommon;
 
@@ -33,9 +35,11 @@ namespace YetiVSI.DebugEngine
         /// placeholder modules and the matching binaries are successfully loaded, then |modules|
         /// will be modified, replacing the placeholder modules with the newly loaded modules.
         /// </summary>
-        /// <returns>S_OK if all binaries and symbols are loaded, E_FAIL otherwise.</returns>
+        /// <returns>
+        /// A <see cref="LoadModuleFilesResult"/>.
+        /// </returns>
         /// <exception cref="ArgumentNullException">Thrown if any argument is null.</exception>
-        Task<int> LoadModuleFilesAsync(IList<SbModule> modules, ICancelable task,
+        Task<LoadModuleFilesResult> LoadModuleFilesAsync(IList<SbModule> modules, ICancelable task,
                                        IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
 
         /// <summary>
@@ -43,14 +47,25 @@ namespace YetiVSI.DebugEngine
         /// but allows user to additionally specify modules for which symbols should be loaded
         /// via SymbolInclusionSettings.
         /// </summary>
-        Task<int> LoadModuleFilesAsync(
+        /// <param name="useSymbolStores">
+        /// If true, then during loading the module the method will try to lookup module in
+        /// symbol stores by the name extracted from module.
+        /// <see cref="SymbolLoader.GetSymbolFileDirAndNameAsync"/>
+        /// </param>
+        /// <param name="isStadiaSymbolsServerUsed">
+        /// If true, then the method will not return suggestion to enable symbol store server.
+        /// A <see cref="LoadModuleFilesResult.SuggestToEnableSymbolStore"/>.
+        /// </param>
+        Task<LoadModuleFilesResult> LoadModuleFilesAsync(
             IList<SbModule> modules, SymbolInclusionSettings symbolSettings, bool useSymbolStores,
-            ICancelable task, IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
+            bool isStadiaSymbolsServerUsed, ICancelable task,
+            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
     }
 
     public interface IModuleFileLoaderFactory
     {
         IModuleFileLoader Create(ISymbolLoader symbolLoader, IBinaryLoader binaryLoader,
+                                 bool isCoreAttach,
                                  IModuleSearchLogHolder moduleSearchLogHolder);
     }
 
@@ -104,25 +119,96 @@ namespace YetiVSI.DebugEngine
         public class Factory : IModuleFileLoaderFactory
         {
             public IModuleFileLoader Create(ISymbolLoader symbolLoader, IBinaryLoader binaryLoader,
+                                            bool isCoreAttach,
                                             IModuleSearchLogHolder moduleSearchLogHolder) =>
-                new ModuleFileLoader(symbolLoader, binaryLoader, moduleSearchLogHolder);
+                new ModuleFileLoader(symbolLoader, binaryLoader, isCoreAttach,
+                                     moduleSearchLogHolder);
         }
 
         readonly ISymbolLoader _symbolLoader;
         readonly IBinaryLoader _binaryLoader;
+        readonly bool _isCoreAttach;
         readonly IModuleSearchLogHolder _moduleSearchLogHolder;
+        readonly static IList<Regex> _importantModulesForCoreDumpDebugging =
+            new []
+            {
+                new Regex("amdvlk64\\.so", RegexOptions.Compiled),
+                new Regex("ggpvlk\\.so", RegexOptions.Compiled),
+                new Regex("libanl-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libasound\\.so.*", RegexOptions.Compiled),
+                new Regex("libatomic\\.so.*", RegexOptions.Compiled),
+                new Regex("libBrokenLocale-?.*\\.so", RegexOptions.Compiled),
+                new Regex("libc-?([0-9].[0-9]{2})?\\.so.*", RegexOptions.Compiled),
+                new Regex("libc\\+\\+abi\\.so.*", RegexOptions.Compiled),
+                new Regex("libcap\\.so.*", RegexOptions.Compiled),
+                new Regex("libcidn-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libcrypto\\.so.*", RegexOptions.Compiled),
+                new Regex("libcrypt-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libc\\+\\+\\.so.*", RegexOptions.Compiled),
+                new Regex("libdbus-1\\.so.*", RegexOptions.Compiled),
+                new Regex("libdl-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libdrm_amdgpu\\.so.*", RegexOptions.Compiled),
+                new Regex("libdrm\\.so.*", RegexOptions.Compiled),
+                new Regex("libgcc_s\\.so.*", RegexOptions.Compiled),
+                new Regex("libgcrypt\\.so.*", RegexOptions.Compiled),
+                new Regex("libggp_g3\\.so.*", RegexOptions.Compiled),
+                new Regex("libggp\\.so", RegexOptions.Compiled),
+                new Regex("libggp_with_heap_isolation\\.so.*", RegexOptions.Compiled),
+                new Regex("libgomp\\.so.*", RegexOptions.Compiled),
+                new Regex("libgpg-error\\.so.*", RegexOptions.Compiled),
+                new Regex("libGPUPerfAPIVK\\.so", RegexOptions.Compiled),
+                new Regex("libidn\\.so.*", RegexOptions.Compiled),
+                new Regex("liblz4\\.so.*", RegexOptions.Compiled),
+                new Regex("liblzma\\.so.*", RegexOptions.Compiled),
+                new Regex("libmemusage\\.so", RegexOptions.Compiled),
+                new Regex("libm-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libmvec-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libnettle\\.so.*", RegexOptions.Compiled),
+                new Regex("libnsl-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libnss_compat-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libnss_dns-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libnss_files-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libnss_hesiod-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libnss_nisplus-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libnss_nis-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libpcprofile.so", RegexOptions.Compiled),
+                new Regex("libpcre\\.so.*", RegexOptions.Compiled),
+                new Regex("libpthread-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libpulsecommon-12\\.0\\.so", RegexOptions.Compiled),
+                new Regex("libpulse-simple\\.so.*", RegexOptions.Compiled),
+                new Regex("libpulse\\.so.*", RegexOptions.Compiled),
+                new Regex("librenderdoc\\.so", RegexOptions.Compiled),
+                new Regex("libresolv-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("librgpserver\\.so", RegexOptions.Compiled),
+                new Regex("librt-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libSegFault\\.so", RegexOptions.Compiled),
+                new Regex("libselinux\\.so.*", RegexOptions.Compiled),
+                new Regex("libsndfile\\.so.*", RegexOptions.Compiled),
+                new Regex("libssl\\.so.*", RegexOptions.Compiled),
+                new Regex("libsystemd\\.so.*", RegexOptions.Compiled),
+                new Regex("libthread_db-1\\.0\\.so.*", RegexOptions.Compiled),
+                new Regex("libthread_db\\.so.*", RegexOptions.Compiled),
+                new Regex("libutil-?.*\\.so.*", RegexOptions.Compiled),
+                new Regex("libVkLayer.*\\.so", RegexOptions.Compiled),
+                new Regex("libvulkan\\.so.*", RegexOptions.Compiled),
+                new Regex("libz\\.so.*", RegexOptions.Compiled),
+                new Regex("oskhost\\.so", RegexOptions.Compiled),
+            };
 
         public ModuleFileLoader(ISymbolLoader symbolLoader, IBinaryLoader binaryLoader,
+                                bool isCoreAttach,
                                 IModuleSearchLogHolder moduleSearchLogHolder)
         {
             _symbolLoader = symbolLoader;
             _binaryLoader = binaryLoader;
+            _isCoreAttach = isCoreAttach;
             _moduleSearchLogHolder = moduleSearchLogHolder;
         }
 
-        public async Task<int> LoadModuleFilesAsync(
+        public async Task<LoadModuleFilesResult> LoadModuleFilesAsync(
             IList<SbModule> modules, SymbolInclusionSettings symbolSettings, bool useSymbolStores,
-            ICancelable task, IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
+            bool isStadiaSymbolsServerUsed, ICancelable task,
+            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
         {
             if (modules == null)
             {
@@ -143,8 +229,8 @@ namespace YetiVSI.DebugEngine
             // are still recorded if the task is aborted or cancelled.
             moduleFileLoadRecorder.RecordBeforeLoad(modules);
 
-            int result = VSConstants.S_OK;
-
+            var result = new LoadModuleFilesResult() { ResultCode = VSConstants.S_OK,
+                                                       SuggestToEnableSymbolStore = false };
             for (int i = 0; i < modules.Count; ++i)
             {
                 SbModule module = modules[i];
@@ -169,7 +255,16 @@ namespace YetiVSI.DebugEngine
                             await _binaryLoader.LoadBinaryAsync(module, searchLog);
                         if (!ok)
                         {
-                            result = VSConstants.E_FAIL;
+                            if (!isStadiaSymbolsServerUsed &&
+                                _isCoreAttach &&
+                                !result.SuggestToEnableSymbolStore &&
+                                _importantModulesForCoreDumpDebugging.Any(
+                                    expr => expr.IsMatch(name)))
+                            {
+                                result.SuggestToEnableSymbolStore = true;
+                            }
+
+                            result.ResultCode = VSConstants.E_FAIL;
                             continue;
                         }
 
@@ -182,7 +277,7 @@ namespace YetiVSI.DebugEngine
                                 module, searchLog, useSymbolStores);
                         if (!loaded)
                         {
-                            result = VSConstants.E_FAIL;
+                            result.ResultCode = VSConstants.E_FAIL;
                             continue;
                         }
                     }
@@ -199,10 +294,10 @@ namespace YetiVSI.DebugEngine
             return result;
         }
 
-        public Task<int> LoadModuleFilesAsync(
+        public Task<LoadModuleFilesResult> LoadModuleFilesAsync(
             IList<SbModule> modules, ICancelable task,
             IModuleFileLoadMetricsRecorder moduleFileLoadRecorder) =>
-            LoadModuleFilesAsync(modules, null, true, task, moduleFileLoadRecorder);
+            LoadModuleFilesAsync(modules, null, true, true, task, moduleFileLoadRecorder);
 
         bool SkipModule(string module, SymbolInclusionSettings settings)
         {

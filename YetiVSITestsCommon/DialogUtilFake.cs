@@ -102,6 +102,14 @@ namespace YetiVSITestsCommon
             return true;
         }
 
+        public bool ShowOkNoMoreWithDocumentationDisplayWarning(string message,
+                                                                string documentationLink,
+                                                                string documentationText,
+                                                                string[] settingPath)
+        {
+            return ShowOkNoMoreDisplayWarning(message, settingPath);
+        }
+
         public void ShowError(string message, string details = null)
         {
             RecordMessage(message, details, MessageType.Error);

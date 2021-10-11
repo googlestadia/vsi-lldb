@@ -23,7 +23,10 @@ namespace YetiVSI
 {
     public partial class DetailsDialog
     {
+        string _documentationLink;
+
         public DetailsDialog(string title, string message, string details, bool dontShowAgainButton,
+                             string documentationLink = "", string documentationText = "",
                              string[] dontShowAgainSettingPath = null)
         {
             InitializeComponent();
@@ -44,7 +47,22 @@ namespace YetiVSI
                 DontShowAgain.ToolTip =
                     ErrorStrings.DontShowAgainSettingHint(dontShowAgainSettingPath);
             }
+
+            if (!string.IsNullOrEmpty(documentationLink) &&
+                !string.IsNullOrEmpty(documentationText))
+            {
+                DocumentationBlock.Visibility = Visibility.Visible;
+                DocumentationText.Text = documentationText;
+                _documentationLink = documentationLink;
+            }
+            else
+            {
+                DocumentationBlock.Visibility = Visibility.Hidden;
+            }
         }
+
+        void DocumentationLinkClick(object sender, RoutedEventArgs e) =>
+            Process.Start(_documentationLink);
 
         void OkClick(object sender, RoutedEventArgs e)
         {

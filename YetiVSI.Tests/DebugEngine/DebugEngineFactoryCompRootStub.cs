@@ -134,7 +134,7 @@ namespace YetiVSI.Test.DebugEngine
                 actionRecorder, null, moduleFileLoadRecorderFactory, moduleFileFinder,
                 testClientLauncherFactory, GetNatvis(), GetNatvisDiagnosticLogger(),
                 exitDialogUtil, preflightBinaryChecker, _debugSessionLauncherFactory, paramsFactory,
-                _remoteDeploy, cancelableTaskFactory, _dialogUtil,
+                _remoteDeploy, cancelableTaskFactory, _dialogUtil, _vsiService,
                 GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(), debugEngineCommands,
                 GetDebugEventCallbackDecorator(vsiService.DebuggerOptions),
                 GetSymbolSettingsProvider(), deployLldbServer, _gameLauncher,

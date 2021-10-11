@@ -112,6 +112,16 @@ namespace YetiVSI
 
         public const string StopRunningGame = "Stop running game?";
 
+        public static readonly string SymbolStoreEnableSuggestion =
+            $"Couldn't find symbols for important modules.{Environment.NewLine}" +
+            $"This will degrade the debugging experience.{Environment.NewLine}" +
+            $"Enabling the symbol store server may resolve this issue.";
+
+        public static readonly string SymbolStoreEnableDocumentationLink =
+            "https://developers.google.com/stadia/docs/develop/debug-and-test/" +
+            "debug-in-visual-studio#stadia_symbol_store";
+        public static readonly string SymbolStoreEnableDocumentationText = "See documentation.";
+
         public const string GameNotRunningDuringAttach =
             "Cannot proceed with the attach. Game is not running.";
 
@@ -187,7 +197,6 @@ namespace YetiVSI
                 $" An account can only play one game at a time.{Environment.NewLine}" +
                 "Would you like to stop your active game and launch this one?";
         }
-
 
         public static string BuildIdCheckDetails(IEnumerable<string> matchedFiles,
                                                  IEnumerable<string> searchedPaths) =>

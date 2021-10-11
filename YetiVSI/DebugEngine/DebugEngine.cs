@@ -167,6 +167,7 @@ namespace YetiVSI.DebugEngine
             readonly IRemoteDeploy _remoteDeploy;
             readonly CancelableTask.Factory _cancelableTaskFactory;
             readonly IDialogUtil _dialogUtil;
+            readonly IYetiVSIService _vsiService;
             readonly NatvisLoggerOutputWindowListener _natvisLogListener;
             readonly ISolutionExplorer _solutionExplorer;
             readonly IDebugEngineCommands _debugEngineCommands;
@@ -190,6 +191,7 @@ namespace YetiVSI.DebugEngine
                            IDebugSessionLauncherFactory debugSessionLauncherFactory,
                            Params.Factory paramsFactory, IRemoteDeploy remoteDeploy,
                            CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
+                           IYetiVSIService vsiService,
                            NatvisLoggerOutputWindowListener natvisLogListener,
                            ISolutionExplorer solutionExplorer,
                            IDebugEngineCommands debugEngineCommands,
@@ -217,6 +219,7 @@ namespace YetiVSI.DebugEngine
                 _remoteDeploy = remoteDeploy;
                 _cancelableTaskFactory = cancelableTaskFactory;
                 _dialogUtil = dialogUtil;
+                _vsiService = vsiService;
                 _natvisLogListener = natvisLogListener;
                 _solutionExplorer = solutionExplorer;
                 _debugEngineCommands = debugEngineCommands;
@@ -248,6 +251,7 @@ namespace YetiVSI.DebugEngine
                 return new DebugEngine(self, Guid.NewGuid(), extensionOptions, debuggerOptions,
                                        _debugSessionMetrics, _taskContext, _natvisLogListener,
                                        _solutionExplorer, _cancelableTaskFactory, _dialogUtil,
+                                       _vsiService,
                                        _yetiTransport, _actionRecorder, _symbolServerHttpClient,
                                        _moduleFileLoadRecorderFactory, _moduleFileFinder,
                                        _testClientLauncherFactory, _natvisExpander, _natvisLogger,
@@ -318,6 +322,7 @@ namespace YetiVSI.DebugEngine
         readonly ISolutionExplorer _solutionExplorer;
         readonly YetiDebugTransport _yetiTransport;
         readonly IDialogUtil _dialogUtil;
+        readonly IYetiVSIService _vsiService;
         readonly ActionRecorder _actionRecorder;
         readonly IExtensionOptions _extensionOptions;
         readonly DebuggerOptions.DebuggerOptions _debuggerOptions;
@@ -370,6 +375,7 @@ namespace YetiVSI.DebugEngine
                            NatvisLoggerOutputWindowListener natvisLogListener,
                            ISolutionExplorer solutionExplorer,
                            CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
+                           IYetiVSIService vsiService,
                            YetiDebugTransport yetiTransport, ActionRecorder actionRecorder,
                            HttpClient symbolServerHttpClient,
                            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
@@ -403,6 +409,7 @@ namespace YetiVSI.DebugEngine
             _cancelableTaskFactory = cancelableTaskFactory;
             _solutionExplorer = solutionExplorer;
             _dialogUtil = dialogUtil;
+            _vsiService = vsiService;
             _yetiTransport = yetiTransport;
             _actionRecorder = actionRecorder;
             _symbolServerHttpClient = symbolServerHttpClient;
@@ -893,18 +900,41 @@ namespace YetiVSI.DebugEngine
 
             var inclusionSettings = _symbolSettingsProvider.GetInclusionSettings();
             var isSymbolServerEnabled = _symbolSettingsProvider.IsSymbolServerEnabled;
+            var isStadiaSymbolsServerUsed = _moduleFileFinder.IsStadiaSymbolsServerUsed;
 
             var loadSymbolsTask = _cancelableTaskFactory.Create(
                 "Loading symbols...",
                 task =>
                 {
                     return _attachedProgram.LoadModuleFilesAsync(
-                        inclusionSettings, isSymbolServerEnabled, task,
+                        inclusionSettings, isSymbolServerEnabled, isStadiaSymbolsServerUsed, task,
                         _moduleFileLoadRecorderFactory.Create(action));
                 });
+
             var completed = loadSymbolsTask.RunAndRecord(action);
+
+            if (loadSymbolsTask.Result.SuggestToEnableSymbolStore &&
+                _vsiService.Options.ShowSuggestionToEnableSymbolsServer != ShowOption.NeverShow &&
+                !isStadiaSymbolsServerUsed)
+            {
+                bool showAgain = _dialogUtil.ShowOkNoMoreWithDocumentationDisplayWarning(
+                    ErrorStrings.SymbolStoreEnableSuggestion,
+                    ErrorStrings.SymbolStoreEnableDocumentationLink,
+                    ErrorStrings.SymbolStoreEnableDocumentationText,
+                    new[]
+                    {
+                        "Tools", "Options", "Stadia SDK", OptionPageGrid.LldbDebugger,
+                        OptionPageGrid.SuggestToEnableSymbolStore
+                    });
+
+                if (!showAgain)
+                {
+                    _vsiService.Options.HideSuggestionToEnableSymbolsServer();
+                }
+            }
+
             return completed
-                ? loadSymbolsTask.Result
+                ? loadSymbolsTask.Result.ResultCode
                 : VSConstants.E_ABORT;
         }
 

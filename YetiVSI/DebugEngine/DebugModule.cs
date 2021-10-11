@@ -32,6 +32,8 @@ namespace YetiVSI.DebugEngine
             readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
             readonly ILldbModuleUtil _moduleUtil;
             readonly ISymbolSettingsProvider _symbolSettingsProvider;
+            readonly IDialogUtil _dialogUtil;
+            readonly IYetiVSIService _vsiService;
 
             [Obsolete("This constructor only exists to support mocking libraries.", true)]
             protected Factory()
@@ -42,13 +44,16 @@ namespace YetiVSI.DebugEngine
                            ActionRecorder actionRecorder,
                            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
                            ILldbModuleUtil moduleUtil,
-                           ISymbolSettingsProvider symbolSettingsProvider)
+                           ISymbolSettingsProvider symbolSettingsProvider,
+                           IDialogUtil dialogUtil, IYetiVSIService vsiService)
             {
                 _cancelableTaskFactory = cancelableTaskFactory;
                 _actionRecorder = actionRecorder;
                 _moduleUtil = moduleUtil;
                 _symbolSettingsProvider = symbolSettingsProvider;
                 _moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
+                _dialogUtil = dialogUtil;
+                _vsiService = vsiService;
             }
 
             public virtual IDebugModule3 Create(
@@ -60,7 +65,8 @@ namespace YetiVSI.DebugEngine
                                                              _moduleUtil, moduleFileLoader,
                                                              moduleSearchLogHolder, lldbModule,
                                                              loadOrder, debugEngineHandler, program,
-                                                             _symbolSettingsProvider);
+                                                             _symbolSettingsProvider,
+                                                             _dialogUtil, _vsiService);
         }
 
         readonly ActionRecorder _actionRecorder;
@@ -76,6 +82,8 @@ namespace YetiVSI.DebugEngine
         readonly ILldbModuleUtil _moduleUtil;
         readonly IGgpDebugProgram _program;
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
+        readonly IDialogUtil _dialogUtil;
+        readonly IYetiVSIService _vsiService;
 
         string ModuleName => _lldbModule.GetPlatformFileSpec()?.GetFilename() ?? "<unknown>";
 
@@ -84,7 +92,8 @@ namespace YetiVSI.DebugEngine
                     ILldbModuleUtil moduleUtil, IModuleFileLoader moduleFileLoader,
                     IModuleSearchLogHolder moduleSearchLogHolder, SbModule lldbModule,
                     uint loadOrder, IDebugEngineHandler engineHandler, IGgpDebugProgram program,
-                    ISymbolSettingsProvider symbolSettingsProvider)
+                    ISymbolSettingsProvider symbolSettingsProvider, IDialogUtil dialogUtil,
+                    IYetiVSIService vsiService)
         {
             _cancelableTaskFactory = cancelableTaskFactory;
             _actionRecorder = actionRecorder;
@@ -97,6 +106,8 @@ namespace YetiVSI.DebugEngine
             _engineHandler = engineHandler;
             _program = program;
             _symbolSettingsProvider = symbolSettingsProvider;
+            _dialogUtil = dialogUtil;
+            _vsiService = vsiService;
         }
 
         #region IDebugModule2 functions
@@ -256,7 +267,7 @@ namespace YetiVSI.DebugEngine
         {
             IAction action = _actionRecorder.CreateToolAction(ActionType.DebugModuleLoadSymbols);
 
-            ICancelableTask<int> loadSymbolsTask = _cancelableTaskFactory.Create(
+            ICancelableTask<LoadModuleFilesResult> loadSymbolsTask = _cancelableTaskFactory.Create(
                 "Loading symbols...",
                 task => _moduleFileLoader.LoadModuleFilesAsync(new[] {_lldbModule}, task,
                                                           _moduleFileLoadRecorderFactory.Create(
@@ -268,13 +279,14 @@ namespace YetiVSI.DebugEngine
             }
 
             _engineHandler.OnSymbolsLoaded(Self, ModuleName, null,
-                                           loadSymbolsTask.Result == VSConstants.S_OK, _program);
+                                           loadSymbolsTask.Result.ResultCode == VSConstants.S_OK, _program);
+
             // Returning E_FAIL causes Visual Studio to show a file dialog when attached
             // to a running program or crash dump. This dialog can only be used to select PDB
             // files.
-            return loadSymbolsTask.Result == VSConstants.E_FAIL
+            return loadSymbolsTask.Result.ResultCode == VSConstants.E_FAIL
                 ? VSConstants.S_OK
-                : loadSymbolsTask.Result;
+                : loadSymbolsTask.Result.ResultCode;
         }
 
         public int IsUserCode(out int pfUser)

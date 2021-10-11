@@ -22,6 +22,7 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using YetiVSI.DebugEngine;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
+using System.Linq;
 
 namespace YetiVSI.Test.DebugEngine
 {
@@ -40,6 +41,8 @@ namespace YetiVSI.Test.DebugEngine
         IDebugEngineHandler _mockEngineHandler;
         IGgpDebugProgram _mockDebugProgram;
         ISymbolSettingsProvider _mockSymbolSettingsProvider;
+        IDialogUtil _dialogUtil;
+        IYetiVSIService _vsiService;
 
         [SetUp]
         public void SetUp()
@@ -56,11 +59,13 @@ namespace YetiVSI.Test.DebugEngine
             _mockEngineHandler = Substitute.For<IDebugEngineHandler>();
             _mockDebugProgram = Substitute.For<IGgpDebugProgram>();
             _mockSymbolSettingsProvider = Substitute.For<ISymbolSettingsProvider>();
+            _dialogUtil = Substitute.For<IDialogUtil>();
+            _vsiService = Substitute.For<IYetiVSIService>();
             _debugModule =
                 new DebugModule
                     .Factory(_mockCancelableTaskFactory, _mockActionRecorder,
                              mockModuleFileLoadRecorderFactory, _mockModuleUtil,
-                             _mockSymbolSettingsProvider)
+                             _mockSymbolSettingsProvider, _dialogUtil, _vsiService)
                     .Create(_mockModuleFileLoader, _mockModuleSearchLogHolder, _mockModule,
                             _testLoadOrder, _mockEngineHandler, _mockDebugProgram);
         }
@@ -212,10 +217,14 @@ namespace YetiVSI.Test.DebugEngine
             action.Record(Arg.Any<Func<bool>>()).Returns(true);
             _mockActionRecorder.CreateToolAction(ActionType.DebugModuleLoadSymbols).Returns(action);
 
-            var task = Substitute.For<ICancelableTask<int>>();
-            task.Result.Returns(VSConstants.S_OK);
-            _mockCancelableTaskFactory.Create(Arg.Any<string>(), Arg.Any<Func<ICancelable, int>>())
-                .Returns(task);
+            var task = Substitute.For<ICancelableTask<LoadModuleFilesResult>>();
+            task.Result.Returns(
+                x => new LoadModuleFilesResult() { ResultCode = VSConstants.S_OK });
+            _mockCancelableTaskFactory
+                .Create(
+                    Arg.Any<string>(),
+                    Arg.Any<Func<ICancelable, LoadModuleFilesResult>>())
+                .ReturnsForAnyArgs(task);
 
             _debugModule.LoadSymbols();
 

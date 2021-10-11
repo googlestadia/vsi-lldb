@@ -36,6 +36,13 @@ namespace YetiVSI.DebugEngine
         /// </param>
         void SetSearchPaths(string searchPaths);
 
+
+        /// <summary>
+        /// Returns if search paths contains stadia symbol store placeholder path and server
+        /// symbol store enabled.
+        /// </summary>
+        bool IsStadiaSymbolsServerUsed { get; }
+
         /// <summary>
         /// Searches the paths set through <see cref="SetSearchPaths"/> for a file with the
         /// specified name and build ID.
@@ -67,11 +74,16 @@ namespace YetiVSI.DebugEngine
         {
             _symbolPathParser = symbolPathParser;
             _symbolStore = new NullSymbolStore();
+            IsStadiaSymbolsServerUsed = false;
         }
+
+        public bool IsStadiaSymbolsServerUsed { get; private set; }
 
         public void SetSearchPaths(string searchPaths)
         {
             _symbolStore = _symbolPathParser.Parse(searchPaths);
+            IsStadiaSymbolsServerUsed =
+                _symbolStore.Substores.Any(store => store is StadiaSymbolStore);
         }
 
         public async Task<string> FindFileAsync(

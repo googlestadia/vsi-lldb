@@ -62,6 +62,20 @@ namespace YetiVSI
         /// where presence of this message can be edited.</param>
         /// <returns>false if 'I don't want to see this' selected, otherwise true.</returns>
         bool ShowOkNoMoreDisplayWarning(string message, string[] settingPath);
+
+        /// <summary>
+        /// Displays the same dialog as method ShowOkNoMoreDisplayWarning with additional link to
+        /// documentation.
+        /// </summary>
+        /// <param name="message">Message to show.</param>
+        /// <param name="settingPath">A path to the setting,
+        /// where presence of this message can be edited.</param>
+        /// <param name="documentationLink">Link to the documentation page.</param>
+        /// <param name="documentationText">Link text.</param>
+        /// <returns>false if 'I don't want to see this' selected, otherwise true.</returns>
+        bool ShowOkNoMoreWithDocumentationDisplayWarning(string message, string documentationLink,
+                                                         string documentationText,
+                                                         string[] settingPath);
     }
 
     public class DialogUtil : IDialogUtil
@@ -99,8 +113,16 @@ namespace YetiVSI
             ShowDetailsDialog(ErrorStrings.DialogTitleWarning, message, details);
         }
 
+        public bool ShowOkNoMoreWithDocumentationDisplayWarning(
+            string message, string documentationLink, string documentationText,
+            string[] settingPath) =>
+            ShowDetailsNoMoreDisplayDialog(
+                ErrorStrings.DialogTitleWarning, message, documentationLink, documentationText,
+                settingPath);
+
         public bool ShowOkNoMoreDisplayWarning(string message, string[] settingPath) =>
-            ShowDetailsNoMoreDisplayDialog(ErrorStrings.DialogTitleWarning, message, settingPath);
+            ShowDetailsNoMoreDisplayDialog(ErrorStrings.DialogTitleWarning, message, string.Empty,
+                                           string.Empty, settingPath);
 
         static void ShowDetailsDialog(string title, string message, string details)
         {
@@ -119,11 +141,14 @@ namespace YetiVSI
         }
 
         static bool ShowDetailsNoMoreDisplayDialog(string title, string message,
+                                                   string documentationLink,
+                                                   string documentationText,
                                                    string[] settingPath)
         {
             if (System.Windows.Application.Current.Dispatcher.CheckAccess())
             {
-                var dialog = new DetailsDialog(title, message, null, true, settingPath);
+                var dialog = new DetailsDialog(title, message, null, true, documentationLink,
+                                               documentationText, settingPath);
                 dialog.ShowModal();
                 return dialog.DialogResult == true;
             }

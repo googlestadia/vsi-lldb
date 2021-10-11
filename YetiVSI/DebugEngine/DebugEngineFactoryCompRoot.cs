@@ -226,7 +226,7 @@ namespace YetiVSI.DebugEngine
             DebugModule.Factory debugModuleFactory =
                 GetFactoryDecorator().Decorate(new DebugModule.Factory(
                     cancelableTaskFactory, actionRecorder, moduleFileLoadRecorderFactory,
-                    lldbModuleUtil, GetSymbolSettingsProvider()));
+                    lldbModuleUtil, GetSymbolSettingsProvider(), GetDialogUtil(), _vsiService));
             var debugModuleCacheFactory = new DebugModuleCache.Factory(GetDispatcher());
             var debugMemoryContextFactory =
                 GetFactoryDecorator().Decorate(new DebugMemoryContext.Factory());
@@ -381,7 +381,8 @@ namespace YetiVSI.DebugEngine
                 moduleFileFinder, testClientLauncherFactory, GetNatvis(),
                 GetNatvisDiagnosticLogger(), exitDialogUtil, preflightBinaryChecker,
                 debugSessionLauncherFactory, paramsFactory, remoteDeploy, cancelableTaskFactory,
-                GetDialogUtil(), GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(),
+                GetDialogUtil(), _vsiService,
+                GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(),
                 debugEngineCommands,
                 GetDebugEventCallbackDecorator(GetVsiService().DebuggerOptions),
                 GetSymbolSettingsProvider(), deployLldbServer, gameLauncher,

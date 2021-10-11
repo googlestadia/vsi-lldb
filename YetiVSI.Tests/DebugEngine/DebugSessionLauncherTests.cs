@@ -474,6 +474,7 @@ namespace YetiVSI.Test.DebugEngine
             var lldbShell = Substitute.For<ILLDBShell>();
             var actionRecorder = new ActionRecorder(Substitute.For<IMetrics>());
             var symbolSettingsProvider = Substitute.For<ISymbolSettingsProvider>();
+
             var attachedProgramFactory = new LldbAttachedProgram.Factory(
                 taskContext, new DebugEngineHandler.Factory(taskContext), taskExecutor,
                 new LldbEventManager.Factory(new BoundBreakpointEnumFactory(), taskContext),
@@ -487,7 +488,9 @@ namespace YetiVSI.Test.DebugEngine
                 new DebugModule.Factory(
                     FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false),
                     actionRecorder, moduleFileLoadRecorderFactory, lldbModuleUtil,
-                    symbolSettingsProvider), new DebugAsyncThread.Factory(taskExecutor,
+                    symbolSettingsProvider,
+                    Substitute.For<IDialogUtil>(),
+                    Substitute.For<IYetiVSIService>()), new DebugAsyncThread.Factory(taskExecutor,
                                                                           frameEnumFactory),
                 new DebugAsyncStackFrame.Factory(debugDocumentContextFactory,
                                                  new ChildrenProvider.Factory(),

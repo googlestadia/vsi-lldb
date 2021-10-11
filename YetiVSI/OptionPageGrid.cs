@@ -197,12 +197,14 @@ namespace YetiVSI
         string SelectedAccount { get; }
         LLDBVisualizerSupport LLDBVisualizerSupport { get; }
         SymbolServerSupport SymbolServerSupport { get; }
+        ShowOption ShowSuggestionToEnableSymbolsServer { get; }
         NatvisLoggingLevel NatvisLoggingLevel { get; }
         FastExpressionEvaluation FastExpressionEvaluation { get; }
         ExpressionEvaluationStrategy ExpressionEvaluationStrategy { get; }
         ShowOption SdkCompatibilityWarningOption { get; }
         void AddSdkVersionsToHide(string gameletVersion, string localVersion, string gameletName);
         bool SdkVersionsAreHidden(string gameletVersion, string localVersion, string gameletName);
+        void HideSuggestionToEnableSymbolsServer();
 
         IEnumerable<GenericOption> Options { get; }
     }
@@ -229,6 +231,9 @@ namespace YetiVSI
         FastExpressionEvaluationFlag _fastExpressionEvaluation;
         ExpressionEvaluationEngineFlag _expressionEvaluationEngine;
 
+        public const string LldbDebugger = "LLDB Debugger";
+        public const string SuggestToEnableSymbolStore = "Suggest to enable symbol store";
+
         [Category("Runtime")]
         [DisplayName("Display game output in Output window")]
         [Description("If enabled, captures the game's standard error and standard output and " +
@@ -243,20 +248,28 @@ namespace YetiVSI
         [DefaultValue("")]
         public string SelectedAccount { get; set; }
 
-        [Category("LLDB Debugger")]
+        [Category(LldbDebugger)]
         [DisplayName("Enable variable visualizer support")]
         [Description("Enables Natvis visualizer support for inspecting variables.")]
         [TypeConverter(typeof(FeatureFlagConverter))]
         [DefaultValue(LLDBVisualizerFeatureFlag.DEFAULT)]
         public LLDBVisualizerFeatureFlag LLDBVisualizerSupport1 { get; set; }
 
-        [Category("LLDB Debugger")]
+        [Category(LldbDebugger)]
         [DisplayName("Enable symbol server support")]
         [Description("If enabled, searches for symbol files in the locations specified in " +
             "'Tools -> Options... -> Debugging -> Symbols'.")]
         [TypeConverter(typeof(FeatureFlagConverter))]
         [DefaultValue(SymbolServerFeatureFlag.DEFAULT)]
         public SymbolServerFeatureFlag SymbolServerSupport { get; set; }
+
+        [Category(LldbDebugger)]
+        [DisplayName(SuggestToEnableSymbolStore)]
+        [Description("Sets whether the symbol store suggestion is shown during" +
+            " crash dump load or not.")]
+        [TypeConverter(typeof(FeatureFlagConverter))]
+        [DefaultValue(ShowOption.AskForEachDialog)]
+        public ShowOption ShowSuggestionToEnableSymbolsServer { get; set; }
 
         [Category("Game launch")]
         [DisplayName("SDK incompatibility warning")]
@@ -265,7 +278,7 @@ namespace YetiVSI
         [TypeConverter(typeof(SdkWarningFlagConverter))]
         public SdkIncompatibilityWarning SdkIncompatibilityWarning { get; set; }
 
-        [Category("LLDB Debugger")]
+        [Category(LldbDebugger)]
         [DisplayName("Natvis diagnostic messages")]
         [Description("Sets the level of diagnostic output involving visualization of C++" +
             " objects using natvis files. Takes effect immediately. Performance may be impacted" +
@@ -375,6 +388,10 @@ namespace YetiVSI
             EnumValueAliasAttribute.GetAliasOrValue(SymbolServerSupport)
                 .ConvertTo<SymbolServerSupport>();
 
+        ShowOption IExtensionOptions.ShowSuggestionToEnableSymbolsServer =>
+            EnumValueAliasAttribute.GetAliasOrValue(ShowSuggestionToEnableSymbolsServer)
+                .ConvertTo<ShowOption>();
+
         NatvisLoggingLevel IExtensionOptions.NatvisLoggingLevel =>
             EnumValueAliasAttribute.GetAliasOrValue(NatvisLoggingLevel)
                 .ConvertTo<NatvisLoggingLevel>();
@@ -419,6 +436,12 @@ namespace YetiVSI
                 GameletName = gameletName
             };
             return SdkIncompatibilityWarning.SdkVersionPairsToHide.Contains(sdkPair);
+        }
+
+        void IExtensionOptions.HideSuggestionToEnableSymbolsServer()
+        {
+            ShowSuggestionToEnableSymbolsServer = ShowOption.NeverShow;
+            SaveSettingsToStorage();
         }
 
         IEnumerable<GenericOption> IExtensionOptions.Options

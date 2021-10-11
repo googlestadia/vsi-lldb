@@ -290,11 +290,11 @@ namespace YetiVSI.Test
                 new SymbolInclusionSettings(true, new List<string>(), new List<string>());
             var moduleFileLoadRecorder = Substitute.For<IModuleFileLoadMetricsRecorder>();
             await _attachedProgram.LoadModuleFilesAsync(
-                symbolSettings, true, task, moduleFileLoadRecorder);
+                symbolSettings, true, true, task, moduleFileLoadRecorder);
 
             await _moduleFileLoader.Received(1).LoadModuleFilesAsync(
-                Arg.Is<IList<SbModule>>(l => l.SequenceEqual(modules)), symbolSettings, true, task,
-                moduleFileLoadRecorder);
+                Arg.Is<IList<SbModule>>(l => l.SequenceEqual(modules)), symbolSettings, true,
+                true, task, moduleFileLoadRecorder);
         }
 
         [Test]
