@@ -404,10 +404,6 @@ namespace YetiVSI.CoreAttach
 
             GameletMessageTextBox.Text = "";
             LocalMessageTextBox.Text = "";
-            if (e.AddedItems[0] == GameletTab)
-            {
-                RefreshCoreList();
-            }
 
             if (e.AddedItems[0] == LocalTab)
             {
