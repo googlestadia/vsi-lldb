@@ -24,7 +24,7 @@ namespace Google.VisualStudioFake.Internal.Jobs
         protected readonly Action _action;
         readonly string _logDetails;
 
-        public GenericJob(Action action) : this(action, "") { }
+        public GenericJob(Action action) : this(action, action.Method.Name) { }
 
         public GenericJob(Action action, string logDetails)
         {

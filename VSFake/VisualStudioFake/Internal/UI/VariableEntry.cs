@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API;
+using Google.VisualStudioFake.API;
 using Google.VisualStudioFake.API.UI;
 using Google.VisualStudioFake.Internal.Jobs;
 using Microsoft.VisualStudio.Debugger.Interop;
@@ -46,9 +46,8 @@ namespace Google.VisualStudioFake.Internal.UI
             readonly IDebugSessionContext _debugSessionContext;
             readonly VariableExpander.Factory _variableExpanderFactory;
 
-            public Factory(IJobQueue jobQueue,
-                IDebugSessionContext debugSessionContext,
-                VariableExpander.Factory variableExpanderFactory)
+            public Factory(IJobQueue jobQueue, IDebugSessionContext debugSessionContext,
+                           VariableExpander.Factory variableExpanderFactory)
             {
                 _jobQueue = jobQueue;
                 _debugSessionContext = debugSessionContext;
@@ -56,8 +55,8 @@ namespace Google.VisualStudioFake.Internal.UI
             }
 
             public virtual IVariableEntryInternal Create(IVariableDataSource dataSource) =>
-                new VariableEntry(dataSource, _jobQueue,
-                    _debugSessionContext, _variableExpanderFactory.Create());
+                new VariableEntry(dataSource, _jobQueue, _debugSessionContext,
+                                  _variableExpanderFactory.Create());
         }
 
         readonly IVariableDataSource _dataSource;
@@ -68,8 +67,7 @@ namespace Google.VisualStudioFake.Internal.UI
         DEBUG_PROPERTY_INFO _propertyInfo;
 
         VariableEntry(IVariableDataSource dataSource, IJobQueue jobQueue,
-            IDebugSessionContext debugSessionContext,
-            IVariableExpander variableExpander)
+                      IDebugSessionContext debugSessionContext, IVariableExpander variableExpander)
         {
             _dataSource = dataSource;
             _jobQueue = jobQueue;
@@ -102,7 +100,8 @@ namespace Google.VisualStudioFake.Internal.UI
 
             State = VariableState.Pending;
             _jobQueue.Push(new GenericJob(
-                () => _dataSource.GetCurrentState(this, CurrentStateRetrievalCallback)));
+                               () => _dataSource.GetCurrentState(
+                                   this, CurrentStateRetrievalCallback), $"Get variable state"));
             return this;
         }
 
@@ -124,8 +123,9 @@ namespace Google.VisualStudioFake.Internal.UI
                     case VariableState.Deleted:
                         return false;
                     default:
-                        throw new InvalidOperationException($"The variable state ({State}) " +
-                            $"isn't handled by the {nameof(Ready)} getter.");
+                        throw new InvalidOperationException(
+                            $"The variable state ({State}) isn't handled by the " +
+                            $"{nameof(Ready)} getter.");
                 }
             }
         }
@@ -136,6 +136,7 @@ namespace Google.VisualStudioFake.Internal.UI
             {
                 return $"{{state:{State}}}";
             }
+
             return $"{{name:\"{Name}\", type:\"{Type}\", value:\"{Value}\", state:{State}}}";
         }
 
@@ -168,7 +169,7 @@ namespace Google.VisualStudioFake.Internal.UI
                 var chars = new ushort[strLen];
                 HResultChecker.Check(debugProperty3.GetStringChars(strLen, chars, out numFetched));
 
-                return new string(chars.Select(c => (char)c).ToArray());
+                return new string(chars.Select(c => (char) c).ToArray());
             }
         }
 
@@ -211,7 +212,9 @@ namespace Google.VisualStudioFake.Internal.UI
         {
             _propertyInfo = propertyInfo;
             State = VariableState.Evaluated;
-            _variableExpander.UpdateDebugProperty(IsExpandable ? DebugProperty3 : null);
+            _variableExpander.UpdateDebugProperty(IsExpandable
+                                                      ? DebugProperty3
+                                                      : null);
         }
 
         DEBUG_PROPERTY_INFO PropertyInfo

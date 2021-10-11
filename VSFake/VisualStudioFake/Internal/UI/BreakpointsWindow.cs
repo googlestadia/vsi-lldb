@@ -63,26 +63,49 @@ namespace Google.VisualStudioFake.Internal.UI
 
         public IBreakpoint Add(string filename, int lineNumber) =>
             Add(new Breakpoint(() => new FileLineBreakpointRequest(filename, lineNumber),
-                               $"Breakpoint at {filename}:{lineNumber}", _jobQueue));
+                               $"Breakpoint at {filename}:{lineNumber}"));
+
+        public IBreakpoint SetPassCount(IBreakpoint breakpoint, uint count, PassCountStyle style)
+        {
+            CheckState(breakpoint, "set pass count for");
+
+            Breakpoint bp = _breakpoints.FirstOrDefault(b => b == breakpoint);
+            bp.PassCount = count;
+            bp.PassCountStyle = style;
+
+            if (_debugSessionContext.ProgramState == ProgramState.Running ||
+                _debugSessionContext.ProgramState == ProgramState.AtBreak)
+            {
+                _jobQueue.Push(new GenericJob(() => SetPassCount(bp),
+                                              $"Set pass count {bp.PassCount}, style " +
+                                              $"{bp.PassCountStyle} for breakpoint {bp}"));
+            }
+
+            return breakpoint;
+        }
 
         public IList<IBreakpoint> GetBreakpoints() => new List<IBreakpoint>(_breakpoints);
 
-        public IList<IBreakpoint> DeleteAllBreakpoints()
+        public void Delete(IBreakpoint breakpoint)
+        {
+            CheckState(breakpoint, "delete");
+            QueueDelete(_breakpoints.FirstOrDefault(b => b == breakpoint));
+        }
+
+        public IList<IBreakpoint> DeleteAll()
         {
             var deletedBreakpoints = new List<IBreakpoint>(_breakpoints);
-            _breakpoints.ForEach(b => DeleteAll(b));
+            _breakpoints.ForEach(QueueDelete);
             return deletedBreakpoints;
         }
 
         public IBreakpoint FiredBreakpoint
         {
-            get
-            {
-                return _debugSessionContext.ProgramState == ProgramState.AtBreak
+            get =>
+                _debugSessionContext.ProgramState == ProgramState.AtBreak
                     ? _firedBreakpoint
                     : null;
-            }
-            private set { _firedBreakpoint = value; }
+            private set => _firedBreakpoint = value;
         }
 
         #endregion
@@ -91,9 +114,17 @@ namespace Google.VisualStudioFake.Internal.UI
 
         public IEnumerable<IBreakpoint> BindPendingBreakpoints()
         {
-            var pendingBreakpoints = _breakpoints.Where(
+            IEnumerable<Breakpoint> pendingBreakpoints = _breakpoints.Where(
                 b => b.State == BreakpointState.RequestedPreSession);
-            pendingBreakpoints.ForEach(b => Bind(b));
+            foreach (Breakpoint bp in pendingBreakpoints)
+            {
+                Bind(bp);
+                if (bp.PassCount != 0 && bp.PassCountStyle != PassCountStyle.None)
+                {
+                    SetPassCount(bp);
+                }
+            }
+
             return pendingBreakpoints;
         }
 
@@ -212,14 +243,38 @@ namespace Google.VisualStudioFake.Internal.UI
             }
         }
 
-        void DeleteAll(Breakpoint breakpoint)
+        void SetPassCount(Breakpoint breakpoint)
         {
-            if (breakpoint.State == BreakpointState.Pending ||
-                breakpoint.State == BreakpointState.Deleted)
+            // Set pass count on pending breakpoint.
+            BP_PASSCOUNT pc = new BP_PASSCOUNT();
+            pc.dwPassCount = breakpoint.PassCount;
+            pc.stylePassCount = ToVsStyle(breakpoint.PassCountStyle);
+            HResultChecker.Check(breakpoint.PendingBreakpoint.SetPassCount(pc));
+
+            // Also set pass count on all bound breakpoints.
+            HResultChecker.Check(
+                breakpoint.PendingBreakpoint.EnumBoundBreakpoints(
+                    out IEnumDebugBoundBreakpoints2 boundBreakpointsEnum));
+            HResultChecker.Check(boundBreakpointsEnum.Reset());
+            HResultChecker.Check(boundBreakpointsEnum.GetCount(out uint numBound));
+            var boundBreakpoints = new IDebugBoundBreakpoint2[numBound];
+            uint actual = 0;
+            HResultChecker.Check(boundBreakpointsEnum.Next(numBound, boundBreakpoints, ref actual));
+            if (actual != numBound)
             {
-                throw new InvalidOperationException(
-                    $"Cannot delete breakpoint ({breakpoint}); state = {breakpoint.State}.");
+                throw new VSFakeException("Could not fetch all bound breakpoints. " +
+                                          $"Expected: {numBound}, got: {actual}");
             }
+
+            foreach (var bp in boundBreakpoints)
+            {
+                HResultChecker.Check(bp.SetPassCount(pc));
+            }
+        }
+
+        void QueueDelete(Breakpoint breakpoint)
+        {
+            CheckState(breakpoint, "delete");
 
             bool shouldDeleteInteropBreakpoint = breakpoint.State == BreakpointState.Disabled ||
                 breakpoint.State == BreakpointState.Enabled;
@@ -233,7 +288,32 @@ namespace Google.VisualStudioFake.Internal.UI
 
                 breakpoint.State = BreakpointState.Deleted;
                 _breakpoints.Remove(breakpoint);
-            }, $"{{{breakpoint}}}"));
+                _pendingToBreakpoint.Remove(breakpoint.PendingBreakpoint);
+            }, $"Delete breakpoint ({breakpoint})"));
+        }
+
+        enum_BP_PASSCOUNT_STYLE ToVsStyle(PassCountStyle style)
+        {
+            switch (style)
+            {
+                case PassCountStyle.None: return enum_BP_PASSCOUNT_STYLE.BP_PASSCOUNT_NONE;
+                case PassCountStyle.Equal: return enum_BP_PASSCOUNT_STYLE.BP_PASSCOUNT_EQUAL;
+                case PassCountStyle.EqualOrGreater:
+                    return enum_BP_PASSCOUNT_STYLE.BP_PASSCOUNT_EQUAL_OR_GREATER;
+                case PassCountStyle.Mod: return enum_BP_PASSCOUNT_STYLE.BP_PASSCOUNT_MOD;
+            }
+
+            throw new InvalidOperationException($"Unhandled pass count style: {style}");
+        }
+
+        void CheckState(IBreakpoint breakpoint, string operation)
+        {
+            if (breakpoint.State == BreakpointState.Pending ||
+                breakpoint.State == BreakpointState.Deleted)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot {operation} breakpoint ({breakpoint}); state = {breakpoint.State}.");
+            }
         }
     }
 }

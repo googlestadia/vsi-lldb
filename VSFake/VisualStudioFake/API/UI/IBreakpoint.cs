@@ -38,7 +38,7 @@ namespace Google.VisualStudioFake.API.UI
         Error,
     }
 
-    public enum PasscountStyle
+    public enum PassCountStyle
     {
         /// <summary>
         /// Breakpoint always fires.
@@ -64,6 +64,16 @@ namespace Google.VisualStudioFake.API.UI
     public interface IBreakpoint
     {
         /// <summary>
+        /// Gets the pass count setting for this breakpoint.
+        /// </summary>
+        uint PassCount { get; }
+
+        /// <summary>
+        /// Gets the way PassCount is interpreted.
+        /// </summary>
+        PassCountStyle PassCountStyle { get; }
+
+        /// <summary>
         /// Gets the current state of this breakpoint.
         /// </summary>
         BreakpointState State { get; }
@@ -73,15 +83,6 @@ namespace Google.VisualStudioFake.API.UI
         /// debugging purposes.
         /// </summary>
         IDebugPendingBreakpoint2 PendingBreakpoint { get; }
-
-        /// <summary>
-        /// Sets the pass count on all bound breakpoints, i.e. the number of times that a breakpoint
-        /// must be passed before it is activated.
-        /// This method is run asynchronously.
-        /// </summary>
-        /// <param name="count">Pass count to set</param>
-        /// <param name="style">Determines when the breakpoint files depending on |count|</param>
-        void SetPassCount(uint count, PasscountStyle style);
 
         /// <summary>
         /// Returns true if either the breakpoint has been bound or an error occured while doing so.

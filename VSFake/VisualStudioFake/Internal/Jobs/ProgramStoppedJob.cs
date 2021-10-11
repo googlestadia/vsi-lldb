@@ -71,8 +71,9 @@ namespace Google.VisualStudioFake.Internal.Jobs
             _firedBreakpointSetter.Set(GetBoundBreakpointsFired());
             // Queue a sub-job since setting SelectedThread will
             // queue a job to update the selected frame.
-            _jobQueue.Push(
-                new GenericJob(() => _debugSessionContext.ProgramState = ProgramState.AtBreak));
+            _jobQueue.Push(new GenericJob(
+                               () => _debugSessionContext.ProgramState = ProgramState.AtBreak,
+                               "Set program state AtBreak"));
         }
 
         IEnumerable<IDebugBoundBreakpoint2> GetBoundBreakpointsFired()

@@ -30,15 +30,33 @@ namespace Google.VisualStudioFake.API.UI
         IBreakpoint Add(string filename, int lineNumber);
 
         /// <summary>
+        /// Sets the pass count for the given breakpoint, i.e. the number of times that a breakpoint
+        /// must be passed before it is activated.
+        /// This can be called either when the program has not started or while it is running.
+        /// </summary>
+        /// <param name="breakpoint">Breakpoint to set pass count for</param>
+        /// <param name="count">Pass count to set</param>
+        /// <param name="style">Determines when the breakpoint files depending on |count|</param>
+        /// <returns>The breakpoint for easy chaining with Add()</returns>
+        [SyncPoint(ExecutionSyncPoint.IDLE, Timeout = VSFakeTimeout.Medium)]
+        IBreakpoint SetPassCount(IBreakpoint breakpoint, uint count, PassCountStyle style);
+
+        /// <summary>
         /// Gets the breakpoints currently managed by this view.
         /// </summary>
         IList<IBreakpoint> GetBreakpoints();
 
         /// <summary>
+        /// Deletes a given breakpoint.
+        /// </summary>
+        [SyncPoint(ExecutionSyncPoint.IDLE, Timeout = VSFakeTimeout.Medium)]
+        void Delete(IBreakpoint breakpoint);
+
+        /// <summary>
         /// Deletes all the breakpoints currently managed by this view.
         /// </summary>
         [SyncPoint(ExecutionSyncPoint.IDLE, Timeout = VSFakeTimeout.Medium)]
-        IList<IBreakpoint> DeleteAllBreakpoints();
+        IList<IBreakpoint> DeleteAll();
 
         /// <summary>
         /// Gets the breakpoint that fired at the current code location.

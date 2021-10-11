@@ -199,7 +199,7 @@ namespace Google.VisualStudioFake.API
         /// Convenience function that calls IBreakpointsWindow.DeleteAllBreakpoints().
         /// </remarks>
         public static IList<IBreakpoint> DeleteAllBreakpoints(this IVSFake vsFake) =>
-            vsFake.DebugSession.BreakpointsWindow.DeleteAllBreakpoints();
+            vsFake.DebugSession.BreakpointsWindow.DeleteAll();
 
         #endregion
 
