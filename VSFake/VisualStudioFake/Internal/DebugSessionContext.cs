@@ -24,6 +24,7 @@ namespace Google.VisualStudioFake.Internal
     public class DebugSessionContext : IDebugSessionContext
     {
         public ProgramState ProgramState { get; set; } = ProgramState.NotStarted;
+        public Exception ProgramException { get; set; }
 
         public IDebugEngine2 DebugEngine { get; set; }
         public IDebugProgram3 DebugProgram { get; set; }

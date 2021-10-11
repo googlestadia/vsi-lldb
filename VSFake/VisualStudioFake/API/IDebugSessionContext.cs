@@ -32,6 +32,7 @@ namespace Google.VisualStudioFake.API
     public interface IDebugSessionContext
     {
         ProgramState ProgramState { get; set; }
+        Exception ProgramException { get; set; }
 
         IDebugEngine2 DebugEngine { get; set; }
         IDebugProgram3 DebugProgram { get; set; }

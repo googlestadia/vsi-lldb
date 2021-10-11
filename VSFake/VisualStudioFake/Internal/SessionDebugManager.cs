@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API;
+using Google.VisualStudioFake.API;
 using Google.VisualStudioFake.Internal.Jobs;
 using System;
 using System.Threading;
@@ -86,6 +86,13 @@ namespace Google.VisualStudioFake.Internal
                 if (predicate())
                 {
                     break;
+                }
+
+                if (Session.Context.ProgramException != null)
+                {
+                    Exception ex = Session.Context.ProgramException;
+                    Session.Context.ProgramException = null;
+                    throw new Exception("Program threw an exception. Check logs for details.", ex);
                 }
 
                 // TODO: Don't busy wait.

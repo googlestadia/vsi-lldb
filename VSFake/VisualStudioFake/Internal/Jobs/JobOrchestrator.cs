@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API;
+using Google.VisualStudioFake.API;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using System;
@@ -57,15 +57,31 @@ namespace Google.VisualStudioFake.Internal.Jobs
                 _queue.Push(
                     _programTerminatedJobFactory.Create(pEngine, pEvent, _debugSessionContext));
             }
+            else if (pEvent is IDebugExceptionEvent2)
+            {
+                var exceptionEvent = pEvent as IDebugExceptionEvent2;
+                EXCEPTION_INFO[] info = new EXCEPTION_INFO[1];
+                HResultChecker.Check(exceptionEvent.GetException(info));
+                HResultChecker.Check(exceptionEvent.GetExceptionDescription(out string desc));
+                var ex = new Exception($"Program crashed with exception; description:'{desc}', " +
+                                       $"exception name: {info[0].bstrExceptionName}, " +
+                                       $"code: {info[0].dwCode}, state:{info[0].dwState}");
+
+                _queue.Push(new GenericJob(() =>
+                {
+                    _debugSessionContext.DebugProgram.Terminate();
+                    _debugSessionContext.ProgramException = ex;
+                }, "Terminate program on exception"));
+            }
 
             var pProgram3 = pProgram as IDebugProgram3;
             if (pProgram3 == null)
             {
                 // TODO: Ensure program can be cast to IDebugProgram3 without
                 // throwing across the COM/interop boundary.
-                throw new NotSupportedException(
-                    "'pProgram' must be castable to type " +
-                    $"{nameof(IDebugProgram3)} but is of type {pProgram.GetType()}");
+                throw new NotSupportedException("'pProgram' must be castable to type " +
+                                                $"{nameof(IDebugProgram3)} but is of type " +
+                                                pProgram.GetType());
             }
 
             _queue.Push(new GenericJob(() =>
@@ -79,7 +95,7 @@ namespace Google.VisualStudioFake.Internal.Jobs
                     Thread = pThread,
                     Event = pEvent
                 });
-            }, $"{{eventType:\"{pEvent.GetType()}\"}}"));
+            }, $"Invoke DebugEvent, eventType:\"{pEvent.GetType()}\""));
 
             return VSConstants.S_OK;
         }
