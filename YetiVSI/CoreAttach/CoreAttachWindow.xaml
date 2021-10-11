@@ -26,7 +26,8 @@
                             <Button DockPanel.Dock="Right" x:Name="Refresh" Content="_Refresh" Click="RefreshClick"
                                     HorizontalAlignment="Right" Width="100" Margin="8" />
                             <TextBox x:Name="GameletMessageTextBox" DockPanel.Dock="Left" IsReadOnly="True"
-                                     TextWrapping="Wrap" BorderThickness="0" />
+                                     Foreground="Red" VerticalAlignment="Center"
+                                     HorizontalAlignment="Left" TextWrapping="Wrap" BorderThickness="0" />
                         </DockPanel>
                         <Label x:Name="InstanceLabel" Content="Instance:" DockPanel.Dock="Top"/>
                         <Grid x:Name="InstanceGrid" DockPanel.Dock="Top">
@@ -50,17 +51,23 @@
                 <TabItem.Header>
                     <AccessText Text="_Local" />
                 </TabItem.Header>
-                <GroupBox x:Name="LocalGroupBox">
+                <GroupBox x:Name="LocalGroupBox" Header="Path to the dump file" Margin="10">
                     <Grid>
                         <DockPanel DockPanel.Dock="Top" RenderTransformOrigin="0.478,8.548" Margin="0"
-                                   VerticalAlignment="Center">
-                            <TextBox x:Name="LocalCorePathBox" DockPanel.Dock="Left" Height="20" Width="372"
-                                     TextChanged="localCorePathBox_TextChanged" />
-                            <Button x:Name="BrowseButton" DockPanel.Dock="Right" Content="_Browse..." Width="100"
-                                    HorizontalAlignment="Right" Click="BrowseClick" Height="20" />
+                                   VerticalAlignment="Top">
+                            <Grid Margin="20" HorizontalAlignment="Stretch" Height="35">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="LocalCorePathBox" Grid.Column="0" MinWidth="250"
+                                     Margin="5"  TextChanged="localCorePathBox_TextChanged" />
+                                <Button x:Name="BrowseButton" Margin="5" Grid.Column="1" Content="_Browse..." Width="90" HorizontalAlignment="Right"
+                                     Click="BrowseClick" Height="22" />
+                            </Grid>
                         </DockPanel>
                         <TextBox x:Name="LocalMessageTextBox" DockPanel.Dock="Bottom" VerticalAlignment="Bottom"
-                                 HorizontalAlignment="Center" IsReadOnly="True" TextWrapping="Wrap" BorderThickness="0" />
+                                 HorizontalAlignment="Left" IsReadOnly="True" Foreground="Red" TextWrapping="Wrap" BorderThickness="0" />
                     </Grid>
                 </GroupBox>
             </TabItem>
