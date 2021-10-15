@@ -87,7 +87,7 @@ namespace YetiCommon
 
         public TestBenchmarkScope(ITestBenchmarksRecorder recorder)
         {
-            _prevRecorder = recorder;
+            _prevRecorder = Recorder;
             Recorder = recorder;
         }
 
