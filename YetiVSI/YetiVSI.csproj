@@ -726,6 +726,11 @@
       <VSIXSourceItem Include="@(PythonLibFiles)">
         <VSIXSubPath>Python3\Lib\%(RecursiveDir)</VSIXSubPath>
       </VSIXSourceItem>
+      <!-- Include msdia140.dll from DIA SDK. It is used by LLDB for PDB parsing. -->
+      <msdia140_dll Include="$(SolutionDir)lib\DIA SDK\msdia140.dll" />
+      <VSIXSourceItem Include="@(msdia140_dll)" Condition="$(IsInternalBuild)">
+        <VSIXSubPath>LLDB\bin</VSIXSubPath>
+      </VSIXSourceItem>
     </ItemGroup>
   </Target>
   <Target Name="AddNewtonsoftJsonVSIXContentFiles">
