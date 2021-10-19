@@ -54,6 +54,7 @@ namespace Google.VisualStudioFake.API
                 this[VSFakeTimeout.Short] = TimeSpan.FromSeconds(5);
                 this[VSFakeTimeout.Medium] = TimeSpan.FromSeconds(60);
                 this[VSFakeTimeout.Long] = TimeSpan.FromSeconds(120);
+                this[VSFakeTimeout.RunUntil] = TimeSpan.FromSeconds(120);
             }
         }
 
