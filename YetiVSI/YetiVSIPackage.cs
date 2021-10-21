@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using System;
-using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.Logging;
 using YetiVSI.Attributes;
@@ -29,19 +31,20 @@ using YetiVSI.LLDBShell;
 using YetiVSI.LoadSymbols;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
-using YetiVSI.Util;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
+using Task = System.Threading.Tasks.Task;
 
 namespace YetiVSI
 {
-    [PackageRegistration(UseManagedResourcesOnly = true)]
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.71.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
-    [Guid(PackageGuidString)]
+    [Guid(_packageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules",
                      "SA1650:ElementDocumentationMustBeSpelledCorrectly",
                      Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideOptionPage(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 0, true)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideProfile(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 110, true,
                     DescriptionResourceID = 113)]
     [ProvideService(typeof(YetiVSIService))]
@@ -53,125 +56,106 @@ namespace YetiVSI
 
     // This is boilerplate code needed to add a new entry to the Tools menu.
     // TODO: Migrate to AsyncPackage
-    public sealed class YetiVSIPackage : Package
+    public sealed class YetiVSIPackage : AsyncPackage
     {
-        public const string PackageGuidString = "5fc8481d-4b1a-4cdc-b123-fd6d32fc4096";
-
+        const string _packageGuidString = "5fc8481d-4b1a-4cdc-b123-fd6d32fc4096";
         JoinableTaskContext _taskContext;
-
-        public YetiVSIPackage()
-        {
-            ServiceCreatorCallback callback = CreateService;
-            (this as IServiceContainer).AddService(typeof(YetiVSIService), callback, true);
-            (this as IServiceContainer).AddService(typeof(SLLDBShell), callback, true);
-            (this as IServiceContainer).AddService(typeof(SMetrics), callback, true);
-            (this as IServiceContainer).AddService(typeof(SDebugEngineManager), callback, true);
-            (this as IServiceContainer).AddService(typeof(SSessionNotifier), callback, true);
-        }
-
-        #region Test Helpers
-
-        // Test helper to make Initialize() accessible from tests.
-        // Clients should make sure to call Uninitialize() during tear down.
-        public void InitializeForTest(JoinableTaskContext taskContext)
-        {
-            taskContext.ThrowIfNotOnMainThread();
-
-            Initialize(taskContext);
-        }
-
-        // Test helper to make Initialize() accessible from tests.
-        public void UninitializeForTest()
-        {
-            YetiLog.Uninitialize();
-        }
-
-        #endregion
-
-        #region Package Members
 
         /// <summary>
         /// Initialization of the package; this method is called right after the
         /// package is sited, so this is the place where you can put all the
         /// initialization code that rely on services provided by VisualStudio.
         /// </summary>
-        protected override void Initialize()
+        protected override async Task InitializeAsync(
+           CancellationToken cancellationToken,
+           IProgress<ServiceProgressData> progress)
         {
             var serviceManager = new ServiceManager();
-            var taskContext = serviceManager.GetJoinableTaskContext();
-            taskContext.ThrowIfNotOnMainThread();
+            _taskContext = serviceManager.GetJoinableTaskContext();
+            AddServices();
 
-            Initialize(taskContext);
+            await InitializeAsync(_taskContext);
         }
 
-        #endregion
-
-        void Initialize(JoinableTaskContext taskContext)
+        async Task InitializeAsync(JoinableTaskContext taskContext)
         {
-            _taskContext = taskContext;
-            taskContext.ThrowIfNotOnMainThread();
-
-            base.Initialize();
             YetiLog.Initialize("YetiVSI", DateTime.Now);
+
+            await taskContext.Factory.SwitchToMainThreadAsync();
 
             CoreAttachCommand.Register(this);
             LLDBShellCommandTarget.Register(taskContext, this);
             DebuggerOptionsCommand.Register(taskContext, this);
         }
 
-        object CreateService(IServiceContainer container, Type serviceType)
+        void AddServices()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            AddService(typeof(YetiVSIService), CreateYetiVsiServiceAsync, true);
+            AddService(typeof(SLLDBShell), CreateSLLDBShellAsync, true);
+            AddService(typeof(SMetrics), CreateSMetricsAsync, true);
+            AddService(typeof(SDebugEngineManager), CreateSDebugEngineManagerAsync, true);
+            AddService(typeof(SSessionNotifier), CreateSSessionNotifierAsync, true);
+        }
 
-            if (typeof(YetiVSIService) == serviceType)
-            {
-                var options = GetDialogPage(typeof(OptionPageGrid)) as OptionPageGrid;
-                var yeti = new YetiVSIService(options);
-                yeti.DebuggerOptions.ValueChanged += OnDebuggerOptionChanged;
-                return yeti;
-            }
+        Task<object> CreateYetiVsiServiceAsync(IAsyncServiceContainer container,
+                                               CancellationToken cancellationToken,
+                                               Type serviceType)
+        {
+            var options = GetDialogPage(typeof(OptionPageGrid)) as OptionPageGrid;
+            var yeti = new YetiVSIService(options);
+            yeti.DebuggerOptions.ValueChanged += OnDebuggerOptionChanged;
+            return Task.FromResult<object>(yeti);
+        }
 
-            if (typeof(SLLDBShell) == serviceType)
-            {
-                var writer = new CommandWindowWriter(_taskContext,
-                                                     (IVsCommandWindow) GetService(
-                                                         typeof(SVsCommandWindow)));
-                return new LLDBShell.LLDBShell(_taskContext, writer);
-            }
+        async Task<object> CreateSLLDBShellAsync(IAsyncServiceContainer container,
+                                                 CancellationToken cancellationToken,
+                                                 Type serviceType)
+        {
+            await _taskContext.Factory.SwitchToMainThreadAsync();
+            var vsCommandWindow = (IVsCommandWindow)
+                await GetServiceAsync(typeof(SVsCommandWindow));
+            var commandWindowWriter = new CommandWindowWriter(_taskContext, vsCommandWindow);
+            return new LLDBShell.LLDBShell(_taskContext, commandWindowWriter);
+        }
 
-            if (typeof(SMetrics) == serviceType)
-            {
-                return new MetricsService(_taskContext,
-                                          Versions.Populate(
-                                              (GetService(typeof(EnvDTE.DTE)) as EnvDTE._DTE)
-                                              ?.RegistryRoot));
-            }
+        async Task<object> CreateSMetricsAsync(IAsyncServiceContainer container,
+                                               CancellationToken cancellationToken,
+                                               Type serviceType)
+        {
+            await _taskContext.Factory.SwitchToMainThreadAsync();
+            var dte = await GetServiceAsync(typeof(EnvDTE.DTE)) as EnvDTE._DTE;
+            return new MetricsService(_taskContext,
+                                      Versions.Populate(dte?.RegistryRoot));
+        }
 
-            if (typeof(SDebugEngineManager) == serviceType)
-            {
-                return new DebugEngineManager();
-            }
+        Task<object> CreateSDebugEngineManagerAsync(IAsyncServiceContainer container,
+                                                    CancellationToken cancellationToken,
+                                                    Type serviceType)
+        {
+            var debugEngineManager = new DebugEngineManager();
+            return Task.FromResult<object>(debugEngineManager);
+        }
 
-            if (typeof(SSessionNotifier) == serviceType)
-            {
-                ISessionNotifier sessionNotifier = new SessionNotifierService();
-                var vsiService = (YetiVSIService) GetGlobalService(typeof(YetiVSIService));
-                var exceptionRecorder =
-                    new ExceptionRecorder((IMetrics) GetService(typeof(SMetrics)));
-                var loadSymbolsCommand = new LoadSymbolsCommand(
-                    _taskContext, this, exceptionRecorder, vsiService);
-                sessionNotifier.SessionLaunched += loadSymbolsCommand.OnSessionLaunched;
-                sessionNotifier.SessionStopped += loadSymbolsCommand.OnSessionStopped;
+        async Task<object> CreateSSessionNotifierAsync(IAsyncServiceContainer container,
+                                                       CancellationToken cancellationToken,
+                                                       Type serviceType)
+        {
+            ISessionNotifier sessionNotifier = new SessionNotifierService();
+            var vsiService = (YetiVSIService)GetGlobalService(typeof(YetiVSIService));
+            await _taskContext.Factory.SwitchToMainThreadAsync();
+            var metricsService = (IMetrics)await GetServiceAsync(typeof(SMetrics));
+            var exceptionRecorder = new ExceptionRecorder(metricsService);
+            var loadSymbolsCommand = new LoadSymbolsCommand(
+                _taskContext, this, exceptionRecorder, vsiService);
+            sessionNotifier.SessionLaunched += loadSymbolsCommand.OnSessionLaunched;
+            sessionNotifier.SessionStopped += loadSymbolsCommand.OnSessionStopped;
 
-                var noSourceWindowHider = new NoSourceWindowHider(_taskContext, this,
-                                                                  exceptionRecorder, vsiService);
-                sessionNotifier.SessionLaunched += noSourceWindowHider.OnSessionLaunched;
-                sessionNotifier.SessionStopped += noSourceWindowHider.OnSessionStopped;
+            var noSourceWindowHider = new NoSourceWindowHider(_taskContext, this,
+                                                              exceptionRecorder, vsiService);
+            sessionNotifier.SessionLaunched += noSourceWindowHider.OnSessionLaunched;
+            sessionNotifier.SessionStopped += noSourceWindowHider.OnSessionStopped;
 
-                return sessionNotifier;
-            }
-
-            return null;
+            return sessionNotifier;
         }
 
         void OnDebuggerOptionChanged(object sender, ValueChangedEventArgs args)
