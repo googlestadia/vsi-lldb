@@ -20,33 +20,28 @@ using YetiCommon;
 namespace YetiVSI.CoreAttach
 {
     // A menu command to attach to core dumps.
-    internal sealed class CoreAttachCommand
+    sealed class CoreAttachCommand
     {
-        readonly Package package;
-        readonly IDialogUtil dialogUtil;
-        readonly ServiceManager serviceManager;
+        readonly Package _package;
 
-        public static CoreAttachCommand Register(Package package)
+        public static CoreAttachCommand Register(Package package) =>
+            new CoreAttachCommand(package);
+
+        CoreAttachCommand(Package package)
         {
-            return new CoreAttachCommand(package);
-        }
-
-        private CoreAttachCommand(Package package)
-        {
-            this.package = package;
-            dialogUtil = new DialogUtil();
-            serviceManager = new ServiceManager();
-
-            ((package as IServiceProvider)
-                .GetService(typeof(IMenuCommandService)) as OleMenuCommandService)?.AddCommand(
+            _package = package;
+            var serviceProvider = _package as IServiceProvider;
+            var commandService =
+                serviceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
+            commandService?.AddCommand(
                     new MenuCommand(HandleCoreAttachCommand, new CommandID(
                         YetiConstants.CommandSetGuid,
                         PkgCmdID.cmdidCrashDumpAttachCommand)));
         }
 
-        private void HandleCoreAttachCommand(object sender, EventArgs e)
+        void HandleCoreAttachCommand(object sender, EventArgs e)
         {
-            var window = new CoreAttachWindow(package);
+            var window = new CoreAttachWindow(_package);
             window.ShowModal();
         }
     }

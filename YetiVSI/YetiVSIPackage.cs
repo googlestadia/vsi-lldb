@@ -55,7 +55,6 @@ namespace YetiVSI
     [ProvideStadiaExceptions()]
 
     // This is boilerplate code needed to add a new entry to the Tools menu.
-    // TODO: Migrate to AsyncPackage
     public sealed class YetiVSIPackage : AsyncPackage
     {
         const string _packageGuidString = "5fc8481d-4b1a-4cdc-b123-fd6d32fc4096";
