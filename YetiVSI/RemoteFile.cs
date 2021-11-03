@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -99,6 +100,7 @@ namespace YetiVSI
                     task.Progress.Report(data);
                 };
 
+                List<string> errors = new List<string>();
                 process.ErrorDataReceived += (sender, args) => {
                     task.ThrowIfCancellationRequested();
                     if (string.IsNullOrWhiteSpace(args.Text))
@@ -107,10 +109,14 @@ namespace YetiVSI
                     }
 
                     string data = args.Text;
-                    throw new ProcessException(data);
+                    errors.Add(data);
                 };
 
                 await process.RunToExitWithSuccessAsync();
+                if (errors.Count > 0)
+                {
+                    throw new ProcessException(String.Join("\n", errors));
+                }
             }
 
             // Notify client if operation was cancelled.
