@@ -56,8 +56,7 @@ namespace YetiVSI.Test.Metrics
             var stepDurationUs = 200;
             var step =
                 new ExpressionEvaluationStepBatchParams(stepEngine, stepErrorCode, stepDurationUs);
-            var steps = new List<ExpressionEvaluationStepBatchParams>();
-            steps.Add(step);
+            var steps = new List<ExpressionEvaluationStepBatchParams> { step };
 
             var startTimestamp = 200;
             var endTimestamp = 400;
@@ -86,15 +85,14 @@ namespace YetiVSI.Test.Metrics
 
             var strategy = ExpressionEvaluationStrategy.LLDB_EVAL_WITH_FALLBACK;
             // Non-valid context
-            var context = (ExpressionEvaluationContext) 1000;
+            var context = (ExpressionEvaluationContext)1000;
 
             var stepEngine = ExpressionEvaluationEngine.LLDB_EVAL;
             var stepErrorCode = LldbEvalErrorCode.Ok;
             var stepDurationUs = 200;
             var step =
                 new ExpressionEvaluationStepBatchParams(stepEngine, stepErrorCode, stepDurationUs);
-            var steps = new List<ExpressionEvaluationStepBatchParams>();
-            steps.Add(step);
+            var steps = new List<ExpressionEvaluationStepBatchParams> { step };
 
             var startTimestamp = 200;
             var endTimestamp = 400;
@@ -131,7 +129,8 @@ namespace YetiVSI.Test.Metrics
                     MethodName = "GetContextProto"
                 },
                 Filename = "ExpressionEvaluationBatch.cs",
-                LineNumber = 115
+                // Set to zero to ignore this value. See RemoveExceptionDataLineNumber method.
+                LineNumber = 0
             };
             var secondStackTraceFrame = new VSIExceptionData.Types.Exception.Types.StackTraceFrame
             {
@@ -143,20 +142,45 @@ namespace YetiVSI.Test.Metrics
                     MethodName = "ConvertToProto"
                 },
                 Filename = "ExpressionEvaluationBatch.cs",
-                LineNumber = 70
+                // Set to zero to ignore this value. See RemoveExceptionDataLineNumber method.
+                LineNumber = 0
             };
             firstExceptionInChain.ExceptionStackTraceFrames.Add(firstStackTraceFrame);
             firstExceptionInChain.ExceptionStackTraceFrames.Add(secondStackTraceFrame);
             exceptionsData.ExceptionsChain.Add(firstExceptionInChain);
 
-            var logEvent = new DeveloperLogEvent
+            var expectedLogEvent = new DeveloperLogEvent
             {
                 StatusCode = DeveloperEventStatus.Types.Code.InternalError
             };
-            logEvent.ExceptionsData.Add(exceptionsData);
+            expectedLogEvent.ExceptionsData.Add(exceptionsData);
 
             _metrics.Received(1)
-                .RecordEvent(DeveloperEventType.Types.Type.VsiException, logEvent);
+                .RecordEvent(DeveloperEventType.Types.Type.VsiException,
+                             Arg.Is<DeveloperLogEvent>(logEvent =>
+                                                           RemoveExceptionDataLineNumber(logEvent)
+                                                               .Equals(expectedLogEvent)));
+        }
+
+        // Set the line numbers in the ExceptionStackTraceFrames to zero. This is needed as the
+        // information of the LineNumber retrieved from the StackFrame LineNumber is not always
+        // accurate. See (internal).
+        DeveloperLogEvent RemoveExceptionDataLineNumber(DeveloperLogEvent logEvent)
+        {
+            DeveloperLogEvent copyLogEvent = logEvent.Clone();
+
+            foreach (var exceptionData in copyLogEvent.ExceptionsData)
+            {
+                foreach (var exception in exceptionData.ExceptionsChain)
+                {
+                    foreach (var stackTraceFrame in exception.ExceptionStackTraceFrames)
+                    {
+                        stackTraceFrame.LineNumber = 0;
+                    }
+                }
+            }
+
+            return copyLogEvent;
         }
     }
 }
