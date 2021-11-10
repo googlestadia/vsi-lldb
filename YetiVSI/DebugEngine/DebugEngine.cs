@@ -1356,39 +1356,13 @@ namespace YetiVSI.DebugEngine
             // Add search paths for all open projects.
             foreach (var project in _solutionExplorer.EnumerateProjects())
             {
-                // TODO: Perform proper null checks in VCProjectAdapter instead of
-                // catching exceptions at the call site.
-                string outputDirectory;
-                try
-                {
-                    outputDirectory = project.OutputDirectory;
-                }
-                catch (Exception ex) when (ex is Microsoft.VisualStudio.ProjectSystem
-                    .ProjectException || ex is NullReferenceException || ex is COMException)
-                {
-                    Trace.WriteLine("WARNING: Unable to get project output directory." +
-                                    $"{Environment.NewLine}{ex.ToString()}");
-                    outputDirectory = "";
-                }
-
+                string outputDirectory = project.OutputDirectory;
                 if (!string.IsNullOrEmpty(outputDirectory))
                 {
                     libPaths.Add(outputDirectory);
                 }
 
-                string targetDirectory;
-                try
-                {
-                    targetDirectory = project.TargetDirectory;
-                }
-                catch (Exception ex) when (ex is Microsoft.VisualStudio.ProjectSystem
-                    .ProjectException || ex is NullReferenceException || ex is COMException)
-                {
-                    Trace.WriteLine("WARNING: Unable to get project target directory." +
-                                    $"{Environment.NewLine}{ex.ToString()}");
-                    targetDirectory = "";
-                }
-
+                string targetDirectory = project.TargetDirectory;
                 if (!string.IsNullOrEmpty(targetDirectory))
                 {
                     libPaths.Add(targetDirectory);

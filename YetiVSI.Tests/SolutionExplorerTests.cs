@@ -26,8 +26,8 @@ namespace YetiVSI.Test
     [TestFixture]
     class SolutionExplorerTests
     {
-        VcProjectAdapter.Factory vcProjectAdapterFactory =
-            Substitute.For<VcProjectAdapter.Factory>();
+        VsProjectInfo.Factory vcProjectInfoFactory =
+            Substitute.For<VsProjectInfo.Factory>();
         IEnvDteUtil envDteUtil = Substitute.For<IEnvDteUtil>();
         SolutionExplorer.Factory solutionExplorerFactory;
         JoinableTaskContext taskContext;
@@ -35,7 +35,7 @@ namespace YetiVSI.Test
         [SetUp]
         public void SetUp()
         {
-            solutionExplorerFactory = new SolutionExplorer.Factory(vcProjectAdapterFactory);
+            solutionExplorerFactory = new SolutionExplorer.Factory(vcProjectInfoFactory);
             taskContext = new JoinableTaskContext();
         }
 
@@ -52,7 +52,7 @@ namespace YetiVSI.Test
 
             // Project.Object is dynamic. We need to cast it to object so NSubstitute can mock it.
             ((object)envDteProject.Object).Returns(vcProject);
-            vcProjectAdapterFactory.Create(vcProject).Returns(project);
+            vcProjectInfoFactory.Create(vcProject).Returns(project);
 
             var projects = solutionExplorer.EnumerateProjects();
             Assert.AreEqual(1, projects.Count());
@@ -95,7 +95,7 @@ namespace YetiVSI.Test
 
             // Project.Object is dynamic. We need to cast it to object so NSubstitute can mock it.
             ((object)envDteProject.Object).Returns(vcProject);
-            vcProjectAdapterFactory.Create(vcProject).Returns((ISolutionExplorerProject)null);
+            vcProjectInfoFactory.Create(vcProject).Returns((ISolutionExplorerProject)null);
 
             var projects = solutionExplorer.EnumerateProjects();
             Assert.AreEqual(0, projects.Count());

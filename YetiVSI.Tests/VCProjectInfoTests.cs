@@ -23,9 +23,9 @@ using YetiVSI.ProjectSystem.Abstractions;
 namespace YetiVSI.Test
 {
     [TestFixture]
-    class VCProjectAdapterTests
+    class VCProjectInfoTests
     {
-        VcProjectAdapter.Factory vcProjectAdapterFactory = new VcProjectAdapter.Factory();
+        VsProjectInfo.Factory vcProjectInfoFactory = new VsProjectInfo.Factory();
 
         [Test]
         public void GetOutputDirectory()
@@ -37,7 +37,7 @@ namespace YetiVSI.Test
             };
 
             var vcProject = CreateVcProject(projectValues, projectPath);
-            ISolutionExplorerProject project = vcProjectAdapterFactory.Create(vcProject);
+            ISolutionExplorerProject project = vcProjectInfoFactory.Create(vcProject);
             Assert.AreEqual(RemoveTrailingSeparator(projectValues.OutDir), project.OutputDirectory);
         }
 
@@ -51,7 +51,7 @@ namespace YetiVSI.Test
             };
 
             var vcProject = CreateVcProject(projectValues, projectPath);
-            ISolutionExplorerProject project = vcProjectAdapterFactory.Create(vcProject);
+            ISolutionExplorerProject project = vcProjectInfoFactory.Create(vcProject);
             Assert.AreEqual(RemoveTrailingSeparator(projectPath), project.OutputDirectory);
         }
 
@@ -71,7 +71,7 @@ namespace YetiVSI.Test
             };
 
             var vcProject = CreateVcMakefileProject(projectValues, projectPath);
-            ISolutionExplorerProject project = vcProjectAdapterFactory.Create(vcProject);
+            ISolutionExplorerProject project = vcProjectInfoFactory.Create(vcProject);
             Assert.AreEqual(expected, project.TargetDirectory);
         }
 
@@ -93,7 +93,7 @@ namespace YetiVSI.Test
             };
 
             var vcProject = CreateVcMsBuildProject(projectValues, projectPath);
-            ISolutionExplorerProject project = vcProjectAdapterFactory.Create(vcProject);
+            ISolutionExplorerProject project = vcProjectInfoFactory.Create(vcProject);
             Assert.AreEqual(expected, project.TargetDirectory);
         }
 
@@ -113,7 +113,7 @@ namespace YetiVSI.Test
             };
 
             var vcProject = CreateVcMsBuildProject(projectValues, projectPath);
-            ISolutionExplorerProject project = vcProjectAdapterFactory.Create(vcProject);
+            ISolutionExplorerProject project = vcProjectInfoFactory.Create(vcProject);
             Assert.AreEqual(expected, project.TargetDirectory);
         }
 
@@ -126,7 +126,7 @@ namespace YetiVSI.Test
             vcProject.ActiveConfiguration.Rules.Item("ConfigurationGeneral")
                 .Throws(new COMException(""));
 
-            var project = vcProjectAdapterFactory.Create(vcProject);
+            var project = vcProjectInfoFactory.Create(vcProject);
             Assert.IsNull(project);
         }
 

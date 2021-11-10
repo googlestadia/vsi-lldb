@@ -697,12 +697,12 @@ namespace YetiVSI.DebugEngine
             if (_solutionExplorer == null)
             {
                 JoinableTaskContext taskContext = GetJoinableTaskContext();
-                var vcProjectAdapterFactory = new VcProjectAdapter.Factory();
+                var vcProjectInfoFactory = new VsProjectInfo.Factory();
                 var dte2 = Package.GetGlobalService(typeof(DTE)) as DTE2;
                 var envDteUtilFactory = new EnvDteUtil.Factory();
                 var envDteUtil = envDteUtilFactory.Create(taskContext, dte2);
                 _solutionExplorer =
-                    new SolutionExplorer(taskContext, vcProjectAdapterFactory, envDteUtil);
+                    new SolutionExplorer(taskContext, vcProjectInfoFactory, envDteUtil);
             }
 
             return _solutionExplorer;

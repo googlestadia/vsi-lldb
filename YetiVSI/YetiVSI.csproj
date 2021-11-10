@@ -304,7 +304,7 @@
     <Compile Include="LLDBShell\SLLDBShell.cs" />
     <Compile Include="PkgCmdID.cs" />
     <Compile Include="ProcessManager.cs" />
-    <Compile Include="VCProjectAdapter.cs" />
+    <Compile Include="VsProjectInfo.cs" />
     <Compile Include="VSCommandUtil.cs" />
     <Compile Include="YetiDebugTransport.cs" />
     <Compile Include="CoreAttach\CoreAttachCommand.cs" />

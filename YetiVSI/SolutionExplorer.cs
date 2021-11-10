@@ -25,26 +25,26 @@ namespace YetiVSI
     {
         public class Factory
         {
-            readonly VcProjectAdapter.Factory vcProjectAdapterFactory;
+            readonly VsProjectInfo.Factory vcProjectInfoFactory;
 
-            public Factory(VcProjectAdapter.Factory vcProjectAdapterFactory)
+            public Factory(VsProjectInfo.Factory vcProjectInfoFactory)
             {
-                this.vcProjectAdapterFactory = vcProjectAdapterFactory;
+                this.vcProjectInfoFactory = vcProjectInfoFactory;
             }
 
             public virtual SolutionExplorer Create(
                 JoinableTaskContext taskContext, IEnvDteUtil envDteUtil)
             {
-                return new SolutionExplorer(taskContext, vcProjectAdapterFactory, envDteUtil);
+                return new SolutionExplorer(taskContext, vcProjectInfoFactory, envDteUtil);
             }
         }
 
         readonly JoinableTaskContext taskContext;
-        readonly VcProjectAdapter.Factory projectFactory;
+        readonly VsProjectInfo.Factory projectFactory;
         readonly IEnvDteUtil envDteUtil;
 
         public SolutionExplorer(JoinableTaskContext taskContext,
-            VcProjectAdapter.Factory projectFactory, IEnvDteUtil envDteUtil)
+            VsProjectInfo.Factory projectFactory, IEnvDteUtil envDteUtil)
         {
             this.taskContext = taskContext;
             this.projectFactory = projectFactory;
