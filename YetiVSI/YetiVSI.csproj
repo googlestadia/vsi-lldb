@@ -255,6 +255,7 @@
     <Compile Include="ProgressDialog.xaml.cs">
       <DependentUpon>ProgressDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ReportBug.cs" />
     <Compile Include="ServiceManager.cs" />
     <Compile Include="SshManager.cs" />
     <Compile Include="ProjectSystemLoader.cs" />

@@ -85,6 +85,8 @@ namespace YetiVSI
             CoreAttachCommand.Register(this);
             LLDBShellCommandTarget.Register(taskContext, this);
             DebuggerOptionsCommand.Register(taskContext, this);
+
+            await ReportBug.InitializeAsync(this);
         }
 
         void AddServices()

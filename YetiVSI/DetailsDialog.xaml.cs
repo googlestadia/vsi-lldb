@@ -95,6 +95,11 @@ namespace YetiVSI
             }
         }
 
+        void ReportBug(object sender, RoutedEventArgs e)
+        {
+            YetiVSI.ReportBug.TriggerCommand();
+        }
+
         void DetailsExpanded(object sender, RoutedEventArgs e)
         {
             SizeToContent = SizeToContent.Manual;

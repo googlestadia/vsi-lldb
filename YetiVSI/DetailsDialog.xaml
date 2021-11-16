@@ -6,17 +6,21 @@
         xmlns:local="clr-namespace:YetiVSI"
         xmlns:platformUi="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
         mc:Ignorable="d"
-        Title="Error" MinHeight="100" MinWidth="250" MaxWidth="525" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
+        Title="Error" MinHeight="100" MinWidth="400" MaxWidth="525" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
     <DockPanel LastChildFill="True" Margin="4">
         <TextBlock DockPanel.Dock="Top" x:Name="Message" Margin="4" Text="Error message" TextWrapping="Wrap"></TextBlock>
         <TextBlock DockPanel.Dock="Top" Margin="4" TextWrapping="Wrap" x:Name="DocumentationBlock">
             <Hyperlink Click="DocumentationLinkClick"><TextBlock x:Name="DocumentationText"></TextBlock></Hyperlink>
         </TextBlock>
         <DockPanel DockPanel.Dock="Bottom">
-            <Button DockPanel.Dock="Right" x:Name="Ok" Content="OK" Click="OkClick" Width="100" Margin="4"/>
+            <Button DockPanel.Dock="Right" x:Name="Ok" Content="OK"
+                    Click="OkClick" Width="100" Margin="4"/>
             <Button DockPanel.Dock="Right" x:Name="DontShowAgain" Content="Do not show again"
                     Click="DoNotShowAgainClick" Width="120" Margin="4"/>
-                <TextBlock x:Name="LogsLink" DockPanel.Dock="Left" VerticalAlignment="Bottom" Margin="4" TextWrapping="Wrap">
+            <TextBlock x:Name="BugLink" DockPanel.Dock="Left" VerticalAlignment="Bottom" Margin="4" TextWrapping="Wrap">
+                <Hyperlink Click="ReportBug">Report bug</Hyperlink>
+            </TextBlock>
+            <TextBlock x:Name="LogsLink" DockPanel.Dock="Left" VerticalAlignment="Bottom" Margin="4" TextWrapping="Wrap">
                 <Hyperlink Click="OpenLogs">Open logs</Hyperlink>
             </TextBlock>
         </DockPanel>

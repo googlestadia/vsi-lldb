@@ -58,6 +58,7 @@ namespace YetiVSI.Shared.Metrics
                 VsiGameLaunchWaitForEnd,
                 VsiGameLaunchGetExisting,
                 VsiDebugExpressionEvaluationBatch,
+                VsiReportFeedback,
             }
         }
     }

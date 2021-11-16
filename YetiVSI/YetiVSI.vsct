@@ -6,14 +6,29 @@
   <Extern href="VsDebugGuids.h" />
 
   <Commands package="guidYetiVSIPackage">
+
+    <Menus>
+      <Menu guid="guidYetiVSIPackageCmdSet" id="yetiTopLevelMenu" priority="0x700" type="Menu">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_MM_TOOLSADDINS" />
+        <Strings>
+          <ButtonText>Stadia for Visual Studio</ButtonText>
+        </Strings>
+      </Menu>
+    </Menus>
+
     <Groups>
+      <Group guid="guidYetiVSIPackageCmdSet" id="yetiTopLevelMenuGroup" priority="0x0600">
+        <Parent guid="guidYetiVSIPackageCmdSet" id="yetiTopLevelMenu"/>
+      </Group>
       <Group guid="guidYetiVSIPackageCmdSet" id="yetiDebugMenuGroup" priority="0x0300">
         <Parent guid="guidVSDebugGroup" id="IDM_DEBUG_MENU" />
       </Group>
     </Groups>
+
     <Bitmaps>
       <Bitmap guid="guidYetiIcons" href="Resources\YetiIcons.png" usedList="yetiIcon1" />
     </Bitmaps>
+
     <Buttons>
       <Button guid="guidYetiVSIPackageCmdSet" id="cmdidCrashDumpAttachCommand" priority="0x0100" type="Button">
         <Parent guid="guidYetiVSIPackageCmdSet" id="yetiDebugMenuGroup" />
@@ -44,16 +59,27 @@
           <LocCanonicalName>Stadia.Debugger</LocCanonicalName>
         </Strings>
       </Button>
+
+      <Button guid="guidYetiVSIPackageCmdSet" id="cmdidReportBug" priority="0x0103" type="Button">
+        <Parent guid="guidYetiVSIPackageCmdSet" id="yetiTopLevelMenuGroup" />
+        <Strings>
+          <ButtonText>Report Bug</ButtonText>
+        </Strings>
+      </Button>
     </Buttons>
+
   </Commands>
 
   <Symbols>
     <GuidSymbol name="guidYetiVSIPackage" value="{5fc8481d-4b1a-4cdc-b123-fd6d32fc4096}" />
     <GuidSymbol name="guidYetiVSIPackageCmdSet" value="{56bb93d0-9d14-42a1-afab-ee7ed1d3ca1a}">
+      <IDSymbol name="yetiTopLevelMenuGroup" value="0x1021"/>
+      <IDSymbol name="yetiTopLevelMenu" value="0x1022"/>
       <IDSymbol name="yetiDebugMenuGroup" value="0x1020" />
       <IDSymbol name="cmdidCrashDumpAttachCommand" value="256" />
       <IDSymbol name="cmdidLLDBShellExec" value="257" />
       <IDSymbol name="cmdidDebuggerOptionsCommand" value="258" />
+      <IDSymbol name="cmdidReportBug" value="259" />
     </GuidSymbol>
     <GuidSymbol name="guidYetiIcons" value="{7ef24189-6258-4cf1-808b-0f513b5a50f4}">
       <IDSymbol name="yetiIcon1" value="1" />

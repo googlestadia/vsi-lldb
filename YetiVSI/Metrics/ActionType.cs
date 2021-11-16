@@ -52,6 +52,7 @@ namespace YetiVSI.Metrics
         GameLaunchCreate,
         GameLaunchWaitForEnd,
         GameLaunchGetExisting,
+        ReportFeedback,
     }
 
     class ActionTypeMapping
@@ -126,6 +127,8 @@ namespace YetiVSI.Metrics
                     return DeveloperEventType.Types.Type.VsiGameLaunchWaitForEnd;
                 case ActionType.GameLaunchGetExisting:
                     return DeveloperEventType.Types.Type.VsiGameLaunchGetExisting;
+                case ActionType.ReportFeedback:
+                    return DeveloperEventType.Types.Type.VsiReportFeedback;
             }
             return DeveloperEventType.Types.Type.UnknownEventType;
         }
