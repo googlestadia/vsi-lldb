@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
+using DebuggerApi;
 using System;
 using System.Diagnostics;
 
@@ -29,24 +29,26 @@ namespace YetiVSI.DebugEngine
 
         public PlaceholderModuleProperties(long slide, SbFileSpec platformFileSpec)
         {
-            this.Slide = slide;
-            this.PlatformFileSpec = platformFileSpec;
+            Slide = slide;
+            PlatformFileSpec = platformFileSpec;
         }
     }
 
-    public interface ILldbModuleUtil
+    public static class LldbModuleUtil
     {
         /// <summary>Whether the module has symbols loaded.</summary>
-        bool HasSymbolsLoaded(SbModule module);
-
-        /// <summary>Whether the module's binary is loaded.</summary>
-        bool HasBinaryLoaded(SbModule module);
+        public static bool HasSymbolsLoaded(this SbModule module) => module.HasCompileUnits();
 
         /// <summary>
         /// Whether the module is a placeholder module. Placeholder modules are created by LLDB
         /// during minidump loading to take the place of modules with missing binaries.
         /// </summary>
-        bool IsPlaceholderModule(SbModule module);
+        public static bool IsPlaceholderModule(this SbModule module) => 
+            module.GetNumSections() == 1
+            && module.FindSection(".module_image") != null;
+
+        /// <summary>Whether the module's binary is loaded.</summary>
+        public static bool HasBinaryLoaded(this SbModule module) => !IsPlaceholderModule(module);
 
         /// <summary>
         /// Returns the properties of the supplied placeholder module (file and load address)
@@ -55,26 +57,9 @@ namespace YetiVSI.DebugEngine
         /// <exception cref="ArgumentException">
         /// Thrown if |placeholderModule| is not a placeholder module.
         /// </exception>
-        PlaceholderModuleProperties GetPlaceholderProperties(SbModule placeholderModule,
-            RemoteTarget lldbTarget);
-
-        /// <summary>
-        /// Sets |properties|, i.e., file path and load address, on the module |destModule|.
-        /// Returns false on rpc errors.
-        /// </summary>
-        bool ApplyPlaceholderProperties(SbModule destModule, PlaceholderModuleProperties properties,
-            RemoteTarget lldbTarget);
-    }
-
-    public class LldbModuleUtil : ILldbModuleUtil
-    {
-        public bool HasSymbolsLoaded(SbModule module) => module.HasCompileUnits();
-        public bool HasBinaryLoaded(SbModule module) => !IsPlaceholderModule(module);
-        public bool IsPlaceholderModule(SbModule module) => module.GetNumSections() == 1 &&
-            module.FindSection(".module_image") != null;
-
-        public PlaceholderModuleProperties GetPlaceholderProperties(SbModule placeholderModule,
-             RemoteTarget lldbTarget)
+        public static PlaceholderModuleProperties GetPlaceholderProperties(
+            this SbModule placeholderModule,
+            RemoteTarget lldbTarget)
         {
             SbSection placeholderSection = placeholderModule.FindSection(".module_image");
             if (placeholderSection == null)
@@ -105,7 +90,11 @@ namespace YetiVSI.DebugEngine
             return new PlaceholderModuleProperties(slide, fileSpec);
         }
 
-        public bool ApplyPlaceholderProperties(SbModule destModule,
+        /// <summary>
+        /// Sets |properties|, i.e., file path and load address, on the module |destModule|.
+        /// Returns false on rpc errors.
+        /// </summary>
+        public static bool ApplyPlaceholderProperties(this SbModule destModule,
             PlaceholderModuleProperties properties, RemoteTarget lldbTarget)
         {
             long slide = properties.Slide;

@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,11 +99,10 @@ namespace YetiVSI.Test.DebugEngine
 
             var processFactory = new ManagedProcess.Factory();
             var binaryFileUtil = new ElfFileUtil(processFactory);
-            var lldbModuleUtil = new LldbModuleUtil();
 
             IModuleFileFinder moduleFileFinder = Substitute.For<IModuleFileFinder>();
             var moduleFileLoadRecorderFactory =
-                new ModuleFileLoadMetricsRecorder.Factory(lldbModuleUtil, moduleFileFinder);
+                new ModuleFileLoadMetricsRecorder.Factory(moduleFileFinder);
             var grpcInterceptors = CreateGrpcInterceptors(vsiService.DebuggerOptions);
             var vsOutputWindow =
                 serviceManager.GetGlobalService(typeof(SVsOutputWindow)) as IVsOutputWindow;

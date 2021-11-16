@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -196,7 +196,6 @@ namespace YetiVSI.DebugEngine
 
             var processFactory = new ManagedProcess.Factory();
             var binaryFileUtil = new ElfFileUtil(processFactory);
-            var lldbModuleUtil = new LldbModuleUtil();
 
             var symbolServerRequestHandler = new WebRequestHandler(){
                 AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip,
@@ -213,11 +212,11 @@ namespace YetiVSI.DebugEngine
             IModuleFileLoaderFactory moduleFileLoaderFactory = new ModuleFileLoader.Factory();
 
             var moduleFileLoadRecorderFactory =
-                new ModuleFileLoadMetricsRecorder.Factory(lldbModuleUtil, moduleFileFinder);
+                new ModuleFileLoadMetricsRecorder.Factory(moduleFileFinder);
 
             var symbolLoaderFactory =
-                new SymbolLoader.Factory(lldbModuleUtil, binaryFileUtil, moduleFileFinder);
-            var binaryLoaderFactory = new BinaryLoader.Factory(lldbModuleUtil, moduleFileFinder);
+                new SymbolLoader.Factory(binaryFileUtil, moduleFileFinder);
+            var binaryLoaderFactory = new BinaryLoader.Factory(moduleFileFinder);
 
             var cancelableTaskFactory = GetCancelableTaskFactory();
 
@@ -226,7 +225,7 @@ namespace YetiVSI.DebugEngine
             DebugModule.Factory debugModuleFactory =
                 GetFactoryDecorator().Decorate(new DebugModule.Factory(
                     cancelableTaskFactory, actionRecorder, moduleFileLoadRecorderFactory,
-                    lldbModuleUtil, GetSymbolSettingsProvider(), GetDialogUtil(), _vsiService));
+                    GetSymbolSettingsProvider(), GetDialogUtil(), _vsiService));
             var debugModuleCacheFactory = new DebugModuleCache.Factory(GetDispatcher());
             var debugMemoryContextFactory =
                 GetFactoryDecorator().Decorate(new DebugMemoryContext.Factory());

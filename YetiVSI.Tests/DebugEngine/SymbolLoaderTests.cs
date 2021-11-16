@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
+using DebuggerApi;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
@@ -51,7 +51,6 @@ namespace YetiVSI.Test.DebugEngine
         SbFileSpec mockSymbolFileSpec;
         SbFileSpec mockBinaryFileSpec;
         SbCommandReturnObject mockSuccessCommandReturnObject;
-        ILldbModuleUtil mockModuleUtil;
         SymbolLoader symbolLoader;
         IFileReference symbolFileInStore;
         LogSpy logSpy;
@@ -87,10 +86,8 @@ namespace YetiVSI.Test.DebugEngine
 
             mockModuleFileFinder = Substitute.For<IModuleFileFinder>();
             SetFindFileReturnValue(PATH_IN_STORE);
-            mockModuleUtil = Substitute.For<ILldbModuleUtil>();
-            mockModuleUtil.HasSymbolsLoaded(Arg.Any<SbModule>()).Returns(false);
 
-            symbolLoader = new SymbolLoader(mockModuleUtil, mockBinaryFileUtil,
+            symbolLoader = new SymbolLoader(mockBinaryFileUtil,
                                             mockModuleFileFinder, mockCommandInterpreter);
 
             symbolFileInStore = Substitute.For<IFileReference>();
@@ -149,10 +146,9 @@ namespace YetiVSI.Test.DebugEngine
         public async Task LoadSymbols_AlreadyLoadedAsync()
         {
             var mockModule = Substitute.For<SbModule>();
-            mockModuleUtil.HasSymbolsLoaded(mockModule).Returns(true);
+            mockModule.HasCompileUnits().Returns(true);
 
             Assert.IsTrue(await symbolLoader.LoadSymbolsAsync(mockModule, searchLog, true));
-
             Assert.IsEmpty(searchLog.ToString());
         }
 
@@ -356,7 +352,6 @@ namespace YetiVSI.Test.DebugEngine
             mockModule.GetSymbolFileSpec().Returns(mockSymbolFileSpec);
             mockModule.GetFileSpec().Returns(mockBinaryFileSpec);
             mockModule.GetUUIDString().Returns(UUID.ToString());
-            mockModuleUtil.HasSymbolsLoaded(mockModule).Returns(false);
             return mockModule;
         }
 

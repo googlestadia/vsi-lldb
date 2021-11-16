@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
+using DebuggerApi;
 using NSubstitute;
 using NUnit.Framework;
 using YetiVSI.DebugEngine;
@@ -25,7 +25,6 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class ModuleFileLoadMetricsRecorderTests
     {
-        ILldbModuleUtil mockModuleUtil;
         IModuleFileFinder mockModuleFileFinder;
         ModuleFileLoadMetricsRecorder moduleFileLoadRecorder;
         Action action;
@@ -33,12 +32,11 @@ namespace YetiVSI.Test.DebugEngine
         [SetUp]
         public void SetUp()
         {
-            mockModuleUtil = Substitute.For<ILldbModuleUtil>();
             mockModuleFileFinder = Substitute.For<IModuleFileFinder>();
             action = new Action(
                 DeveloperEventType.Types.Type.VsiDebugEngineLoadSymbols,
                 Substitute.For<Timer.Factory>(), Substitute.For<IMetrics>());
-            moduleFileLoadRecorder = new ModuleFileLoadMetricsRecorder(mockModuleUtil,
+            moduleFileLoadRecorder = new ModuleFileLoadMetricsRecorder(
                 mockModuleFileFinder, action);
         }
 
@@ -104,8 +102,16 @@ namespace YetiVSI.Test.DebugEngine
         SbModule CreateMockModule(bool binaryLoaded, bool symbolsLoaded)
         {
             var module = Substitute.For<SbModule>();
-            mockModuleUtil.HasSymbolsLoaded(module).Returns(symbolsLoaded);
-            mockModuleUtil.HasBinaryLoaded(module).Returns(binaryLoaded);
+            module.HasCompileUnits().Returns(symbolsLoaded);
+            if (binaryLoaded)
+            {
+                module.GetNumSections().Returns(2ul);
+            }
+            else
+            {
+                module.GetNumSections().Returns(1ul);
+                module.FindSection(".module_image").Returns(Substitute.For<SbSection>());
+            }
             return module;
         }
     }

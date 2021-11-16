@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
+using DebuggerApi;
 using NSubstitute;
 using NUnit.Framework;
 using System;
@@ -32,7 +32,6 @@ namespace YetiVSI.Test.DebugEngine
         RemoteTarget mockTarget;
         SbModule mockModule;
         SbFileSpec mockPlatformFileSpec;
-        ILldbModuleUtil moduleUtil;
         LogSpy logSpy;
 
         [SetUp]
@@ -48,7 +47,6 @@ namespace YetiVSI.Test.DebugEngine
             mockModule.HasCompileUnits().Returns(false);
             mockModule.FindSection(Arg.Any<string>()).Returns((SbSection)null);
             mockPlatformFileSpec = Substitute.For<SbFileSpec>();
-            moduleUtil = new LldbModuleUtil();
         }
 
         [TearDown]
@@ -63,7 +61,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             mockModule.HasCompileUnits().Returns(hasCompileUnits);
 
-            Assert.AreEqual(hasCompileUnits, moduleUtil.HasSymbolsLoaded(mockModule));
+            Assert.AreEqual(hasCompileUnits, mockModule.HasSymbolsLoaded());
         }
 
         [Test]
@@ -71,8 +69,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             var placeholderModule = CreatePlaceholderModule();
 
-            Assert.True(moduleUtil.IsPlaceholderModule(placeholderModule));
-            Assert.False(moduleUtil.HasBinaryLoaded(placeholderModule));
+            Assert.True(placeholderModule.IsPlaceholderModule());
+            Assert.False(placeholderModule.HasBinaryLoaded());
         }
 
         [Test]
@@ -81,8 +79,8 @@ namespace YetiVSI.Test.DebugEngine
             var placeholderModule = CreatePlaceholderModule();
             placeholderModule.GetNumSections().Returns(2u);
 
-            Assert.False(moduleUtil.IsPlaceholderModule(mockModule));
-            Assert.True(moduleUtil.HasBinaryLoaded(mockModule));
+            Assert.False(placeholderModule.IsPlaceholderModule());
+            Assert.True(placeholderModule.HasBinaryLoaded());
         }
 
         [Test]
@@ -91,8 +89,8 @@ namespace YetiVSI.Test.DebugEngine
             var placeholderModule = CreatePlaceholderModule();
             placeholderModule.FindSection(".module_image").Returns((SbSection)null);
 
-            Assert.False(moduleUtil.IsPlaceholderModule(mockModule));
-            Assert.True(moduleUtil.HasBinaryLoaded(mockModule));
+            Assert.False(placeholderModule.IsPlaceholderModule());
+            Assert.True(placeholderModule.HasBinaryLoaded());
         }
 
         [TestCase(0u)]
@@ -114,13 +112,13 @@ namespace YetiVSI.Test.DebugEngine
             otherModule.SetPlatformFileSpec(Arg.Any<SbFileSpec>()).Returns(true);
 
             PlaceholderModuleProperties properties =
-                moduleUtil.GetPlaceholderProperties(placeholderModule, mockTarget);
+                placeholderModule.GetPlaceholderProperties(mockTarget);
             Assert.IsNotNull(properties);
             Assert.AreEqual(slide + (long)fileBaseAddress, properties.Slide);
             Assert.AreEqual(mockPlatformFileSpec, properties.PlatformFileSpec);
 
             Assert.True(
-                moduleUtil.ApplyPlaceholderProperties(otherModule, properties, mockTarget));
+                otherModule.ApplyPlaceholderProperties(properties, mockTarget));
 
             otherModule.Received().SetPlatformFileSpec(mockPlatformFileSpec);
             mockTarget.Received().SetModuleLoadAddress(otherModule, slide);
@@ -132,7 +130,7 @@ namespace YetiVSI.Test.DebugEngine
             mockModule.FindSection(".module_image").Returns((SbSection)null);
 
             Assert.Throws<ArgumentException>(() =>
-                moduleUtil.GetPlaceholderProperties(mockModule, mockTarget));
+                mockModule.GetPlaceholderProperties(mockTarget));
         }
 
         [Test]
@@ -142,7 +140,7 @@ namespace YetiVSI.Test.DebugEngine
             placeholderModule.FindSection(".module_image")
                 .GetLoadAddress(mockTarget).Returns(DebuggerConstants.INVALID_ADDRESS);
 
-            Assert.IsNull(moduleUtil.GetPlaceholderProperties(placeholderModule, mockTarget));
+            Assert.IsNull(placeholderModule.GetPlaceholderProperties(mockTarget));
 
             var output = logSpy.GetOutput();
             Assert.That(output, Does.Contain("Failed to get load address"));
@@ -157,8 +155,8 @@ namespace YetiVSI.Test.DebugEngine
             var placeholderProperties =
                 new PlaceholderModuleProperties(MODULE_SLIDE, Substitute.For<SbFileSpec>());
 
-            Assert.IsFalse(moduleUtil.ApplyPlaceholderProperties(
-                Substitute.For<SbModule>(), placeholderProperties, mockTarget));
+            Assert.IsFalse(Substitute.For<SbModule>()
+                               .ApplyPlaceholderProperties(placeholderProperties, mockTarget));
 
             var output = logSpy.GetOutput();
             Assert.That(output, Does.Contain("Failed to set load address"));
@@ -171,7 +169,7 @@ namespace YetiVSI.Test.DebugEngine
             SbModule placeholderModule = CreatePlaceholderModule();
             placeholderModule.GetPlatformFileSpec().Returns((SbFileSpec)null);
 
-            Assert.IsNull(moduleUtil.GetPlaceholderProperties(placeholderModule, mockTarget));
+            Assert.IsNull(placeholderModule.GetPlaceholderProperties(mockTarget));
 
             var output = logSpy.GetOutput();
             Assert.That(output, Does.Contain("Failed to get file spec"));
@@ -186,8 +184,8 @@ namespace YetiVSI.Test.DebugEngine
             var placeholderProperties =
                 new PlaceholderModuleProperties(MODULE_SLIDE, Substitute.For<SbFileSpec>());
 
-            Assert.IsFalse(moduleUtil.ApplyPlaceholderProperties(
-                otherModule, placeholderProperties, mockTarget));
+            Assert.IsFalse(otherModule
+                               .ApplyPlaceholderProperties(placeholderProperties, mockTarget));
 
             var output = logSpy.GetOutput();
             Assert.That(output, Does.Contain("Failed to set file spec"));

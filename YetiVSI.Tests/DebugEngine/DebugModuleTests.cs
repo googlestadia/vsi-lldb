@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using YetiVSI.DebugEngine;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
-using System.Linq;
 
 namespace YetiVSI.Test.DebugEngine
 {
@@ -32,7 +30,6 @@ namespace YetiVSI.Test.DebugEngine
         const uint _testLoadOrder = 123;
 
         CancelableTask.Factory _mockCancelableTaskFactory;
-        ILldbModuleUtil _mockModuleUtil;
         IModuleFileLoader _mockModuleFileLoader;
         IModuleSearchLogHolder _mockModuleSearchLogHolder;
         SbModule _mockModule;
@@ -48,8 +45,6 @@ namespace YetiVSI.Test.DebugEngine
         public void SetUp()
         {
             _mockCancelableTaskFactory = Substitute.For<CancelableTask.Factory>();
-            _mockModuleUtil = Substitute.For<ILldbModuleUtil>();
-            _mockModuleUtil.HasSymbolsLoaded(Arg.Any<SbModule>()).Returns(false);
             _mockModuleFileLoader = Substitute.For<IModuleFileLoader>();
             _mockModuleSearchLogHolder = Substitute.For<IModuleSearchLogHolder>();
             _mockModule = Substitute.For<SbModule>();
@@ -64,7 +59,7 @@ namespace YetiVSI.Test.DebugEngine
             _debugModule =
                 new DebugModule
                     .Factory(_mockCancelableTaskFactory, _mockActionRecorder,
-                             mockModuleFileLoadRecorderFactory, _mockModuleUtil,
+                             mockModuleFileLoadRecorderFactory,
                              _mockSymbolSettingsProvider, _dialogUtil, _vsiService)
                     .Create(_mockModuleFileLoader, _mockModuleSearchLogHolder, _mockModule,
                             _testLoadOrder, _mockEngineHandler, _mockDebugProgram);
@@ -93,7 +88,7 @@ namespace YetiVSI.Test.DebugEngine
             _mockModule.GetCodeLoadAddress().Returns(testCodeLoadAddress);
             _mockModule.GetCodeSize().Returns(testCodeSize);
             _mockModule.Is64Bit().Returns(true);
-            _mockModuleUtil.HasSymbolsLoaded(_mockModule).Returns(true);
+            _mockModule.HasCompileUnits().Returns(true);
 
             var flags = enum_MODULE_INFO_FIELDS.MIF_NAME | enum_MODULE_INFO_FIELDS.MIF_URL |
                         enum_MODULE_INFO_FIELDS.MIF_URLSYMBOLLOCATION |
@@ -133,7 +128,7 @@ namespace YetiVSI.Test.DebugEngine
             {
                 Assert.That(_debugModule.GetSymbolInfo(flags, symbolSearchInfo),
                             Is.EqualTo(VSConstants.S_OK));
-                Assert.That((enum_SYMBOL_SEARCH_INFO_FIELDS) symbolSearchInfo[0].dwValidFields,
+                Assert.That((enum_SYMBOL_SEARCH_INFO_FIELDS)symbolSearchInfo[0].dwValidFields,
                             Is.EqualTo(flags));
                 Assert.That(symbolSearchInfo[0].bstrVerboseSearchInfo, Is.EqualTo(testSearchLog));
             });
@@ -148,8 +143,6 @@ namespace YetiVSI.Test.DebugEngine
                 new SymbolInclusionSettings(useIncludeList, excludedModules, new List<string>()));
 
             _mockModule.GetPlatformFileSpec().GetFilename().Returns("excludedModule");
-
-            _mockModuleUtil.HasSymbolsLoaded(_mockModule).Returns(false);
 
             var flags = enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE;
             var moduleInfo = new MODULE_INFO[1];
@@ -173,9 +166,8 @@ namespace YetiVSI.Test.DebugEngine
                 new SymbolInclusionSettings(useIncludeList, excludedModules, new List<string>()));
 
             _mockModule.GetPlatformFileSpec().GetFilename().Returns("excludedModule");
-
-            _mockModuleUtil.HasSymbolsLoaded(_mockModule).Returns(true);
-
+            _mockModule.HasCompileUnits().Returns(true);
+            
             var flags = enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE;
             var moduleInfo = new MODULE_INFO[1];
 
@@ -193,7 +185,6 @@ namespace YetiVSI.Test.DebugEngine
         public void GetSymbolInfoNotifiesIfSymbolServerSupportIsDisabled()
         {
             _mockSymbolSettingsProvider.IsSymbolServerEnabled.Returns(false);
-            _mockModuleUtil.HasSymbolsLoaded(_mockModule).Returns(false);
 
             var flags = enum_SYMBOL_SEARCH_INFO_FIELDS.SSIF_VERBOSE_SEARCH_INFO;
             var symbolSearchInfo = new MODULE_SYMBOL_SEARCH_INFO[1];

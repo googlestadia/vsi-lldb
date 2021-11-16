@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ namespace YetiVSI.Test.DebugEngine
             _grpcConnection = new GrpcConnection(taskContext.Factory, callInvoker);
             _callback = Substitute.For<IDebugEventCallback2>();
             _debuggerOptions = new YetiVSI.DebuggerOptions.DebuggerOptions
-                { [DebuggerOption.CLIENT_LOGGING] = DebuggerOptionState.DISABLED };
+            { [DebuggerOption.CLIENT_LOGGING] = DebuggerOptionState.DISABLED };
             _libPaths = new HashSet<string> { "some/path", "some/other/path", _gameBinary };
             _programId = Guid.Empty;
             _task = Substitute.For<ICancelable>();
@@ -466,10 +466,9 @@ namespace YetiVSI.Test.DebugEngine
             var frameEnumFactory = new FrameEnumFactory();
             var codeContextEnumFactory = new CodeContextEnumFactory();
 
-            var lldbModuleUtil = new LldbModuleUtil();
             var moduleFileFinder = Substitute.For<IModuleFileFinder>();
             var moduleFileLoadRecorderFactory =
-                new ModuleFileLoadMetricsRecorder.Factory(lldbModuleUtil, moduleFileFinder);
+                new ModuleFileLoadMetricsRecorder.Factory(moduleFileFinder);
             var mockBinaryFileUtil = Substitute.For<IBinaryFileUtil>();
             var lldbShell = Substitute.For<ILLDBShell>();
             var actionRecorder = new ActionRecorder(Substitute.For<IMetrics>());
@@ -487,7 +486,7 @@ namespace YetiVSI.Test.DebugEngine
                 new DebugModuleCache.Factory(new SynchronousDispatcher()),
                 new DebugModule.Factory(
                     FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false),
-                    actionRecorder, moduleFileLoadRecorderFactory, lldbModuleUtil,
+                    actionRecorder, moduleFileLoadRecorderFactory,
                     symbolSettingsProvider,
                     Substitute.For<IDialogUtil>(),
                     Substitute.For<IYetiVSIService>()), new DebugAsyncThread.Factory(taskExecutor,
@@ -513,8 +512,8 @@ namespace YetiVSI.Test.DebugEngine
                                                       new DebugWatchpointResolution.Factory(),
                                                       new BreakpointErrorEnumFactory(),
                                                       new BoundBreakpointEnumFactory())),
-                new SymbolLoader.Factory(lldbModuleUtil, mockBinaryFileUtil, moduleFileFinder),
-                new BinaryLoader.Factory(lldbModuleUtil, moduleFileFinder),
+                new SymbolLoader.Factory(mockBinaryFileUtil, moduleFileFinder),
+                new BinaryLoader.Factory(moduleFileFinder),
                 Substitute.For<IModuleFileLoaderFactory>());
 
             var coreAttachWarningDialog = new CoreAttachWarningDialogUtil(

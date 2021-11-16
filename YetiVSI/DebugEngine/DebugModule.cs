@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ namespace YetiVSI.DebugEngine
             readonly ActionRecorder _actionRecorder;
             readonly CancelableTask.Factory _cancelableTaskFactory;
             readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
-            readonly ILldbModuleUtil _moduleUtil;
             readonly ISymbolSettingsProvider _symbolSettingsProvider;
             readonly IDialogUtil _dialogUtil;
             readonly IYetiVSIService _vsiService;
@@ -43,13 +42,11 @@ namespace YetiVSI.DebugEngine
             public Factory(CancelableTask.Factory cancelableTaskFactory,
                            ActionRecorder actionRecorder,
                            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
-                           ILldbModuleUtil moduleUtil,
                            ISymbolSettingsProvider symbolSettingsProvider,
                            IDialogUtil dialogUtil, IYetiVSIService vsiService)
             {
                 _cancelableTaskFactory = cancelableTaskFactory;
                 _actionRecorder = actionRecorder;
-                _moduleUtil = moduleUtil;
                 _symbolSettingsProvider = symbolSettingsProvider;
                 _moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
                 _dialogUtil = dialogUtil;
@@ -62,7 +59,7 @@ namespace YetiVSI.DebugEngine
                 IGgpDebugProgram program) => new DebugModule(_cancelableTaskFactory,
                                                              _actionRecorder,
                                                              _moduleFileLoadRecorderFactory,
-                                                             _moduleUtil, moduleFileLoader,
+                                                             moduleFileLoader,
                                                              moduleSearchLogHolder, lldbModule,
                                                              loadOrder, debugEngineHandler, program,
                                                              _symbolSettingsProvider,
@@ -79,7 +76,6 @@ namespace YetiVSI.DebugEngine
         readonly IModuleFileLoader _moduleFileLoader;
         readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
         readonly IModuleSearchLogHolder _moduleSearchLogHolder;
-        readonly ILldbModuleUtil _moduleUtil;
         readonly IGgpDebugProgram _program;
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
         readonly IDialogUtil _dialogUtil;
@@ -89,7 +85,7 @@ namespace YetiVSI.DebugEngine
 
         DebugModule(CancelableTask.Factory cancelableTaskFactory, ActionRecorder actionRecorder,
                     ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
-                    ILldbModuleUtil moduleUtil, IModuleFileLoader moduleFileLoader,
+                    IModuleFileLoader moduleFileLoader,
                     IModuleSearchLogHolder moduleSearchLogHolder, SbModule lldbModule,
                     uint loadOrder, IDebugEngineHandler engineHandler, IGgpDebugProgram program,
                     ISymbolSettingsProvider symbolSettingsProvider, IDialogUtil dialogUtil,
@@ -98,7 +94,6 @@ namespace YetiVSI.DebugEngine
             _cancelableTaskFactory = cancelableTaskFactory;
             _actionRecorder = actionRecorder;
             _moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
-            _moduleUtil = moduleUtil;
             _moduleFileLoader = moduleFileLoader;
             _moduleSearchLogHolder = moduleSearchLogHolder;
             _lldbModule = lldbModule;
@@ -142,7 +137,7 @@ namespace YetiVSI.DebugEngine
             // "URLSYMBOLLOCATION" fills in the Symbol File Location column.
             if ((enum_MODULE_INFO_FIELDS.MIF_URLSYMBOLLOCATION & fields) != 0)
             {
-                if (_moduleUtil.HasSymbolsLoaded(_lldbModule))
+                if (_lldbModule.HasSymbolsLoaded())
                 {
                     // The symbol paths are for local files (on Windows).
                     SbFileSpec symbolFileSpec = _lldbModule.GetSymbolFileSpec();
@@ -188,7 +183,7 @@ namespace YetiVSI.DebugEngine
             if ((enum_MODULE_INFO_FIELDS.MIF_FLAGS & fields) != 0)
             {
                 info.m_dwModuleFlags = 0;
-                if (_moduleUtil.HasSymbolsLoaded(_lldbModule))
+                if (_lldbModule.HasSymbolsLoaded())
                 {
                     info.m_dwModuleFlags |= enum_MODULE_FLAGS.MODULE_FLAG_SYMBOLS;
                 }
@@ -203,7 +198,7 @@ namespace YetiVSI.DebugEngine
 
             if ((enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE & fields) != 0)
             {
-                if (!_moduleUtil.HasSymbolsLoaded(_lldbModule))
+                if (!_lldbModule.HasSymbolsLoaded())
                 {
                     var inclusionSetting = _symbolSettingsProvider.GetInclusionSettings();
                     if (!inclusionSetting.IsModuleIncluded(ModuleName))
@@ -239,7 +234,7 @@ namespace YetiVSI.DebugEngine
                 string log = _moduleSearchLogHolder.GetSearchLog(_lldbModule);
                 if (string.IsNullOrEmpty(log))
                 {
-                    if (_moduleUtil.HasSymbolsLoaded(_lldbModule))
+                    if (_lldbModule.HasSymbolsLoaded())
                     {
                         log = "Symbols for this module were automatically located by LLDB.";
                     }

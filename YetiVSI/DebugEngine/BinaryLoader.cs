@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
+using DebuggerApi;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -54,7 +54,7 @@ namespace YetiVSI.DebugEngine
         public LldbModuleReplacedEventArgs(SbModule addedModule, SbModule removedModule)
         {
             AddedModule = addedModule;
-            RemovedModule  = removedModule;
+            RemovedModule = removedModule;
         }
     }
 
@@ -62,32 +62,27 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory
         {
-            ILldbModuleUtil moduleUtil;
             IModuleFileFinder moduleFileFinder;
 
-            public Factory(ILldbModuleUtil moduleUtil, IModuleFileFinder moduleFileFinder)
+            public Factory(IModuleFileFinder moduleFileFinder)
             {
-                this.moduleUtil = moduleUtil;
                 this.moduleFileFinder = moduleFileFinder;
             }
 
             public virtual IBinaryLoader Create(RemoteTarget lldbTarget)
             {
-                return new BinaryLoader(moduleUtil, moduleFileFinder, lldbTarget);
+                return new BinaryLoader(moduleFileFinder, lldbTarget);
             }
         }
 
         public event EventHandler<LldbModuleReplacedEventArgs> LldbModuleReplaced;
 
-        ILldbModuleUtil moduleUtil;
         IModuleFileFinder moduleFileFinder;
         RemoteTarget lldbTarget;
 
-
-        public BinaryLoader(ILldbModuleUtil moduleUtil, IModuleFileFinder moduleFileFinder,
-            RemoteTarget lldbTarget)
+        public BinaryLoader(IModuleFileFinder moduleFileFinder,
+                            RemoteTarget lldbTarget)
         {
-            this.moduleUtil = moduleUtil;
             this.moduleFileFinder = moduleFileFinder;
             this.lldbTarget = lldbTarget;
         }
@@ -98,7 +93,7 @@ namespace YetiVSI.DebugEngine
             if (lldbModule == null) { throw new ArgumentNullException(nameof(lldbModule)); }
             searchLog = searchLog ?? TextWriter.Null;
 
-            if (!moduleUtil.IsPlaceholderModule(lldbModule))
+            if (!lldbModule.IsPlaceholderModule())
             {
                 return (lldbModule, true);
             }
@@ -119,7 +114,7 @@ namespace YetiVSI.DebugEngine
             }
 
             PlaceholderModuleProperties properties =
-                moduleUtil.GetPlaceholderProperties(lldbModule, lldbTarget);
+                lldbModule.GetPlaceholderProperties(lldbTarget);
             if (properties == null)
             {
                 return (lldbModule, false);
@@ -132,7 +127,7 @@ namespace YetiVSI.DebugEngine
                 return (lldbModule, false);
             }
 
-            if (!moduleUtil.ApplyPlaceholderProperties(newModule, properties, lldbTarget))
+            if (!newModule.ApplyPlaceholderProperties(properties, lldbTarget))
             {
                 return (lldbModule, false);
             }

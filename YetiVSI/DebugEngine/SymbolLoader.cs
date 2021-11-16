@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,32 +42,28 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory
         {
-            ILldbModuleUtil moduleUtil;
             IBinaryFileUtil binaryFileUtil;
             IModuleFileFinder moduleFileFinder;
 
-            public Factory(ILldbModuleUtil moduleUtil, IBinaryFileUtil binaryFileUtil,
+            public Factory(IBinaryFileUtil binaryFileUtil,
                 IModuleFileFinder moduleFileFinder)
             {
-                this.moduleUtil = moduleUtil;
                 this.binaryFileUtil = binaryFileUtil;
                 this.moduleFileFinder = moduleFileFinder;
             }
 
             public virtual ISymbolLoader Create(SbCommandInterpreter lldbCommandInterpreter) =>
-                new SymbolLoader(moduleUtil, binaryFileUtil, moduleFileFinder,
+                new SymbolLoader(binaryFileUtil, moduleFileFinder,
                     lldbCommandInterpreter);
         }
 
-        ILldbModuleUtil moduleUtil;
         IBinaryFileUtil binaryFileUtil;
         IModuleFileFinder moduleFileFinder;
         SbCommandInterpreter lldbCommandInterpreter;
 
-        public SymbolLoader(ILldbModuleUtil moduleUtil, IBinaryFileUtil binaryFileUtil,
+        public SymbolLoader(IBinaryFileUtil binaryFileUtil,
             IModuleFileFinder moduleFileFinder, SbCommandInterpreter lldbCommandInterpreter)
         {
-            this.moduleUtil = moduleUtil;
             this.binaryFileUtil = binaryFileUtil;
             this.moduleFileFinder = moduleFileFinder;
             this.lldbCommandInterpreter = lldbCommandInterpreter;
@@ -80,7 +76,7 @@ namespace YetiVSI.DebugEngine
             searchLog = searchLog ?? TextWriter.Null;
 
             // Return early if symbols are already loaded
-            if (moduleUtil.HasSymbolsLoaded(lldbModule)) { return true; }
+            if (lldbModule.HasSymbolsLoaded()) { return true; }
 
             var (symbolFileDir, symbolFileName) =
                 await GetSymbolFileDirAndNameAsync(lldbModule, searchLog);

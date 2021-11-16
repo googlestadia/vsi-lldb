@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
+using DebuggerApi;
 using NSubstitute;
 using NUnit.Framework;
 using System;
@@ -31,13 +31,11 @@ namespace YetiVSI.Test.DebugEngine
         static BuildId UUID = new BuildId("1234");
         const long MODULE_SLIDE = 2000;
 
-        PlaceholderModuleProperties placeholderProperties;
         StringWriter searchLog;
         RemoteTarget mockTarget;
         EventHandler<LldbModuleReplacedEventArgs> moduleReplacedHandler;
         SbModule placeholderModule;
         IModuleFileFinder mockModuleFileFinder;
-        ILldbModuleUtil mockModuleUtil;
         BinaryLoader binaryLoader;
 
         [SetUp]
@@ -55,21 +53,12 @@ namespace YetiVSI.Test.DebugEngine
             placeholderModule = Substitute.For<SbModule>();
             placeholderModule.GetPlatformFileSpec().GetFilename().Returns(BINARY_FILENAME);
             placeholderModule.GetUUIDString().Returns(UUID.ToString());
+            var section = Substitute.For<SbSection>();
+            section.GetLoadAddress(mockTarget).Returns((ulong)MODULE_SLIDE);
+            placeholderModule.FindSection(".module_image").Returns(Substitute.For<SbSection>());
+            placeholderModule.GetNumSections().Returns(1ul);
 
-            placeholderProperties =
-                new PlaceholderModuleProperties(MODULE_SLIDE, Substitute.For<SbFileSpec>());
-
-            mockModuleUtil = Substitute.For<ILldbModuleUtil>();
-            mockModuleUtil.IsPlaceholderModule(placeholderModule).Returns(true);
-            mockModuleUtil.GetPlaceholderProperties(Arg.Any<SbModule>(), Arg.Any<RemoteTarget>())
-                .ReturnsForAnyArgs(placeholderProperties);
-            mockModuleUtil.ApplyPlaceholderProperties(
-                Arg.Any<SbModule>(), Arg.Any<PlaceholderModuleProperties>(),
-                Arg.Any<RemoteTarget>())
-                    .ReturnsForAnyArgs(true);
-
-
-            binaryLoader = new BinaryLoader(mockModuleUtil, mockModuleFileFinder,
+            binaryLoader = new BinaryLoader(mockModuleFileFinder,
                 mockTarget);
             binaryLoader.LldbModuleReplaced += moduleReplacedHandler;
         }
@@ -86,11 +75,10 @@ namespace YetiVSI.Test.DebugEngine
         public async Task LoadBinary_AlreadyLoadedAsync()
         {
             var loadedModule = Substitute.For<SbModule>();
-            mockModuleUtil.IsPlaceholderModule(loadedModule).Returns(false);
+            loadedModule.GetNumSections().Returns(2ul);
 
-            var module = loadedModule;
-            bool ok;
-            (module, ok) = await binaryLoader.LoadBinaryAsync(module, searchLog);
+            (SbModule module, bool ok) = await binaryLoader.LoadBinaryAsync(
+                loadedModule, searchLog);
             Assert.True(ok);
 
             Assert.AreSame(loadedModule, module);
@@ -101,9 +89,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             placeholderModule.GetPlatformFileSpec().Returns((SbFileSpec)null);
 
-            var module = placeholderModule;
-            bool ok;
-            (module, ok) = await binaryLoader.LoadBinaryAsync(module, searchLog);
+            (SbModule module, bool ok) = await binaryLoader.LoadBinaryAsync(
+                placeholderModule, searchLog);
             Assert.False(ok);
 
             Assert.AreSame(module, placeholderModule);
@@ -116,9 +103,8 @@ namespace YetiVSI.Test.DebugEngine
             mockModuleFileFinder.FindFileAsync(BINARY_FILENAME, UUID, false, searchLog)
                 .Returns(Task.FromResult<string>(null));
 
-            var module = placeholderModule;
-            bool ok;
-            (module, ok) = await binaryLoader.LoadBinaryAsync(module, searchLog);
+            (SbModule module, bool ok) = await binaryLoader.LoadBinaryAsync(
+                placeholderModule, searchLog);
             Assert.False(ok);
 
             Assert.AreSame(module, placeholderModule);
@@ -129,9 +115,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             mockTarget.AddModule(PATH_IN_STORE, null, UUID.ToString()).Returns((SbModule)null);
 
-            var module = placeholderModule;
-            bool ok;
-            (module, ok) = await binaryLoader.LoadBinaryAsync(module, searchLog);
+            (SbModule module, bool ok) = await binaryLoader.LoadBinaryAsync(
+                placeholderModule, searchLog);
             Assert.False(ok);
 
             Assert.AreSame(module, placeholderModule);
@@ -144,17 +129,13 @@ namespace YetiVSI.Test.DebugEngine
         {
             var newModule = Substitute.For<SbModule>();
             mockTarget.AddModule(PATH_IN_STORE, null, UUID.ToString()).Returns(newModule);
-
-            var module = placeholderModule;
-            bool ok;
-            (module, ok) = await binaryLoader.LoadBinaryAsync(module, searchLog);
+            newModule.SetPlatformFileSpec(Arg.Any<SbFileSpec>()).Returns(true);
+            (SbModule module, bool ok) = await binaryLoader.LoadBinaryAsync(
+                placeholderModule, searchLog);
             Assert.True(ok);
 
-            mockModuleUtil.Received().GetPlaceholderProperties(placeholderModule, mockTarget);
-            mockModuleUtil.Received().ApplyPlaceholderProperties(newModule,
-                placeholderProperties, mockTarget);
-            mockTarget.Received().AddModule(PATH_IN_STORE, null, UUID.ToString());
             mockTarget.Received().RemoveModule(placeholderModule);
+            mockTarget.Received().AddModule(PATH_IN_STORE, null, UUID.ToString());
             moduleReplacedHandler.Received().Invoke(binaryLoader,
                 Arg.Is<LldbModuleReplacedEventArgs>(a =>
                     a.AddedModule == newModule && a.RemovedModule == placeholderModule));

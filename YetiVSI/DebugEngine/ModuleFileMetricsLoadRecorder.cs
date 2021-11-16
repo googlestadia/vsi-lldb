@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,32 +50,28 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory
         {
-            ILldbModuleUtil moduleUtil;
             IModuleFileFinder moduleFileFinder;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
             protected Factory() { }
 
-            public Factory(ILldbModuleUtil moduleUtil, IModuleFileFinder moduleFileFinder)
+            public Factory(IModuleFileFinder moduleFileFinder)
             {
-                this.moduleUtil = moduleUtil;
                 this.moduleFileFinder = moduleFileFinder;
             }
 
             public virtual IModuleFileLoadMetricsRecorder Create(Metrics.IAction action)
             {
-                return new ModuleFileLoadMetricsRecorder(moduleUtil, moduleFileFinder, action);
+                return new ModuleFileLoadMetricsRecorder(moduleFileFinder, action);
             }
         }
 
-        ILldbModuleUtil moduleUtil;
         IModuleFileFinder moduleFileFinder;
         Metrics.IAction action;
 
-        public ModuleFileLoadMetricsRecorder(ILldbModuleUtil moduleUtil,
+        public ModuleFileLoadMetricsRecorder(
             IModuleFileFinder moduleFileFinder, Metrics.IAction action)
         {
-            this.moduleUtil = moduleUtil;
             this.moduleFileFinder = moduleFileFinder;
             this.action = action;
         }
@@ -86,9 +82,9 @@ namespace YetiVSI.DebugEngine
             moduleFileFinder.RecordMetrics(loadSymbolDataBuilder);
             loadSymbolDataBuilder.ModulesBeforeCount = modules.Count;
             loadSymbolDataBuilder.ModulesWithSymbolsLoadedBeforeCount =
-                modules.Count(m => moduleUtil.HasSymbolsLoaded(m));
+                modules.Count(m => m.HasSymbolsLoaded());
             loadSymbolDataBuilder.BinariesLoadedBeforeCount =
-                modules.Count(m => moduleUtil.HasBinaryLoaded(m));
+                modules.Count(m => m.HasBinaryLoaded());
             action.UpdateEvent(new DeveloperLogEvent
             {
                 LoadSymbolData = loadSymbolDataBuilder
@@ -102,9 +98,9 @@ namespace YetiVSI.DebugEngine
             loadSymbolDataBuilder.ModulesAfterCount =
                 Math.Max(modules.Count, loadSymbolDataBuilder.ModulesCount.GetValueOrDefault());
             loadSymbolDataBuilder.ModulesWithSymbolsLoadedAfterCount =
-                modules.Count(m => moduleUtil.HasSymbolsLoaded(m));
+                modules.Count(m => m.HasSymbolsLoaded());
             loadSymbolDataBuilder.BinariesLoadedAfterCount =
-                modules.Count(m => moduleUtil.HasBinaryLoaded(m));
+                modules.Count(m => m.HasBinaryLoaded());
             action.UpdateEvent(new DeveloperLogEvent {LoadSymbolData = loadSymbolDataBuilder});
         }
 
