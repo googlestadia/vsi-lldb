@@ -358,6 +358,7 @@ namespace YetiVSI.DebugEngine
         SshTarget _target;
         string _coreFilePath;
         LaunchOption _launchOption;
+        LaunchParams _launchParams;
         bool _deleteCoreFileAtCleanup;
         IVsiGameLaunch _vsiGameLaunch;
 
@@ -586,8 +587,14 @@ namespace YetiVSI.DebugEngine
                     switch (_launchOption)
                     {
                         case LaunchOption.LaunchGame:
+                            string cmd =
+                                _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s))
+                                ?? _executableFileName;
+
+                            // Note that Path.Combine works for both relative and full paths.
+                            // It returns cmd if cmd starts with '/' or '\'.
                             var remoteTargetPath =
-                                Path.Combine(YetiConstants.RemoteGamePath, _executableFileName);
+                                Path.Combine(YetiConstants.RemoteGamePath, cmd);
                             _cancelableTaskFactory.Create(TaskMessages.CheckingBinaries,
                                                           async _ =>
                                                               await _preflightBinaryChecker
@@ -1066,6 +1073,7 @@ namespace YetiVSI.DebugEngine
         // (not Attach to Process / Attach to Stadia Crash Dump).
         void LaunchGame(IChromeClientsLauncher chromeClientsLauncher)
         {
+            _launchParams = chromeClientsLauncher.LaunchParams;
             _vsiGameLaunch = _gameLauncher.CreateLaunch(chromeClientsLauncher.LaunchParams);
 
             if (chromeClientsLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)

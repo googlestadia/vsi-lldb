@@ -91,6 +91,7 @@ namespace YetiVSI.Test
             _project.GetTargetPathAsync().Returns(_targetPath);
             _project.GetTargetDirectoryAsync().Returns(Path.GetDirectoryName(_targetPath));
             _project.GetTargetFileNameAsync().Returns(Path.GetFileName(_targetPath));
+            _project.GetGameletLaunchExecutableAsync().Returns(Path.GetFileName(_targetPath));
             _project.GetOutputDirectoryAsync().Returns(_outputDirectory);
             _project.GetAbsoluteRootPathAsync().Returns(_testProjectDir);
             _project.GetApplicationAsync().Returns(_testApplicationName);

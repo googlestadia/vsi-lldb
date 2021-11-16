@@ -83,6 +83,11 @@ namespace YetiVSI.ProjectSystem.Abstractions
         Task<string> GetExecutablePathAsync();
 
         /// <summary>
+        /// Get path used when launching the game binary.
+        /// </summary>
+        Task<string> GetGameletLaunchExecutableAsync();
+
+        /// <summary>
         /// Get arguments to pass to the game binary.
         /// </summary>
         Task<string> GetGameletLaunchArgumentsAsync();

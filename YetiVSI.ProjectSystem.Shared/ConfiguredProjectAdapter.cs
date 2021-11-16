@@ -102,6 +102,17 @@ namespace YetiVSI.ProjectSystem
             return gameletEnvironmentVariables;
         }
 
+        public async Task<string> GetGameletLaunchExecutableAsync()
+        {
+            var gameletLaunchExecutable = await userProperties.GetEvaluatedPropertyValueAsync(
+                ProjectPropertyName.GgpGameletLaunchExecutable);
+            if (string.IsNullOrWhiteSpace(gameletLaunchExecutable))
+            {
+                return await GetTargetFileNameAsync();
+            }
+            return gameletLaunchExecutable;
+        }
+
         public async Task<string> GetGameletLaunchArgumentsAsync()
         {
             var gameletLaunchArguments = await userProperties.GetEvaluatedPropertyValueAsync(

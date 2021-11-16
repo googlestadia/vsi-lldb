@@ -238,6 +238,16 @@ namespace Google.VisualStudioFake.Internal
         public void SetGameletEnvironmentVariables(string envVars) =>
             SetStringProperty(ProjectPropertyName.GgpGameletEnvironmentVariables, envVars);
 
+        public async Task<string> GetGameletLaunchExecutableAsync() {
+            var gameletLaunchExecutable
+                = await GetStringPropertyAsync(ProjectPropertyName.GgpGameletLaunchExecutable);
+            if (string.IsNullOrWhiteSpace(gameletLaunchExecutable))
+            {
+                return await GetTargetFileNameAsync();
+            }
+            return gameletLaunchExecutable;
+        }
+
         public Task<string> GetGameletLaunchArgumentsAsync() =>
             GetStringPropertyAsync(ProjectPropertyName.GgpGameletLaunchArguments);
 

@@ -29,6 +29,7 @@ namespace YetiVSI.ProjectSystem.Abstractions
         public const string GgpDeployOnLaunch = "GgpDeployOnLaunch";
         public const string GgpSurfaceEnforcementMode = "GgpSurfaceEnforcementMode";
         public const string GgpGameletEnvironmentVariables = "GgpGameletEnvironmentVariables";
+        public const string GgpGameletLaunchExecutable = "GgpGameletLaunchExecutable";
         public const string GgpGameletLaunchArguments = "GgpGameletLaunchArguments";
         public const string GgpLaunchRenderDoc = "GgpLaunchRenderDoc";
         public const string GgpLaunchRgp = "GgpLaunchRgp";

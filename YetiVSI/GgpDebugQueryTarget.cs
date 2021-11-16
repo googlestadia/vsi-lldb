@@ -114,8 +114,8 @@ namespace YetiVSI
                 _metrics.UseNewDebugSessionId();
                 var actionRecorder = new ActionRecorder(_metrics);
 
-                var targetFileName = await project.GetTargetFileNameAsync();
-                var gameletCommand = (targetFileName + " " +
+                var executablePath = await project.GetGameletLaunchExecutableAsync();
+                var gameletCommand = (executablePath + " " +
                     await project.GetGameletLaunchArgumentsAsync()).Trim();
 
                 var launchParams = new LaunchParams() {
