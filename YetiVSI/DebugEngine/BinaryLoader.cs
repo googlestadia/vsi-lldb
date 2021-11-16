@@ -62,29 +62,29 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory
         {
-            IModuleFileFinder moduleFileFinder;
+            readonly IModuleFileFinder _moduleFileFinder;
 
             public Factory(IModuleFileFinder moduleFileFinder)
             {
-                this.moduleFileFinder = moduleFileFinder;
+                _moduleFileFinder = moduleFileFinder;
             }
 
             public virtual IBinaryLoader Create(RemoteTarget lldbTarget)
             {
-                return new BinaryLoader(moduleFileFinder, lldbTarget);
+                return new BinaryLoader(_moduleFileFinder, lldbTarget);
             }
         }
 
         public event EventHandler<LldbModuleReplacedEventArgs> LldbModuleReplaced;
 
-        IModuleFileFinder moduleFileFinder;
-        RemoteTarget lldbTarget;
+        readonly IModuleFileFinder _moduleFileFinder;
+        readonly RemoteTarget _lldbTarget;
 
         public BinaryLoader(IModuleFileFinder moduleFileFinder,
                             RemoteTarget lldbTarget)
         {
-            this.moduleFileFinder = moduleFileFinder;
-            this.lldbTarget = lldbTarget;
+            _moduleFileFinder = moduleFileFinder;
+            _lldbTarget = lldbTarget;
         }
 
         public virtual async Task<(SbModule, bool)> LoadBinaryAsync(
@@ -106,7 +106,7 @@ namespace YetiVSI.DebugEngine
                 return (lldbModule, false);
             }
 
-            var binaryPath = await moduleFileFinder.FindFileAsync(
+            var binaryPath = await _moduleFileFinder.FindFileAsync(
                 binaryName, new BuildId(lldbModule.GetUUIDString()), false, searchLog);
             if (binaryPath == null)
             {
@@ -114,7 +114,7 @@ namespace YetiVSI.DebugEngine
             }
 
             PlaceholderModuleProperties properties =
-                lldbModule.GetPlaceholderProperties(lldbTarget);
+                lldbModule.GetPlaceholderProperties(_lldbTarget);
             if (properties == null)
             {
                 return (lldbModule, false);
@@ -127,7 +127,7 @@ namespace YetiVSI.DebugEngine
                 return (lldbModule, false);
             }
 
-            if (!newModule.ApplyPlaceholderProperties(properties, lldbTarget))
+            if (!newModule.ApplyPlaceholderProperties(properties, _lldbTarget))
             {
                 return (lldbModule, false);
             }
@@ -140,7 +140,7 @@ namespace YetiVSI.DebugEngine
 
         SbModule AddModule(string binaryPath, string id, TextWriter searchLog)
         {
-            var newModule = lldbTarget.AddModule(binaryPath, null, id);
+            var newModule = _lldbTarget.AddModule(binaryPath, null, id);
             if (newModule == null)
             {
                 searchLog.WriteLine(ErrorStrings.FailedToLoadBinary(binaryPath));
@@ -155,7 +155,7 @@ namespace YetiVSI.DebugEngine
 
         void RemoveModule(SbModule placeholderModule)
         {
-            lldbTarget.RemoveModule(placeholderModule);
+            _lldbTarget.RemoveModule(placeholderModule);
         }
     }
 }

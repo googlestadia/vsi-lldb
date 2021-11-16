@@ -225,7 +225,7 @@ namespace YetiVSI.DebugEngine
             DebugModule.Factory debugModuleFactory =
                 GetFactoryDecorator().Decorate(new DebugModule.Factory(
                     cancelableTaskFactory, actionRecorder, moduleFileLoadRecorderFactory,
-                    GetSymbolSettingsProvider(), GetDialogUtil(), _vsiService));
+                    GetSymbolSettingsProvider()));
             var debugModuleCacheFactory = new DebugModuleCache.Factory(GetDispatcher());
             var debugMemoryContextFactory =
                 GetFactoryDecorator().Decorate(new DebugMemoryContext.Factory());

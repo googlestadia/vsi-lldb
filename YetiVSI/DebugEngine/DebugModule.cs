@@ -31,8 +31,6 @@ namespace YetiVSI.DebugEngine
             readonly CancelableTask.Factory _cancelableTaskFactory;
             readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
             readonly ISymbolSettingsProvider _symbolSettingsProvider;
-            readonly IDialogUtil _dialogUtil;
-            readonly IYetiVSIService _vsiService;
 
             [Obsolete("This constructor only exists to support mocking libraries.", true)]
             protected Factory()
@@ -42,15 +40,12 @@ namespace YetiVSI.DebugEngine
             public Factory(CancelableTask.Factory cancelableTaskFactory,
                            ActionRecorder actionRecorder,
                            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
-                           ISymbolSettingsProvider symbolSettingsProvider,
-                           IDialogUtil dialogUtil, IYetiVSIService vsiService)
+                           ISymbolSettingsProvider symbolSettingsProvider)
             {
                 _cancelableTaskFactory = cancelableTaskFactory;
                 _actionRecorder = actionRecorder;
                 _symbolSettingsProvider = symbolSettingsProvider;
                 _moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
-                _dialogUtil = dialogUtil;
-                _vsiService = vsiService;
             }
 
             public virtual IDebugModule3 Create(
@@ -62,8 +57,7 @@ namespace YetiVSI.DebugEngine
                                                              moduleFileLoader,
                                                              moduleSearchLogHolder, lldbModule,
                                                              loadOrder, debugEngineHandler, program,
-                                                             _symbolSettingsProvider,
-                                                             _dialogUtil, _vsiService);
+                                                             _symbolSettingsProvider);
         }
 
         readonly ActionRecorder _actionRecorder;
@@ -78,8 +72,6 @@ namespace YetiVSI.DebugEngine
         readonly IModuleSearchLogHolder _moduleSearchLogHolder;
         readonly IGgpDebugProgram _program;
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
-        readonly IDialogUtil _dialogUtil;
-        readonly IYetiVSIService _vsiService;
 
         string ModuleName => _lldbModule.GetPlatformFileSpec()?.GetFilename() ?? "<unknown>";
 
@@ -88,8 +80,7 @@ namespace YetiVSI.DebugEngine
                     IModuleFileLoader moduleFileLoader,
                     IModuleSearchLogHolder moduleSearchLogHolder, SbModule lldbModule,
                     uint loadOrder, IDebugEngineHandler engineHandler, IGgpDebugProgram program,
-                    ISymbolSettingsProvider symbolSettingsProvider, IDialogUtil dialogUtil,
-                    IYetiVSIService vsiService)
+                    ISymbolSettingsProvider symbolSettingsProvider)
         {
             _cancelableTaskFactory = cancelableTaskFactory;
             _actionRecorder = actionRecorder;
@@ -101,8 +92,6 @@ namespace YetiVSI.DebugEngine
             _engineHandler = engineHandler;
             _program = program;
             _symbolSettingsProvider = symbolSettingsProvider;
-            _dialogUtil = dialogUtil;
-            _vsiService = vsiService;
         }
 
         #region IDebugModule2 functions

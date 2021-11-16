@@ -42,31 +42,31 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory
         {
-            IBinaryFileUtil binaryFileUtil;
-            IModuleFileFinder moduleFileFinder;
+            readonly IBinaryFileUtil _binaryFileUtil;
+            readonly IModuleFileFinder _moduleFileFinder;
 
             public Factory(IBinaryFileUtil binaryFileUtil,
                 IModuleFileFinder moduleFileFinder)
             {
-                this.binaryFileUtil = binaryFileUtil;
-                this.moduleFileFinder = moduleFileFinder;
+                _binaryFileUtil = binaryFileUtil;
+                _moduleFileFinder = moduleFileFinder;
             }
 
             public virtual ISymbolLoader Create(SbCommandInterpreter lldbCommandInterpreter) =>
-                new SymbolLoader(binaryFileUtil, moduleFileFinder,
+                new SymbolLoader(_binaryFileUtil, _moduleFileFinder,
                     lldbCommandInterpreter);
         }
 
-        IBinaryFileUtil binaryFileUtil;
-        IModuleFileFinder moduleFileFinder;
-        SbCommandInterpreter lldbCommandInterpreter;
+        readonly IBinaryFileUtil _binaryFileUtil;
+        readonly IModuleFileFinder _moduleFileFinder;
+        readonly SbCommandInterpreter _lldbCommandInterpreter;
 
         public SymbolLoader(IBinaryFileUtil binaryFileUtil,
             IModuleFileFinder moduleFileFinder, SbCommandInterpreter lldbCommandInterpreter)
         {
-            this.binaryFileUtil = binaryFileUtil;
-            this.moduleFileFinder = moduleFileFinder;
-            this.lldbCommandInterpreter = lldbCommandInterpreter;
+            _binaryFileUtil = binaryFileUtil;
+            _moduleFileFinder = moduleFileFinder;
+            _lldbCommandInterpreter = lldbCommandInterpreter;
         }
 
         public virtual async Task<bool> LoadSymbolsAsync(
@@ -78,7 +78,7 @@ namespace YetiVSI.DebugEngine
             // Return early if symbols are already loaded
             if (lldbModule.HasSymbolsLoaded()) { return true; }
 
-            var (symbolFileDir, symbolFileName) =
+            (string symbolFileDir, string symbolFileName) =
                 await GetSymbolFileDirAndNameAsync(lldbModule, searchLog);
             if (string.IsNullOrEmpty(symbolFileName))
             {
@@ -95,8 +95,8 @@ namespace YetiVSI.DebugEngine
                 try
                 {
                     symbolFilePath = Path.Combine(symbolFileDir, symbolFileName);
-                    BuildId fileUUID = await binaryFileUtil.ReadBuildIdAsync(symbolFilePath);
-                    if (fileUUID == uuid)
+                    BuildId fileUuid = await _binaryFileUtil.ReadBuildIdAsync(symbolFilePath);
+                    if (fileUuid == uuid)
                     {
                         return AddSymbolFile(symbolFilePath, lldbModule, searchLog);
                     }
@@ -111,8 +111,8 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
-            var filepath = useSymbolStores
-                               ? await moduleFileFinder.FindFileAsync(
+            string filepath = useSymbolStores
+                               ? await _moduleFileFinder.FindFileAsync(
                                    symbolFileName, uuid, true, searchLog)
                                : null;
             if (filepath == null) { return false; }
@@ -123,13 +123,13 @@ namespace YetiVSI.DebugEngine
         async Task<(string, string)> GetSymbolFileDirAndNameAsync(
             SbModule lldbModule, TextWriter log)
         {
-            var symbolFileSpec = lldbModule.GetSymbolFileSpec();
-            var symbolFileDirectory = symbolFileSpec?.GetDirectory();
-            var symbolFileName = symbolFileSpec?.GetFilename();
+            SbFileSpec symbolFileSpec = lldbModule.GetSymbolFileSpec();
+            string symbolFileDirectory = symbolFileSpec?.GetDirectory();
+            string symbolFileName = symbolFileSpec?.GetFilename();
 
-            var binaryFileSpec = lldbModule.GetFileSpec();
-            var binaryDirectory = binaryFileSpec?.GetDirectory();
-            var binaryFilename = binaryFileSpec?.GetFilename();
+            SbFileSpec binaryFileSpec = lldbModule.GetFileSpec();
+            string binaryDirectory = binaryFileSpec?.GetDirectory();
+            string binaryFilename = binaryFileSpec?.GetFilename();
 
             // If there is no path to the binary, there is nothing we can do.
             if (string.IsNullOrEmpty(binaryDirectory) || string.IsNullOrEmpty(binaryFilename))
@@ -147,7 +147,6 @@ namespace YetiVSI.DebugEngine
             }
 
             symbolFileDirectory = null;
-            symbolFileName = null;
 
             // Let us look up the symbol file name and directory in the binary.
             string binaryPath;
@@ -157,7 +156,7 @@ namespace YetiVSI.DebugEngine
             }
             catch (ArgumentException e)
             {
-                var errorString = ErrorStrings.InvalidBinaryPathOrName(binaryDirectory,
+                string errorString = ErrorStrings.InvalidBinaryPathOrName(binaryDirectory,
                                                                        binaryFilename, e.Message);
                 Trace.WriteLine(errorString);
                 await log.WriteLineAsync(errorString);
@@ -167,7 +166,7 @@ namespace YetiVSI.DebugEngine
             // Read the symbol file name from the binary.
             try
             {
-                symbolFileName = await binaryFileUtil.ReadSymbolFileNameAsync(binaryPath);
+                symbolFileName = await _binaryFileUtil.ReadSymbolFileNameAsync(binaryPath);
             }
             catch (BinaryFileUtilException e)
             {
@@ -179,7 +178,7 @@ namespace YetiVSI.DebugEngine
             // Try to read the debug info directory.
             try
             {
-                symbolFileDirectory = await binaryFileUtil.ReadSymbolFileDirAsync(binaryPath);
+                symbolFileDirectory = await _binaryFileUtil.ReadSymbolFileDirAsync(binaryPath);
             }
             catch (BinaryFileUtilException e)
             {
@@ -193,21 +192,21 @@ namespace YetiVSI.DebugEngine
 
         bool AddSymbolFile(string filepath, SbModule module, TextWriter searchLog)
         {
-            var command = "target symbols add";
+            string command = "target symbols add";
 
-            var platformFileSpec = module.GetPlatformFileSpec();
+            SbFileSpec platformFileSpec = module.GetPlatformFileSpec();
             if (platformFileSpec != null)
             {
-                var platformPath = FileUtil.PathCombineLinux(platformFileSpec.GetDirectory(),
-                    platformFileSpec.GetFilename());
+                string platformPath = FileUtil.PathCombineLinux(platformFileSpec.GetDirectory(),
+                                                                platformFileSpec.GetFilename());
                 // The -s flag specifies the path of the module to add symbols to.
                 command += " -s " + LldbCommandUtil.QuoteArgument(platformPath);
             }
 
             command += " " + LldbCommandUtil.QuoteArgument(filepath);
 
-            SbCommandReturnObject commandResult;
-            lldbCommandInterpreter.HandleCommand(command, out commandResult);
+            _lldbCommandInterpreter.HandleCommand(command,
+                                                  out SbCommandReturnObject commandResult);
             Trace.WriteLine($"Executed LLDB command '{command}' with result:" +
                 Environment.NewLine + commandResult.GetDescription());
             if (!commandResult.Succeeded())

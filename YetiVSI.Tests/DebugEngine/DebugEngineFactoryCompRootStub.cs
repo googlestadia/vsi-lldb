@@ -50,7 +50,7 @@ namespace YetiVSI.Test.DebugEngine
 
         YetiVSIService _vsiService;
 
-        IWindowsRegistry _windowsRegistry { get; set; }
+        IWindowsRegistry _windowsRegistry;
 
         public ServiceManager ServiceManager { get; set; }
 

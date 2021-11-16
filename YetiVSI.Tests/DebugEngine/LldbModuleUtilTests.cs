@@ -25,43 +25,41 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class LldbModuleUtilTests
     {
-        const ulong CODE_SECTION_FILE_OFFSET = 10;
-        const ulong BASE_LOAD_ADDRESS = 2000;
-        const long MODULE_SLIDE = 3000;
+        const ulong _baseLoadAddress = 2000;
+        const long _moduleSlide = 3000;
 
-        RemoteTarget mockTarget;
-        SbModule mockModule;
-        SbFileSpec mockPlatformFileSpec;
-        LogSpy logSpy;
+        RemoteTarget _mockTarget;
+        SbModule _mockModule;
+        SbFileSpec _mockPlatformFileSpec;
+        LogSpy _logSpy;
 
         [SetUp]
         public void SetUp()
         {
-            logSpy = new LogSpy();
-            logSpy.Attach();
+            _logSpy = new LogSpy();
+            _logSpy.Attach();
 
             var noError = new SbErrorStub(true, null);
-            mockTarget = Substitute.For<RemoteTarget>();
-            mockTarget.SetModuleLoadAddress(Arg.Any<SbModule>(), Arg.Any<long>()).Returns(noError);
-            mockModule = Substitute.For<SbModule>();
-            mockModule.HasCompileUnits().Returns(false);
-            mockModule.FindSection(Arg.Any<string>()).Returns((SbSection)null);
-            mockPlatformFileSpec = Substitute.For<SbFileSpec>();
+            _mockTarget = Substitute.For<RemoteTarget>();
+            _mockTarget.SetModuleLoadAddress(Arg.Any<SbModule>(), Arg.Any<long>()).Returns(noError);
+            _mockModule = Substitute.For<SbModule>();
+            _mockModule.HasCompileUnits().Returns(false);
+            _mockModule.FindSection(Arg.Any<string>()).Returns((SbSection)null);
+            _mockPlatformFileSpec = Substitute.For<SbFileSpec>();
         }
 
         [TearDown]
         public void TearDown()
         {
-            logSpy.Detach();
+            _logSpy.Detach();
         }
 
         [TestCase(true)]
         [TestCase(false)]
         public void HasSymbolsLoaded(bool hasCompileUnits)
         {
-            mockModule.HasCompileUnits().Returns(hasCompileUnits);
-
-            Assert.AreEqual(hasCompileUnits, mockModule.HasSymbolsLoaded());
+            _mockModule.HasCompileUnits().Returns(hasCompileUnits);
+            Assert.AreEqual(hasCompileUnits, _mockModule.HasSymbolsLoaded());
         }
 
         [Test]
@@ -97,7 +95,7 @@ namespace YetiVSI.Test.DebugEngine
         [TestCase(2000u)]
         public void GetAndApplyPlaceholderProperties(ulong fileBaseAddress)
         {
-            long slide = (long)BASE_LOAD_ADDRESS - (long)fileBaseAddress;
+            long slide = (long)_baseLoadAddress - (long)fileBaseAddress;
 
             SbModule placeholderModule = CreatePlaceholderModule();
 
@@ -112,25 +110,25 @@ namespace YetiVSI.Test.DebugEngine
             otherModule.SetPlatformFileSpec(Arg.Any<SbFileSpec>()).Returns(true);
 
             PlaceholderModuleProperties properties =
-                placeholderModule.GetPlaceholderProperties(mockTarget);
+                placeholderModule.GetPlaceholderProperties(_mockTarget);
             Assert.IsNotNull(properties);
             Assert.AreEqual(slide + (long)fileBaseAddress, properties.Slide);
-            Assert.AreEqual(mockPlatformFileSpec, properties.PlatformFileSpec);
+            Assert.AreEqual(_mockPlatformFileSpec, properties.PlatformFileSpec);
 
             Assert.True(
-                otherModule.ApplyPlaceholderProperties(properties, mockTarget));
+                otherModule.ApplyPlaceholderProperties(properties, _mockTarget));
 
-            otherModule.Received().SetPlatformFileSpec(mockPlatformFileSpec);
-            mockTarget.Received().SetModuleLoadAddress(otherModule, slide);
+            otherModule.Received().SetPlatformFileSpec(_mockPlatformFileSpec);
+            _mockTarget.Received().SetModuleLoadAddress(otherModule, slide);
         }
 
         [Test]
         public void GetPlaceholderProperties_NotPlaceholder()
         {
-            mockModule.FindSection(".module_image").Returns((SbSection)null);
+            _mockModule.FindSection(".module_image").Returns((SbSection)null);
 
             Assert.Throws<ArgumentException>(() =>
-                mockModule.GetPlaceholderProperties(mockTarget));
+                _mockModule.GetPlaceholderProperties(_mockTarget));
         }
 
         [Test]
@@ -138,11 +136,11 @@ namespace YetiVSI.Test.DebugEngine
         {
             SbModule placeholderModule = CreatePlaceholderModule();
             placeholderModule.FindSection(".module_image")
-                .GetLoadAddress(mockTarget).Returns(DebuggerConstants.INVALID_ADDRESS);
+                .GetLoadAddress(_mockTarget).Returns(DebuggerConstants.INVALID_ADDRESS);
 
-            Assert.IsNull(placeholderModule.GetPlaceholderProperties(mockTarget));
+            Assert.IsNull(placeholderModule.GetPlaceholderProperties(_mockTarget));
 
-            var output = logSpy.GetOutput();
+            string output = _logSpy.GetOutput();
             Assert.That(output, Does.Contain("Failed to get load address"));
         }
 
@@ -150,15 +148,15 @@ namespace YetiVSI.Test.DebugEngine
         public void ApplyPlaceholderProperties_SetModuleLoadAddressFails()
         {
             var error = new SbErrorStub(false, "failorama");
-            mockTarget.SetModuleLoadAddress(Arg.Any<SbModule>(), Arg.Any<long>()).Returns(error);
+            _mockTarget.SetModuleLoadAddress(Arg.Any<SbModule>(), Arg.Any<long>()).Returns(error);
 
             var placeholderProperties =
-                new PlaceholderModuleProperties(MODULE_SLIDE, Substitute.For<SbFileSpec>());
+                new PlaceholderModuleProperties(_moduleSlide, Substitute.For<SbFileSpec>());
 
             Assert.IsFalse(Substitute.For<SbModule>()
-                               .ApplyPlaceholderProperties(placeholderProperties, mockTarget));
+                               .ApplyPlaceholderProperties(placeholderProperties, _mockTarget));
 
-            var output = logSpy.GetOutput();
+            string output = _logSpy.GetOutput();
             Assert.That(output, Does.Contain("Failed to set load address"));
             Assert.That(output, Does.Contain(error.GetCString()));
         }
@@ -169,9 +167,9 @@ namespace YetiVSI.Test.DebugEngine
             SbModule placeholderModule = CreatePlaceholderModule();
             placeholderModule.GetPlatformFileSpec().Returns((SbFileSpec)null);
 
-            Assert.IsNull(placeholderModule.GetPlaceholderProperties(mockTarget));
+            Assert.IsNull(placeholderModule.GetPlaceholderProperties(_mockTarget));
 
-            var output = logSpy.GetOutput();
+            string output = _logSpy.GetOutput();
             Assert.That(output, Does.Contain("Failed to get file spec"));
         }
 
@@ -182,21 +180,21 @@ namespace YetiVSI.Test.DebugEngine
             otherModule.SetPlatformFileSpec(Arg.Any<SbFileSpec>()).Returns(false);
 
             var placeholderProperties =
-                new PlaceholderModuleProperties(MODULE_SLIDE, Substitute.For<SbFileSpec>());
+                new PlaceholderModuleProperties(_moduleSlide, Substitute.For<SbFileSpec>());
 
             Assert.IsFalse(otherModule
-                               .ApplyPlaceholderProperties(placeholderProperties, mockTarget));
+                               .ApplyPlaceholderProperties(placeholderProperties, _mockTarget));
 
-            var output = logSpy.GetOutput();
+            string output = _logSpy.GetOutput();
             Assert.That(output, Does.Contain("Failed to set file spec"));
         }
 
         SbModule CreatePlaceholderModule()
         {
             var mockPlaceholderSection = Substitute.For<SbSection>();
-            mockPlaceholderSection.GetLoadAddress(mockTarget).Returns(BASE_LOAD_ADDRESS);
+            mockPlaceholderSection.GetLoadAddress(_mockTarget).Returns(_baseLoadAddress);
             var mockPlaceholderModule = Substitute.For<SbModule>();
-            mockPlaceholderModule.GetPlatformFileSpec().Returns(mockPlatformFileSpec);
+            mockPlaceholderModule.GetPlatformFileSpec().Returns(_mockPlatformFileSpec);
             mockPlaceholderModule.GetNumSections().Returns(1u);
             mockPlaceholderModule.FindSection(".module_image").Returns(mockPlaceholderSection);
             return mockPlaceholderModule;

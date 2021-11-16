@@ -38,8 +38,6 @@ namespace YetiVSI.Test.DebugEngine
         IDebugEngineHandler _mockEngineHandler;
         IGgpDebugProgram _mockDebugProgram;
         ISymbolSettingsProvider _mockSymbolSettingsProvider;
-        IDialogUtil _dialogUtil;
-        IYetiVSIService _vsiService;
 
         [SetUp]
         public void SetUp()
@@ -54,13 +52,11 @@ namespace YetiVSI.Test.DebugEngine
             _mockEngineHandler = Substitute.For<IDebugEngineHandler>();
             _mockDebugProgram = Substitute.For<IGgpDebugProgram>();
             _mockSymbolSettingsProvider = Substitute.For<ISymbolSettingsProvider>();
-            _dialogUtil = Substitute.For<IDialogUtil>();
-            _vsiService = Substitute.For<IYetiVSIService>();
             _debugModule =
                 new DebugModule
                     .Factory(_mockCancelableTaskFactory, _mockActionRecorder,
                              mockModuleFileLoadRecorderFactory,
-                             _mockSymbolSettingsProvider, _dialogUtil, _vsiService)
+                             _mockSymbolSettingsProvider)
                     .Create(_mockModuleFileLoader, _mockModuleSearchLogHolder, _mockModule,
                             _testLoadOrder, _mockEngineHandler, _mockDebugProgram);
         }

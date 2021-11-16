@@ -26,41 +26,41 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class BinaryLoaderTests
     {
-        const string BINARY_FILENAME = "test";
-        const string PATH_IN_STORE = @"C:\store\" + BINARY_FILENAME;
-        static BuildId UUID = new BuildId("1234");
-        const long MODULE_SLIDE = 2000;
+        const string _binaryFilename = "test";
+        const string _pathInStore = @"C:\store\" + _binaryFilename;
+        static BuildId _uuid = new BuildId("1234");
+        const long _moduleSlide = 2000;
 
-        StringWriter searchLog;
-        RemoteTarget mockTarget;
-        EventHandler<LldbModuleReplacedEventArgs> moduleReplacedHandler;
-        SbModule placeholderModule;
-        IModuleFileFinder mockModuleFileFinder;
-        BinaryLoader binaryLoader;
+        StringWriter _searchLog;
+        RemoteTarget _mockTarget;
+        EventHandler<LldbModuleReplacedEventArgs> _moduleReplacedHandler;
+        SbModule _placeholderModule;
+        IModuleFileFinder _mockModuleFileFinder;
+        BinaryLoader _binaryLoader;
 
         [SetUp]
         public void SetUp()
         {
-            searchLog = new StringWriter();
+            _searchLog = new StringWriter();
 
-            mockTarget = Substitute.For<RemoteTarget>();
-            moduleReplacedHandler = Substitute.For<EventHandler<LldbModuleReplacedEventArgs>>();
+            _mockTarget = Substitute.For<RemoteTarget>();
+            _moduleReplacedHandler = Substitute.For<EventHandler<LldbModuleReplacedEventArgs>>();
 
-            mockModuleFileFinder = Substitute.For<IModuleFileFinder>();
-            mockModuleFileFinder.FindFileAsync(BINARY_FILENAME, UUID, false, searchLog)
-                .Returns(Task.FromResult(PATH_IN_STORE));
+            _mockModuleFileFinder = Substitute.For<IModuleFileFinder>();
+            _mockModuleFileFinder.FindFileAsync(_binaryFilename, _uuid, false, _searchLog)
+                .Returns(Task.FromResult(_pathInStore));
 
-            placeholderModule = Substitute.For<SbModule>();
-            placeholderModule.GetPlatformFileSpec().GetFilename().Returns(BINARY_FILENAME);
-            placeholderModule.GetUUIDString().Returns(UUID.ToString());
+            _placeholderModule = Substitute.For<SbModule>();
+            _placeholderModule.GetPlatformFileSpec().GetFilename().Returns(_binaryFilename);
+            _placeholderModule.GetUUIDString().Returns(_uuid.ToString());
             var section = Substitute.For<SbSection>();
-            section.GetLoadAddress(mockTarget).Returns((ulong)MODULE_SLIDE);
-            placeholderModule.FindSection(".module_image").Returns(Substitute.For<SbSection>());
-            placeholderModule.GetNumSections().Returns(1ul);
+            section.GetLoadAddress(_mockTarget).Returns((ulong)_moduleSlide);
+            _placeholderModule.FindSection(".module_image").Returns(Substitute.For<SbSection>());
+            _placeholderModule.GetNumSections().Returns(1ul);
 
-            binaryLoader = new BinaryLoader(mockModuleFileFinder,
-                mockTarget);
-            binaryLoader.LldbModuleReplaced += moduleReplacedHandler;
+            _binaryLoader = new BinaryLoader(_mockModuleFileFinder,
+                _mockTarget);
+            _binaryLoader.LldbModuleReplaced += _moduleReplacedHandler;
         }
 
         [Test]
@@ -68,7 +68,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             SbModule module = null;
             Assert.ThrowsAsync<ArgumentNullException>(
-                () => binaryLoader.LoadBinaryAsync(module, searchLog));
+                () => _binaryLoader.LoadBinaryAsync(module, _searchLog));
         }
 
         [Test]
@@ -77,8 +77,8 @@ namespace YetiVSI.Test.DebugEngine
             var loadedModule = Substitute.For<SbModule>();
             loadedModule.GetNumSections().Returns(2ul);
 
-            (SbModule module, bool ok) = await binaryLoader.LoadBinaryAsync(
-                loadedModule, searchLog);
+            (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
+                loadedModule, _searchLog);
             Assert.True(ok);
 
             Assert.AreSame(loadedModule, module);
@@ -87,60 +87,60 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task LoadBinary_NoBinaryNameAsync()
         {
-            placeholderModule.GetPlatformFileSpec().Returns((SbFileSpec)null);
+            _placeholderModule.GetPlatformFileSpec().Returns((SbFileSpec)null);
 
-            (SbModule module, bool ok) = await binaryLoader.LoadBinaryAsync(
-                placeholderModule, searchLog);
+            (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
+                _placeholderModule, _searchLog);
             Assert.False(ok);
 
-            Assert.AreSame(module, placeholderModule);
-            StringAssert.Contains(ErrorStrings.BinaryFileNameUnknown, searchLog.ToString());
+            Assert.AreSame(module, _placeholderModule);
+            StringAssert.Contains(ErrorStrings.BinaryFileNameUnknown, _searchLog.ToString());
         }
 
         [Test]
         public async Task LoadBinary_FileNotFoundAsync()
         {
-            mockModuleFileFinder.FindFileAsync(BINARY_FILENAME, UUID, false, searchLog)
+            _mockModuleFileFinder.FindFileAsync(_binaryFilename, _uuid, false, _searchLog)
                 .Returns(Task.FromResult<string>(null));
 
-            (SbModule module, bool ok) = await binaryLoader.LoadBinaryAsync(
-                placeholderModule, searchLog);
+            (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
+                _placeholderModule, _searchLog);
             Assert.False(ok);
 
-            Assert.AreSame(module, placeholderModule);
+            Assert.AreSame(module, _placeholderModule);
         }
 
         [Test]
         public async Task LoadBinary_FailedToAddModuleAsync()
         {
-            mockTarget.AddModule(PATH_IN_STORE, null, UUID.ToString()).Returns((SbModule)null);
+            _mockTarget.AddModule(_pathInStore, null, _uuid.ToString()).Returns((SbModule)null);
 
-            (SbModule module, bool ok) = await binaryLoader.LoadBinaryAsync(
-                placeholderModule, searchLog);
+            (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
+                _placeholderModule, _searchLog);
             Assert.False(ok);
 
-            Assert.AreSame(module, placeholderModule);
-            StringAssert.Contains(ErrorStrings.FailedToLoadBinary(PATH_IN_STORE),
-                searchLog.ToString());
+            Assert.AreSame(module, _placeholderModule);
+            StringAssert.Contains(ErrorStrings.FailedToLoadBinary(_pathInStore),
+                _searchLog.ToString());
         }
 
         [Test]
         public async Task LoadBinaryAsync()
         {
             var newModule = Substitute.For<SbModule>();
-            mockTarget.AddModule(PATH_IN_STORE, null, UUID.ToString()).Returns(newModule);
+            _mockTarget.AddModule(_pathInStore, null, _uuid.ToString()).Returns(newModule);
             newModule.SetPlatformFileSpec(Arg.Any<SbFileSpec>()).Returns(true);
-            (SbModule module, bool ok) = await binaryLoader.LoadBinaryAsync(
-                placeholderModule, searchLog);
+            (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
+                _placeholderModule, _searchLog);
             Assert.True(ok);
 
-            mockTarget.Received().RemoveModule(placeholderModule);
-            mockTarget.Received().AddModule(PATH_IN_STORE, null, UUID.ToString());
-            moduleReplacedHandler.Received().Invoke(binaryLoader,
+            _mockTarget.Received().RemoveModule(_placeholderModule);
+            _mockTarget.Received().AddModule(_pathInStore, null, _uuid.ToString());
+            _moduleReplacedHandler.Received().Invoke(_binaryLoader,
                 Arg.Is<LldbModuleReplacedEventArgs>(a =>
-                    a.AddedModule == newModule && a.RemovedModule == placeholderModule));
+                    a.AddedModule == newModule && a.RemovedModule == _placeholderModule));
             Assert.AreSame(module, newModule);
-            StringAssert.Contains("Binary loaded successfully.", searchLog.ToString());
+            StringAssert.Contains("Binary loaded successfully.", _searchLog.ToString());
         }
     }
 }

@@ -487,9 +487,7 @@ namespace YetiVSI.Test.DebugEngine
                 new DebugModule.Factory(
                     FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false),
                     actionRecorder, moduleFileLoadRecorderFactory,
-                    symbolSettingsProvider,
-                    Substitute.For<IDialogUtil>(),
-                    Substitute.For<IYetiVSIService>()), new DebugAsyncThread.Factory(taskExecutor,
+                    symbolSettingsProvider), new DebugAsyncThread.Factory(taskExecutor,
                                                                           frameEnumFactory),
                 new DebugAsyncStackFrame.Factory(debugDocumentContextFactory,
                                                  new ChildrenProvider.Factory(),

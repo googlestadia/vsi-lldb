@@ -50,42 +50,42 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory
         {
-            IModuleFileFinder moduleFileFinder;
+            readonly IModuleFileFinder _moduleFileFinder;
 
             [Obsolete("This constructor only exists to support mocking libraries.", error: true)]
             protected Factory() { }
 
             public Factory(IModuleFileFinder moduleFileFinder)
             {
-                this.moduleFileFinder = moduleFileFinder;
+                _moduleFileFinder = moduleFileFinder;
             }
 
             public virtual IModuleFileLoadMetricsRecorder Create(Metrics.IAction action)
             {
-                return new ModuleFileLoadMetricsRecorder(moduleFileFinder, action);
+                return new ModuleFileLoadMetricsRecorder(_moduleFileFinder, action);
             }
         }
 
-        IModuleFileFinder moduleFileFinder;
-        Metrics.IAction action;
+        readonly IModuleFileFinder _moduleFileFinder;
+        readonly Metrics.IAction _action;
 
         public ModuleFileLoadMetricsRecorder(
             IModuleFileFinder moduleFileFinder, Metrics.IAction action)
         {
-            this.moduleFileFinder = moduleFileFinder;
-            this.action = action;
+            _moduleFileFinder = moduleFileFinder;
+            _action = action;
         }
 
         public void RecordBeforeLoad(IList<SbModule> modules)
         {
             var loadSymbolDataBuilder = new LoadSymbolData();
-            moduleFileFinder.RecordMetrics(loadSymbolDataBuilder);
+            _moduleFileFinder.RecordMetrics(loadSymbolDataBuilder);
             loadSymbolDataBuilder.ModulesBeforeCount = modules.Count;
             loadSymbolDataBuilder.ModulesWithSymbolsLoadedBeforeCount =
                 modules.Count(m => m.HasSymbolsLoaded());
             loadSymbolDataBuilder.BinariesLoadedBeforeCount =
                 modules.Count(m => m.HasBinaryLoaded());
-            action.UpdateEvent(new DeveloperLogEvent
+            _action.UpdateEvent(new DeveloperLogEvent
             {
                 LoadSymbolData = loadSymbolDataBuilder
             });
@@ -101,12 +101,12 @@ namespace YetiVSI.DebugEngine
                 modules.Count(m => m.HasSymbolsLoaded());
             loadSymbolDataBuilder.BinariesLoadedAfterCount =
                 modules.Count(m => m.HasBinaryLoaded());
-            action.UpdateEvent(new DeveloperLogEvent {LoadSymbolData = loadSymbolDataBuilder});
+            _action.UpdateEvent(new DeveloperLogEvent {LoadSymbolData = loadSymbolDataBuilder});
         }
 
         public void RecordFeatureDisabled()
         {
-            action.UpdateEvent(new DeveloperLogEvent
+            _action.UpdateEvent(new DeveloperLogEvent
             {
                 StatusCode = DeveloperEventStatus.Types.Code.FeatureDisabled
             });

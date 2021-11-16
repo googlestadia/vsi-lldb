@@ -25,25 +25,25 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class ModuleFileLoadMetricsRecorderTests
     {
-        IModuleFileFinder mockModuleFileFinder;
-        ModuleFileLoadMetricsRecorder moduleFileLoadRecorder;
-        Action action;
+        IModuleFileFinder _mockModuleFileFinder;
+        ModuleFileLoadMetricsRecorder _moduleFileLoadRecorder;
+        Action _action;
 
         [SetUp]
         public void SetUp()
         {
-            mockModuleFileFinder = Substitute.For<IModuleFileFinder>();
-            action = new Action(
+            _mockModuleFileFinder = Substitute.For<IModuleFileFinder>();
+            _action = new Action(
                 DeveloperEventType.Types.Type.VsiDebugEngineLoadSymbols,
                 Substitute.For<Timer.Factory>(), Substitute.For<IMetrics>());
-            moduleFileLoadRecorder = new ModuleFileLoadMetricsRecorder(
-                mockModuleFileFinder, action);
+            _moduleFileLoadRecorder = new ModuleFileLoadMetricsRecorder(
+                _mockModuleFileFinder, _action);
         }
 
         [Test]
         public void RecordBeforeLoad()
         {
-            mockModuleFileFinder.When(x => x.RecordMetrics(Arg.Any<LoadSymbolData>()))
+            _mockModuleFileFinder.When(x => x.RecordMetrics(Arg.Any<LoadSymbolData>()))
                 .Do((x) =>
                 {
                     var data = x.Arg<LoadSymbolData>();
@@ -59,9 +59,9 @@ namespace YetiVSI.Test.DebugEngine
                 CreateMockModule(binaryLoaded: true, symbolsLoaded: true),
             };
 
-            moduleFileLoadRecorder.RecordBeforeLoad(modules);
+            _moduleFileLoadRecorder.RecordBeforeLoad(modules);
 
-            var loadSymbolData = action.GetEvent().LoadSymbolData;
+            var loadSymbolData = _action.GetEvent().LoadSymbolData;
             Assert.Multiple(() =>
             {
                 Assert.AreEqual(loadSymbolData.StadiaSymbolStoresCount, 7);
@@ -84,9 +84,9 @@ namespace YetiVSI.Test.DebugEngine
                 CreateMockModule(true, true),
             };
 
-            moduleFileLoadRecorder.RecordAfterLoad(modules);
+            _moduleFileLoadRecorder.RecordAfterLoad(modules);
 
-            var loadSymbolData = action.GetEvent().LoadSymbolData;
+            var loadSymbolData = _action.GetEvent().LoadSymbolData;
             Assert.Multiple(() =>
             {
                 Assert.AreEqual(loadSymbolData.ModulesAfterCount, 3);
