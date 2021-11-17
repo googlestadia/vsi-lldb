@@ -93,12 +93,12 @@ namespace YetiVSI.DebugEngine
             if (lldbModule == null) { throw new ArgumentNullException(nameof(lldbModule)); }
             searchLog = searchLog ?? TextWriter.Null;
 
-            if (!lldbModule.IsPlaceholderModule())
+            if (lldbModule.HasBinaryLoaded())
             {
                 return (lldbModule, true);
             }
-
-            var binaryName = lldbModule.GetPlatformFileSpec()?.GetFilename();
+            
+            string binaryName = lldbModule.GetPlatformFileSpec()?.GetFilename();
             if (string.IsNullOrEmpty(binaryName))
             {
                 await searchLog.WriteLineAsync(ErrorStrings.BinaryFileNameUnknown);
@@ -106,56 +106,46 @@ namespace YetiVSI.DebugEngine
                 return (lldbModule, false);
             }
 
-            var binaryPath = await _moduleFileFinder.FindFileAsync(
+            string binaryPath = await _moduleFileFinder.FindFileAsync(
                 binaryName, new BuildId(lldbModule.GetUUIDString()), false, searchLog);
             if (binaryPath == null)
             {
                 return (lldbModule, false);
             }
 
+            if (TryReplaceModule(lldbModule, binaryPath, out SbModule addedModule))
+            {
+                await searchLog.WriteLineAsync("Binary loaded successfully.");
+                Trace.WriteLine($"Successfully loaded binary '{binaryPath}'.");
+                LldbModuleReplaced?.Invoke(Self,
+                                           new LldbModuleReplacedEventArgs(
+                                               addedModule, lldbModule));
+
+                return (addedModule, true);
+            }
+
+            await searchLog.WriteLineAsync(ErrorStrings.FailedToLoadBinary(binaryPath));
+            Trace.WriteLine(ErrorStrings.FailedToLoadBinary(binaryPath));
+            return (lldbModule, false);
+        }
+
+        bool TryReplaceModule(SbModule placeholder, string binaryPath, out SbModule addedModule)
+        {
             PlaceholderModuleProperties properties =
-                lldbModule.GetPlaceholderProperties(_lldbTarget);
+                placeholder.GetPlaceholderProperties(_lldbTarget);
             if (properties == null)
             {
-                return (lldbModule, false);
-            }
-            RemoveModule(lldbModule);
-
-            var newModule = AddModule(binaryPath, lldbModule.GetUUIDString(), searchLog);
-            if (newModule == null)
-            {
-                return (lldbModule, false);
+                addedModule = null;
+                return false;
             }
 
-            if (!newModule.ApplyPlaceholderProperties(properties, _lldbTarget))
-            {
-                return (lldbModule, false);
-            }
-
-            LldbModuleReplaced?.Invoke(Self,
-                new LldbModuleReplacedEventArgs(newModule, lldbModule));
-
-            return (newModule, true);
-        }
-
-        SbModule AddModule(string binaryPath, string id, TextWriter searchLog)
-        {
-            var newModule = _lldbTarget.AddModule(binaryPath, null, id);
-            if (newModule == null)
-            {
-                searchLog.WriteLine(ErrorStrings.FailedToLoadBinary(binaryPath));
-                Trace.WriteLine(ErrorStrings.FailedToLoadBinary(binaryPath));
-                return null;
-            }
-
-            searchLog.WriteLine("Binary loaded successfully.");
-            Trace.WriteLine($"Successfully loaded binary '{binaryPath}'.");
-            return newModule;
-        }
-
-        void RemoveModule(SbModule placeholderModule)
-        {
-            _lldbTarget.RemoveModule(placeholderModule);
+            string triple = placeholder.GetTriple();
+            string uuid = placeholder.GetUUIDString();
+            _lldbTarget.RemoveModule(placeholder);
+            addedModule = _lldbTarget.AddModule(binaryPath, triple, uuid);
+            
+            return addedModule != null
+                && addedModule.ApplyPlaceholderProperties(properties, _lldbTarget);
         }
     }
 }

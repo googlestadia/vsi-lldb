@@ -151,6 +151,10 @@ System::String ^ LLDBModule::GetUUIDString() {
   return gcnew System::String(module_->GetUUIDString());
 }
 
+System::String^ LLDBModule::GetTriple() {
+    return gcnew System::String(module_->GetTriple());
+}
+
 LldbApi::SbSection ^ LLDBModule::FindSection(System::String ^ name) {
   auto section = module_->FindSection(
       msclr::interop::marshal_as<std::string>(name).c_str());

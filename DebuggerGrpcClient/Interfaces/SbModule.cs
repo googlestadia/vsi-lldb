@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,58 +14,99 @@
 
 namespace DebuggerApi
 {
-    // Interface mirrors the SBModule API as closely as possible.
+    /// <summary>
+    /// Interface mirrors the SBModule API as closely as possible.
+    /// </summary>
     public interface SbModule
     {
-        // Returns the file specification for the local binary file
+        /// <summary>
+        /// Returns the file specification for the local binary file
+        /// </summary>
         SbFileSpec GetFileSpec();
 
-        // Returns the file specification for the file on the target platform.
+        /// <summary>
+        /// Returns the file specification for the file on the target platform.
+        /// </summary>
         SbFileSpec GetPlatformFileSpec();
 
-        // Sets the file specification for the file on the target platform.
+        /// <summary>
+        /// Sets the file specification for the file on the target platform.
+        /// </summary>
         bool SetPlatformFileSpec(SbFileSpec fileSpec);
 
-        // Sets the file specification for the file on the target platform.
+        /// <summary>
+        /// Sets the file specification for the file on the target platform.
+        /// </summary>
         bool SetPlatformFileSpec(string fileDirectory, string fileName);
 
-        // Returns the file specification for the symbol file.
+        /// <summary>
+        /// Returns the file specification for the symbol file.
+        /// </summary>
         SbFileSpec GetSymbolFileSpec();
 
-        // Returns the starting load address of this module's code section.
+        /// <summary>
+        /// Returns the starting load address of this module's code section.
+        /// </summary>
         ulong GetCodeLoadAddress();
 
-        // Returns the starting address of the module's object file.
+        /// <summary>
+        /// Returns the starting address of the module's object file.
+        /// </summary>
         SbAddress GetObjectFileHeaderAddress();
 
-        // Returns the size in bytes of this module's code section.
+        /// <summary>
+        /// Returns the size in bytes of this module's code section.
+        /// </summary>
         ulong GetCodeSize();
 
-        // Returns true if the target architecture is 64-bit, false otherwise.
+        /// <summary>
+        /// Returns true if the target architecture is 64-bit, false otherwise.
+        /// </summary>
         bool Is64Bit();
 
-        // Returns true if this module has symbols, false otherwise.
+        /// <summary>
+        /// Returns true if this module has symbols, false otherwise.
+        /// </summary>
         bool HasSymbols();
 
-        // Returns true if this module has compile units, false otherwise.
+        /// <summary>
+        /// Returns true if this module has compile units, false otherwise.
+        /// </summary>
         bool HasCompileUnits();
 
-        // Returns the number of compile units.
+        /// <summary>
+        /// Returns the number of compile units. 
+        /// </summary>
         uint GetNumCompileUnits();
 
-        // Returns the module's build id
+        /// <summary>
+        /// Returns the module's build id.
+        /// </summary>
         string GetUUIDString();
+        
+        /// <summary>
+        /// Returns the module's triple info. 
+        /// </summary>
+        string GetTriple();
 
-        // Returns the section with the name |name| if it exists, null otherwise.
+        /// <summary>
+        /// Returns the section with the name |name| if it exists, null otherwise.
+        /// </summary>
         SbSection FindSection(string name);
 
-        // Returns the number of sections.
+        /// <summary>
+        /// Returns the number of sections.
+        /// </summary>
         ulong GetNumSections();
 
-        // Returns the section at |index|.
+        /// <summary>
+        /// Returns the section at |index|.
+        /// </summary>
         SbSection GetSectionAtIndex(ulong index);
 
-        // A unique identifier for the module. Not part of the LLDB API.
+        /// <summary>
+        /// A unique identifier for the module. Not a part of the LLDB API.
+        /// </summary>
         long GetId();
     }
 }

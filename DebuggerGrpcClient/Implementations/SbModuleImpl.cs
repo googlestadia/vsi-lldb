@@ -303,6 +303,18 @@ namespace DebuggerGrpcClient
             return "";
         }
 
+        public string GetTriple()
+        {
+            GetTripleResponse response = null;
+            return connection.InvokeRpc(() =>
+            {
+                response = client.GetTriple(
+                    new GetTripleRequest { Module = grpcSbModule });
+            })
+                ? response.Triple
+                : "";
+        }
+
         public SbSection FindSection(string name)
         {
             FindSectionResponse response = null;

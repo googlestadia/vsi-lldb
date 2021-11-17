@@ -43,6 +43,7 @@ ref class LLDBModule sealed : SbModule {
   virtual bool HasCompileUnits();
   virtual uint32_t GetNumCompileUnits();
   virtual System::String ^ GetUUIDString();
+  virtual System::String^ GetTriple();
   virtual SbSection ^ FindSection(System::String ^ name);
   virtual uint64_t GetNumSections();
   virtual SbSection ^ GetSectionAtIndex(uint64_t index);

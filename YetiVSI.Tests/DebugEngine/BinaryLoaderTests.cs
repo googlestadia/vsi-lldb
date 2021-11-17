@@ -29,7 +29,7 @@ namespace YetiVSI.Test.DebugEngine
         const string _binaryFilename = "test";
         const string _pathInStore = @"C:\store\" + _binaryFilename;
         static BuildId _uuid = new BuildId("1234");
-        const long _moduleSlide = 2000;
+        const string _triple = "msp430--";
 
         StringWriter _searchLog;
         RemoteTarget _mockTarget;
@@ -53,8 +53,7 @@ namespace YetiVSI.Test.DebugEngine
             _placeholderModule = Substitute.For<SbModule>();
             _placeholderModule.GetPlatformFileSpec().GetFilename().Returns(_binaryFilename);
             _placeholderModule.GetUUIDString().Returns(_uuid.ToString());
-            var section = Substitute.For<SbSection>();
-            section.GetLoadAddress(_mockTarget).Returns((ulong)_moduleSlide);
+            _placeholderModule.GetTriple().Returns(_triple);
             _placeholderModule.FindSection(".module_image").Returns(Substitute.For<SbSection>());
             _placeholderModule.GetNumSections().Returns(1ul);
 
@@ -113,8 +112,6 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task LoadBinary_FailedToAddModuleAsync()
         {
-            _mockTarget.AddModule(_pathInStore, null, _uuid.ToString()).Returns((SbModule)null);
-
             (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
                 _placeholderModule, _searchLog);
             Assert.False(ok);
@@ -128,14 +125,15 @@ namespace YetiVSI.Test.DebugEngine
         public async Task LoadBinaryAsync()
         {
             var newModule = Substitute.For<SbModule>();
-            _mockTarget.AddModule(_pathInStore, null, _uuid.ToString()).Returns(newModule);
+
+            _mockTarget.AddModule(_pathInStore, _triple, _uuid.ToString()).Returns(newModule);
             newModule.SetPlatformFileSpec(Arg.Any<SbFileSpec>()).Returns(true);
+
             (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
                 _placeholderModule, _searchLog);
             Assert.True(ok);
 
             _mockTarget.Received().RemoveModule(_placeholderModule);
-            _mockTarget.Received().AddModule(_pathInStore, null, _uuid.ToString());
             _moduleReplacedHandler.Received().Invoke(_binaryLoader,
                 Arg.Is<LldbModuleReplacedEventArgs>(a =>
                     a.AddedModule == newModule && a.RemovedModule == _placeholderModule));

@@ -53,8 +53,11 @@ namespace LldbApi
         // Returns the number of compile units.
         uint GetNumCompileUnits();
 
-        // Returns the module's build id
+        // Returns the module's build id.
         string GetUUIDString();
+
+        // Returns the module's triple.
+        string GetTriple();
 
         // Returns the section with the name |name| if it exists, null otherwise.
         SbSection FindSection(string name);

@@ -179,8 +179,15 @@ namespace DebuggerGrpcServer
             return Task.FromResult(new GetUUIDStringResponse { Uuid = module.GetUUIDString() });
         }
 
-        public override Task<FindSectionResponse> FindSection(FindSectionRequest request,
+        public override Task<GetTripleResponse> GetTriple(GetTripleRequest request,
             ServerCallContext context)
+        {
+            var module = moduleStore.GetObject(request.Module.Id);
+            return Task.FromResult(new GetTripleResponse { Triple = module.GetTriple() });
+        }
+
+        public override Task<FindSectionResponse> FindSection(FindSectionRequest request,
+                                                              ServerCallContext context)
         {
             var module = moduleStore.GetObject(request.Module.Id);
             var section = module.FindSection(request.Name);

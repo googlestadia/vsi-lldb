@@ -52,6 +52,8 @@ service SbModuleRpcService {
   }
   rpc GetUUIDString(GetUUIDStringRequest) returns (GetUUIDStringResponse) {
   }
+  rpc GetTriple(GetTripleRequest) returns (GetTripleResponse){
+  }
   rpc FindSection(FindSectionRequest) returns (FindSectionResponse) {
   }
   rpc GetNumSections(GetNumSectionsRequest) returns (GetNumSectionsResponse) {
@@ -163,6 +165,14 @@ message GetUUIDStringRequest {
 
 message GetUUIDStringResponse {
   string uuid = 1;
+}
+
+message GetTripleRequest {
+  Common.GrpcSbModule module = 1;
+}
+
+message GetTripleResponse {
+  string triple = 1;
 }
 
 message FindSectionRequest {
