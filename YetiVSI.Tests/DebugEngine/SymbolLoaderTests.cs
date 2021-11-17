@@ -112,7 +112,7 @@ namespace YetiVSI.Test.DebugEngine
             Assert.IsTrue(await _symbolLoader.LoadSymbolsAsync(mockModule, _searchLog, true));
 
             StringAssert.Contains(_lldbOutput, _searchLog.ToString());
-            StringAssert.Contains("Symbols loaded successfully", _searchLog.ToString());
+            StringAssert.Contains("Successfully loaded symbol file", _searchLog.ToString());
             StringAssert.Contains(_lldbOutput, _logSpy.GetOutput());
             StringAssert.Contains("Successfully loaded symbol file", _logSpy.GetOutput());
         }
@@ -126,6 +126,7 @@ namespace YetiVSI.Test.DebugEngine
             Assert.IsFalse(await _symbolLoader.LoadSymbolsAsync(mockModule, _searchLog, true));
         }
 
+        [Test]
         public async Task LoadSymbols_LLDBCommandFailsAsync()
         {
             var mockModule = CreateMockModule();

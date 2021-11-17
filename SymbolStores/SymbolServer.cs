@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,16 +15,18 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using YetiCommon;
+using YetiCommon.Logging;
 
 namespace SymbolStores
 {
-    // Represents a cascading list of symbol stores. Each store is searched in turn, and when
-    // the requested file is found, it is copied to all previously searched stores.
+    /// <summary>
+    /// Represents a cascading list of symbol stores. Each store is searched in turn, and when
+    /// the requested file is found, it is copied to all previously searched stores.
+    /// </summary>
     public class SymbolServer : SymbolStoreBase
     {
         public bool IsEmpty => _stores.Count == 0;
@@ -105,10 +107,10 @@ namespace SymbolStores
 
         public override bool DeepEquals(ISymbolStore otherStore)
         {
-            var other = otherStore as SymbolServer;
-            return other != null && IsCache == other.IsCache &&
-                   _stores.Count == other._stores.Count &&
-                   _stores.Zip(other._stores, (a, b) => Tuple.Create(a, b))
+            return otherStore is SymbolServer other 
+                && IsCache == other.IsCache 
+                && _stores.Count == other._stores.Count 
+                && _stores.Zip(other._stores, (a, b) => Tuple.Create(a, b))
                        .All(x => x.Item1.DeepEquals(x.Item2));
         }
 
@@ -132,8 +134,7 @@ namespace SymbolStores
                 catch (Exception e) when (e is NotSupportedException || e is SymbolStoreException ||
                                           e is ArgumentException)
                 {
-                    Trace.WriteLine(e.Message);
-                    await log.WriteLineAsync(e.Message);
+                    await log.WriteLogAsync(e.Message);
                 }
             }
             return fileReference;

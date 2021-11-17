@@ -15,11 +15,11 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using YetiCommon;
+using YetiCommon.Logging;
 
 namespace SymbolStores
 {
@@ -80,8 +80,7 @@ namespace SymbolStores
                             when (e is NotSupportedException || e is SymbolStoreException ||
                                   e is ArgumentException)
                         {
-                            Trace.WriteLine(e.Message);
-                            await log.WriteLineAsync(e.Message);
+                            await log.WriteLogAsync(e.Message);
                         }
                     }
 
@@ -131,16 +130,14 @@ namespace SymbolStores
                     {
                         string errorMessage =
                             Strings.BuildIdMismatch(filepath, buildId, actualBuildId);
-                        Trace.WriteLine(errorMessage);
-                        await log.WriteLineAsync(errorMessage);
+                        await log.WriteLogAsync(errorMessage);
                         return false;
                     }
                 }
             }
             catch (BinaryFileUtilException e)
             {
-                Trace.WriteLine(e.Message);
-                await log.WriteLineAsync(e.Message);
+                await log.WriteLogAsync(e.Message);
                 return false;
             }
             return true;

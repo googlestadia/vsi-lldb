@@ -14,11 +14,11 @@
 
 ﻿using Newtonsoft.Json;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using YetiCommon;
+using YetiCommon.Logging;
 
 namespace SymbolStores
 {
@@ -73,9 +73,7 @@ namespace SymbolStores
             }
             if (buildId == BuildId.Empty)
             {
-                Trace.WriteLine(
-                    Strings.FailedToSearchStructuredStore(_path, filename, Strings.EmptyBuildId));
-                await log.WriteLineAsync(
+                await log.WriteLogAsync(
                     Strings.FailedToSearchStructuredStore(_path, filename, Strings.EmptyBuildId));
                 return null;
             }
@@ -88,20 +86,17 @@ namespace SymbolStores
             }
             catch (ArgumentException e)
             {
-                Trace.WriteLine(Strings.FailedToSearchStructuredStore(_path, filename, e.Message));
-                await log.WriteLineAsync(
+                await log.WriteLogAsync(
                     Strings.FailedToSearchStructuredStore(_path, filename, e.Message));
                 return null;
             }
             if (!_fileSystem.File.Exists(filepath))
             {
-                Trace.WriteLine(Strings.FileNotFound(filepath));
-                await log.WriteLineAsync(Strings.FileNotFound(filepath));
+                await log.WriteLogAsync(Strings.FileNotFound(filepath));
                 return null;
             }
 
-            Trace.WriteLine(Strings.FileFound(filepath));
-            await log.WriteLineAsync(Strings.FileFound(filepath));
+            await log.WriteLogAsync(Strings.FileFound(filepath));
             return new FileReference(_fileSystem, filepath);
         }
 
@@ -135,8 +130,7 @@ namespace SymbolStores
                 string filepath = Path.Combine(_path, filename, buildId.ToString(), filename);
                 await source.CopyToAsync(filepath);
 
-                Trace.WriteLine(Strings.CopiedFile(filename, filepath));
-                await log.WriteLineAsync(Strings.CopiedFile(filename, filepath));
+                await log.WriteLogAsync(Strings.CopiedFile(filename, filepath));
 
                 return new FileReference(_fileSystem, filepath);
             }
@@ -157,11 +151,14 @@ namespace SymbolStores
 
         public void AddMarkerFileIfNeeded()
         {
-            if (!_fileSystem.File.Exists(Path.Combine(_path, _markerFileName)))
+            string markerFilePath = Path.Combine(_path, _markerFileName);
+            if (_fileSystem.File.Exists(markerFilePath))
             {
-                _fileSystem.Directory.CreateDirectory(_path);
-                _fileSystem.File.Create(Path.Combine(_path, _markerFileName)).Close();
+                return;
             }
+
+            _fileSystem.Directory.CreateDirectory(_path);
+            _fileSystem.File.Create(markerFilePath).Close();
         }
     }
 }

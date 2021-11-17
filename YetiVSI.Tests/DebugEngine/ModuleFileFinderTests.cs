@@ -86,7 +86,8 @@ namespace YetiVSI.Test.DebugEngine
                 PATH_IN_STORE,
                 await moduleFileFinder.FindFileAsync(FILENAME, BuildId.Empty, true, searchLog));
 
-            StringAssert.Contains(ErrorStrings.ModuleBuildIdUnknown, searchLog.ToString());
+            StringAssert.Contains(ErrorStrings.ModuleBuildIdUnknown(FILENAME),
+                                  searchLog.ToString());
         }
 
         [Test]

@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,13 +20,17 @@ using YetiCommon;
 
 namespace SymbolStores
 {
-    // Abstract base class for all symbol stores.
+    /// <summary>
+    /// Abstract base class for all symbol stores.
+    /// </summary>
     public abstract class SymbolStoreBase : ISymbolStore
     {
         public bool SupportsAddingFiles { get; }
         public bool IsCache { get; }
 
-        // Default implementation for any symbol store that does not contain substores.
+        /// <summary>
+        /// Default implementation for any symbol store that does not contain substores.
+        /// </summary>
         public virtual IEnumerable<ISymbolStore> Substores => Enumerable.Empty<ISymbolStore>();
 
         public SymbolStoreBase(bool supportsAddingFiles, bool isCache)
@@ -39,7 +43,9 @@ namespace SymbolStores
                                                            bool isDebugInfoFile,
                                                            TextWriter logWriter);
 
-        // Default implementation that delegates to FindFile(string, BuildId, bool, TextWriter)
+        /// <summary>
+        ///  Default implementation that delegates to FindFile(string, BuildId, bool, TextWriter).
+        /// </summary>
         public Task<IFileReference> FindFileAsync(string filename, BuildId buildId)
         {
             return FindFileAsync(filename, buildId, false, TextWriter.Null);
@@ -48,7 +54,9 @@ namespace SymbolStores
         public abstract Task<IFileReference> AddFileAsync(IFileReference source, string filename,
                                                           BuildId buildId, TextWriter logWriter);
 
-        // Default implementation that delegates to AddFile(string, BuildId, TextWriter)
+        /// <summary>
+        ///  Default implementation that delegates to AddFile(string, BuildId, TextWriter).
+        /// </summary>
         public Task<IFileReference> AddFileAsync(IFileReference source, string filename,
                                                  BuildId buildId)
         {

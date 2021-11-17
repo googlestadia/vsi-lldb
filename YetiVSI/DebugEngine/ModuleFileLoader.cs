@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YetiCommon;
+using YetiCommon.Logging;
 
 namespace YetiVSI.DebugEngine
 {
@@ -244,7 +245,7 @@ namespace YetiVSI.DebugEngine
 
                         if (SkipModule(name, symbolSettings))
                         {
-                            await searchLog.WriteLineAsync(
+                            await searchLog.WriteLogAsync(
                                 SymbolInclusionSettings.ModuleExcludedMessage);
                             continue;
                         }

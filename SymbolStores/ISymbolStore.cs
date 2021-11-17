@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,9 +48,9 @@ namespace SymbolStores
         /// If `buildId` is empty, implementors may return a file without checking the file's build
         /// ID.
         /// If `isDebugInfoFile` is true, then any validity checking of the file should also ensure
-        /// that the file contains a debug info section. Throws ArgumentNullException if `filename`
-        /// is null.
+        /// that the file contains a debug info section.
         /// </summary>
+        /// <exception cref="ArgumentNullException">If `filename` is null.</exception>
         Task<IFileReference> FindFileAsync(string filename, BuildId buildId, bool isDebugInfoFile,
                                            TextWriter log);
         Task<IFileReference> FindFileAsync(string filename, BuildId buildId);
@@ -58,13 +58,16 @@ namespace SymbolStores
         /// <summary>
         /// Copies the file represented by `source` into the store. The file in the store will be
         /// given the filename `filename`, and may potentially be indexed by the given build ID.
-        /// Returns an IFileReference representing the newly copied file.
-        /// Throws SymbolStoreException on failure, including if the file cannot be added because it
-        /// already exists.
-        /// Throws ArgumentNullException if `source` or `filename` are null, or if `buildId`
-        /// is empty.
-        /// Throws NotSupportedException if the store does not support adding files.
         /// </summary>
+        /// <returns>An IFileReference representing the newly copied file.</returns>
+        /// <exception cref="SymbolStoreException">On failure, including if the file cannot be
+        /// added because it already exists.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">If `source` or `filename` are null, or if
+        /// `buildId` is empty.
+        /// </exception>
+        /// <exception cref="NotSupportedException">if the store does not support adding files.
+        /// </exception>
         Task<IFileReference> AddFileAsync(IFileReference source, string filename, BuildId buildId,
                                           TextWriter log);
         Task<IFileReference> AddFileAsync(IFileReference source, string filename, BuildId buildId);

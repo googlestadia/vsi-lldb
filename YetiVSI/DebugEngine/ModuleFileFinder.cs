@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
 
 ﻿using SymbolStores;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using YetiCommon;
+using YetiCommon.Logging;
 using static YetiVSI.Shared.Metrics.DeveloperLogEvent.Types;
 
 namespace YetiVSI.DebugEngine
@@ -47,12 +47,14 @@ namespace YetiVSI.DebugEngine
         /// Searches the paths set through <see cref="SetSearchPaths"/> for a file with the
         /// specified name and build ID.
         /// </summary>
+        /// <param name="buildId">Build ID of the file.</param>
         /// <param name="isDebugInfoFile">
         /// If true, then the search should ensure that the file contains debug information.
         /// </param>
         /// <param name="searchLog">
         /// A TextWriter that is used to log errors and other information during the search.
         /// </param>
+        /// <param name="filename">File name to look for.</param>
         /// <returns>The filepath of the file on success, or null on failure.</returns>
         /// <exception cref="ArgumentNullException">Thrown if |filename| is null.</exception>
         Task<string> FindFileAsync(
@@ -95,29 +97,25 @@ namespace YetiVSI.DebugEngine
             }
             searchLog = searchLog ?? TextWriter.Null;
 
-            await searchLog.WriteLineAsync($"Searching for {filename}");
-            Trace.WriteLine($"Searching for {filename}");
+            await searchLog.WriteLogAsync($"Searching for '{filename}'");
 
             if (uuid == BuildId.Empty)
             {
-                await searchLog.WriteLineAsync(ErrorStrings.ModuleBuildIdUnknown);
-                Trace.WriteLine($"Warning: The build ID of {filename} is unknown.");
+                await searchLog.WriteLogAsync(ErrorStrings.ModuleBuildIdUnknown(filename));
             }
 
-            var fileReference =
+            IFileReference fileReference =
                 await _symbolStore.FindFileAsync(filename, uuid, isDebugInfoFile, searchLog);
             if (fileReference == null)
             {
-                await searchLog.WriteLineAsync(ErrorStrings.FailedToFindFile(filename));
-                Trace.WriteLine(ErrorStrings.FailedToFindFile(filename));
+                await searchLog.WriteLogAsync(ErrorStrings.FailedToFindFile(filename));
                 return null;
             }
+
             if (!fileReference.IsFilesystemLocation)
             {
-                await searchLog.WriteLineAsync(
+                await searchLog.WriteLogAsync(
                     ErrorStrings.FileNotOnFilesystem(fileReference.Location));
-                Trace.WriteLine($"Unable to load file. '{fileReference.Location}' must be " +
-                    $"cached in a filesystem location.");
                 return null;
             }
 

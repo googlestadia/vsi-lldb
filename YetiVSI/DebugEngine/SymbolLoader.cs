@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using YetiCommon;
+using YetiCommon.Logging;
 using YetiVSI.Util;
 
 namespace YetiVSI.DebugEngine
@@ -82,11 +83,10 @@ namespace YetiVSI.DebugEngine
                 await GetSymbolFileDirAndNameAsync(lldbModule, searchLog);
             if (string.IsNullOrEmpty(symbolFileName))
             {
-                await searchLog.WriteLineAsync(ErrorStrings.SymbolFileNameUnknown);
-                Trace.WriteLine(ErrorStrings.SymbolFileNameUnknown);
+                await searchLog.WriteLogAsync(ErrorStrings.SymbolFileNameUnknown);
                 return false;
             }
-            BuildId uuid = new BuildId(lldbModule.GetUUIDString());
+            var uuid = new BuildId(lldbModule.GetUUIDString());
 
             // If we have a search directory, let us look up the symbol file in there.
             if (!string.IsNullOrEmpty(symbolFileDir))
@@ -98,7 +98,7 @@ namespace YetiVSI.DebugEngine
                     BuildId fileUuid = await _binaryFileUtil.ReadBuildIdAsync(symbolFilePath);
                     if (fileUuid == uuid)
                     {
-                        return AddSymbolFile(symbolFilePath, lldbModule, searchLog);
+                        return await AddSymbolFileAsync(symbolFilePath, lldbModule, searchLog);
                     }
                 }
                 catch (Exception e) when (e is InvalidBuildIdException ||
@@ -117,7 +117,7 @@ namespace YetiVSI.DebugEngine
                                : null;
             if (filepath == null) { return false; }
 
-            return AddSymbolFile(filepath, lldbModule, searchLog);
+            return await AddSymbolFileAsync(filepath, lldbModule, searchLog);
         }
 
         async Task<(string, string)> GetSymbolFileDirAndNameAsync(
@@ -158,8 +158,7 @@ namespace YetiVSI.DebugEngine
             {
                 string errorString = ErrorStrings.InvalidBinaryPathOrName(binaryDirectory,
                                                                        binaryFilename, e.Message);
-                Trace.WriteLine(errorString);
-                await log.WriteLineAsync(errorString);
+                await log.WriteLogAsync(errorString);
                 return (null, null);
             }
 
@@ -170,8 +169,7 @@ namespace YetiVSI.DebugEngine
             }
             catch (BinaryFileUtilException e)
             {
-                Trace.WriteLine(e.ToString());
-                await log.WriteLineAsync(e.Message);
+                await log.WriteLogAsync(e.Message);
                 return (null, null);
             }
 
@@ -183,14 +181,13 @@ namespace YetiVSI.DebugEngine
             catch (BinaryFileUtilException e)
             {
                 // Just log the message (the directory section is optional).
-                Trace.WriteLine(e.Message);
-                await log.WriteLineAsync(e.Message);
+                await log.WriteLogAsync(e.Message);
             }
 
             return (symbolFileDirectory, symbolFileName);
         }
 
-        bool AddSymbolFile(string filepath, SbModule module, TextWriter searchLog)
+        async Task<bool> AddSymbolFileAsync(string filepath, SbModule module, TextWriter searchLog)
         {
             string command = "target symbols add";
 
@@ -209,15 +206,16 @@ namespace YetiVSI.DebugEngine
                                                   out SbCommandReturnObject commandResult);
             Trace.WriteLine($"Executed LLDB command '{command}' with result:" +
                 Environment.NewLine + commandResult.GetDescription());
+
             if (!commandResult.Succeeded())
             {
-                searchLog.WriteLine("LLDB error: " + commandResult.GetError());
+                await searchLog.WriteLogAsync("LLDB error: " + commandResult.GetError());
                 return false;
             }
-            searchLog.WriteLine("LLDB output: " + commandResult.GetOutput());
 
-            searchLog.WriteLine("Symbols loaded successfully.");
-            Trace.WriteLine($"Successfully loaded symbol file '{filepath}'.");
+            string text = $"LLDB output: {commandResult.GetOutput()}{Environment.NewLine}" +
+                $"Successfully loaded symbol file '{filepath}'.";
+            await searchLog.WriteLogAsync(text);
 
             return true;
         }

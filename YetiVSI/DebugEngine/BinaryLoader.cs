@@ -14,11 +14,11 @@
 
 using DebuggerApi;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.CastleAspects;
+using YetiCommon.Logging;
 
 namespace YetiVSI.DebugEngine
 {
@@ -97,12 +97,11 @@ namespace YetiVSI.DebugEngine
             {
                 return (lldbModule, true);
             }
-            
+
             string binaryName = lldbModule.GetPlatformFileSpec()?.GetFilename();
             if (string.IsNullOrEmpty(binaryName))
             {
-                await searchLog.WriteLineAsync(ErrorStrings.BinaryFileNameUnknown);
-                Trace.WriteLine(ErrorStrings.BinaryFileNameUnknown);
+                await searchLog.WriteLogAsync(ErrorStrings.BinaryFileNameUnknown);
                 return (lldbModule, false);
             }
 
@@ -115,8 +114,7 @@ namespace YetiVSI.DebugEngine
 
             if (TryReplaceModule(lldbModule, binaryPath, out SbModule addedModule))
             {
-                await searchLog.WriteLineAsync("Binary loaded successfully.");
-                Trace.WriteLine($"Successfully loaded binary '{binaryPath}'.");
+                await searchLog.WriteLogAsync($"Successfully loaded binary '{binaryPath}'.");
                 LldbModuleReplaced?.Invoke(Self,
                                            new LldbModuleReplacedEventArgs(
                                                addedModule, lldbModule));
@@ -124,8 +122,7 @@ namespace YetiVSI.DebugEngine
                 return (addedModule, true);
             }
 
-            await searchLog.WriteLineAsync(ErrorStrings.FailedToLoadBinary(binaryPath));
-            Trace.WriteLine(ErrorStrings.FailedToLoadBinary(binaryPath));
+            await searchLog.WriteLogAsync(ErrorStrings.FailedToLoadBinary(binaryPath));
             return (lldbModule, false);
         }
 

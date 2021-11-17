@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
 
 ﻿using Newtonsoft.Json;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using YetiCommon;
+using YetiCommon.Logging;
 
 namespace SymbolStores
 {
@@ -61,7 +61,7 @@ namespace SymbolStores
         {
             if (string.IsNullOrEmpty(filename))
             {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty, "filename");
+                throw new ArgumentException(Strings.FilenameNullOrEmpty, nameof(filename));
             }
 
             string filepath;
@@ -72,17 +72,17 @@ namespace SymbolStores
             }
             catch (ArgumentException e)
             {
-                Trace.WriteLine(Strings.FailedToSearchFlatStore(_path, filename, e.Message));
-                await log.WriteLineAsync(
+                await log.WriteLogAsync(
                     Strings.FailedToSearchFlatStore(_path, filename, e.Message));
                 return null;
             }
+
             if (!_fileSystem.File.Exists(filepath))
             {
-                Trace.WriteLine(Strings.FileNotFound(filepath));
-                await log.WriteLineAsync(Strings.FileNotFound(filepath));
+                await log.WriteLogAsync(Strings.FileNotFound(filepath));
                 return null;
             }
+
             if (buildId != BuildId.Empty)
             {
                 try
@@ -90,23 +90,19 @@ namespace SymbolStores
                     BuildId actualBuildId = await _binaryFileUtil.ReadBuildIdAsync(filepath);
                     if (actualBuildId != buildId)
                     {
-                        Trace.WriteLine(Strings.BuildIdMismatch(filepath, buildId, actualBuildId));
-                        await log.WriteLineAsync(
+                        await log.WriteLogAsync(
                             Strings.BuildIdMismatch(filepath, buildId, actualBuildId));
                         return null;
                     }
                 }
                 catch (BinaryFileUtilException e)
                 {
-                    Trace.WriteLine(e.ToString());
-                    await log.WriteLineAsync(e.Message);
+                    await log.WriteLogAsync(e.Message);
                     return null;
                 }
             }
 
-            Trace.WriteLine(Strings.FileFound(filepath));
-            await log.WriteLineAsync(Strings.FileFound(filepath));
-
+            await log.WriteLogAsync(Strings.FileFound(filepath));
             return new FileReference(_fileSystem, filepath);
         }
 

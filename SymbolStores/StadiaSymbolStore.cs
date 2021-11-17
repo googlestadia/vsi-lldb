@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
 using GgpGrpc.Cloud;
 using Grpc.Core;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using YetiCommon;
+using YetiCommon.Logging;
 
 namespace SymbolStores
 {
@@ -68,9 +68,7 @@ namespace SymbolStores
 
             if (buildId == BuildId.Empty)
             {
-                // TODO: simplify logging
-                Trace.WriteLine(Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
-                await log.WriteLineAsync(
+                await log.WriteLogAsync(
                     Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
                 return null;
             }
@@ -89,17 +87,12 @@ namespace SymbolStores
                 if (e.InnerException is RpcException inner &&
                     inner.StatusCode == StatusCode.NotFound)
                 {
-                    // TODO: simplify logging
-                    Trace.WriteLine(
-                        Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
-                    await log.WriteLineAsync(
+                    await log.WriteLogAsync(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
                 }
                 else
                 {
-                    // TODO: simplify logging
-                    Trace.WriteLine(Strings.FailedToSearchStadiaStore(filename, e.ToString()));
-                    await log.WriteLineAsync(
+                    await log.WriteLogAsync(
                         Strings.FailedToSearchStadiaStore(filename, e.Message));
                 }
 
@@ -117,8 +110,7 @@ namespace SymbolStores
             }
             catch (HttpRequestException e)
             {
-                Trace.WriteLine(Strings.FailedToSearchStadiaStore(filename, e.ToString()));
-                await log.WriteLineAsync(Strings.FailedToSearchStadiaStore(filename, e.Message));
+                await log.WriteLogAsync(Strings.FailedToSearchStadiaStore(filename, e.Message));
                 return null;
             }
 
@@ -127,27 +119,19 @@ namespace SymbolStores
                 // Handle the most common case of NotFound with a nicer error message.
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    // TODO: simplify logging
-                    Trace.WriteLine(
-                        Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
-                    await log.WriteLineAsync(
+                    await log.WriteLogAsync(
                         Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
                     return null;
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    // TODO: simplify logging
-                    Trace.WriteLine(Strings.FileNotFoundInHttpStore(
-                        filename, (int)response.StatusCode, response.ReasonPhrase));
-                    await log.WriteLineAsync(Strings.FileNotFoundInHttpStore(
+                    await log.WriteLogAsync(Strings.FileNotFoundInHttpStore(
                         filename, (int)response.StatusCode, response.ReasonPhrase));
                     return null;
                 }
 
-                // TODO: simplify logging
-                Trace.WriteLine(Strings.FileFound(filename));
-                await log.WriteLineAsync(Strings.FileFound(filename));
+                await log.WriteLogAsync(Strings.FileFound(filename));
 
                 return new HttpFileReference(_fileSystem, _httpClient, fileUrl);
             }

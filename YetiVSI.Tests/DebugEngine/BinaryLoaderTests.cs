@@ -138,7 +138,8 @@ namespace YetiVSI.Test.DebugEngine
                 Arg.Is<LldbModuleReplacedEventArgs>(a =>
                     a.AddedModule == newModule && a.RemovedModule == _placeholderModule));
             Assert.AreSame(module, newModule);
-            StringAssert.Contains("Binary loaded successfully.", _searchLog.ToString());
+            StringAssert.Contains("Successfully loaded binary 'C:\\store\\test'.",
+                                  _searchLog.ToString());
         }
     }
 }

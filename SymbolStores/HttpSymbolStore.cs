@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
 
 using Newtonsoft.Json;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using YetiCommon;
+using YetiCommon.Logging;
 
 namespace SymbolStores
 {
@@ -61,8 +61,6 @@ namespace SymbolStores
             _url = url;
         }
 
-#region SymbolStoreBase functions
-
         public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
                                                                  bool isDebugInfoFile,
                                                                  TextWriter log)
@@ -74,9 +72,7 @@ namespace SymbolStores
 
             if (buildId == BuildId.Empty)
             {
-                Trace.WriteLine(
-                    Strings.FailedToSearchHttpStore(_url, filename, Strings.EmptyBuildId));
-                await log.WriteLineAsync(
+                await log.WriteLogAsync(
                     Strings.FailedToSearchHttpStore(_url, filename, Strings.EmptyBuildId));
                 return null;
             }
@@ -89,7 +85,7 @@ namespace SymbolStores
 
                 // Send a HEAD request to check if the file exists at the given url without
                 // downloading it.
-                var response =
+                HttpResponseMessage response =
                     await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, fileUrl),
                                                 HttpCompletionOption.ResponseHeadersRead);
 
@@ -108,32 +104,25 @@ namespace SymbolStores
                     Uri connectionUri = response.RequestMessage.RequestUri;
                     if (connectionUri.Scheme != Uri.UriSchemeHttps)
                     {
-                        Trace.WriteLine(Strings.ConnectionIsUnencrypted(connectionUri.Host));
-                        await log.WriteLineAsync(
+                        await log.WriteLogAsync(
                             Strings.ConnectionIsUnencrypted(connectionUri.Host));
                     }
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        Trace.WriteLine(Strings.FileNotFoundInHttpStore(
-                            fileUrl, (int)response.StatusCode, response.ReasonPhrase));
-                        await log.WriteLineAsync(Strings.FileNotFoundInHttpStore(
-                            fileUrl, (int)response.StatusCode, response.ReasonPhrase));
+                        await log.WriteLogAsync(Strings.FileNotFoundInHttpStore(
+                                                    fileUrl, (int)response.StatusCode,
+                                                    response.ReasonPhrase));
                         return null;
                     }
-                    else
-                    {
-                        Trace.WriteLine(Strings.FileFound(fileUrl));
-                        await log.WriteLineAsync(Strings.FileFound(fileUrl));
 
-                        return new HttpFileReference(_fileSystem, _httpClient, fileUrl);
-                    }
+                    await log.WriteLogAsync(Strings.FileFound(fileUrl));
+                    return new HttpFileReference(_fileSystem, _httpClient, fileUrl);
                 }
             }
             catch (HttpRequestException e)
             {
-                Trace.WriteLine(Strings.FailedToSearchHttpStore(_url, filename, e.ToString()));
-                await log.WriteLineAsync(
+                await log.WriteLogAsync(
                     Strings.FailedToSearchHttpStore(_url, filename, e.Message));
                 return null;
             }
@@ -146,6 +135,5 @@ namespace SymbolStores
         public override bool DeepEquals(ISymbolStore otherStore) =>
             otherStore is HttpSymbolStore other && _url == other._url;
 
-#endregion
     }
 }

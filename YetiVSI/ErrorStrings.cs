@@ -90,7 +90,8 @@ namespace YetiVSI
             "A process required by the GGP Instance Debugger exited unexpectedly. " +
             "Please check the logs for more information.";
 
-        public const string ModuleBuildIdUnknown = "Warning: The module's build ID is unknown. " +
+        public static string ModuleBuildIdUnknown(string filename) =>
+            $"Warning: The build ID of {filename} is unknown. " +
             "This means that only flat directories can be searched, and it is not guaranteed " +
             "that the file found will match the module being debugged.";
 
