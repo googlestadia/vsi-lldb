@@ -30,6 +30,8 @@
     <ClCompile Include="$(LldbEvalDir)lldb-eval\eval.cc" />
     <ClCompile Include="$(LldbEvalDir)lldb-eval\parser.cc" />
     <ClCompile Include="$(LldbEvalDir)lldb-eval\value.cc" />
+    <ClCompile Include="$(LldbEvalDir)lldb-eval\parser_context.cc" />
+    <ClCompile Include="$(LldbEvalDir)lldb-eval\type.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(LldbEvalDir)lldb-eval\api.h" />
@@ -39,6 +41,8 @@
     <ClInclude Include="$(LldbEvalDir)lldb-eval\eval.h" />
     <ClInclude Include="$(LldbEvalDir)lldb-eval\parser.h" />
     <ClInclude Include="$(LldbEvalDir)lldb-eval\value.h" />
+    <ClInclude Include="$(LldbEvalDir)lldb-eval\parser_context.h" />
+    <ClInclude Include="$(LldbEvalDir)lldb-eval\type.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
