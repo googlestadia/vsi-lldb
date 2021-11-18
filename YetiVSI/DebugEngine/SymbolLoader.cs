@@ -36,7 +36,8 @@ namespace YetiVSI.DebugEngine
         /// otherwise.
         /// </returns>
         /// <exception cref="ArgumentNullException">Thrown when |lldbModule| is null.</exception>
-        Task<bool> LoadSymbolsAsync(SbModule lldbModule, TextWriter searchLog, bool useSymbolStores);
+        Task<bool> LoadSymbolsAsync(SbModule lldbModule, TextWriter searchLog,
+                                    bool useSymbolStores, bool forceLoad);
     }
 
     public class SymbolLoader : ISymbolLoader
@@ -71,7 +72,7 @@ namespace YetiVSI.DebugEngine
         }
 
         public virtual async Task<bool> LoadSymbolsAsync(
-            SbModule lldbModule, TextWriter searchLog, bool useSymbolStores)
+            SbModule lldbModule, TextWriter searchLog, bool useSymbolStores, bool forceLoad)
         {
             if (lldbModule == null) { throw new ArgumentNullException(nameof(lldbModule)); }
             searchLog = searchLog ?? TextWriter.Null;
@@ -113,7 +114,7 @@ namespace YetiVSI.DebugEngine
 
             string filepath = useSymbolStores
                                ? await _moduleFileFinder.FindFileAsync(
-                                   symbolFileName, uuid, true, searchLog)
+                                   symbolFileName, uuid, true, searchLog, forceLoad)
                                : null;
             if (filepath == null) { return false; }
 
@@ -157,7 +158,7 @@ namespace YetiVSI.DebugEngine
             catch (ArgumentException e)
             {
                 string errorString = ErrorStrings.InvalidBinaryPathOrName(binaryDirectory,
-                                                                       binaryFilename, e.Message);
+                    binaryFilename, e.Message);
                 await log.WriteLogAsync(errorString);
                 return (null, null);
             }

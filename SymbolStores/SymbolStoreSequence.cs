@@ -52,11 +52,12 @@ namespace SymbolStores
 
         public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
                                                                  bool isDebugInfoFile,
-                                                                 TextWriter log)
+                                                                 TextWriter log,
+                                                                 bool forceLoad)
         {
             if (string.IsNullOrEmpty(filename))
             {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty, "filename");
+                throw new ArgumentException(Strings.FilenameNullOrEmpty, nameof(filename));
             }
 
             ISymbolStore currentCache = null;
@@ -64,7 +65,7 @@ namespace SymbolStores
             foreach (var store in _stores)
             {
                 IFileReference fileReference =
-                    await store.FindFileAsync(filename, buildId, false, log);
+                    await store.FindFileAsync(filename, buildId, false, log, forceLoad);
 
                 if (fileReference != null)
                 {

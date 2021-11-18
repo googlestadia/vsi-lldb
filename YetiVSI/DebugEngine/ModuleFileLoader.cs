@@ -225,6 +225,14 @@ namespace YetiVSI.DebugEngine
             {
                 throw new ArgumentNullException(nameof(moduleFileLoadRecorder));
             }
+            
+            // If LoadSymbols is called from the "Modules -> Load Symbols" context menu
+            // or by clicking "Load Symbols" in "Symbols" pane in the settings, `symbolSettings`
+            // will be empty. On the other hand, when LoadSymbols is called during
+            // the debugger attaching, the `symbolSettings` will be set and IsManualLoad = false,
+            // only in this case we'll be using cache when trying to load symbols from
+            // remote symbolStores.
+            bool forceLoad = symbolSettings?.IsManualLoad ?? true;
 
             // Add some metrics to the event proto before attempting to load symbols, so that they
             // are still recorded if the task is aborted or cancelled.
@@ -275,7 +283,7 @@ namespace YetiVSI.DebugEngine
                         task.Progress.Report($"Loading symbols for {name} ({i}/{modules.Count})");
                         var loaded =
                             await _symbolLoader.LoadSymbolsAsync(
-                                module, searchLog, useSymbolStores);
+                                module, searchLog, useSymbolStores, forceLoad);
                         if (!loaded)
                         {
                             result.ResultCode = VSConstants.E_FAIL;

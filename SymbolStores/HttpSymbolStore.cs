@@ -18,6 +18,7 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.Caching;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.Logging;
@@ -43,6 +44,7 @@ namespace SymbolStores
 
         readonly IFileSystem _fileSystem;
         readonly HttpClient _httpClient;
+        readonly ObjectCache _missingSymbolsCache;
 
         [JsonProperty("Url")]
         readonly string _url;
@@ -59,11 +61,13 @@ namespace SymbolStores
             _fileSystem = fileSystem;
             _httpClient = httpClient;
             _url = url;
+            _missingSymbolsCache = MemoryCache.Default;
         }
 
         public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
                                                                  bool isDebugInfoFile,
-                                                                 TextWriter log)
+                                                                 TextWriter log,
+                                                                 bool forceLoad)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -77,12 +81,17 @@ namespace SymbolStores
                 return null;
             }
 
+            string encodedFilename = Uri.EscapeDataString(filename);
+            string fileUrl = string.Join("/", _url.TrimEnd('/'), encodedFilename,
+                                      buildId.ToString(), encodedFilename);
+            if (DoesNotExistInSymbolStore(fileUrl, forceLoad))
+            {
+                await log.WriteLogAsync(Strings.DoesNotExistInHttpStore(filename, _url));
+                return null;
+            }
+
             try
             {
-                string encodedFilename = Uri.EscapeDataString(filename);
-                string fileUrl = string.Join("/", _url.TrimEnd('/'), encodedFilename,
-                                             buildId.ToString(), encodedFilename);
-
                 // Send a HEAD request to check if the file exists at the given url without
                 // downloading it.
                 HttpResponseMessage response =
@@ -113,6 +122,7 @@ namespace SymbolStores
                         await log.WriteLogAsync(Strings.FileNotFoundInHttpStore(
                                                     fileUrl, (int)response.StatusCode,
                                                     response.ReasonPhrase));
+                        AddAsNonExisting(fileUrl);
                         return null;
                     }
 
@@ -124,6 +134,7 @@ namespace SymbolStores
             {
                 await log.WriteLogAsync(
                     Strings.FailedToSearchHttpStore(_url, filename, e.Message));
+                AddAsNonExisting(fileUrl);
                 return null;
             }
         }
@@ -134,6 +145,22 @@ namespace SymbolStores
 
         public override bool DeepEquals(ISymbolStore otherStore) =>
             otherStore is HttpSymbolStore other && _url == other._url;
+
+        bool DoesNotExistInSymbolStore(string symbolStoreKey, bool force = false)
+        {
+            if (force)
+            {
+                _missingSymbolsCache.Remove(symbolStoreKey);
+                return false;
+            }
+
+            return _missingSymbolsCache.Contains(symbolStoreKey);
+        }
+
+        void AddAsNonExisting(string symbolStoreKey)
+        {
+            _missingSymbolsCache.Add(symbolStoreKey, true, DateTimeOffset.MaxValue);
+        }
 
     }
 }

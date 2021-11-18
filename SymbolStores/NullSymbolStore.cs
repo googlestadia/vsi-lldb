@@ -40,7 +40,8 @@ namespace SymbolStores
 
         public override Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
                                                            bool isDebugInfoFile,
-                                                           TextWriter logWriter)
+                                                           TextWriter logWriter,
+                                                           bool forceLoad)
         {
             return Task.FromResult<IFileReference>(null);
         }

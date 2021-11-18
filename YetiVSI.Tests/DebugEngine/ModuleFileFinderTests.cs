@@ -48,7 +48,7 @@ namespace YetiVSI.Test.DebugEngine
             fileReference.Location.Returns(PATH_IN_STORE);
 
             mockSymbolStore = Substitute.For<ISymbolStore>();
-            mockSymbolStore.FindFileAsync(FILENAME, UUID, true, Arg.Any<TextWriter>())
+            mockSymbolStore.FindFileAsync(FILENAME, UUID, true, Arg.Any<TextWriter>(), false)
                 .Returns(Task.FromResult(fileReference));
 
             mockSymbolPathParser = Substitute.For<SymbolPathParser>();
@@ -62,7 +62,7 @@ namespace YetiVSI.Test.DebugEngine
             moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
             Assert.AreEqual(
                 PATH_IN_STORE,
-                await moduleFileFinder.FindFileAsync(FILENAME, UUID, true, searchLog));
+                await moduleFileFinder.FindFileAsync(FILENAME, UUID, true, searchLog, false));
 
             StringAssert.Contains("Searching for", searchLog.ToString());
         }
@@ -72,19 +72,21 @@ namespace YetiVSI.Test.DebugEngine
         {
             moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
             Assert.ThrowsAsync<ArgumentNullException>(
-                () => moduleFileFinder.FindFileAsync(null, UUID, true, searchLog));
+                () => moduleFileFinder.FindFileAsync(null, UUID, true, searchLog, false));
         }
-
+        
         [Test]
         public async Task FindFile_EmptyBuildIdAsync()
         {
-            mockSymbolStore.FindFileAsync(FILENAME, BuildId.Empty, true, Arg.Any<TextWriter>())
+            mockSymbolStore.FindFileAsync(FILENAME, BuildId.Empty, true,
+                                          Arg.Any<TextWriter>(), false)
                 .Returns(Task.FromResult(fileReference));
 
             moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
             Assert.AreEqual(
                 PATH_IN_STORE,
-                await moduleFileFinder.FindFileAsync(FILENAME, BuildId.Empty, true, searchLog));
+                await moduleFileFinder.FindFileAsync(FILENAME, BuildId.Empty, true,
+                                                     searchLog, false));
 
             StringAssert.Contains(ErrorStrings.ModuleBuildIdUnknown(FILENAME),
                                   searchLog.ToString());
@@ -97,7 +99,8 @@ namespace YetiVSI.Test.DebugEngine
             // unnecessary assumptions about the order visual studio calls SetSearchPaths and
             // LoadSymbols.
 
-            Assert.IsNull(await moduleFileFinder.FindFileAsync(FILENAME, UUID, true, searchLog));
+            Assert.IsNull(await moduleFileFinder.FindFileAsync(FILENAME, UUID, true,
+                                                               searchLog, false));
 
             StringAssert.Contains("Failed to find file", searchLog.ToString());
         }
@@ -105,11 +108,12 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task FindFile_SearchFailedAsync()
         {
-            mockSymbolStore.FindFileAsync(FILENAME, UUID, true, Arg.Any<TextWriter>())
+            mockSymbolStore.FindFileAsync(FILENAME, UUID, true, Arg.Any<TextWriter>(), false)
                 .Returns(Task.FromResult((IFileReference)null));
 
             moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
-            Assert.IsNull(await moduleFileFinder.FindFileAsync(FILENAME, UUID, true, searchLog));
+            Assert.IsNull(await moduleFileFinder.FindFileAsync(FILENAME, UUID, true,
+                                                               searchLog, false));
 
             StringAssert.Contains("Failed to find file", searchLog.ToString());
         }
@@ -121,7 +125,7 @@ namespace YetiVSI.Test.DebugEngine
 
             moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
             Assert.IsNull(
-                await moduleFileFinder.FindFileAsync(FILENAME, UUID, true, searchLog));
+                await moduleFileFinder.FindFileAsync(FILENAME, UUID, true, searchLog, false));
 
             StringAssert.Contains("Unable to load file", searchLog.ToString());
         }

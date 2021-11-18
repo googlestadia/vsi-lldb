@@ -155,7 +155,7 @@ namespace SymbolStores.Tests
         {
             await storeA.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
             var unsupportedCache = Substitute.For<ISymbolStore>();
-            unsupportedCache.FindFileAsync("", BuildId.Empty, true, null)
+            unsupportedCache.FindFileAsync("", BuildId.Empty, true, null, false)
                 .ReturnsForAnyArgs((IFileReference)null);
             unsupportedCache.AddFileAsync(null, "", BuildId.Empty, null)
                 .Throws(new NotSupportedException());
@@ -183,7 +183,7 @@ namespace SymbolStores.Tests
             var logWriter = new StringWriter();
 
             var fileReference =
-                await storeSequence.FindFileAsync(FILENAME, BUILD_ID, true, logWriter);
+                await storeSequence.FindFileAsync(FILENAME, BUILD_ID, true, logWriter, false);
 
             Assert.That(fileReference, Is.Null);
         }
@@ -211,7 +211,7 @@ namespace SymbolStores.Tests
             var logWriter = new StringWriter();
 
             var fileReference =
-                await storeSequence.FindFileAsync(FILENAME, BUILD_ID, true, logWriter);
+                await storeSequence.FindFileAsync(FILENAME, BUILD_ID, true, logWriter, false);
 
             Assert.That(fileReference.Location,
                         Is.EqualTo((await cacheA.FindFileAsync(FILENAME, BUILD_ID)).Location));

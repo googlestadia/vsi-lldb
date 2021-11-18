@@ -47,12 +47,18 @@ namespace SymbolStores
         /// exists.
         /// If `buildId` is empty, implementors may return a file without checking the file's build
         /// ID.
-        /// If `isDebugInfoFile` is true, then any validity checking of the file should also ensure
-        /// that the file contains a debug info section.
         /// </summary>
+        /// <param name="log">Entity for storing module's logs.</param>
+        /// <param name="forceLoad">Whether we need to reload a module from the remote moduleStore.
+        /// </param>
+        /// <param name="filename">Module name.</param>
+        /// <param name="buildId">Build ID.</param>
+        /// <param name="isDebugInfoFile">If set to true, then any validity checking of the file
+        /// should also ensure that the file contains a debug info section.</param>
         /// <exception cref="ArgumentNullException">If `filename` is null.</exception>
         Task<IFileReference> FindFileAsync(string filename, BuildId buildId, bool isDebugInfoFile,
-                                           TextWriter log);
+                                           TextWriter log, bool forceLoad);
+        
         Task<IFileReference> FindFileAsync(string filename, BuildId buildId);
 
         /// <summary>

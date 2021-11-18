@@ -17,6 +17,7 @@ using Grpc.Core;
 using NSubstitute;
 using NUnit.Framework;
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -57,11 +58,12 @@ namespace SymbolStores.Tests
                 new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
             IFileReference fileReference =
-                await store.FindFileAsync(FILENAME, BuildId.Empty, true, log);
+                await store.FindFileAsync(FILENAME, BuildId.Empty, true, log, _forceLoad);
 
             Assert.Null(fileReference);
-            StringAssert.Contains(Strings.FailedToSearchStadiaStore(FILENAME, Strings.EmptyBuildId),
-                                  log.ToString());
+            StringAssert.Contains(
+                Strings.FailedToSearchStadiaStore(FILENAME, Strings.EmptyBuildId),
+                log.ToString());
         }
 
         [Test]
@@ -75,12 +77,35 @@ namespace SymbolStores.Tests
             ISymbolStore store =
                 new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
-            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(
                 Strings.FileNotFoundInStadiaStore(BUILD_ID.ToHexString(), FILENAME),
                 log.ToString());
+        }
+
+        [Test]
+        public async Task FindFile_WontSearchAgainAfterAPINotFoundAsync()
+        {
+            var ex =
+                new CloudException("Failed to generate download URL: not found",
+                                   new RpcException(new Status(StatusCode.NotFound, "message")));
+            _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
+                .Returns(x => Task.FromException<string>(ex));
+            ISymbolStore store =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
+
+            await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                                      TextWriter.Null, true);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                log, false);
+
+            Assert.Null(fileReference);
+            StringAssert.Contains(Strings.DoesNotExistInStadiaStore(FILENAME,
+                                      BUILD_ID.ToHexString()),
+                                  log.ToString());
         }
 
         [Test]
@@ -94,10 +119,33 @@ namespace SymbolStores.Tests
             ISymbolStore store =
                 new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
-            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchStadiaStore(FILENAME, ex.Message),
+                                  log.ToString());
+        }
+
+        [Test]
+        public async Task FindFile_WontSearchAgainAfterAPIExceptionAsync()
+        {
+            var ex = new CloudException(
+                "Failed to generate download URL: permission denied",
+                new RpcException(new Status(StatusCode.PermissionDenied, "message")));
+            _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
+                .Returns(x => Task.FromException<string>(ex));
+            ISymbolStore store =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
+
+            await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                TextWriter.Null, true);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                log, false);
+
+            Assert.Null(fileReference);
+            StringAssert.Contains(Strings.DoesNotExistInStadiaStore(FILENAME,
+                                      BUILD_ID.ToHexString()),
                                   log.ToString());
         }
 
@@ -110,12 +158,33 @@ namespace SymbolStores.Tests
             ISymbolStore store =
                 new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
-            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(
                 Strings.FileNotFoundInStadiaStore(BUILD_ID.ToHexString(), FILENAME),
                 log.ToString());
+        }
+
+        [Test]
+        public async Task FindFile_WontSearchAgainAfterHttpNotFoundAsync()
+        {
+            _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
+                .Returns(_urlInStore);
+            // By default, HTTP client returns Not Found for every file.
+            ISymbolStore store =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
+
+            await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                                      TextWriter.Null, true);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                log, false);
+
+            Assert.Null(fileReference);
+            StringAssert.Contains(Strings.DoesNotExistInStadiaStore(FILENAME,
+                                      BUILD_ID.ToHexString()),
+                                  log.ToString());
         }
 
         [Test]
@@ -128,10 +197,32 @@ namespace SymbolStores.Tests
             ISymbolStore store =
                 new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
 
-            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchStadiaStore(FILENAME, "message"),
+                                  log.ToString());
+        }
+
+        [Test]
+        public async Task FindFile_WntSearchAgainAfterHttpRequestExceptionAsync()
+        {
+            _crashReportClient.GenerateSymbolFileDownloadUrlAsync(BUILD_ID.ToHexString(), FILENAME)
+                .Returns(_urlInStore);
+            _fakeHttpMessageHandler.ExceptionMap[new Uri(_urlInStore)] =
+                new HttpRequestException("message");
+            ISymbolStore store =
+                new StadiaSymbolStore(fakeFileSystem, _httpClient, _crashReportClient);
+
+            await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                                      TextWriter.Null, true);
+            IFileReference fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                log, false);
+
+            Assert.Null(fileReference);
+            StringAssert.Contains(Strings.DoesNotExistInStadiaStore(FILENAME,
+                                      BUILD_ID.ToHexString()),
                                   log.ToString());
         }
 

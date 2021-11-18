@@ -39,7 +39,8 @@ namespace SymbolStores.Tests
         {
             var store = await GetStoreWithFileAsync();
 
-            var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true,
+                                                          log, _forceLoad);
 
             Assert.AreEqual(Path.Combine(STORE_PATH, FILENAME), fileReference.Location);
             StringAssert.Contains(Strings.FileFound(Path.Combine(STORE_PATH, FILENAME)),
@@ -52,7 +53,8 @@ namespace SymbolStores.Tests
             var mismatchedBuildId = new BuildId("4321");
 
             var store = await GetStoreWithFileAsync();
-            var fileReference = await store.FindFileAsync(FILENAME, mismatchedBuildId, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, mismatchedBuildId, true,
+                                                          log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.BuildIdMismatch(Path.Combine(STORE_PATH, FILENAME),
@@ -65,7 +67,8 @@ namespace SymbolStores.Tests
         {
             var store = new FlatSymbolStore(fakeFileSystem, fakeBinaryFileUtil, INVALID_PATH);
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                                                          log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchFlatStore(INVALID_PATH, FILENAME, ""),
@@ -82,7 +85,8 @@ namespace SymbolStores.Tests
             var store = new FlatSymbolStore(fakeFileSystem, mockBinaryFileUtil, STORE_PATH);
             fakeBuildIdWriter.WriteBuildId(Path.Combine(STORE_PATH, FILENAME), BUILD_ID);
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                                                          log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains("test exception", log.ToString());

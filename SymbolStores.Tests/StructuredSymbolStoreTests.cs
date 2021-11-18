@@ -37,7 +37,8 @@ namespace SymbolStores.Tests
         {
             var store = GetEmptyStore();
 
-            var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true,
+                                                          log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(
@@ -50,7 +51,8 @@ namespace SymbolStores.Tests
         {
             var store = new StructuredSymbolStore(fakeFileSystem, INVALID_PATH);
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                                                          log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchStructuredStore(INVALID_PATH, FILENAME, ""),

@@ -36,6 +36,7 @@ namespace SymbolStores.Tests
         protected FakeBuildIdWriter fakeBuildIdWriter;
         protected FileReference sourceSymbolFile;
         protected StringWriter log;
+        protected bool _forceLoad = true;
 
         [SetUp]
         public virtual void SetUp()
@@ -53,7 +54,8 @@ namespace SymbolStores.Tests
         {
             var store = await GetStoreWithFileAsync();
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                                                          log, _forceLoad);
             await fileReference.CopyToAsync(DEST_FILEPATH);
 
             Assert.AreEqual(BUILD_ID, await fakeBinaryFileUtil.ReadBuildIdAsync(DEST_FILEPATH));
@@ -84,7 +86,8 @@ namespace SymbolStores.Tests
         {
             var store = GetEmptyStore();
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true, log);
+            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
+                                                          log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FileNotFound(""), log.ToString());

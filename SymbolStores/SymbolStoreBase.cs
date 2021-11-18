@@ -39,23 +39,26 @@ namespace SymbolStores
             IsCache = isCache;
         }
 
-        public abstract Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+        public abstract Task<IFileReference> FindFileAsync(string filename,
+                                                           BuildId buildId,
                                                            bool isDebugInfoFile,
-                                                           TextWriter logWriter);
+                                                           TextWriter logWriter,
+                                                           bool forceLoad);
 
         /// <summary>
-        ///  Default implementation that delegates to FindFile(string, BuildId, bool, TextWriter).
+        ///  Default implementation that delegates to FindFileAsync(string, BuildId, bool,
+        ///     TextWriter, bool).
         /// </summary>
         public Task<IFileReference> FindFileAsync(string filename, BuildId buildId)
         {
-            return FindFileAsync(filename, buildId, false, TextWriter.Null);
+            return FindFileAsync(filename, buildId, false, TextWriter.Null, true);
         }
 
         public abstract Task<IFileReference> AddFileAsync(IFileReference source, string filename,
                                                           BuildId buildId, TextWriter logWriter);
 
         /// <summary>
-        ///  Default implementation that delegates to AddFile(string, BuildId, TextWriter).
+        ///  Default implementation that delegates to AddFileAsync(string, BuildId, TextWriter).
         /// </summary>
         public Task<IFileReference> AddFileAsync(IFileReference source, string filename,
                                                  BuildId buildId)

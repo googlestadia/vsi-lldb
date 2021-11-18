@@ -47,18 +47,21 @@ namespace YetiVSI.DebugEngine
         /// Searches the paths set through <see cref="SetSearchPaths"/> for a file with the
         /// specified name and build ID.
         /// </summary>
+        /// <param name="filename">File name to look for.</param>
         /// <param name="buildId">Build ID of the file.</param>
         /// <param name="isDebugInfoFile">
-        /// If true, then the search should ensure that the file contains debug information.
+        ///     If true, then the search should ensure that the file contains debug information.
         /// </param>
         /// <param name="searchLog">
-        /// A TextWriter that is used to log errors and other information during the search.
+        ///     A TextWriter that is used to log errors and other information during the search.
         /// </param>
-        /// <param name="filename">File name to look for.</param>
+        /// <param name="forceLoad">Whether we need to reload a module from the remote
+        /// moduleStore.</param>
         /// <returns>The filepath of the file on success, or null on failure.</returns>
         /// <exception cref="ArgumentNullException">Thrown if |filename| is null.</exception>
         Task<string> FindFileAsync(
-            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter searchLog);
+            string filename, BuildId buildId, bool isDebugInfoFile, TextWriter searchLog,
+            bool forceLoad);
 
         /// <summary>
         /// Adds metrics related to the current search paths to the data.
@@ -88,8 +91,8 @@ namespace YetiVSI.DebugEngine
                 _symbolStore.Substores.Any(store => store is StadiaSymbolStore);
         }
 
-        public async Task<string> FindFileAsync(
-            string filename, BuildId uuid, bool isDebugInfoFile, TextWriter searchLog)
+        public async Task<string> FindFileAsync(string filename, BuildId uuid, bool isDebugInfoFile,
+                                                TextWriter searchLog, bool forceLoad)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -105,7 +108,8 @@ namespace YetiVSI.DebugEngine
             }
 
             IFileReference fileReference =
-                await _symbolStore.FindFileAsync(filename, uuid, isDebugInfoFile, searchLog);
+                await _symbolStore.FindFileAsync(filename, uuid, isDebugInfoFile, searchLog,
+                                                 forceLoad);
             if (fileReference == null)
             {
                 await searchLog.WriteLogAsync(ErrorStrings.FailedToFindFile(filename));

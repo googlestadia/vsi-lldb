@@ -65,12 +65,14 @@ namespace SymbolStores
 
         public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
                                                                  bool isDebugInfoFile,
-                                                                 TextWriter log)
+                                                                 TextWriter log,
+                                                                 bool forceLoad)
         {
             if (string.IsNullOrEmpty(filename))
             {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty, "filename");
+                throw new ArgumentException(Strings.FilenameNullOrEmpty, nameof(filename));
             }
+
             if (buildId == BuildId.Empty)
             {
                 await log.WriteLogAsync(

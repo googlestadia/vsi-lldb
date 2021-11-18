@@ -181,7 +181,8 @@ namespace SymbolStores
                                     "configuration; it will be ignored.");
                     continue;
                 }
-                else if (HttpSymbolStore.IsHttpStore(path))
+
+                if (HttpSymbolStore.IsHttpStore(path))
                 {
                     bool hasDownstreamCache = storeSequence.HasCache || !server.IsEmpty;
                     if (!TryAddHttpStore(server, path, hasDownstreamCache))

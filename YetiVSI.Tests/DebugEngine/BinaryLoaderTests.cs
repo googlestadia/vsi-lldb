@@ -47,7 +47,7 @@ namespace YetiVSI.Test.DebugEngine
             _moduleReplacedHandler = Substitute.For<EventHandler<LldbModuleReplacedEventArgs>>();
 
             _mockModuleFileFinder = Substitute.For<IModuleFileFinder>();
-            _mockModuleFileFinder.FindFileAsync(_binaryFilename, _uuid, false, _searchLog)
+            _mockModuleFileFinder.FindFileAsync(_binaryFilename, _uuid, false, _searchLog, false)
                 .Returns(Task.FromResult(_pathInStore));
 
             _placeholderModule = Substitute.For<SbModule>();
@@ -99,7 +99,7 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task LoadBinary_FileNotFoundAsync()
         {
-            _mockModuleFileFinder.FindFileAsync(_binaryFilename, _uuid, false, _searchLog)
+            _mockModuleFileFinder.FindFileAsync(_binaryFilename, _uuid, false, _searchLog, false)
                 .Returns(Task.FromResult<string>(null));
 
             (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(

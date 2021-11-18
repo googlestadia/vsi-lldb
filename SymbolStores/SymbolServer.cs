@@ -50,7 +50,8 @@ namespace SymbolStores
 
         public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
                                                                  bool isDebugInfoFile,
-                                                                 TextWriter log)
+                                                                 TextWriter log,
+                                                                 bool forceLoad)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -60,7 +61,8 @@ namespace SymbolStores
             for (int i = 0; i < _stores.Count; ++i)
             {
                 var fileReference =
-                    await _stores[i].FindFileAsync(filename, buildId, isDebugInfoFile, log);
+                    await _stores[i].FindFileAsync(filename, buildId, isDebugInfoFile,
+                                                   log, forceLoad);
                 if (fileReference != null)
                 {
                     var cascadeFileRef =

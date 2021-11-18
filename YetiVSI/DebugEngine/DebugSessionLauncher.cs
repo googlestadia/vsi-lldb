@@ -716,7 +716,8 @@ namespace YetiVSI.DebugEngine
             string moduleName = Path.GetFileName(module.Path);
             string modulePath = _taskContext.Factory.Run(() =>
             {
-                return _moduleFileFinder.FindFileAsync(moduleName, module.Id, false, searchLog);
+                return _moduleFileFinder.FindFileAsync(moduleName, module.Id, false, searchLog, 
+                                                       false);
             });
 
             if (!string.IsNullOrWhiteSpace(modulePath))

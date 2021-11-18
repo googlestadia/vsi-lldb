@@ -106,7 +106,7 @@ namespace YetiVSI.DebugEngine
             }
 
             string binaryPath = await _moduleFileFinder.FindFileAsync(
-                binaryName, new BuildId(lldbModule.GetUUIDString()), false, searchLog);
+                binaryName, new BuildId(lldbModule.GetUUIDString()), false, searchLog, false);
             if (binaryPath == null)
             {
                 return (lldbModule, false);

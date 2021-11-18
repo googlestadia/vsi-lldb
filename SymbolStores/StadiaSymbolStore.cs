@@ -19,6 +19,7 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.Caching;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.Logging;
@@ -45,6 +46,7 @@ namespace SymbolStores
         readonly IFileSystem _fileSystem;
         readonly HttpClient _httpClient;
         readonly ICrashReportClient _crashReportClient;
+        readonly ObjectCache _missingSymbolsCache;
 
         public StadiaSymbolStore(IFileSystem fileSystem, HttpClient httpClient,
                                  ICrashReportClient crashReportClient)
@@ -53,13 +55,15 @@ namespace SymbolStores
             _fileSystem = fileSystem;
             _httpClient = httpClient;
             _crashReportClient = crashReportClient;
+            _missingSymbolsCache =  MemoryCache.Default;
         }
 
 #region SymbolStoreBase functions
 
         public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
                                                                  bool isDebugInfoFile,
-                                                                 TextWriter log)
+                                                                 TextWriter log,
+                                                                 bool forceLoad)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -73,6 +77,14 @@ namespace SymbolStores
                 return null;
             }
 
+            var buildIdHex = buildId.ToHexString();
+            string symbolStoreKey = $"{filename};{buildIdHex}";
+            if (DoesNotExistInSymbolStore(symbolStoreKey, forceLoad))
+            {
+                await log.WriteLogAsync(Strings.DoesNotExistInStadiaStore(filename, buildIdHex));
+                return null;
+            }
+
             string fileUrl;
             try
             {
@@ -80,7 +92,7 @@ namespace SymbolStores
                 // URL that does not exist. The second case is handled later.
                 // TODO: figure out how to intercept these calls to record in metrics.
                 fileUrl = await _crashReportClient.GenerateSymbolFileDownloadUrlAsync(
-                    buildId.ToHexString(), filename);
+                    buildIdHex, filename);
             }
             catch (CloudException e)
             {
@@ -88,14 +100,15 @@ namespace SymbolStores
                     inner.StatusCode == StatusCode.NotFound)
                 {
                     await log.WriteLogAsync(
-                        Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
+                        Strings.FileNotFoundInStadiaStore(buildIdHex, filename));
                 }
                 else
                 {
                     await log.WriteLogAsync(
                         Strings.FailedToSearchStadiaStore(filename, e.Message));
                 }
-
+                
+                AddAsNonExisting(symbolStoreKey);
                 return null;
             }
 
@@ -110,6 +123,7 @@ namespace SymbolStores
             }
             catch (HttpRequestException e)
             {
+                AddAsNonExisting(symbolStoreKey);
                 await log.WriteLogAsync(Strings.FailedToSearchStadiaStore(filename, e.Message));
                 return null;
             }
@@ -119,13 +133,15 @@ namespace SymbolStores
                 // Handle the most common case of NotFound with a nicer error message.
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
+                    AddAsNonExisting(symbolStoreKey);
                     await log.WriteLogAsync(
-                        Strings.FileNotFoundInStadiaStore(buildId.ToHexString(), filename));
+                        Strings.FileNotFoundInStadiaStore(buildIdHex, filename));
                     return null;
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
+                    AddAsNonExisting(symbolStoreKey);
                     await log.WriteLogAsync(Strings.FileNotFoundInHttpStore(
                         filename, (int)response.StatusCode, response.ReasonPhrase));
                     return null;
@@ -144,5 +160,21 @@ namespace SymbolStores
         public override bool DeepEquals(ISymbolStore otherStore) => otherStore is StadiaSymbolStore;
 
 #endregion
+
+        bool DoesNotExistInSymbolStore(string symbolStoreKey, bool force)
+        {
+            if (force)
+            {
+                _missingSymbolsCache.Remove(symbolStoreKey);
+                return false;
+            }
+
+            return _missingSymbolsCache.Contains(symbolStoreKey);
+        }
+
+        void AddAsNonExisting(string symbolStoreKey)
+        {
+            _missingSymbolsCache.Add(symbolStoreKey, true, DateTimeOffset.MaxValue);
+        }
     }
 }

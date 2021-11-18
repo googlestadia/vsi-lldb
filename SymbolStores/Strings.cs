@@ -60,6 +60,12 @@ namespace SymbolStores
             $"Could not search http symbol store '{baseUrl}' for '{filename}'. {message}";
         public static string FailedToSearchStadiaStore(string filename, string message) =>
             $"Could not search Stadia symbol store for '{filename}'. {message}";
+        public static string DoesNotExistInStadiaStore(string filename, string buildId) =>
+            $"Symbol '{filename}' ({buildId}) won't be searched in Stadia store. You can " +
+            "load it via `Modules->Load Symbols` if you believe that it exists in the store.";
+        public static string DoesNotExistInHttpStore(string filename, string url) =>
+            $"Symbol '{filename}' won't be searched in Http store '{url}'. You can " +
+            "load it via `Modules->Load Symbols` if you believe that it exists in the store.";
         public static string FailedToSearchStadiaStoreHTTPStorage(string filename, int statusCode,
             string reason) =>
             $"Could not search Stadia symbol store for '{filename}'. " +
