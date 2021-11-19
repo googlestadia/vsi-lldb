@@ -13,10 +13,8 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Abstractions;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -29,7 +27,6 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiVSI.DebugEngine.CoreDumps;
-using YetiVSI.DebuggerOptions;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
@@ -40,9 +37,8 @@ namespace YetiVSI.DebugEngine
 
     public interface IDebugSessionLauncherFactory
     {
-        IDebugSessionLauncher Create(IDebugEngine3 debugEngine, LaunchOption launchOption,
-                                     string coreFilePath, string executableFileName,
-                                     string executableFullPath, IVsiGameLaunch gameLaunch);
+        IDebugSessionLauncher Create(IDebugEngine3 debugEngine, string coreFilePath,
+                                     string executableFileName, IVsiGameLaunch gameLaunch);
     }
 
 
@@ -50,11 +46,11 @@ namespace YetiVSI.DebugEngine
     {
         Task<ILldbAttachedProgram> LaunchAsync(ICancelable task, IDebugProcess2 process,
                                                Guid programId, uint? attachPid,
-                                               DebuggerOptions.DebuggerOptions debuggerOptions,
-                                               HashSet<string> libPaths,
                                                GrpcConnection grpcConnection, int localDebuggerPort,
                                                string targetIpAddress, int targetPort,
-                                               IDebugEventCallback2 callback);
+                                               LaunchOption launchOption,
+                                               IDebugEventCallback2 callback,
+                                               StadiaLldbDebugger stadiaDebugger);
     }
 
 
@@ -77,14 +73,10 @@ namespace YetiVSI.DebugEngine
             readonly ActionRecorder _actionRecorder;
             readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
             readonly ILldbAttachedProgramFactory _attachedProgramFactory;
-            readonly GrpcDebuggerFactory _lldbDebuggerFactory;
             readonly GrpcListenerFactory _lldbListenerFactory;
             readonly GrpcPlatformConnectOptionsFactory _lldbPlatformConnectOptionsFactory;
-            readonly GrpcPlatformFactory _lldbPlatformFactory;
             readonly GrpcPlatformShellCommandFactory _lldbPlatformShellCommandFactory;
             readonly LldbExceptionManager.Factory _exceptionManagerFactory;
-            readonly IFileSystem _fileSystem;
-            readonly bool _fastExpressionEvaluation;
             readonly CoreAttachWarningDialogUtil _warningDialog;
 
             readonly IModuleFileFinder _moduleFileFinder;
@@ -92,16 +84,14 @@ namespace YetiVSI.DebugEngine
             readonly IModuleSearchLogHolder _moduleSearchLogHolder;
             readonly ISymbolSettingsProvider _symbolSettingsProvider;
 
-            public Factory(JoinableTaskContext taskContext, GrpcDebuggerFactory lldbDebuggerFactory,
+            public Factory(JoinableTaskContext taskContext,
                            GrpcListenerFactory lldbListenerFactory,
-                           GrpcPlatformFactory lldbPlatformFactory,
                            GrpcPlatformConnectOptionsFactory lldbPlatformConnectOptionsFactory,
                            GrpcPlatformShellCommandFactory lldbPlatformShellCommandFactory,
                            ILldbAttachedProgramFactory attachedProgramFactory,
                            ActionRecorder actionRecorder,
                            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
                            LldbExceptionManager.Factory exceptionManagerFactory,
-                           IFileSystem fileSystem, bool fastExpressionEvaluation,
                            IModuleFileFinder moduleFileFinder,
                            IDumpModulesProvider dumpModulesProvider,
                            IModuleSearchLogHolder moduleSearchLogHolder,
@@ -109,17 +99,13 @@ namespace YetiVSI.DebugEngine
                            CoreAttachWarningDialogUtil warningDialog)
             {
                 _taskContext = taskContext;
-                _lldbDebuggerFactory = lldbDebuggerFactory;
                 _lldbListenerFactory = lldbListenerFactory;
-                _lldbPlatformFactory = lldbPlatformFactory;
                 _lldbPlatformConnectOptionsFactory = lldbPlatformConnectOptionsFactory;
                 _lldbPlatformShellCommandFactory = lldbPlatformShellCommandFactory;
                 _attachedProgramFactory = attachedProgramFactory;
                 _actionRecorder = actionRecorder;
                 _moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
                 _exceptionManagerFactory = exceptionManagerFactory;
-                _fileSystem = fileSystem;
-                _fastExpressionEvaluation = fastExpressionEvaluation;
                 _moduleFileFinder = moduleFileFinder;
                 _dumpModulesProvider = dumpModulesProvider;
                 _moduleSearchLogHolder = moduleSearchLogHolder;
@@ -128,51 +114,38 @@ namespace YetiVSI.DebugEngine
             }
 
             public IDebugSessionLauncher Create(IDebugEngine3 debugEngine,
-                                                LaunchOption launchOption, string coreFilePath,
+                                                string coreFilePath,
                                                 string executableFileName,
-                                                string executableFullPath,
                                                 IVsiGameLaunch gameLaunch) =>
-                new DebugSessionLauncher(_taskContext, _lldbDebuggerFactory, _lldbListenerFactory,
-                                         _lldbPlatformFactory, _lldbPlatformConnectOptionsFactory,
+                new DebugSessionLauncher(_taskContext, _lldbListenerFactory,
+                                         _lldbPlatformConnectOptionsFactory,
                                          _lldbPlatformShellCommandFactory, _attachedProgramFactory,
-                                         debugEngine, launchOption, _actionRecorder,
+                                         debugEngine, _actionRecorder,
                                          _moduleFileLoadRecorderFactory, coreFilePath,
-                                         executableFileName, executableFullPath,
-                                         _exceptionManagerFactory, _fileSystem,
-                                         _fastExpressionEvaluation, _moduleFileFinder,
+                                         executableFileName,
+                                         _exceptionManagerFactory, _moduleFileFinder,
                                          _dumpModulesProvider, _moduleSearchLogHolder,
                                          _symbolSettingsProvider, _warningDialog, gameLaunch);
         }
 
-        const string _remoteLldbPlatformName = "remote-stadia";
-        const string _fallbackRemoteLldbPlatformName = "remote-linux";
-        bool _stadiaPlatformAvailable = false;
-
-        const string _localLldbPlatformName = "host";
         const string _lldbConnectUrl = "connect://localhost";
 
         readonly TimeSpan _launchTimeout = TimeSpan.FromSeconds(60);
         readonly TimeSpan _launchRetryDelay = TimeSpan.FromMilliseconds(500);
 
         readonly JoinableTaskContext _taskContext;
-        readonly GrpcDebuggerFactory _lldbDebuggerFactory;
         readonly GrpcListenerFactory _lldbListenerFactory;
-        readonly GrpcPlatformFactory _lldbPlatformFactory;
         readonly GrpcPlatformConnectOptionsFactory _lldbPlatformConnectOptionsFactory;
         readonly GrpcPlatformShellCommandFactory _lldbPlatformShellCommandFactory;
         readonly ILldbAttachedProgramFactory _attachedProgramFactory;
         readonly IDebugEngine3 _debugEngine;
         readonly LldbExceptionManager.Factory _exceptionManagerFactory;
-        readonly IFileSystem _fileSystem;
-        readonly bool _fastExpressionEvaluation;
 
-        readonly LaunchOption _launchOption;
         readonly ActionRecorder _actionRecorder;
         readonly ModuleFileLoadMetricsRecorder.Factory _moduleFileLoadRecorderFactory;
 
         readonly string _coreFilePath;
         readonly string _executableFileName;
-        readonly string _executableFullPath;
 
         readonly IModuleFileFinder _moduleFileFinder;
         readonly IDumpModulesProvider _dumpModulesProvider;
@@ -182,37 +155,30 @@ namespace YetiVSI.DebugEngine
         readonly IVsiGameLaunch _gameLaunch;
 
         public DebugSessionLauncher(
-            JoinableTaskContext taskContext, GrpcDebuggerFactory lldbDebuggerFactory,
-            GrpcListenerFactory lldbListenerFactory, GrpcPlatformFactory lldbPlatformFactory,
+            JoinableTaskContext taskContext, GrpcListenerFactory lldbListenerFactory,
             GrpcPlatformConnectOptionsFactory lldbPlatformConnectOptionsFactory,
             GrpcPlatformShellCommandFactory lldbPlatformShellCommandFactory,
             ILldbAttachedProgramFactory attachedProgramFactory, IDebugEngine3 debugEngine,
-            LaunchOption launchOption, ActionRecorder actionRecorder,
+            ActionRecorder actionRecorder,
             ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
-            string coreFilePath, string executableFileName, string executableFullPath,
-            LldbExceptionManager.Factory exceptionManagerFactory, IFileSystem fileSystem,
-            bool fastExpressionEvaluation, IModuleFileFinder moduleFileFinder,
+            string coreFilePath, string executableFileName,
+            LldbExceptionManager.Factory exceptionManagerFactory,
+            IModuleFileFinder moduleFileFinder,
             IDumpModulesProvider dumpModulesProvider, IModuleSearchLogHolder moduleSearchLogHolder,
             ISymbolSettingsProvider symbolSettingsProvider,
             CoreAttachWarningDialogUtil warningDialog, IVsiGameLaunch gameLaunch)
         {
             _taskContext = taskContext;
-            _lldbDebuggerFactory = lldbDebuggerFactory;
             _lldbListenerFactory = lldbListenerFactory;
-            _lldbPlatformFactory = lldbPlatformFactory;
             _lldbPlatformConnectOptionsFactory = lldbPlatformConnectOptionsFactory;
             _lldbPlatformShellCommandFactory = lldbPlatformShellCommandFactory;
             _attachedProgramFactory = attachedProgramFactory;
             _debugEngine = debugEngine;
             _exceptionManagerFactory = exceptionManagerFactory;
-            _fileSystem = fileSystem;
-            _fastExpressionEvaluation = fastExpressionEvaluation;
-            _launchOption = launchOption;
             _actionRecorder = actionRecorder;
             _moduleFileLoadRecorderFactory = moduleFileLoadRecorderFactory;
             _coreFilePath = coreFilePath;
             _executableFileName = executableFileName;
-            _executableFullPath = executableFullPath;
             _moduleFileFinder = moduleFileFinder;
             _dumpModulesProvider = dumpModulesProvider;
             _moduleSearchLogHolder = moduleSearchLogHolder;
@@ -223,75 +189,30 @@ namespace YetiVSI.DebugEngine
 
         public async Task<ILldbAttachedProgram> LaunchAsync(
             ICancelable task, IDebugProcess2 process, Guid programId, uint? attachPid,
-            DebuggerOptions.DebuggerOptions debuggerOptions, HashSet<string> libPaths,
             GrpcConnection grpcConnection, int localDebuggerPort, string targetIpAddress,
-            int targetPort, IDebugEventCallback2 callback)
+            int targetPort, LaunchOption launchOption, IDebugEventCallback2 callback,
+            StadiaLldbDebugger stadiaDebugger)
         {
             var launchSucceeded = false;
             Stopwatch launchTimer = Stopwatch.StartNew();
-
-            // This should be the first request to the DebuggerGrpcServer.  Providing a retry wait
-            // time allows us to connect to a DebuggerGrpcServer that is slow to start. Note that
-            // we postpone sourcing .lldbinit until we are done with our initialization so that
-            // the users can override our defaults.
-            var lldbDebugger =
-                _lldbDebuggerFactory.Create(grpcConnection, false, TimeSpan.FromSeconds(10));
-
-            if (lldbDebugger == null)
+            SbPlatform lldbPlatform = stadiaDebugger.CreatePlatform(grpcConnection);
+            if (lldbPlatform == null)
             {
-                throw new AttachException(VSConstants.E_ABORT, ErrorStrings.FailedToCreateDebugger);
+                throw new AttachException(VSConstants.E_FAIL,
+                                          ErrorStrings.FailedToCreateLldbPlatform);
             }
 
-            if (debuggerOptions[DebuggerOption.CLIENT_LOGGING] == DebuggerOptionState.ENABLED)
+            if (launchOption == LaunchOption.AttachToGame ||
+                launchOption == LaunchOption.LaunchGame)
             {
-                lldbDebugger.EnableLog("lldb", new List<string> { "default", "module" });
-
-                // TODO: Disable 'dwarf' logs until we can determine why this
-                // causes LLDB to hang.
-                // lldbDebugger.EnableLog("dwarf", new List<string> { "default" });
-            }
-
-            if (_fastExpressionEvaluation)
-            {
-                lldbDebugger.EnableFastExpressionEvaluation();
-            }
-
-            lldbDebugger.SetDefaultLLDBSettings();
-
-            // Apply .lldbinit after we set our settings so that the user can override our
-            // defaults with a custom .lldbinit.
-            LoadLocalLldbInit(lldbDebugger);
-
-            // Add exec search paths, so that LLDB can find the executable and any dependent
-            // libraries.  If LLDB is able to find the files locally, it won't try to download
-            // them from the remote server, saving valuable time on attach.
-            foreach (string path in libPaths)
-            {
-                lldbDebugger.SetLibrarySearchPath(path);
-            }
-
-            lldbDebugger.SetAsync(true);
-
-            SbPlatform lldbPlatform;
-
-            switch (_launchOption)
-            {
-            case LaunchOption.AttachToGame:
-            // Fall through.
-            case LaunchOption.LaunchGame:
-                lldbPlatform = CreateRemotePlatform(grpcConnection, lldbDebugger);
-                if (lldbPlatform == null)
-                {
-                    throw new AttachException(VSConstants.E_FAIL,
-                                              ErrorStrings.FailedToCreateLldbPlatform);
-                }
                 task.ThrowIfCancellationRequested();
                 Trace.WriteLine("Attempting to connect debugger");
                 task.Progress.Report("Connecting to debugger");
 
                 string connectRemoteUrl = $"{_lldbConnectUrl}:{localDebuggerPort}";
                 string connectRemoteArgument =
-                    CreateConnectRemoteArgument(connectRemoteUrl, targetIpAddress, targetPort);
+                    CreateConnectRemoteArgument(connectRemoteUrl, targetIpAddress, targetPort,
+                                                stadiaDebugger.IsStadiaPlatformAvailable());
 
                 SbPlatformConnectOptions lldbConnectOptions =
                     _lldbPlatformConnectOptionsFactory.Create(connectRemoteArgument);
@@ -323,47 +244,21 @@ namespace YetiVSI.DebugEngine
                         ErrorStrings.FailedToConnectDebugger(lldbConnectOptions.GetUrl()), e);
                 }
                 Trace.WriteLine("LLDB successfully connected");
-                break;
-
-            case LaunchOption.AttachToCore:
-                lldbPlatform = _lldbPlatformFactory.Create(_localLldbPlatformName, grpcConnection);
-                if (lldbPlatform == null)
-                {
-                    throw new AttachException(VSConstants.E_FAIL,
-                                              ErrorStrings.FailedToCreateLldbPlatform);
-                }
-                break;
-
-            default:
+            }
+            else if (launchOption != LaunchOption.AttachToCore)
+            {
                 throw new AttachException(VSConstants.E_ABORT, ErrorStrings.InvalidLaunchOption(
-                                                                   _launchOption.ToString()));
+                                                                   launchOption.ToString()));
             }
 
-            lldbDebugger.SetSelectedPlatform(lldbPlatform);
+            stadiaDebugger.Debugger.SetSelectedPlatform(lldbPlatform);
 
             task.ThrowIfCancellationRequested();
             task.Progress.Report("Debugger is attaching (this can take a while)");
 
-            RemoteTarget lldbTarget = null;
-            using (new TestBenchmark("CreateTarget", TestBenchmarkScope.Recorder))
-            {
-                if (_launchOption == LaunchOption.LaunchGame &&
-                    !string.IsNullOrEmpty(_executableFullPath))
-                {
-                    var createExecutableTargetAction =
-                        _actionRecorder.CreateToolAction(ActionType.DebugCreateExecutableTarget);
-                    createExecutableTargetAction.Record(
-                        () => lldbTarget = CreateTarget(lldbDebugger, _executableFullPath));
-                }
-                else
-                {
-                    lldbTarget = CreateTarget(lldbDebugger, "");
-                }
-            }
-
             var lldbListener = CreateListener(grpcConnection);
             // This is required to catch breakpoint change events.
-            lldbTarget.AddListener(lldbListener, EventType.STATE_CHANGED);
+            stadiaDebugger.Target.AddListener(lldbListener, EventType.STATE_CHANGED);
             var listenerSubscriber = new LldbListenerSubscriber(lldbListener);
             var eventHandler = new EventHandler<FileUpdateReceivedEventArgs>(
                 (s, e) => ListenerSubscriberOnFileUpdateReceived(task, e));
@@ -372,24 +267,24 @@ namespace YetiVSI.DebugEngine
 
             try
             {
-                if (_launchOption == LaunchOption.AttachToCore)
+                if (launchOption == LaunchOption.AttachToCore)
                 {
                     var loadCoreAction = _actionRecorder.CreateToolAction(ActionType.DebugLoadCore);
                     SbProcess lldbDebuggerProcess = null;
                     loadCoreAction.Record(() =>
-                        lldbDebuggerProcess = LoadCore(lldbTarget, loadCoreAction));
+                        lldbDebuggerProcess = LoadCore(stadiaDebugger.Target, loadCoreAction));
 
                     await _taskContext.Factory.SwitchToMainThreadAsync();
                     return _attachedProgramFactory.Create(
-                        process, programId, _debugEngine, callback, lldbDebugger, lldbTarget,
-                        listenerSubscriber, lldbDebuggerProcess,
-                        lldbDebugger.GetCommandInterpreter(), true, new NullExceptionManager(),
-                        _moduleSearchLogHolder, remotePid: 0);
+                        process, programId, _debugEngine, callback, stadiaDebugger.Debugger,
+                        stadiaDebugger.Target, listenerSubscriber, lldbDebuggerProcess,
+                        stadiaDebugger.Debugger.GetCommandInterpreter(), true,
+                        new NullExceptionManager(), _moduleSearchLogHolder, remotePid: 0);
                 }
 
                 // Get process ID.
                 uint processId = 0;
-                switch (_launchOption)
+                switch (launchOption)
                 {
                 case LaunchOption.AttachToGame:
                     if (!attachPid.HasValue)
@@ -444,8 +339,8 @@ namespace YetiVSI.DebugEngine
 
                     using (new TestBenchmark("AttachToProcessWithID", TestBenchmarkScope.Recorder))
                     {
-                        debuggerProcess = lldbTarget.AttachToProcessWithID(lldbListener, processId,
-                                                                           out SbError lldbError);
+                        debuggerProcess = stadiaDebugger.Target.AttachToProcessWithID(
+                            lldbListener, processId, out SbError lldbError);
 
                         if (lldbError.Fail())
                         {
@@ -455,16 +350,17 @@ namespace YetiVSI.DebugEngine
                         }
                     }
 
-                    RecordModules(lldbTarget, moduleFileLoadRecorder);
+                    RecordModules(stadiaDebugger.Target, moduleFileLoadRecorder);
                 });
 
                 var exceptionManager = _exceptionManagerFactory.Create(debuggerProcess);
 
                 await _taskContext.Factory.SwitchToMainThreadAsync();
                 ILldbAttachedProgram attachedProgram = _attachedProgramFactory.Create(
-                    process, programId, _debugEngine, callback, lldbDebugger, lldbTarget,
-                    listenerSubscriber, debuggerProcess, lldbDebugger.GetCommandInterpreter(),
-                    false, exceptionManager, _moduleSearchLogHolder, processId);
+                    process, programId, _debugEngine, callback, stadiaDebugger.Debugger,
+                    stadiaDebugger.Target, listenerSubscriber, debuggerProcess,
+                    stadiaDebugger.Debugger.GetCommandInterpreter(), false, exceptionManager,
+                    _moduleSearchLogHolder, processId);
                 launchSucceeded = true;
                 return attachedProgram;
             }
@@ -600,22 +496,6 @@ namespace YetiVSI.DebugEngine
             return ErrorStrings.FailedToAttachToProcessOtherTracer(tracerName, tracerPid);
         }
 
-        SbPlatform CreateRemotePlatform(GrpcConnection grpcConnection, SbDebugger debugger)
-        {
-            string platformName;
-            if (debugger.IsPlatformAvailable(_remoteLldbPlatformName))
-            {
-                _stadiaPlatformAvailable = true;
-                platformName = _remoteLldbPlatformName;
-            }
-            else
-            {
-                platformName = _fallbackRemoteLldbPlatformName;
-            }
-
-            return _lldbPlatformFactory.Create(platformName, grpcConnection);
-        }
-
         /// <summary>
         /// If PlatformStadia is available we pass the gamelet's ip and port for an scp
         /// connection in pre-generated scp command (it includes the full path to scp executable
@@ -627,9 +507,9 @@ namespace YetiVSI.DebugEngine
         /// <returns>ConnectRemote url enriched with a
         /// configuration for scp.exe if applicable.</returns>
         string CreateConnectRemoteArgument(string debuggerUrl, string targetIpAddress,
-                                           int targetPort)
+                                           int targetPort, bool stadiaPlatformAvailable)
         {
-            if (!_stadiaPlatformAvailable)
+            if (!stadiaPlatformAvailable)
             {
                 return debuggerUrl;
             }
@@ -779,51 +659,6 @@ namespace YetiVSI.DebugEngine
                               .Where(m => m != null)
                               .ToList();
             moduleFileLoadRecorder.RecordAfterLoad(modules);
-        }
-
-        /// <summary>
-        /// LoadLocalLldbInit looks for a local LLDB config (~/.lldbinit), logs its contents and
-        /// then issues RPCs to load it in LLDB.  Internally LLDB will try to load one of the
-        /// following files: ~/.lldbinit-{PROGRAM_NAME}, ~/.lldbinit, {CWD}/.lldbinit (in that
-        /// order).  We check only for ~/.lldbinit and don't call `SourceInitFileInHomeDirectory`
-        /// if it doesn't exist.
-        /// </summary>
-        void LoadLocalLldbInit(SbDebugger debugger)
-        {
-            var lldbinitPath = SbDebuggerExtensions.GetLLDBInitPath();
-            string lldbinit;
-            try
-            {
-                lldbinit = _fileSystem.File.ReadAllText(lldbinitPath);
-            }
-            catch (FileNotFoundException)
-            {
-                Trace.WriteLine("No local ~/.lldbinit found, don't try loading it in LLDB.");
-                return;
-            }
-            catch (Exception e)
-            {
-                Trace.WriteLine($"Unexpected error while reading {lldbinitPath}: {e}");
-                return;
-            }
-
-            Trace.WriteLine($"Found ~/.lldbinit ({lldbinitPath}), LLDB will try to load it:" +
-                            $"{Environment.NewLine}{lldbinit}{Environment.NewLine}EOF");
-
-            debugger.SkipLLDBInitFiles(false);
-            debugger.GetCommandInterpreter().SourceInitFileInHomeDirectory();
-        }
-
-        RemoteTarget CreateTarget(SbDebugger lldbDebugger, string executable)
-        {
-            RemoteTarget lldbTarget = lldbDebugger.CreateTarget(executable);
-            if (lldbTarget == null)
-            {
-                throw new AttachException(VSConstants.E_ABORT,
-                                          ErrorStrings.FailedToCreateDebugTarget);
-            }
-
-            return lldbTarget;
         }
 
         bool GetRemoteProcessId(string executable, SbPlatform platform, out uint pid)

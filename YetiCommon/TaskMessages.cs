@@ -27,6 +27,7 @@ namespace YetiCommon
         public const string ClearingInstanceLogs = "Clearing instance logs...";
         public const string AttachingToProcess = "Attaching to the process...";
         public const string LaunchingGame = "Launching the game...";
+        public const string LaunchingGrpcServer = "Launching the debugger process...";
         public const string LaunchingDeferredGameTitle = "Start playing";
         public const string LaunchingDeferredGame = "Your run has started on all player" +
             " endpoints. A prompt to play will appear on endpoints where you’re signed in. " +

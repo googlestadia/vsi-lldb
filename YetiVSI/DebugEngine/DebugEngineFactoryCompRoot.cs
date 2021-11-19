@@ -353,11 +353,10 @@ namespace YetiVSI.DebugEngine
                 GetJoinableTaskContext(),
                 GetDialogUtil());
             var debugSessionLauncherFactory = new DebugSessionLauncher.Factory(
-                GetJoinableTaskContext(), lldbDebuggerFactory, lldbListenerFactory,
-                lldbPlatformFactory, lldbPlatformConnectOptionsFactory,
-                lldbPlatformShellCommandFactory, attachedProgramFactory, actionRecorder,
-                moduleFileLoadRecorderFactory, exceptionManagerFactory, GetFileSystem(),
-                fastExpressionEvaluation, moduleFileFinder, dumpModulesProvider,
+                GetJoinableTaskContext(), lldbListenerFactory,
+                lldbPlatformConnectOptionsFactory, lldbPlatformShellCommandFactory,
+                attachedProgramFactory, actionRecorder, moduleFileLoadRecorderFactory,
+                exceptionManagerFactory, moduleFileFinder, dumpModulesProvider,
                 moduleSearchLogHolder, GetSymbolSettingsProvider(), coreAttachWarningDialog);
             var paramsFactory = new Params.Factory(GetJsonUtil());
             var vsiLaunchFactory = new VsiGameLaunchFactory(gameletFactory.Create(GetCloudRunner()),
@@ -374,11 +373,16 @@ namespace YetiVSI.DebugEngine
             var remoteDeploy = new RemoteDeploy(remoteCommand, remoteFile, processFactory,
                                                 GetFileSystem());
             bool deployLldbServer = IsInternalEngine();
+
+            StadiaLldbDebugger.Factory stadiaLldbDebuggerFactory = new StadiaLldbDebugger.Factory(
+                lldbDebuggerFactory, lldbPlatformFactory, GetFileSystem(), actionRecorder,
+                fastExpressionEvaluation);
+
             IDebugEngineFactory factory = new DebugEngine.Factory(
-                GetJoinableTaskContext(), serviceManager, GetDebugSessionMetrics(), yetiTransport,
-                actionRecorder, symbolServerHttpClient, moduleFileLoadRecorderFactory,
-                moduleFileFinder, testClientLauncherFactory, GetNatvis(),
-                GetNatvisDiagnosticLogger(), exitDialogUtil, preflightBinaryChecker,
+                GetJoinableTaskContext(), serviceManager, GetDebugSessionMetrics(),
+                stadiaLldbDebuggerFactory, yetiTransport, actionRecorder, symbolServerHttpClient,
+                moduleFileLoadRecorderFactory, moduleFileFinder, testClientLauncherFactory,
+                GetNatvis(), GetNatvisDiagnosticLogger(), exitDialogUtil, preflightBinaryChecker,
                 debugSessionLauncherFactory, paramsFactory, remoteDeploy, cancelableTaskFactory,
                 GetDialogUtil(), _vsiService,
                 GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(),

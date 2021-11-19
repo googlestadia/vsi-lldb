@@ -112,6 +112,7 @@
     <Compile Include="DebugEngine\IDebugEngineCommands.cs" />
     <Compile Include="DebugEngine\Interfaces\ITaskExecutor.cs" />
     <Compile Include="DebugEngine\ISymbolSettingsProvider.cs" />
+    <Compile Include="DebugEngine\StadiaLldbDebugger.cs" />
     <Compile Include="DebugEngine\LldbEventDescriptionParser.cs" />
     <Compile Include="DebugEngine\LldbListenerSubscriber.cs" />
     <Compile Include="DebugEngine\NatvisEngine\ArrayItemsEntity.cs" />

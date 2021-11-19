@@ -56,6 +56,7 @@ namespace YetiVSI.Test.DebugEngine
 
         public override ServiceManager CreateServiceManager() => ServiceManager;
 
+        readonly IStadiaLldbDebuggerFactory _stadiaLldbDebuggerFactory;
         readonly IDebugSessionLauncherFactory _debugSessionLauncherFactory;
         readonly IRemoteDeploy _remoteDeploy;
         readonly IGameLauncher _gameLauncher;
@@ -72,10 +73,12 @@ namespace YetiVSI.Test.DebugEngine
         /// <param name="remoteDeploy"><see cref="IRemoteDeploy"/> instance to use during the
         /// deployment process.</param>
         /// <param name="gameLauncher">Game launcher.</param>
-        public DebugEngineFactoryCompRootStub(IDebugSessionLauncherFactory factory,
+        public DebugEngineFactoryCompRootStub(IStadiaLldbDebuggerFactory stadiaLldbDebuggerFactory,
+                                              IDebugSessionLauncherFactory factory,
                                               IRemoteDeploy remoteDeploy,
                                               IGameLauncher gameLauncher)
         {
+            _stadiaLldbDebuggerFactory = stadiaLldbDebuggerFactory;
             _debugSessionLauncherFactory = factory;
             _remoteDeploy = remoteDeploy;
             _gameLauncher = gameLauncher;
@@ -129,12 +132,13 @@ namespace YetiVSI.Test.DebugEngine
             var cancelableTaskFactory = GetCancelableTaskFactory();
             bool deployLldbServer = true;
             IDebugEngineFactory factory = new YetiVSI.DebugEngine.DebugEngine.Factory(
-                joinableTaskContext, serviceManager, GetDebugSessionMetrics(), yetiTransport,
-                actionRecorder, null, moduleFileLoadRecorderFactory, moduleFileFinder,
-                testClientLauncherFactory, GetNatvis(), GetNatvisDiagnosticLogger(),
-                exitDialogUtil, preflightBinaryChecker, _debugSessionLauncherFactory, paramsFactory,
-                _remoteDeploy, cancelableTaskFactory, _dialogUtil, _vsiService,
-                GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(), debugEngineCommands,
+                joinableTaskContext, serviceManager, GetDebugSessionMetrics(),
+                _stadiaLldbDebuggerFactory, yetiTransport, actionRecorder, null,
+                moduleFileLoadRecorderFactory, moduleFileFinder,testClientLauncherFactory,
+                GetNatvis(), GetNatvisDiagnosticLogger(), exitDialogUtil, preflightBinaryChecker,
+                _debugSessionLauncherFactory, paramsFactory, _remoteDeploy, cancelableTaskFactory,
+                _dialogUtil, _vsiService, GetNatvisLoggerOutputWindowListener(),
+                GetSolutionExplorer(), debugEngineCommands,
                 GetDebugEventCallbackDecorator(vsiService.DebuggerOptions),
                 GetSymbolSettingsProvider(), deployLldbServer, _gameLauncher,
                 GetDebugEventRecorder(), GetExpressionEvaluationRecorder());

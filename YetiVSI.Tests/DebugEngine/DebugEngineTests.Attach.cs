@@ -21,7 +21,6 @@ using NSubstitute;
 using NSubstitute.Core;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using TestsCommon.TestSupport;
 using YetiCommon.SSH;
@@ -34,6 +33,7 @@ using YetiVSI.PortSupplier;
 using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
 using YetiVSITestsCommon.Services;
+using static YetiVSI.DebugEngine.DebugEngine;
 
 namespace YetiVSI.Test.DebugEngine
 {
@@ -170,8 +170,10 @@ namespace YetiVSI.Test.DebugEngine
         DebugEngineFactoryCompRootStub CreateEngineFactoryCompRoot(
             IDebugSessionLauncherFactory debugSessionLauncherFactory, IRemoteDeploy remoteDeploy)
         {
+            var stadiaLldbDebuggerFactory = Substitute.For<IStadiaLldbDebuggerFactory>();
             var compRoot = new DebugEngineFactoryCompRootStub(
-                debugSessionLauncherFactory, remoteDeploy, Substitute.For<IGameLauncher>());
+                stadiaLldbDebuggerFactory, debugSessionLauncherFactory, remoteDeploy,
+                Substitute.For<IGameLauncher>());
             _metrics = Substitute.For<IMetrics>();
             _metrics.NewDebugSessionId().Returns(_debugSessionId);
             ISessionNotifier sessionNotifier = Substitute.For<ISessionNotifier>();
@@ -225,11 +227,8 @@ namespace YetiVSI.Test.DebugEngine
             IDebugSessionLauncher sessionLauncher)
         {
             var debugSessionLauncherFactory = Substitute.For<IDebugSessionLauncherFactory>();
-            debugSessionLauncherFactory.Create(Arg.Any<IDebugEngine3>(),
-                                               Arg.Any<YetiVSI.DebugEngine.DebugEngine.
-                                                   LaunchOption>(), Arg.Any<string>(),
-                                               Arg.Any<string>(), Arg.Any<string>(),
-                                               Arg.Any<IVsiGameLaunch>())
+            debugSessionLauncherFactory.Create(Arg.Any<IDebugEngine3>(), Arg.Any<string>(),
+                                               Arg.Any<string>(), Arg.Any<IVsiGameLaunch>())
                 .Returns((x) => sessionLauncher);
             return debugSessionLauncherFactory;
         }
@@ -248,15 +247,14 @@ namespace YetiVSI.Test.DebugEngine
             var debugSessionLauncher = Substitute.For<IDebugSessionLauncher>();
             debugSessionLauncher.LaunchAsync(Arg.Any<ICancelableTask>(), Arg.Any<IDebugProcess2>(),
                                              Arg.Any<Guid>(), Arg.Any<uint?>(),
-                                             Arg.Any<YetiVSI.DebuggerOptions.DebuggerOptions>(),
-                                             Arg.Any<HashSet<string>>(), Arg.Any<GrpcConnection>(),
-                                             Arg.Any<int>(), Arg.Is(expectedTarget?.IpAddress),
+                                             Arg.Any<GrpcConnection>(), Arg.Any<int>(),
+                                             Arg.Is(expectedTarget?.IpAddress),
                                              Arg.Is(expectedTarget?.Port ?? 0),
-                                             Arg.Any<IDebugEventCallback2>()).Returns(func);
+                                             Arg.Any<LaunchOption>(),
+                                             Arg.Any<IDebugEventCallback2>(),
+                                             Arg.Any<StadiaLldbDebugger>()).Returns(func);
 
             return debugSessionLauncher;
         }
-
-
     }
 }

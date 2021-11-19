@@ -152,6 +152,7 @@ namespace YetiVSI.DebugEngine
             readonly JoinableTaskContext _taskContext;
             readonly ServiceManager _serviceManager;
             readonly DebugSessionMetrics _debugSessionMetrics;
+            readonly IStadiaLldbDebuggerFactory _stadiaLldbDebuggerFactory;
             readonly YetiDebugTransport _yetiTransport;
             readonly ActionRecorder _actionRecorder;
             readonly HttpClient _symbolServerHttpClient;
@@ -180,6 +181,7 @@ namespace YetiVSI.DebugEngine
 
             public Factory(JoinableTaskContext taskContext, ServiceManager serviceManager,
                            DebugSessionMetrics debugSessionMetrics,
+                           IStadiaLldbDebuggerFactory stadiaLldbDebuggerFactory,
                            YetiDebugTransport yetiTransport, ActionRecorder actionRecorder,
                            HttpClient symbolServerHttpClient,
                            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
@@ -204,6 +206,7 @@ namespace YetiVSI.DebugEngine
                 _serviceManager = serviceManager;
                 _debugSessionMetrics = debugSessionMetrics;
 
+                _stadiaLldbDebuggerFactory = stadiaLldbDebuggerFactory;
                 _yetiTransport = yetiTransport;
                 _actionRecorder = actionRecorder;
                 _symbolServerHttpClient = symbolServerHttpClient;
@@ -250,8 +253,8 @@ namespace YetiVSI.DebugEngine
 
                 return new DebugEngine(self, Guid.NewGuid(), extensionOptions, debuggerOptions,
                                        _debugSessionMetrics, _taskContext, _natvisLogListener,
-                                       _solutionExplorer, _cancelableTaskFactory, _dialogUtil,
-                                       _vsiService,
+                                       _solutionExplorer, _cancelableTaskFactory,
+                                       _stadiaLldbDebuggerFactory, _dialogUtil, _vsiService,
                                        _yetiTransport, _actionRecorder, _symbolServerHttpClient,
                                        _moduleFileLoadRecorderFactory, _moduleFileFinder,
                                        _testClientLauncherFactory, _natvisExpander, _natvisLogger,
@@ -319,6 +322,7 @@ namespace YetiVSI.DebugEngine
         readonly DebugSessionMetrics _debugSessionMetrics;
 
         readonly CancelableTask.Factory _cancelableTaskFactory;
+        readonly IStadiaLldbDebuggerFactory _stadiaLldbDebuggerFactory;
         readonly ISolutionExplorer _solutionExplorer;
         readonly YetiDebugTransport _yetiTransport;
         readonly IDialogUtil _dialogUtil;
@@ -344,6 +348,7 @@ namespace YetiVSI.DebugEngine
         readonly IGameLauncher _gameLauncher;
         readonly DebugEventRecorder _debugEventRecorder;
         readonly ExpressionEvaluationRecorder _expressionEvaluationRecorder;
+        readonly ISessionNotifier _sessionNotifier;
 
         // Keep track of the attach operation, so that it can be aborted by transport errors.
         ICancelableTask _attachOperation;
@@ -368,15 +373,18 @@ namespace YetiVSI.DebugEngine
         // Timer that is started after successfully attaching.
         ITimer _attachedTimer;
 
-        ISessionNotifier _sessionNotifier;
+        JoinableTask<StadiaLldbDebugger> _lldbDebuggerCreator;
+        HashSet<string> _libPaths;
+        YetiDebugTransport.GrpcSession _grpcSession;
 
         public DebugEngine(IGgpDebugEngine self, Guid id, IExtensionOptions extensionOptions,
                            DebuggerOptions.DebuggerOptions debuggerOptions,
                            DebugSessionMetrics debugSessionMetrics, JoinableTaskContext taskContext,
                            NatvisLoggerOutputWindowListener natvisLogListener,
                            ISolutionExplorer solutionExplorer,
-                           CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
-                           IYetiVSIService vsiService,
+                           CancelableTask.Factory cancelableTaskFactory,
+                           IStadiaLldbDebuggerFactory stadiaLldbDebuggerFactory,
+                           IDialogUtil dialogUtil, IYetiVSIService vsiService,
                            YetiDebugTransport yetiTransport, ActionRecorder actionRecorder,
                            HttpClient symbolServerHttpClient,
                            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
@@ -408,6 +416,7 @@ namespace YetiVSI.DebugEngine
             _debuggerOptions = debuggerOptions;
 
             _cancelableTaskFactory = cancelableTaskFactory;
+            _stadiaLldbDebuggerFactory = stadiaLldbDebuggerFactory;
             _solutionExplorer = solutionExplorer;
             _dialogUtil = dialogUtil;
             _vsiService = vsiService;
@@ -548,7 +557,6 @@ namespace YetiVSI.DebugEngine
                     $"{option.Key.ToString().ToLower()}: {option.Value.ToString().ToLower()}");
             }
 
-            var libPaths = GetLldbSearchPaths();
             uint? attachPid = null;
 
             if (!string.IsNullOrEmpty(_coreFilePath))
@@ -567,6 +575,17 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
+            // If the debugger launches or attaches to core dump this initialization is called in
+            // LaunchSuspended method.
+            if (_launchOption == LaunchOption.AttachToGame)
+            {
+                if (!LaunchLldbDebuggerInBackground())
+                {
+                    Trace.WriteLine("Aborting attach because the user canceled it.");
+                    return VSConstants.E_ABORT;
+                }
+            }
+
             var lldbDeployAction = _actionRecorder.CreateToolAction(ActionType.LldbServerDeploy);
             JoinableTask lldbDeployTask = null;
             if (_deployLldbServer && _launchOption != LaunchOption.AttachToCore)
@@ -582,47 +601,50 @@ namespace YetiVSI.DebugEngine
             {
                 var preflightCheckAction = _actionRecorder.CreateToolAction(
                     ActionType.DebugPreflightBinaryChecks);
-                if (_launchOption != LaunchOption.AttachToCore)
+
+                if (_launchOption == LaunchOption.LaunchGame)
                 {
-                    switch (_launchOption)
+                    string cmd =
+                        _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s))
+                        ?? _executableFileName;
+
+                    // Note that Path.Combine works for both relative and full paths.
+                    // It returns cmd if cmd starts with '/' or '\'.
+                    var remoteTargetPath =
+                        Path.Combine(YetiConstants.RemoteGamePath, cmd);
+
+                    // This field should be initialized in LaunchLldbDebuggerInBackground
+                    if (_libPaths == null)
                     {
-                        case LaunchOption.LaunchGame:
-                            string cmd =
-                                _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s))
-                                ?? _executableFileName;
+                        throw new ArgumentNullException(nameof(_libPaths));
+                    }
 
-                            // Note that Path.Combine works for both relative and full paths.
-                            // It returns cmd if cmd starts with '/' or '\'.
-                            var remoteTargetPath =
-                                Path.Combine(YetiConstants.RemoteGamePath, cmd);
-                            _cancelableTaskFactory.Create(TaskMessages.CheckingBinaries,
-                                                          async _ =>
-                                                              await _preflightBinaryChecker
-                                                                  .CheckLocalAndRemoteBinaryOnLaunchAsync(
-                                                                      libPaths, _executableFileName,
-                                                                      _target, remoteTargetPath,
-                                                                      preflightCheckAction))
-                                .RunAndRecord(preflightCheckAction);
-                            break;
-                        case LaunchOption.AttachToGame:
-                            attachPid = GetProcessId(process);
-                            if (attachPid.HasValue)
-                            {
-                                _cancelableTaskFactory.Create(TaskMessages.CheckingRemoteBinary,
-                                                              async _ =>
-                                                                  await _preflightBinaryChecker
-                                                                      .CheckRemoteBinaryOnAttachAsync(
-                                                                          attachPid.Value, _target,
-                                                                          preflightCheckAction))
-                                    .RunAndRecord(preflightCheckAction);
-                            }
-                            else
-                            {
-                                Trace.WriteLine("Failed to get target process ID; skipping " +
-                                                "remote build id check");
-                            }
-
-                            break;
+                    _cancelableTaskFactory.Create(TaskMessages.CheckingBinaries,
+                                                  async _ =>
+                                                      await _preflightBinaryChecker
+                                                          .CheckLocalAndRemoteBinaryOnLaunchAsync(
+                                                              _libPaths, _executableFileName,
+                                                              _target, remoteTargetPath,
+                                                              preflightCheckAction))
+                        .RunAndRecord(preflightCheckAction);
+                }
+                else if (_launchOption == LaunchOption.AttachToGame)
+                {
+                    attachPid = GetProcessId(process);
+                    if (attachPid.HasValue)
+                    {
+                        _cancelableTaskFactory.Create(TaskMessages.CheckingRemoteBinary,
+                                                        async _ =>
+                                                            await _preflightBinaryChecker
+                                                                .CheckRemoteBinaryOnAttachAsync(
+                                                                    attachPid.Value, _target,
+                                                                    preflightCheckAction))
+                            .RunAndRecord(preflightCheckAction);
+                    }
+                    else
+                    {
+                        Trace.WriteLine("Failed to get target process ID; skipping " +
+                                        "remote build id check");
                     }
                 }
             }
@@ -645,48 +667,60 @@ namespace YetiVSI.DebugEngine
             var startAction = _actionRecorder.CreateToolAction(ActionType.DebugStart);
             startAction.UpdateEvent(new DeveloperLogEvent { GameLaunchData = glData });
 
-            Func<ICancelable, Task<ILldbAttachedProgram>> attachTaskDelegate =
-                async delegate(ICancelable task)
+            async Task<ILldbAttachedProgram> AttachAsync(ICancelable task)
+            {
+                if (lldbDeployTask != null)
                 {
-                    if (lldbDeployTask != null)
+                    using (new TestBenchmark("WaitForLLDBDeploy", TestBenchmarkScope.Recorder))
                     {
-                        using (new TestBenchmark("WaitForLLDBDeploy", TestBenchmarkScope.Recorder))
-                        {
-                            await lldbDeployAction.RecordAsync(lldbDeployTask.JoinAsync());
-                        }
+                        await lldbDeployAction.RecordAsync(lldbDeployTask.JoinAsync());
                     }
+                }
 
-                    // Attempt to start the transport. Pass on to the transport if our attach reason
-                    // indicates we need to launch the main debugged process ourselves.
-                    _yetiTransport.StartPreGame(_launchOption, _rgpEnabled, _diveEnabled,
-                                                _renderDocEnabled, _target,
-                                                out GrpcConnection grpcConnection,
-                                                out ITransportSession transportSession);
+                // This field should be initialized in LaunchLldbDebuggerInBackground
+                if (_grpcSession == null)
+                {
+                    throw new ArgumentNullException(nameof(_grpcSession));
+                }
 
-                    SafeErrorUtil.SafelyLogError(
-                        () => RecordParameters(startAction, _extensionOptions, _debuggerOptions),
-                        "Recording debugger parameters");
-                    var launcher = _debugSessionLauncherFactory.Create(
-                        Self, _launchOption, _coreFilePath, _executableFileName,
-                        _executableFullPath, _vsiGameLaunch);
+                // Attempt to start the transport. Pass on to the transport if our attach reason
+                // indicates we need to launch the main debugged process ourselves.
+                _yetiTransport.StartPreGame(_launchOption, _rgpEnabled, _diveEnabled,
+                                            _renderDocEnabled, _target, _grpcSession);
 
-                    ILldbAttachedProgram program;
-                    using (new TestBenchmark("Launch", TestBenchmarkScope.Recorder))
-                    {
-                        program = await launcher.LaunchAsync(
-                            task, process, programId, attachPid, _debuggerOptions, libPaths,
-                            grpcConnection, transportSession?.GetLocalDebuggerPort() ?? 0,
-                            _target?.IpAddress, _target?.Port ?? 0, callback);
-                    }
+                SafeErrorUtil.SafelyLogError(
+                    () => RecordParameters(startAction, _extensionOptions, _debuggerOptions),
+                    "Recording debugger parameters");
 
-                    // Launch processes that need the game process id.
-                    _yetiTransport.StartPostGame(_launchOption, _target, program.RemotePid);
+                ILldbAttachedProgram program;
 
-                    return program;
-                };
+                // This field should be initialized in LaunchLldbDebuggerInBackground
+                if (_lldbDebuggerCreator == null)
+                {
+                    throw new ArgumentNullException(nameof(_lldbDebuggerCreator));
+                }
+
+                StadiaLldbDebugger lldbDebugger = null;
+                using (new TestBenchmark("WaitForLldbDebugger", TestBenchmarkScope.Recorder))
+                {
+                    lldbDebugger = await _lldbDebuggerCreator;
+                }
+
+                var launcher = _debugSessionLauncherFactory.Create(
+                    Self, _coreFilePath, _executableFileName, _vsiGameLaunch);
+                program = await launcher.LaunchAsync(
+                    task, process, programId, attachPid, _grpcSession.GrpcConnection,
+                    _grpcSession.GetLocalDebuggerPort(), _target?.IpAddress, _target?.Port ?? 0,
+                    _launchOption, callback, lldbDebugger);
+
+                // Launch processes that need the game process id.
+                _yetiTransport.StartPostGame(_launchOption, _target, program.RemotePid);
+
+                return program;
+            }
 
             var attachTask = _cancelableTaskFactory.Create(TaskMessages.AttachingToProcess,
-                                                           attachTaskDelegate);
+                                                           AttachAsync);
             _attachOperation = attachTask;
             try
             {
@@ -995,23 +1029,6 @@ namespace YetiVSI.DebugEngine
 
             _executableFullPath = executableFullPath;
             _executableFileName = Path.GetFileName(executableFullPath);
-            ChromeClientsLauncher chromeLauncher;
-            if (string.IsNullOrEmpty(args))
-            {
-                chromeLauncher = null;
-            }
-            else
-            {
-                try
-                {
-                    chromeLauncher = _testClientLauncherFactory.Create(args);
-                }
-                catch (SerializationException e)
-                {
-                    Trace.WriteLine($"Failed to parse launch arguments: {e}");
-                    return VSConstants.E_FAIL;
-                }
-            }
 
             _workingDirectory = dir;
             if (!string.IsNullOrEmpty(options))
@@ -1032,6 +1049,30 @@ namespace YetiVSI.DebugEngine
                 _coreFilePath = executableFullPath;
                 _debugSessionMetrics.UseNewDebugSessionId();
                 _deleteCoreFileAtCleanup = false;
+            }
+
+            if (!LaunchLldbDebuggerInBackground(_coreFilePath))
+            {
+                Trace.WriteLine("Aborting launch because the user canceled it.");
+                return VSConstants.E_FAIL;
+            }
+
+            ChromeClientsLauncher chromeLauncher;
+            if (string.IsNullOrEmpty(args))
+            {
+                chromeLauncher = null;
+            }
+            else
+            {
+                try
+                {
+                    chromeLauncher = _testClientLauncherFactory.Create(args);
+                }
+                catch (SerializationException e)
+                {
+                    Trace.WriteLine($"Failed to parse launch arguments: {e}");
+                    return VSConstants.E_FAIL;
+                }
             }
 
             // Only start Chrome Client in the launch case, and not when attaching to a core.
@@ -1066,6 +1107,70 @@ namespace YetiVSI.DebugEngine
             }
 
             return VSConstants.S_OK;
+        }
+
+        HashSet<string> GetLLDBSearchPaths(string coreFilePath)
+        {
+            var libPaths = new HashSet<string>(SDKUtil.GetLibraryPaths());
+
+            if (!string.IsNullOrEmpty(coreFilePath))
+            {
+                libPaths.Add(Path.GetDirectoryName(coreFilePath));
+            }
+
+            // Add search paths for all open projects.
+            foreach (ISolutionExplorerProject project in _solutionExplorer.EnumerateProjects())
+            {
+                string outputDirectory = project.OutputDirectory;
+                if (!string.IsNullOrEmpty(outputDirectory))
+                {
+                    libPaths.Add(outputDirectory);
+                }
+
+                string targetDirectory = project.TargetDirectory;
+                if (!string.IsNullOrEmpty(targetDirectory))
+                {
+                    libPaths.Add(targetDirectory);
+                }
+            }
+
+            foreach (string path in libPaths)
+            {
+                Trace.WriteLine("Adding LLDB search path: " + path);
+            }
+
+            return libPaths;
+        }
+
+        bool LaunchLldbDebuggerInBackground(string coreFilePath = "")
+        {
+            _libPaths = GetLLDBSearchPaths(coreFilePath);
+            bool isCoreDumpAttach = !string.IsNullOrEmpty(coreFilePath);
+
+            // This should take less then 100ms.
+            // However if GRPC server will be blocked during start this will give partners
+            // way to cancel it.
+            ICancelableTask<YetiDebugTransport.GrpcSession> startGrpcTask =
+                _cancelableTaskFactory.Create(TaskMessages.LaunchingGrpcServer,
+                                              _ => _yetiTransport.StartGrpcServer());
+            if (!startGrpcTask.Run())
+            {
+                return false;
+            }
+
+            _grpcSession = startGrpcTask.Result;
+            _lldbDebuggerCreator = _taskContext.Factory.RunAsync(async () =>
+            {
+                return await Task.Run(() =>
+                {
+                     return _stadiaLldbDebuggerFactory.Create(
+                        _grpcSession.GrpcConnection,
+                        _debuggerOptions, _libPaths,
+                        _executableFullPath, isCoreDumpAttach);
+                });
+            });
+
+            return true;
         }
 
         // _vsiGameLaunch will only be non-null when VS manages the launch. This only
@@ -1349,40 +1454,6 @@ namespace YetiVSI.DebugEngine
             public GameLaunchAttachException(int result, string message) : base(result, message)
             {
             }
-        }
-
-        // Get the list of search paths that should be passed to LLDB.
-        HashSet<string> GetLldbSearchPaths()
-        {
-            var libPaths = new HashSet<string>(SDKUtil.GetLibraryPaths());
-
-            if (!string.IsNullOrEmpty(_coreFilePath))
-            {
-                libPaths.Add(Path.GetDirectoryName(_coreFilePath));
-            }
-
-            // Add search paths for all open projects.
-            foreach (var project in _solutionExplorer.EnumerateProjects())
-            {
-                string outputDirectory = project.OutputDirectory;
-                if (!string.IsNullOrEmpty(outputDirectory))
-                {
-                    libPaths.Add(outputDirectory);
-                }
-
-                string targetDirectory = project.TargetDirectory;
-                if (!string.IsNullOrEmpty(targetDirectory))
-                {
-                    libPaths.Add(targetDirectory);
-                }
-            }
-
-            foreach (var path in libPaths)
-            {
-                Trace.WriteLine("Adding LLDB search path: " + path);
-            }
-
-            return libPaths;
         }
 
         void RecordParameters(IAction action, IExtensionOptions extensionOptions,

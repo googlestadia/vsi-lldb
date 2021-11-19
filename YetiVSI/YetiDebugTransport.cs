@@ -44,24 +44,34 @@ namespace YetiVSI
     // Used by the debug engine in order to initialize Yeti-specific components.
     public class YetiDebugTransport
     {
+        public class GrpcSession
+        {
+            public GrpcConnection GrpcConnection { get; internal set; }
+
+            public ITransportSession TransportSession { get; internal set; }
+
+            public int GetLocalDebuggerPort() =>
+                TransportSession?.GetLocalDebuggerPort() ?? 0;
+        }
+
         // An event indicating that the transprot has stopped.
         public event Action<Exception> OnStop;
 
-        readonly object thisLock = new object();
-        readonly JoinableTaskContext taskContext;
-        readonly PipeCallInvokerFactory grpcCallInvokerFactory;
-        readonly GrpcConnectionFactory grpcConnectionFactory;
-        readonly Action onAsyncRpcCompleted;
-        readonly LldbTransportSession.Factory transportSessionFactory;
-        readonly ManagedProcess.Factory managedProcessFactory;
-        readonly IVsOutputWindowPane debugPane;
-        readonly IDialogUtil dialogUtil;
-        readonly IYetiVSIService yetiVSIService;
+        readonly object _thisLock = new object();
+        readonly JoinableTaskContext _taskContext;
+        readonly PipeCallInvokerFactory _grpcCallInvokerFactory;
+        readonly GrpcConnectionFactory _grpcConnectionFactory;
+        readonly Action _onAsyncRpcCompleted;
+        readonly LldbTransportSession.Factory _transportSessionFactory;
+        readonly ManagedProcess.Factory _managedProcessFactory;
+        readonly IVsOutputWindowPane _debugPane;
+        readonly IDialogUtil _dialogUtil;
+        readonly IYetiVSIService _yetiVSIService;
 
-        PipeCallInvoker grpcCallInvoker;
-        GrpcConnection grpcConnection;
-        ITransportSession transportSession;
-        ProcessManager processManager;
+        PipeCallInvoker _grpcCallInvoker;
+        ProcessManager _processManager;
+
+        GrpcSession _grpcSession;
 
         public YetiDebugTransport(JoinableTaskContext taskContext,
                                   LldbTransportSession.Factory transportSessionFactory,
@@ -74,54 +84,80 @@ namespace YetiVSI
         {
             taskContext.ThrowIfNotOnMainThread();
 
-            this.taskContext = taskContext;
-            this.grpcCallInvokerFactory = grpcCallInvokerFactory;
-            this.grpcConnectionFactory = grpcConnectionFactory;
-            this.onAsyncRpcCompleted = onAsyncRpcCompleted;
-            this.managedProcessFactory = managedProcessFactory;
-            this.transportSessionFactory = transportSessionFactory;
-            this.dialogUtil = dialogUtil;
+            _taskContext = taskContext;
+            _grpcCallInvokerFactory = grpcCallInvokerFactory;
+            _grpcConnectionFactory = grpcConnectionFactory;
+            _onAsyncRpcCompleted = onAsyncRpcCompleted;
+            _managedProcessFactory = managedProcessFactory;
+            _transportSessionFactory = transportSessionFactory;
+            _dialogUtil = dialogUtil;
 
             Guid debugPaneGuid = VSConstants.GUID_OutWindowDebugPane;
-            vsOutputWindow?.GetPane(ref debugPaneGuid, out debugPane);
-            this.yetiVSIService = yetiVSIService;
+            vsOutputWindow?.GetPane(ref debugPaneGuid, out _debugPane);
+            _yetiVSIService = yetiVSIService;
         }
 
-        public void StartPreGame(LaunchOption launchOption, bool rgpEnabled, bool diveEnabled,
-                                 bool renderdocEnabled, SshTarget target,
-                                 out GrpcConnection grpcConnection,
-                                 out ITransportSession transportSession)
+        public GrpcSession StartGrpcServer()
         {
-            lock (thisLock)
+            lock (_thisLock)
             {
-                grpcConnection = null;
-                this.transportSession = transportSession = transportSessionFactory.Create();
-                if (transportSession == null)
+                _grpcSession = new GrpcSession
+                {
+                    TransportSession = _transportSessionFactory.Create()
+                };
+
+                if (_grpcSession.TransportSession == null)
                 {
                     Trace.WriteLine("Unable to start the debug transport, invalid session.");
                     throw new YetiDebugTransportException(ErrorStrings.FailedToStartTransport);
                 }
 
+                ProcessStartData grpcProcessData = CreateDebuggerGrpcServerProcessStartData();
+                if (!LaunchProcesses(new List<ProcessStartData>() { grpcProcessData },
+                                     "grpc-server"))
+                {
+                    Stop(ExitReason.Unknown);
+                    throw new YetiDebugTransportException(
+                        "Failed to launch grpc server process");
+                }
+
+                Trace.WriteLine("Started debug transport.  Session ID: " +
+                                _grpcSession.TransportSession.GetSessionId());
+
+                // The transport class owns the Grpc session. However, it makes sense to return
+                // the session and force the caller to pass it as a parameter in all other methods
+                // to make it clearer that the Grpc server process should be started first.
+                return _grpcSession;
+            }
+        }
+
+        public void StartPreGame(LaunchOption launchOption, bool rgpEnabled, bool diveEnabled,
+                                 bool renderdocEnabled, SshTarget target,
+                                 GrpcSession session)
+        {
+            lock (_thisLock)
+            {
                 if (!LaunchPreGameProcesses(launchOption, rgpEnabled, diveEnabled, renderdocEnabled,
-                                            target))
+                                            target, session))
                 {
                     Stop(ExitReason.Unknown);
                     throw new YetiDebugTransportException(
                         "Failed to launch all needed pre-game processes");
                 }
-
-                Trace.WriteLine("Started debug transport.  Session ID: " +
-                                transportSession.GetSessionId());
-
-                // The grpcConnection is created during the launch of one of the processes.
-                grpcConnection = this.grpcConnection;
             }
         }
 
         public void StartPostGame(LaunchOption launchOption, SshTarget target, uint remotePid)
         {
-            lock (thisLock)
+            lock (_thisLock)
             {
+                if (_grpcSession == null)
+                {
+                    Stop(ExitReason.Unknown);
+                    throw new YetiDebugTransportException(
+                        "Failed to start post-game processes. Transport session not started yet.");
+                }
+
                 if (!LaunchPostGameProcesses(launchOption, target, remotePid))
                 {
                     Stop(ExitReason.Unknown);
@@ -134,18 +170,17 @@ namespace YetiVSI
         // Exits and disposes of all processes, the TransportSession, and GrpcConnection.
         public void Stop(ExitReason exitReason)
         {
-            lock (thisLock)
+            lock (_thisLock)
             {
                 // Stop the grpc connection first because it depends on the the grpc server process
                 // that is managed by the process manager.
-                grpcConnection?.Shutdown();
-                grpcConnection = null;
-                grpcCallInvoker?.Dispose();
-                grpcCallInvoker = null;
-                transportSession?.Dispose();
-                transportSession = null;
-                processManager?.StopAll(exitReason);
-                processManager = null;
+                _grpcSession?.GrpcConnection?.Shutdown();
+                _grpcCallInvoker?.Dispose();
+                _grpcCallInvoker = null;
+                _grpcSession?.TransportSession?.Dispose();
+                _grpcSession = null;
+                _processManager?.StopAll(exitReason);
+                _processManager = null;
             }
         }
 
@@ -169,7 +204,7 @@ namespace YetiVSI
                 $"Command: {startData.StartInfo.FileName} {startData.StartInfo.WorkingDirectory}");
             Trace.WriteLine($"Working Dir: {startData.StartInfo.WorkingDirectory}");
 
-            var process = managedProcessFactory.Create(startData.StartInfo);
+            var process = _managedProcessFactory.Create(startData.StartInfo);
 
             if (startData.OutputToConsole)
             {
@@ -177,10 +212,10 @@ namespace YetiVSI
                 {
                     if (data != null)
                     {
-                        taskContext.Factory.Run(async () =>
+                        _taskContext.Factory.Run(async () =>
                         {
-                            await taskContext.Factory.SwitchToMainThreadAsync();
-                            debugPane?.OutputString(data.Text + "\n");
+                            await _taskContext.Factory.SwitchToMainThreadAsync();
+                            _debugPane?.OutputString(data.Text + "\n");
                         });
                     }
                 };
@@ -188,14 +223,14 @@ namespace YetiVSI
 
             if (startData.MonitorExit)
             {
-                process.OnExit += processManager.OnExit;
+                process.OnExit += _processManager.OnExit;
             }
 
             process.Start();
 
             startData.AfterStart?.Invoke();
 
-            processManager.AddProcess(process, startData.StopHandler);
+            _processManager.AddProcess(process, startData.StopHandler);
         }
 
         /// <summary>
@@ -210,14 +245,15 @@ namespace YetiVSI
         /// True if all processes launched successfully and false otherwise and we should abort.
         /// </returns>
         bool LaunchPreGameProcesses(LaunchOption launchOption, bool rgpEnabled, bool diveEnabled,
-                                    bool renderdocEnabled, SshTarget target)
+                                    bool renderdocEnabled, SshTarget target,
+                                    GrpcSession session)
         {
             var processes = new List<ProcessStartData>();
             if (launchOption == LaunchOption.LaunchGame ||
                 launchOption == LaunchOption.AttachToGame)
             {
-                processes.Add(CreatePortForwardingProcessStartData(target));
-                processes.Add(CreateLldbServerProcessStartData(target));
+                processes.Add(CreatePortForwardingProcessStartData(target, session));
+                processes.Add(CreateLldbServerProcessStartData(target, session));
             }
 
             if (launchOption == LaunchOption.LaunchGame)
@@ -238,8 +274,6 @@ namespace YetiVSI
                 }
             }
 
-            processes.Add(CreateDebuggerGrpcServerProcessStartData());
-
             return LaunchProcesses(processes, "pre-game");
         }
 
@@ -257,7 +291,7 @@ namespace YetiVSI
             var processes = new List<ProcessStartData>();
             if ((launchOption == LaunchOption.LaunchGame ||
                     launchOption == LaunchOption.AttachToGame) &&
-                yetiVSIService.Options.CaptureGameOutput)
+                _yetiVSIService.Options.CaptureGameOutput)
             {
                 processes.Add(CreateTailLogsProcessStartData(target, remotePid));
             }
@@ -267,10 +301,10 @@ namespace YetiVSI
 
         bool LaunchProcesses(List<ProcessStartData> processes, string name)
         {
-            if (processManager == null)
+            if (_processManager == null)
             {
-                processManager = new ProcessManager();
-                processManager.OnProcessExit += (processName, exitCode) =>
+                _processManager = new ProcessManager();
+                _processManager.OnProcessExit += (processName, exitCode) =>
                     StopWithException(new ProcessExecutionException(
                                           $"{processName} exited with exit code {exitCode}",
                                           exitCode));
@@ -285,7 +319,7 @@ namespace YetiVSI
                 catch (ProcessException e)
                 {
                     Trace.WriteLine($"Failed to start {item.Name}: {e.Message}");
-                    dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message),
+                    _dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message),
                                          e.ToString());
                     return false;
                 }
@@ -295,21 +329,21 @@ namespace YetiVSI
             return true;
         }
 
-        ProcessStartData CreatePortForwardingProcessStartData(SshTarget target)
+        ProcessStartData CreatePortForwardingProcessStartData(SshTarget target, GrpcSession session)
         {
             var ports = new List<ProcessStartInfoBuilder.PortForwardEntry>()
             {
                 new ProcessStartInfoBuilder.PortForwardEntry
                 {
-                    LocalPort = transportSession.GetLocalDebuggerPort(),
-                    RemotePort = transportSession.GetRemoteDebuggerPort(),
+                    LocalPort = session.TransportSession.GetLocalDebuggerPort(),
+                    RemotePort = session.TransportSession.GetRemoteDebuggerPort(),
                 },
                 new ProcessStartInfoBuilder.PortForwardEntry
                 {
                     // LLDB returns the GDB server port to the LLDB client, so the local
                     // and remote port must match.
-                    LocalPort = transportSession.GetReservedLocalAndRemotePort(),
-                    RemotePort = transportSession.GetReservedLocalAndRemotePort(),
+                    LocalPort = session.TransportSession.GetReservedLocalAndRemotePort(),
+                    RemotePort = session.TransportSession.GetReservedLocalAndRemotePort(),
                 }
             };
             var startInfo = ProcessStartInfoBuilder.BuildForSshPortForward(ports, target);
@@ -356,18 +390,18 @@ namespace YetiVSI
             return new ProcessStartData("dive port forwarding", startInfo);
         }
 
-        ProcessStartData CreateLldbServerProcessStartData(SshTarget target)
+        ProcessStartData CreateLldbServerProcessStartData(SshTarget target, GrpcSession session)
         {
             string lldbServerCommand = string.Format(
                 "{0} platform --listen 127.0.0.1:{1} --min-gdbserver-port={2} " +
                 "--max-gdbserver-port={3}",
                 Path.Combine(YetiConstants.LldbServerLinuxPath,
                              YetiConstants.LldbServerLinuxExecutable),
-                transportSession.GetRemoteDebuggerPort(),
-                transportSession.GetReservedLocalAndRemotePort(),
-                transportSession.GetReservedLocalAndRemotePort() + 1);
+                session.TransportSession.GetRemoteDebuggerPort(),
+                session.TransportSession.GetReservedLocalAndRemotePort(),
+                session.TransportSession.GetReservedLocalAndRemotePort() + 1);
             List<string> lldbServerEnvironment = new List<string>();
-            if (yetiVSIService.DebuggerOptions[DebuggerOption.SERVER_LOGGING] ==
+            if (_yetiVSIService.DebuggerOptions[DebuggerOption.SERVER_LOGGING] ==
                 DebuggerOptionState.ENABLED)
             {
                 string channels = "lldb default:posix default:gdb-remote default";
@@ -423,24 +457,23 @@ namespace YetiVSI
             // (internal): grpcCallInvoker must be created right before the process is created!
             // If it is created before the other processes are created, they'll hold on to the
             // pipes and they won't get closed if the GRPC server shuts down.
-            Action<ProcessStartInfo> beforeStart = (processStartInfo) =>
+            void beforeStart(ProcessStartInfo processStartInfo)
             {
-                grpcCallInvoker = grpcCallInvokerFactory.Create();
-                grpcConnection = grpcConnectionFactory.Create(grpcCallInvoker);
-                grpcConnection.RpcException += StopWithException;
-                grpcConnection.AsyncRpcCompleted += onAsyncRpcCompleted;
-
-                grpcCallInvoker.GetClientPipeHandles(out string[] inPipeHandles,
+                _grpcCallInvoker = _grpcCallInvokerFactory.Create();
+                _grpcSession.GrpcConnection = _grpcConnectionFactory.Create(_grpcCallInvoker);
+                _grpcSession.GrpcConnection.RpcException += StopWithException;
+                _grpcSession.GrpcConnection.AsyncRpcCompleted += _onAsyncRpcCompleted;
+                _grpcCallInvoker.GetClientPipeHandles(out string[] inPipeHandles,
                                                      out string[] outPipeHandles);
 
                 // Note: The server's input pipes are the client's output pipes and vice versa.
                 processStartInfo.Arguments = $"-i {string.Join(",", outPipeHandles)} " +
                     $"-o {string.Join(",", inPipeHandles)}";
-            };
+            }
 
             // Dispose client handles right after start. This is necessary so that pipes are closed
             // when the server exits.
-            Action afterStart = () => { grpcCallInvoker.DisposeLocalCopyOfClientPipeHandles(); };
+            Action afterStart = () => { _grpcCallInvoker.DisposeLocalCopyOfClientPipeHandles(); };
 
             var rootDir = YetiConstants.RootDir;
 #if USE_LOCAL_PYTHON_AND_TOOLCHAIN

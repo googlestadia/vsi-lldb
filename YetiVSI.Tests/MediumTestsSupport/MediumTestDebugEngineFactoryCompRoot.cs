@@ -22,6 +22,7 @@ using YetiCommon;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.NatvisEngine;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Test.TestSupport.DebugEngine.NatvisEngine;
 using YetiVSI.Util;
 using YetiVSITestsCommon;
@@ -75,6 +76,11 @@ namespace YetiVSI.Test.MediumTestsSupport
             _taskContext = taskContext;
             _gameletClientFactory = gameletClientFactory;
             _windowsRegistry = windowsRegistry;
+        }
+
+        public override ISolutionExplorer GetSolutionExplorer()
+        {
+            return Substitute.For<ISolutionExplorer>();
         }
 
         public override ServiceManager CreateServiceManager()
