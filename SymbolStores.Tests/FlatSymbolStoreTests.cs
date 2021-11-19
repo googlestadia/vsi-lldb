@@ -24,14 +24,14 @@ namespace SymbolStores.Tests
     [TestFixture]
     class FlatSymbolStoreTests : SymbolStoreBaseTests
     {
-        const string STORE_PATH = @"C:\flatStore";
-        const string STORE_PATH_B = @"C:\flatStoreB";
+        const string _storePath = @"C:\flatStore";
+        const string _storePathB = @"C:\flatStoreB";
 
         [Test]
         public void Constructor_EmptyPath()
         {
             Assert.Throws<ArgumentException>(
-                () => new FlatSymbolStore(fakeFileSystem, fakeBinaryFileUtil, ""));
+                () => new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, ""));
         }
 
         [Test]
@@ -39,12 +39,12 @@ namespace SymbolStores.Tests
         {
             var store = await GetStoreWithFileAsync();
 
-            var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true,
-                                                          log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_filename, BuildId.Empty, true,
+                                                          _log, _forceLoad);
 
-            Assert.AreEqual(Path.Combine(STORE_PATH, FILENAME), fileReference.Location);
-            StringAssert.Contains(Strings.FileFound(Path.Combine(STORE_PATH, FILENAME)),
-                                  log.ToString());
+            Assert.AreEqual(Path.Combine(_storePath, _filename), fileReference.Location);
+            StringAssert.Contains(Strings.FileFound(Path.Combine(_storePath, _filename)),
+                                  _log.ToString());
         }
 
         [Test]
@@ -53,26 +53,26 @@ namespace SymbolStores.Tests
             var mismatchedBuildId = new BuildId("4321");
 
             var store = await GetStoreWithFileAsync();
-            var fileReference = await store.FindFileAsync(FILENAME, mismatchedBuildId, true,
-                                                          log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_filename, mismatchedBuildId, true,
+                                                          _log, _forceLoad);
 
             Assert.Null(fileReference);
-            StringAssert.Contains(Strings.BuildIdMismatch(Path.Combine(STORE_PATH, FILENAME),
-                                                          mismatchedBuildId, BUILD_ID),
-                                  log.ToString());
+            StringAssert.Contains(Strings.BuildIdMismatch(Path.Combine(_storePath, _filename),
+                                                          mismatchedBuildId, _buildId),
+                                  _log.ToString());
         }
 
         [Test]
         public async Task FindFile_InvalidStoreAsync()
         {
-            var store = new FlatSymbolStore(fakeFileSystem, fakeBinaryFileUtil, INVALID_PATH);
+            var store = new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, _invalidPath);
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
-                                                          log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
+                                                          _log, _forceLoad);
 
             Assert.Null(fileReference);
-            StringAssert.Contains(Strings.FailedToSearchFlatStore(INVALID_PATH, FILENAME, ""),
-                                  log.ToString());
+            StringAssert.Contains(Strings.FailedToSearchFlatStore(_invalidPath, _filename, ""),
+                                  _log.ToString());
         }
 
         [Test]
@@ -82,21 +82,21 @@ namespace SymbolStores.Tests
             mockBinaryFileUtil.ReadBuildIdAsync(Arg.Any<string>()).Returns<BuildId>(x => {
                 throw new BinaryFileUtilException("test exception");
             });
-            var store = new FlatSymbolStore(fakeFileSystem, mockBinaryFileUtil, STORE_PATH);
-            fakeBuildIdWriter.WriteBuildId(Path.Combine(STORE_PATH, FILENAME), BUILD_ID);
+            var store = new FlatSymbolStore(_fakeFileSystem, mockBinaryFileUtil, _storePath);
+            _fakeBuildIdWriter.WriteBuildId(Path.Combine(_storePath, _filename), _buildId);
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
-                                                          log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
+                                                          _log, _forceLoad);
 
             Assert.Null(fileReference);
-            StringAssert.Contains("test exception", log.ToString());
+            StringAssert.Contains("test exception", _log.ToString());
         }
 
         [Test]
         public void DeepEquals()
         {
-            var storeA = new FlatSymbolStore(fakeFileSystem, fakeBinaryFileUtil, STORE_PATH);
-            var storeB = new FlatSymbolStore(fakeFileSystem, fakeBinaryFileUtil, STORE_PATH);
+            var storeA = new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, _storePath);
+            var storeB = new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, _storePath);
 
             Assert.True(storeA.DeepEquals(storeB));
             Assert.True(storeB.DeepEquals(storeA));
@@ -105,8 +105,8 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_NotEqual()
         {
-            var storeA = new FlatSymbolStore(fakeFileSystem, fakeBinaryFileUtil, STORE_PATH);
-            var storeB = new FlatSymbolStore(fakeFileSystem, fakeBinaryFileUtil, STORE_PATH_B);
+            var storeA = new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, _storePath);
+            var storeB = new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, _storePathB);
 
             Assert.False(storeA.DeepEquals(storeB));
             Assert.False(storeB.DeepEquals(storeA));
@@ -116,14 +116,14 @@ namespace SymbolStores.Tests
 
         protected override ISymbolStore GetEmptyStore()
         {
-            return new FlatSymbolStore(fakeFileSystem, fakeBinaryFileUtil, STORE_PATH);
+            return new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, _storePath);
         }
 
         protected override Task<ISymbolStore> GetStoreWithFileAsync()
         {
-            fakeBuildIdWriter.WriteBuildId(Path.Combine(STORE_PATH, FILENAME), BUILD_ID);
+            _fakeBuildIdWriter.WriteBuildId(Path.Combine(_storePath, _filename), _buildId);
             return Task.FromResult<ISymbolStore>(
-                new FlatSymbolStore(fakeFileSystem, fakeBinaryFileUtil, STORE_PATH));
+                new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, _storePath));
         }
 
 #endregion

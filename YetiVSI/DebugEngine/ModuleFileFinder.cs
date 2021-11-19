@@ -100,11 +100,11 @@ namespace YetiVSI.DebugEngine
             }
             searchLog = searchLog ?? TextWriter.Null;
 
-            await searchLog.WriteLogAsync($"Searching for '{filename}'");
+            await searchLog.WriteLineAndTraceAsync($"Searching for '{filename}'");
 
             if (uuid == BuildId.Empty)
             {
-                await searchLog.WriteLogAsync(ErrorStrings.ModuleBuildIdUnknown(filename));
+                await searchLog.WriteLineAndTraceAsync(ErrorStrings.ModuleBuildIdUnknown(filename));
             }
 
             IFileReference fileReference =
@@ -112,13 +112,13 @@ namespace YetiVSI.DebugEngine
                                                  forceLoad);
             if (fileReference == null)
             {
-                await searchLog.WriteLogAsync(ErrorStrings.FailedToFindFile(filename));
+                await searchLog.WriteLineAndTraceAsync(ErrorStrings.FailedToFindFile(filename));
                 return null;
             }
 
             if (!fileReference.IsFilesystemLocation)
             {
-                await searchLog.WriteLogAsync(
+                await searchLog.WriteLineAndTraceAsync(
                     ErrorStrings.FileNotOnFilesystem(fileReference.Location));
                 return null;
             }

@@ -253,7 +253,7 @@ namespace YetiVSI.DebugEngine
 
                         if (SkipModule(name, symbolSettings))
                         {
-                            await searchLog.WriteLogAsync(
+                            await searchLog.WriteLineAndTraceAsync(
                                 SymbolInclusionSettings.ModuleExcludedMessage);
                             continue;
                         }

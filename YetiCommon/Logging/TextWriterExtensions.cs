@@ -6,7 +6,7 @@ namespace YetiCommon.Logging
 {
     public static class TextWriterExtensions
     {
-        public static async Task WriteLogAsync(this TextWriter log, string message)
+        public static async Task WriteLineAndTraceAsync(this TextWriter log, string message)
         {
             Task loggingTask = log.WriteLineAsync(message);
             Trace.WriteLine(message);

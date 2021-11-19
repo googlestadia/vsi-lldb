@@ -75,7 +75,7 @@ namespace SymbolStores
 
             if (buildId == BuildId.Empty)
             {
-                await log.WriteLogAsync(
+                await log.WriteLineAndTraceAsync(
                     Strings.FailedToSearchStructuredStore(_path, filename, Strings.EmptyBuildId));
                 return null;
             }
@@ -88,17 +88,17 @@ namespace SymbolStores
             }
             catch (ArgumentException e)
             {
-                await log.WriteLogAsync(
+                await log.WriteLineAndTraceAsync(
                     Strings.FailedToSearchStructuredStore(_path, filename, e.Message));
                 return null;
             }
             if (!_fileSystem.File.Exists(filepath))
             {
-                await log.WriteLogAsync(Strings.FileNotFound(filepath));
+                await log.WriteLineAndTraceAsync(Strings.FileNotFound(filepath));
                 return null;
             }
 
-            await log.WriteLogAsync(Strings.FileFound(filepath));
+            await log.WriteLineAndTraceAsync(Strings.FileFound(filepath));
             return new FileReference(_fileSystem, filepath);
         }
 
@@ -132,7 +132,7 @@ namespace SymbolStores
                 string filepath = Path.Combine(_path, filename, buildId.ToString(), filename);
                 await source.CopyToAsync(filepath);
 
-                await log.WriteLogAsync(Strings.CopiedFile(filename, filepath));
+                await log.WriteLineAndTraceAsync(Strings.CopiedFile(filename, filepath));
 
                 return new FileReference(_fileSystem, filepath);
             }

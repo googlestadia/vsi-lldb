@@ -73,14 +73,14 @@ namespace SymbolStores
             }
             catch (ArgumentException e)
             {
-                await log.WriteLogAsync(
+                await log.WriteLineAndTraceAsync(
                     Strings.FailedToSearchFlatStore(_path, filename, e.Message));
                 return null;
             }
 
             if (!_fileSystem.File.Exists(filepath))
             {
-                await log.WriteLogAsync(Strings.FileNotFound(filepath));
+                await log.WriteLineAndTraceAsync(Strings.FileNotFound(filepath));
                 return null;
             }
 
@@ -91,19 +91,19 @@ namespace SymbolStores
                     BuildId actualBuildId = await _binaryFileUtil.ReadBuildIdAsync(filepath);
                     if (actualBuildId != buildId)
                     {
-                        await log.WriteLogAsync(
+                        await log.WriteLineAndTraceAsync(
                             Strings.BuildIdMismatch(filepath, buildId, actualBuildId));
                         return null;
                     }
                 }
                 catch (BinaryFileUtilException e)
                 {
-                    await log.WriteLogAsync(e.Message);
+                    await log.WriteLineAndTraceAsync(e.Message);
                     return null;
                 }
             }
 
-            await log.WriteLogAsync(Strings.FileFound(filepath));
+            await log.WriteLineAndTraceAsync(Strings.FileFound(filepath));
             return new FileReference(_fileSystem, filepath);
         }
 

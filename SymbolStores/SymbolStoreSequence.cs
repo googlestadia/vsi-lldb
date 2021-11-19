@@ -81,7 +81,7 @@ namespace SymbolStores
                             when (e is NotSupportedException || e is SymbolStoreException ||
                                   e is ArgumentException)
                         {
-                            await log.WriteLogAsync(e.Message);
+                            await log.WriteLineAndTraceAsync(e.Message);
                         }
                     }
 
@@ -111,10 +111,10 @@ namespace SymbolStores
 
         public override bool DeepEquals(ISymbolStore otherStore)
         {
-            var other = otherStore as SymbolStoreSequence;
-            return other != null && _stores.Count == other._stores.Count &&
-                   _stores.Zip(other._stores, (a, b) => Tuple.Create(a, b))
-                       .All(x => x.Item1.DeepEquals(x.Item2));
+            return otherStore is SymbolStoreSequence other
+                && _stores.Count == other._stores.Count
+                && _stores.Zip(other._stores, Tuple.Create)
+                    .All(x => x.Item1.DeepEquals(x.Item2));
         }
 #endregion
 
@@ -131,14 +131,14 @@ namespace SymbolStores
                     {
                         string errorMessage =
                             Strings.BuildIdMismatch(filepath, buildId, actualBuildId);
-                        await log.WriteLogAsync(errorMessage);
+                        await log.WriteLineAndTraceAsync(errorMessage);
                         return false;
                     }
                 }
             }
             catch (BinaryFileUtilException e)
             {
-                await log.WriteLogAsync(e.Message);
+                await log.WriteLineAndTraceAsync(e.Message);
                 return false;
             }
             return true;

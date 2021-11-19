@@ -84,7 +84,7 @@ namespace YetiVSI.DebugEngine
                 await GetSymbolFileDirAndNameAsync(lldbModule, searchLog);
             if (string.IsNullOrEmpty(symbolFileName))
             {
-                await searchLog.WriteLogAsync(ErrorStrings.SymbolFileNameUnknown);
+                await searchLog.WriteLineAndTraceAsync(ErrorStrings.SymbolFileNameUnknown);
                 return false;
             }
             var uuid = new BuildId(lldbModule.GetUUIDString());
@@ -159,7 +159,7 @@ namespace YetiVSI.DebugEngine
             {
                 string errorString = ErrorStrings.InvalidBinaryPathOrName(binaryDirectory,
                     binaryFilename, e.Message);
-                await log.WriteLogAsync(errorString);
+                await log.WriteLineAndTraceAsync(errorString);
                 return (null, null);
             }
 
@@ -170,7 +170,7 @@ namespace YetiVSI.DebugEngine
             }
             catch (BinaryFileUtilException e)
             {
-                await log.WriteLogAsync(e.Message);
+                await log.WriteLineAndTraceAsync(e.Message);
                 return (null, null);
             }
 
@@ -182,7 +182,7 @@ namespace YetiVSI.DebugEngine
             catch (BinaryFileUtilException e)
             {
                 // Just log the message (the directory section is optional).
-                await log.WriteLogAsync(e.Message);
+                await log.WriteLineAndTraceAsync(e.Message);
             }
 
             return (symbolFileDirectory, symbolFileName);
@@ -210,13 +210,13 @@ namespace YetiVSI.DebugEngine
 
             if (!commandResult.Succeeded())
             {
-                await searchLog.WriteLogAsync("LLDB error: " + commandResult.GetError());
+                await searchLog.WriteLineAndTraceAsync("LLDB error: " + commandResult.GetError());
                 return false;
             }
 
             string text = $"LLDB output: {commandResult.GetOutput()}{Environment.NewLine}" +
                 $"Successfully loaded symbol file '{filepath}'.";
-            await searchLog.WriteLogAsync(text);
+            await searchLog.WriteLineAndTraceAsync(text);
 
             return true;
         }

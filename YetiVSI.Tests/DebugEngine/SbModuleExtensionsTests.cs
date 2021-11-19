@@ -23,7 +23,7 @@ using YetiVSI.Test.TestSupport;
 namespace YetiVSI.Test.DebugEngine
 {
     [TestFixture]
-    class LldbModuleUtilTests
+    class SbModuleExtensionsTests
     {
         const ulong _baseLoadAddress = 2000;
         const long _moduleSlide = 3000;

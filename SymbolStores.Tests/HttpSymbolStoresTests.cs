@@ -25,32 +25,32 @@ namespace SymbolStores.Tests
     [TestFixture]
     class HttpSymbolStoresTests : SymbolStoreBaseTests
     {
-        const string STORE_URL = "https://example.com/foo";
-        const string STORE_URL_B = "https://example.net/bar";
-        static readonly string URL_IN_STORE = $"{STORE_URL}/{FILENAME}/{BUILD_ID}/{FILENAME}";
-        FakeHttpMessageHandler fakeHttpMessageHandler;
+        const string _storeUrl = "https://example.com/foo";
+        const string _storeUrlB = "https://example.net/bar";
+        static readonly string _urlInStore = $"{_storeUrl}/{_filename}/{_buildId}/{_filename}";
+        FakeHttpMessageHandler _fakeHttpMessageHandler;
 
-        HttpClient httpClient;
+        HttpClient _httpClient;
 
         public override void SetUp()
         {
             base.SetUp();
 
-            fakeHttpMessageHandler = new FakeHttpMessageHandler();
-            httpClient = new HttpClient(fakeHttpMessageHandler);
+            _fakeHttpMessageHandler = new FakeHttpMessageHandler();
+            _httpClient = new HttpClient(_fakeHttpMessageHandler);
         }
 
         [TearDown]
         public void TearDown()
         {
-            httpClient.Dispose();
+            _httpClient.Dispose();
         }
 
         [Test]
         public void Create_EmptyUrl()
         {
             Assert.Throws<ArgumentException>(
-                () => new HttpSymbolStore(fakeFileSystem, httpClient, ""));
+                () => new HttpSymbolStore(_fakeFileSystem, _httpClient, ""));
         }
 
         [Test]
@@ -58,88 +58,88 @@ namespace SymbolStores.Tests
         {
             var store = GetEmptyStore();
 
-            var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true, log,
+            var fileReference = await store.FindFileAsync(_filename, BuildId.Empty, true, _log,
                                                           _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(
-                Strings.FailedToSearchHttpStore(STORE_URL, FILENAME, Strings.EmptyBuildId),
-                log.ToString());
+                Strings.FailedToSearchHttpStore(_storeUrl, _filename, Strings.EmptyBuildId),
+                _log.ToString());
         }
 
         [Test]
         public async Task FindFile_HttpRequestExceptionAsync()
         {
             var store = GetEmptyStore();
-            fakeHttpMessageHandler.ExceptionMap[new Uri(URL_IN_STORE)] =
+            _fakeHttpMessageHandler.ExceptionMap[new Uri(_urlInStore)] =
                 new HttpRequestException("message");
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
-                                                          log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
+                                                          _log, _forceLoad);
 
             Assert.Null(fileReference);
-            StringAssert.Contains(Strings.FailedToSearchHttpStore(STORE_URL, FILENAME, "message"),
-                                  log.ToString());
+            StringAssert.Contains(Strings.FailedToSearchHttpStore(_storeUrl, _filename, "message"),
+                                  _log.ToString());
         }
 
         [Test]
         public async Task FindFile_WontSearchAgainAfterHttpRequestExceptionAsync()
         {
             var store = GetEmptyStore();
-            fakeHttpMessageHandler.ExceptionMap[new Uri(URL_IN_STORE)] =
+            _fakeHttpMessageHandler.ExceptionMap[new Uri(_urlInStore)] =
                 new HttpRequestException("message");
 
-            await store.FindFileAsync(FILENAME, BUILD_ID, true, TextWriter.Null,
+            await store.FindFileAsync(_filename, _buildId, true, TextWriter.Null,
                                       _forceLoad);
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
-                                                          log, false);
+            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
+                                                          _log, false);
             Assert.Null(fileReference);
-            StringAssert.Contains(Strings.DoesNotExistInHttpStore(FILENAME, STORE_URL),
-                                  log.ToString());
+            StringAssert.Contains(Strings.DoesNotExistInHttpStore(_filename, _storeUrl),
+                                  _log.ToString());
         }
 
         [Test]
         public async Task FindFile_HeadRequestsNotSupportedAsync()
         {
             var store = await GetStoreWithFileAsync();
-            fakeHttpMessageHandler.SupportsHeadRequests = false;
+            _fakeHttpMessageHandler.SupportsHeadRequests = false;
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
-                                                          log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
+                                                          _log, _forceLoad);
 
-            Assert.AreEqual(URL_IN_STORE, fileReference.Location);
-            StringAssert.Contains(Strings.FileFound(URL_IN_STORE), log.ToString());
+            Assert.AreEqual(_urlInStore, fileReference.Location);
+            StringAssert.Contains(Strings.FileFound(_urlInStore), _log.ToString());
         }
 
         [Test]
         public async Task FindFile_ConnectionIsUnencryptedAsync()
         {
-            var store = new HttpSymbolStore(fakeFileSystem, httpClient, "http://example.com/");
+            var store = new HttpSymbolStore(_fakeFileSystem, _httpClient, "http://example.com/");
 
-            await store.FindFileAsync(FILENAME, BUILD_ID, true, log, false);
+            await store.FindFileAsync(_filename, _buildId, true, _log, false);
 
-            StringAssert.Contains(Strings.ConnectionIsUnencrypted("example.com"), log.ToString());
+            StringAssert.Contains(Strings.ConnectionIsUnencrypted("example.com"), _log.ToString());
         }
 
         [Test]
         public async Task FindFile_WontSearchAgainAfterConnectionIsUnencryptedAsync()
         {
-            var store = new HttpSymbolStore(fakeFileSystem, httpClient, "http://example.com/");
+            var store = new HttpSymbolStore(_fakeFileSystem, _httpClient, "http://example.com/");
 
-            await store.FindFileAsync(FILENAME, BUILD_ID, true, TextWriter.Null,
+            await store.FindFileAsync(_filename, _buildId, true, TextWriter.Null,
                                       _forceLoad);
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
-                                                          log, false);
+            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
+                                                          _log, false);
             Assert.Null(fileReference);
-            StringAssert.Contains(Strings.DoesNotExistInHttpStore(FILENAME, "http://example.com/"),
-                                  log.ToString());
+            StringAssert.Contains(Strings.DoesNotExistInHttpStore(_filename, "http://example.com/"),
+                                  _log.ToString());
         }
 
         [Test]
         public void DeepEquals()
         {
-            var storeA = new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL);
-            var storeB = new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL);
+            var storeA = new HttpSymbolStore(_fakeFileSystem, _httpClient, _storeUrl);
+            var storeB = new HttpSymbolStore(_fakeFileSystem, _httpClient, _storeUrl);
 
             Assert.True(storeA.DeepEquals(storeB));
             Assert.True(storeB.DeepEquals(storeA));
@@ -148,8 +148,8 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_NotEqual()
         {
-            var storeA = new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL);
-            var storeB = new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL_B);
+            var storeA = new HttpSymbolStore(_fakeFileSystem, _httpClient, _storeUrl);
+            var storeB = new HttpSymbolStore(_fakeFileSystem, _httpClient, _storeUrlB);
 
             Assert.False(storeA.DeepEquals(storeB));
             Assert.False(storeB.DeepEquals(storeA));
@@ -159,16 +159,16 @@ namespace SymbolStores.Tests
 
         protected override ISymbolStore GetEmptyStore()
         {
-            return new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL);
+            return new HttpSymbolStore(_fakeFileSystem, _httpClient, _storeUrl);
         }
 
         protected override Task<ISymbolStore> GetStoreWithFileAsync()
         {
-            fakeHttpMessageHandler.ContentMap[new Uri(URL_IN_STORE)] =
-                Encoding.UTF8.GetBytes(BUILD_ID.ToHexString());
+            _fakeHttpMessageHandler.ContentMap[new Uri(_urlInStore)] =
+                Encoding.UTF8.GetBytes(_buildId.ToHexString());
 
             return Task.FromResult<ISymbolStore>(
-                new HttpSymbolStore(fakeFileSystem, httpClient, STORE_URL));
+                new HttpSymbolStore(_fakeFileSystem, _httpClient, _storeUrl));
         }
 
 #endregion

@@ -23,13 +23,13 @@ namespace SymbolStores.Tests
     [TestFixture]
     class StructuredSymbolStoreTests : SymbolStoreBaseTests
     {
-        const string STORE_PATH = @"C:\store";
-        const string STORE_PATH_B = @"C:\storeB";
+        const string _storePath = @"C:\store";
+        const string _storePathB = @"C:\storeB";
 
         [Test]
         public void Constructor_EmptyPath()
         {
-            Assert.Throws<ArgumentException>(() => new StructuredSymbolStore(fakeFileSystem, ""));
+            Assert.Throws<ArgumentException>(() => new StructuredSymbolStore(_fakeFileSystem, ""));
         }
 
         [Test]
@@ -37,26 +37,27 @@ namespace SymbolStores.Tests
         {
             var store = GetEmptyStore();
 
-            var fileReference = await store.FindFileAsync(FILENAME, BuildId.Empty, true,
-                                                          log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_filename, BuildId.Empty, true,
+                                                          _log, _forceLoad);
 
             Assert.Null(fileReference);
             StringAssert.Contains(
-                Strings.FailedToSearchStructuredStore(STORE_PATH, FILENAME, Strings.EmptyBuildId),
-                log.ToString());
+                Strings.FailedToSearchStructuredStore(_storePath, _filename, Strings.EmptyBuildId),
+                _log.ToString());
         }
 
         [Test]
         public async Task FindFile_InvalidStoreAsync()
         {
-            var store = new StructuredSymbolStore(fakeFileSystem, INVALID_PATH);
+            var store = new StructuredSymbolStore(_fakeFileSystem, _invalidPath);
 
-            var fileReference = await store.FindFileAsync(FILENAME, BUILD_ID, true,
-                                                          log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
+                                                          _log, _forceLoad);
 
             Assert.Null(fileReference);
-            StringAssert.Contains(Strings.FailedToSearchStructuredStore(INVALID_PATH, FILENAME, ""),
-                                  log.ToString());
+            StringAssert.Contains(Strings.FailedToSearchStructuredStore(
+                                      _invalidPath, _filename, ""),
+                                  _log.ToString());
         }
 
         [Test]
@@ -64,9 +65,10 @@ namespace SymbolStores.Tests
         {
             var store = GetEmptyStore();
 
-            var fileReference = await store.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID, log);
+            var fileReference = await store.AddFileAsync(_sourceSymbolFile, _filename,
+                                                         _buildId, _log);
 
-            Assert.AreEqual(Path.Combine(STORE_PATH, FILENAME, BUILD_ID.ToString(), FILENAME),
+            Assert.AreEqual(Path.Combine(_storePath, _filename, _buildId.ToString(), _filename),
                             fileReference.Location);
         }
 
@@ -76,18 +78,18 @@ namespace SymbolStores.Tests
             var store = GetEmptyStore();
 
             var exception = Assert.ThrowsAsync<ArgumentException>(
-                () => store.AddFileAsync(sourceSymbolFile, FILENAME, BuildId.Empty));
+                () => store.AddFileAsync(_sourceSymbolFile, _filename, BuildId.Empty));
 
             StringAssert.Contains(
-                Strings.FailedToCopyToStructuredStore(STORE_PATH, FILENAME, Strings.EmptyBuildId),
+                Strings.FailedToCopyToStructuredStore(_storePath, _filename, Strings.EmptyBuildId),
                 exception.Message);
         }
 
         [Test]
         public void DeepEquals()
         {
-            var storeA = new StructuredSymbolStore(fakeFileSystem, STORE_PATH);
-            var storeB = new StructuredSymbolStore(fakeFileSystem, STORE_PATH);
+            var storeA = new StructuredSymbolStore(_fakeFileSystem, _storePath);
+            var storeB = new StructuredSymbolStore(_fakeFileSystem, _storePath);
 
             Assert.True(storeA.DeepEquals(storeB));
             Assert.True(storeB.DeepEquals(storeA));
@@ -96,8 +98,8 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_NotEqual()
         {
-            var storeA = new StructuredSymbolStore(fakeFileSystem, STORE_PATH);
-            var storeB = new StructuredSymbolStore(fakeFileSystem, STORE_PATH_B);
+            var storeA = new StructuredSymbolStore(_fakeFileSystem, _storePath);
+            var storeB = new StructuredSymbolStore(_fakeFileSystem, _storePathB);
 
             Assert.False(storeA.DeepEquals(storeB));
             Assert.False(storeB.DeepEquals(storeA));
@@ -107,13 +109,13 @@ namespace SymbolStores.Tests
 
         protected override ISymbolStore GetEmptyStore()
         {
-            return new StructuredSymbolStore(fakeFileSystem, STORE_PATH);
+            return new StructuredSymbolStore(_fakeFileSystem, _storePath);
         }
 
         protected override async Task<ISymbolStore> GetStoreWithFileAsync()
         {
-            var store = new StructuredSymbolStore(fakeFileSystem, STORE_PATH);
-            await store.AddFileAsync(sourceSymbolFile, FILENAME, BUILD_ID);
+            var store = new StructuredSymbolStore(_fakeFileSystem, _storePath);
+            await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
             return store;
         }
 

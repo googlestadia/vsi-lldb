@@ -34,7 +34,7 @@ namespace YetiVSI.DebugEngine
         }
     }
 
-    public static class LldbModuleUtil
+    public static class SbModuleExtensions
     {
         /// <summary>Whether the module has symbols loaded.</summary>
         public static bool HasSymbolsLoaded(this SbModule module) => module.HasCompileUnits();
@@ -43,7 +43,7 @@ namespace YetiVSI.DebugEngine
         /// Whether the module is a placeholder module. Placeholder modules are created by LLDB
         /// during minidump loading to take the place of modules with missing binaries.
         /// </summary>
-        public static bool IsPlaceholderModule(this SbModule module) => 
+        public static bool IsPlaceholderModule(this SbModule module) =>
             module.GetNumSections() == 1
             && module.FindSection(".module_image") != null;
 

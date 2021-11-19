@@ -157,7 +157,7 @@
     <Compile Include="DebugEngine\LldbAttachedProgram.cs" />
     <Compile Include="DebugEngine\ModuleFileFinder.cs" />
     <Compile Include="DebugEngine\ModuleFileMetricsLoadRecorder.cs" />
-    <Compile Include="DebugEngine\LldbModuleUtil.cs" />
+    <Compile Include="DebugEngine\SbModuleExtensions.cs" />
     <Compile Include="DebugEngine\NatvisEngine\NatvisExpressionEvaluator.cs" />
     <Compile Include="DebugEngine\NullExceptionManager.cs" />
     <Compile Include="DebugEngine\Signal.cs" />

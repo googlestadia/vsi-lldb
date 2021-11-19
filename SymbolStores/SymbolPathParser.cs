@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ namespace SymbolStores
 {
     // Parses lists of symbol paths, given in the format used by the _NT_SYMBOL_PATH environment
     // variable.
-    // This format consists of a semicolon-seperated list of path elements, in which each path
+    // This format consists of a semicolon-delimited list of path elements, in which each path
     // element can either represent a symbol server, a cache, or a symbol store path.
     // If the path element begins with "srv*" or "symsrv*symsrv.dll*" it represents a server, and
     // the remainder of the path element represents an asterisk-seperated list of symbol store
@@ -35,37 +35,37 @@ namespace SymbolStores
     // regular symbol servers.
     // If the path element does not begin with "srv*", "symsrv*", or "cache*", then it is an
     // unadorned path that represents either a flat or structured symbol store. Structured stores
-    // are disambiguated by the existance of a marker file named "pingme.txt".
+    // are disambiguated by the existence of a marker file named "pingme.txt".
     public class SymbolPathParser
     {
-        readonly IFileSystem fileSystem;
-        readonly IBinaryFileUtil binaryFileUtil;
-        readonly HttpClient httpClient;
-        readonly ICrashReportClient crashReportClient;
+        readonly IFileSystem _fileSystem;
+        readonly IBinaryFileUtil _binaryFileUtil;
+        readonly HttpClient _httpClient;
+        readonly ICrashReportClient _crashReportClient;
 
         // Used to replace any empty cache path elements that are encountered, and as a cache for
         // any HTTP stores that would otherwise not be cached.
-        string defaultCachePath;
+        readonly string _defaultCachePath;
 
         // Used to replace any empty symbol server path elements that are encountered.
-        string defaultSymbolStorePath;
+        readonly string _defaultSymbolStorePath;
 
         // Any http store where the hostname matches an entry in this list is skipped and not
         // parsed.
-        ISet<string> hostExcludeList;
+        readonly ISet<string> _hostExcludeList;
 
         public SymbolPathParser(IFileSystem fileSystem, IBinaryFileUtil binaryFileUtil,
                                 HttpClient httpClient, ICrashReportClient crashReportClient,
                                 string defaultCachePath, string defaultSymbolStorePath,
                                 IEnumerable<string> hostExcludeList = null)
         {
-            this.fileSystem = fileSystem;
-            this.binaryFileUtil = binaryFileUtil;
-            this.httpClient = httpClient;
-            this.crashReportClient = crashReportClient;
-            this.defaultCachePath = defaultCachePath;
-            this.defaultSymbolStorePath = defaultSymbolStorePath;
-            this.hostExcludeList = new HashSet<string>(
+            _fileSystem = fileSystem;
+            _binaryFileUtil = binaryFileUtil;
+            _httpClient = httpClient;
+            _crashReportClient = crashReportClient;
+            _defaultCachePath = defaultCachePath;
+            _defaultSymbolStorePath = defaultSymbolStorePath;
+            _hostExcludeList = new HashSet<string>(
                 hostExcludeList ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
         }
 
@@ -79,21 +79,21 @@ namespace SymbolStores
         {
             if (symbolPaths == null)
             {
-                throw new ArgumentNullException("symbolPaths");
+                throw new ArgumentNullException(nameof(symbolPaths));
             }
 
             Trace.WriteLine($"Parsing symbol paths: '{symbolPaths}'");
 
-            var storeSequence = new SymbolStoreSequence(binaryFileUtil);
+            var storeSequence = new SymbolStoreSequence(_binaryFileUtil);
 
-            foreach (var pathElement in symbolPaths.Split(';'))
+            foreach (string pathElement in symbolPaths.Split(';'))
             {
                 if (string.IsNullOrEmpty(pathElement))
                 {
                     continue;
                 }
 
-                var components = pathElement.Split('*');
+                string[] components = pathElement.Split('*');
 
                 if (components.Length > 2 &&
                     string.Equals(components[0], "symsrv", StringComparison.OrdinalIgnoreCase))
@@ -104,7 +104,7 @@ namespace SymbolStores
                                       StringComparison.OrdinalIgnoreCase))
                     {
                         AddSymbolServer(storeSequence, components.Skip(2).ToList(),
-                                        defaultSymbolStorePath);
+                                        _defaultSymbolStorePath);
                     }
                     else
                     {
@@ -116,18 +116,18 @@ namespace SymbolStores
                 {
                     // "srv*" is a shortform for "symsrv*symsrv.dll*"
                     AddSymbolServer(storeSequence, components.Skip(1).ToList(),
-                                    defaultSymbolStorePath);
+                                    _defaultSymbolStorePath);
                 }
                 else if (components.Length > 1 &&
                          string.Equals(components[0], "cache", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Any empty cache paths are replaced with the defalt cache path
-                    AddSymbolServer(storeSequence, components.Skip(1).ToList(), defaultCachePath,
+                    // Any empty cache paths are replaced with the default cache path
+                    AddSymbolServer(storeSequence, components.Skip(1).ToList(), _defaultCachePath,
                                     isCache: true);
                 }
                 // The path element doesn't refer to a symbol server, but it could still be
                 // a Stadia store, an http store, a structured symbol store, or a flat directory.
-                else if (StadiaSymbolStore.IsStadiaStore(fileSystem, pathElement))
+                else if (StadiaSymbolStore.IsStadiaStore(_fileSystem, pathElement))
                 {
                     // Stadia stores need to be part of an implicit symbol server just in case
                     // we need to add a local cache downstream from the remote store.
@@ -147,18 +147,18 @@ namespace SymbolStores
                         storeSequence.AddStore(server);
                     }
                 }
-                else if (StructuredSymbolStore.IsStructuredStore(fileSystem, pathElement))
+                else if (StructuredSymbolStore.IsStructuredStore(_fileSystem, pathElement))
                 {
-                    storeSequence.AddStore(new StructuredSymbolStore(fileSystem, pathElement));
+                    storeSequence.AddStore(new StructuredSymbolStore(_fileSystem, pathElement));
                 }
                 else
                 {
                     storeSequence.AddStore(
-                        new FlatSymbolStore(fileSystem, binaryFileUtil, pathElement));
+                        new FlatSymbolStore(_fileSystem, _binaryFileUtil, pathElement));
                 }
             }
 
-            var jsonRepresentation = JsonConvert.SerializeObject(
+            string jsonRepresentation = JsonConvert.SerializeObject(
                 storeSequence,
                 new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
             Trace.WriteLine($"Symbol path parsing result: {jsonRepresentation}");
@@ -173,9 +173,9 @@ namespace SymbolStores
 
             for (int i = 0; i < paths.Count; ++i)
             {
-                var path = paths[i];
+                string path = paths[i];
 
-                if (StadiaSymbolStore.IsStadiaStore(fileSystem, path))
+                if (StadiaSymbolStore.IsStadiaStore(_fileSystem, path))
                 {
                     Trace.WriteLine("Warning: Stadia store not supported in symbol server " +
                                     "configuration; it will be ignored.");
@@ -204,11 +204,11 @@ namespace SymbolStores
                 }
                 else if (!string.IsNullOrEmpty(path))
                 {
-                    server.AddStore(new StructuredSymbolStore(fileSystem, path));
+                    server.AddStore(new StructuredSymbolStore(_fileSystem, path));
                 }
                 else if (!string.IsNullOrEmpty(defaultPath))
                 {
-                    server.AddStore(new StructuredSymbolStore(fileSystem, defaultPath));
+                    server.AddStore(new StructuredSymbolStore(_fileSystem, defaultPath));
                 }
             }
             storeSequence.AddStore(server);
@@ -221,12 +221,12 @@ namespace SymbolStores
             {
                 return false;
             }
-            if (hostExcludeList.Contains(new Uri(path, UriKind.Absolute).Host))
+            if (_hostExcludeList.Contains(new Uri(path, UriKind.Absolute).Host))
             {
                 Trace.WriteLine($"Skipped parsing http store '{path}' due to host excludelist.");
                 return false;
             }
-            server.AddStore(new HttpSymbolStore(fileSystem, httpClient, path));
+            server.AddStore(new HttpSymbolStore(_fileSystem, _httpClient, path));
             return true;
         }
 
@@ -237,21 +237,21 @@ namespace SymbolStores
             {
                 return false;
             }
-            server.AddStore(new StadiaSymbolStore(fileSystem, httpClient, crashReportClient));
+            server.AddStore(new StadiaSymbolStore(_fileSystem, _httpClient, _crashReportClient));
             return true;
         }
 
         bool TryAddDefaultCache(SymbolServer server, string upstreamPathForLogging)
         {
             // TODO: require the default cache path to be non-empty.
-            if (string.IsNullOrEmpty(defaultCachePath))
+            if (string.IsNullOrEmpty(_defaultCachePath))
             {
                 Trace.WriteLine(
                     $"'{upstreamPathForLogging}' must be cached, " +
                     "but no downstream cache exists and no default cache path has been provided.");
                 return false;
             }
-            server.AddStore(new StructuredSymbolStore(fileSystem, defaultCachePath));
+            server.AddStore(new StructuredSymbolStore(_fileSystem, _defaultCachePath));
             Trace.WriteLine($"Automatically added default cache as '{upstreamPathForLogging}' " +
                             "would not otherwise be cached.");
             return true;
