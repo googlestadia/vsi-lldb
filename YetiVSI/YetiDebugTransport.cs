@@ -62,7 +62,6 @@ namespace YetiVSI
         readonly PipeCallInvokerFactory _grpcCallInvokerFactory;
         readonly GrpcConnectionFactory _grpcConnectionFactory;
         readonly Action _onAsyncRpcCompleted;
-        readonly LldbTransportSession.Factory _transportSessionFactory;
         readonly ManagedProcess.Factory _managedProcessFactory;
         readonly IVsOutputWindowPane _debugPane;
         readonly IDialogUtil _dialogUtil;
@@ -74,7 +73,6 @@ namespace YetiVSI
         GrpcSession _grpcSession;
 
         public YetiDebugTransport(JoinableTaskContext taskContext,
-                                  LldbTransportSession.Factory transportSessionFactory,
                                   PipeCallInvokerFactory grpcCallInvokerFactory,
                                   GrpcConnectionFactory grpcConnectionFactory,
                                   Action onAsyncRpcCompleted,
@@ -89,7 +87,6 @@ namespace YetiVSI
             _grpcConnectionFactory = grpcConnectionFactory;
             _onAsyncRpcCompleted = onAsyncRpcCompleted;
             _managedProcessFactory = managedProcessFactory;
-            _transportSessionFactory = transportSessionFactory;
             _dialogUtil = dialogUtil;
 
             Guid debugPaneGuid = VSConstants.GUID_OutWindowDebugPane;
@@ -101,16 +98,18 @@ namespace YetiVSI
         {
             lock (_thisLock)
             {
-                _grpcSession = new GrpcSession
-                {
-                    TransportSession = _transportSessionFactory.Create()
-                };
-
-                if (_grpcSession.TransportSession == null)
+                // Try establishing an LLDB session.
+                var session = new LldbTransportSession();
+                if (!session.IsValid())
                 {
                     Trace.WriteLine("Unable to start the debug transport, invalid session.");
                     throw new YetiDebugTransportException(ErrorStrings.FailedToStartTransport);
                 }
+
+                _grpcSession = new GrpcSession
+                {
+                    TransportSession = session
+                };
 
                 ProcessStartData grpcProcessData = CreateDebuggerGrpcServerProcessStartData();
                 if (!LaunchProcesses(new List<ProcessStartData>() { grpcProcessData },

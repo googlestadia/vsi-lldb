@@ -110,10 +110,8 @@ namespace YetiVSI.Test.DebugEngine
             var vsOutputWindow =
                 serviceManager.GetGlobalService(typeof(SVsOutputWindow)) as IVsOutputWindow;
             var callInvokerFactory = new PipeCallInvokerFactory();
-            var transportSessionFactory =
-                new LldbTransportSession.Factory(new MemoryMappedFileFactory());
             var yetiTransport = new YetiDebugTransport(
-                joinableTaskContext, transportSessionFactory, callInvokerFactory,
+                joinableTaskContext, callInvokerFactory,
                 new GrpcConnectionFactory(joinableTaskContext.Factory, grpcInterceptors.ToArray()),
                 GetTaskExecutor().CancelAsyncOperationIfRequested, processFactory, _dialogUtil,
                 vsOutputWindow, vsiService);

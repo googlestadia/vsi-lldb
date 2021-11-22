@@ -18,6 +18,7 @@ using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using YetiCommon;
@@ -28,6 +29,18 @@ using LaunchOption = YetiVSI.DebugEngine.DebugEngine.LaunchOption;
 
 namespace YetiVSI.Test
 {
+
+    class DisposingList<T> : List<T>, IDisposable where T : IDisposable
+    {
+        public void Dispose()
+        {
+            foreach (var item in this)
+            {
+                item?.Dispose();
+            }
+        }
+    }
+
     [TestFixture]
     class YetiDebugTransportTest
     {
@@ -38,8 +51,6 @@ namespace YetiVSI.Test
 
         // Mocks of dependencies
         JoinableTaskContext taskContext;
-        MemoryMappedFileFactory mockMemoryMappedFileFactory;
-        LldbTransportSession.Factory transportSessionFactory;
         PipeCallInvoker mockGrpcCallInvoker;
         PipeCallInvokerFactory mockGrpcCallInvokerFactory;
         GrpcConnectionFactory mockGrpcConnectionFactory;
@@ -58,8 +69,6 @@ namespace YetiVSI.Test
         public void SetUp()
         {
             taskContext = new JoinableTaskContext();
-            mockMemoryMappedFileFactory = Substitute.For<MemoryMappedFileFactory>();
-            transportSessionFactory = new LldbTransportSession.Factory(mockMemoryMappedFileFactory);
             mockManagedProcessFactory = Substitute.For<ManagedProcess.Factory>();
             mockGrpcCallInvoker = Substitute.ForPartsOf<PipeCallInvoker>(_numGrpcPipePairs);
             mockGrpcCallInvokerFactory = Substitute.For<PipeCallInvokerFactory>();
@@ -69,7 +78,7 @@ namespace YetiVSI.Test
             service = new YetiVSIService(optionPageGrid);
             var mockVsOutputWindow = Substitute.For<IVsOutputWindow>();
             mockDialogUtil = Substitute.For<IDialogUtil>();
-            yetiDebugTransport = new YetiDebugTransport(taskContext, transportSessionFactory,
+            yetiDebugTransport = new YetiDebugTransport(taskContext,
                                                         mockGrpcCallInvokerFactory,
                                                         mockGrpcConnectionFactory,
                                                         onAsyncRpcCompleted: null,
@@ -97,12 +106,32 @@ namespace YetiVSI.Test
         [Test]
         public void StartGrpcServerNoSession()
         {
-            mockMemoryMappedFileFactory.CreateNew(Arg.Any<string>(), Arg.Any<long>())
-                .Returns((IMemoryMappedFile) null);
-            Assert.Throws<YetiDebugTransportException>(
-                () => yetiDebugTransport.StartGrpcServer());
-            // Early errors don't cause aborts.
-            Assert.IsNull(abortError);
+            using (var sessions = new DisposingList<LldbTransportSession>())
+            {
+                // Exhaust all available sessions.
+                while (true)
+                {
+                    var session = new LldbTransportSession();
+                    if (session.GetSessionId() == LldbTransportSession.INVALID_SESSION_ID)
+                    {
+                        break;
+                    }
+                    sessions.Add(session);
+
+                    if (sessions.Count > 32)
+                    {
+                        Assert.Fail(
+                            "There are too many LLDB sessions available, " +
+                            "should be no more than ~10");
+                    }
+                }
+
+                Assert.Throws<YetiDebugTransportException>(
+                    () => yetiDebugTransport.StartGrpcServer());
+
+                // Early errors don't cause aborts.
+                Assert.IsNull(abortError);
+            }
         }
 
         [Test]
@@ -337,7 +366,7 @@ namespace YetiVSI.Test
         [Test]
         public void StartPostGameLaunchCaptionOutputNoPane()
         {
-            yetiDebugTransport = new YetiDebugTransport(taskContext, transportSessionFactory,
+            yetiDebugTransport = new YetiDebugTransport(taskContext,
                                                         mockGrpcCallInvokerFactory,
                                                         mockGrpcConnectionFactory,
                                                         onAsyncRpcCompleted: null,

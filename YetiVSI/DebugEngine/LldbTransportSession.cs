@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.IO.MemoryMappedFiles;
 using YetiCommon;
 using YetiVSI.DebugEngine.Interfaces;
 
@@ -21,40 +22,18 @@ namespace YetiVSI.DebugEngine
     // Used to coordinate state between multiple LLDB transport instances.
     public class LldbTransportSession : ITransportSession
     {
-        public class Factory
-        {
-            private readonly MemoryMappedFileFactory memoryMappedFileFactory;
-
-            public Factory(MemoryMappedFileFactory memoryMappedFileFactory)
-            {
-                this.memoryMappedFileFactory = memoryMappedFileFactory;
-            }
-
-            public virtual ITransportSession Create()
-            {
-                var session = new LldbTransportSession(memoryMappedFileFactory);
-                if (session.IsValid())
-                {
-                    return session;
-                }
-                return null;
-            }
-        }
-
         public const int INVALID_SESSION_ID = -1;
         const int MAX_SESSIONS = 10;
         const string FILE_PREFIX = "YetiTransportSession";
 
         // The sessionId is used as the index into an array of ports.
         readonly int sessionId;
-        MemoryMappedFileFactory memoryMappedFileFactory;
-        IMemoryMappedFile memoryMappedFile;
+        MemoryMappedFile memoryMappedFile;
 
         bool disposed = false;
 
-        private LldbTransportSession(MemoryMappedFileFactory memoryMappedFileFactory)
+        public LldbTransportSession()
         {
-            this.memoryMappedFileFactory = memoryMappedFileFactory;
             sessionId = FindAvailableSessionId();
         }
 
@@ -111,7 +90,7 @@ namespace YetiVSI.DebugEngine
 
         #endregion
 
-        bool IsValid()
+        public bool IsValid()
         {
             ThrowIfDisposed();
             return sessionId != INVALID_SESSION_ID && memoryMappedFile != null;
@@ -137,8 +116,7 @@ namespace YetiVSI.DebugEngine
                     // dispose on this object, or when the process stops.  These files let transport
                     // sessions 'reserve' a system unique session ID.  If the file exists it will
                     // throw a System.IO.IOException, and we can try the next one.
-                    memoryMappedFile = memoryMappedFileFactory.CreateNew(FILE_PREFIX + i,
-                        sizeof(byte));
+                    memoryMappedFile = MemoryMappedFile.CreateNew(FILE_PREFIX + i, sizeof(byte));
                     return i;
                 }
                 catch (System.IO.IOException)

@@ -13,88 +13,30 @@
 // limitations under the License.
 
 using NUnit.Framework;
-using NSubstitute;
 using YetiVSI.DebugEngine;
-using YetiCommon;
-using YetiVSI.DebugEngine.Interfaces;
 
 namespace YetiVSI.Test.DebugEngine
 {
     [TestFixture]
     class LldbTransportSessionTests
     {
-        const string FILE_PREFIX = "YetiTransportSession";
-        MemoryMappedFileFactory mockMemoryMappedFileFactory;
-        IMemoryMappedFile mockMemoryMappedFile;
-        ITransportSession transportSession;
-        LldbTransportSession.Factory transportSessionFactory;
-
-        [SetUp]
-        public void Setup()
-        {
-            mockMemoryMappedFileFactory = Substitute.For<MemoryMappedFileFactory>();
-            mockMemoryMappedFile = Substitute.For<IMemoryMappedFile>();
-
-            // The first session should get a memory mapped file on the first try.
-            mockMemoryMappedFileFactory.CreateNew(FILE_PREFIX + 0, Arg.Any<long>()).Returns(
-                mockMemoryMappedFile);
-            transportSessionFactory = new LldbTransportSession.Factory(mockMemoryMappedFileFactory);
-            transportSession = transportSessionFactory.Create();
-        }
-
         [Test]
         public void MultipleSessions()
         {
-            // The second session should throw an exception when creating the first file (because it
-            // already exists), and get a memory mapped file on the second try.
-            mockMemoryMappedFileFactory.CreateNew(FILE_PREFIX + 0, Arg.Any<long>()).Returns(x =>
-                {
-                    throw new System.IO.IOException();
-                });
-            mockMemoryMappedFileFactory.CreateNew(FILE_PREFIX + 1, Arg.Any<long>()).Returns(
-                mockMemoryMappedFile);
-            var transportSession2 = transportSessionFactory.Create();
+            var transportSession1 = new LldbTransportSession();
+            var transportSession2 = new LldbTransportSession();
 
             Assert.AreNotEqual(LldbTransportSession.INVALID_SESSION_ID,
-                transportSession.GetSessionId());
+                transportSession1.GetSessionId());
             Assert.AreNotEqual(LldbTransportSession.INVALID_SESSION_ID,
                 transportSession2.GetSessionId());
-            Assert.AreNotEqual(transportSession.GetSessionId(), transportSession2.GetSessionId());
+            Assert.AreNotEqual(transportSession1.GetSessionId(), transportSession2.GetSessionId());
 
             // Make sure the port numbers are different for the two sessions.
-            Assert.AreNotEqual(transportSession.GetLocalDebuggerPort(),
+            Assert.AreNotEqual(transportSession1.GetLocalDebuggerPort(),
                 transportSession2.GetLocalDebuggerPort());
-            Assert.AreNotEqual(transportSession.GetReservedLocalAndRemotePort(),
+            Assert.AreNotEqual(transportSession1.GetReservedLocalAndRemotePort(),
                 transportSession2.GetReservedLocalAndRemotePort());
-        }
-
-        [Test]
-        public void DisposeSuccess()
-        {
-            transportSession.Dispose();
-            mockMemoryMappedFile.Received().Dispose();
-        }
-
-        [Test]
-        public void InvalidSession()
-        {
-            // Throw an exception for every create call so we get an invalid session.
-            mockMemoryMappedFileFactory.CreateNew(Arg.Any<string>(), Arg.Any<long>()).Returns(x =>
-                {
-                    throw new System.IO.IOException();
-                });
-            var invalidTransportSession = transportSessionFactory.Create();
-            Assert.IsNull(invalidTransportSession);
-        }
-
-        [Test]
-        public void InvalidMappedFile()
-        {
-            // Throw an exception for every create call so we get an invalid session.
-            mockMemoryMappedFileFactory.CreateNew(Arg.Any<string>(), Arg.Any<long>()).Returns(
-                (IMemoryMappedFile)null);
-            var invalidTransportSession = transportSessionFactory.Create();
-            Assert.IsNull(invalidTransportSession);
         }
     }
 }
