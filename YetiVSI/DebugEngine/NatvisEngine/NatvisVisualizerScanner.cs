@@ -318,7 +318,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 // TODO: match on version, etc
                 foreach (TypeInfo v in fileInfo.Visualizers)
                 {
-                    var score = new TypeName.MatchScore(v.Visualizer.Priority);
+                    var score = new TypeName.MatchScore();
                     if (v.ParsedName.Match(typeNameToFind, score))
                     {
                         if (bestScore == null || score.CompareTo(bestScore) > 0)

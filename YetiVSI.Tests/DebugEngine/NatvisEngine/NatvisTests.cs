@@ -9517,9 +9517,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
     <DisplayString>Low Priority Value</DisplayString>
   </Type>
   <Type Name=""MyCustomType"" Priority=""High"">
-    <DisplayString>High Priority Value</DisplayString>
+    <DisplayString>HighPriority Value</DisplayString>
   </Type>
-  <Type Name=""MyCustomType"" Priority=""Medium"">
+  <Type Name=""MyCustomType"" Priority=""MediumLow"">
     <DisplayString>Medium Priority Value</DisplayString>
   </Type>
 </AutoVisualizer>
@@ -9535,140 +9535,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("High Priority Value"));
-        }
-
-        [Test]
-        public async Task VisualizerTypesWithDefaultAndLowPriorityAsync()
-        {
-            var xml = @"
-<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
-  <Type Name=""MyCustomType"" Priority=""MediumLow"">
-    <DisplayString>MediumLow Priority Value</DisplayString>
-  </Type>
-  <Type Name=""MyCustomType"">
-    <DisplayString>Default Priority Value</DisplayString>
-  </Type>
-  <Type Name=""MyCustomType"" Priority=""Low"">
-    <DisplayString>Low Priority Value</DisplayString>
-  </Type>
-</AutoVisualizer>
-";
-
-            LoadFromString(xml);
-
-            var remoteValue =
-                RemoteValueFakeUtil.CreateClass("MyCustomType", "dummyVarName", "actualValue");
-            var varInfo = CreateVarInfo(remoteValue);
-
-            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("Default Priority Value"));
-        }
-
-        [Test]
-        public async Task VisualizerTypesWithDefaultAndHighPriorityAsync()
-        {
-            var xml = @"
-<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
-  <Type Name=""MyCustomType"">
-    <DisplayString>Default Priority Value</DisplayString>
-  </Type>
-  <Type Name=""MyCustomType"" Priority=""MediumHigh"">
-    <DisplayString>MediumHigh Priority Value</DisplayString>
-  </Type>
-</AutoVisualizer>
-";
-
-            LoadFromString(xml);
-
-            var remoteValue =
-                RemoteValueFakeUtil.CreateClass("MyCustomType", "dummyVarName", "actualValue");
-            var varInfo = CreateVarInfo(remoteValue);
-
-            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("MediumHigh Priority Value"));
-        }
-
-        [Test]
-        public void VisualizerTypeWithInvalidPriority()
-        {
-            var xml = @"
-<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
-  <Type Name=""MyCustomType"">
-    <DisplayString>Default Priority Value</DisplayString>
-  </Type>
-  <Type Name=""MyCustomType"" Priority=""InvalidOption"">
-    <DisplayString>InvalidOption Priority Value</DisplayString>
-  </Type>
-</AutoVisualizer>
-";
-
-            _natvisExpander.VisualizerScanner.LoadFromString(xml);
-
-            var logs = nLogSpy.GetOutput();
-            Assert.That(logs, Does.Contain("ERROR: Failed to load Natvis text"));
-            Assert.That(logs, Does.Contain("'InvalidOption' is not a valid value"));
-        }
-
-        [Test]
-        public async Task VisualizerTypePriorityAcrossDifferentFilesAsync()
-        {
-            var firstXml = @"
-<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
-  <Type Name=""MyCustomType"" Priority=""Medium"">
-    <DisplayString>Medium Priority Value</DisplayString>
-  </Type>
-</AutoVisualizer>
-";
-            var secondXml = @"
-<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
-  <Type Name=""MyCustomType"" Priority=""High"">
-    <DisplayString>High Priority Value</DisplayString>
-  </Type>
-</AutoVisualizer>
-";
-            var thirdXml = @"
-<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
-  <Type Name=""MyCustomType"" Priority=""Low"">
-    <DisplayString>Low Priority Value</DisplayString>
-  </Type>
-</AutoVisualizer>
-";
-
-            // Load three natvis "files".
-            LoadFromString(firstXml);
-            LoadFromString(secondXml);
-            LoadFromString(thirdXml);
-
-            var remoteValue =
-                RemoteValueFakeUtil.CreateClass("MyCustomType", "dummyVarName", "actualValue");
-            var varInfo = CreateVarInfo(remoteValue);
-
-            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("High Priority Value"));
-        }
-
-        [Test]
-        public async Task ExactMatchIsPreferredOverPriorityAsync()
-        {
-            var xml = @"
-<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
-  <Type Name=""MyCustomType&lt;*&gt;"" Priority=""High"">
-    <DisplayString>Wildcard match</DisplayString>
-  </Type>
-  <Type Name=""MyCustomType&lt;int&gt;"" Priority=""Low"">
-    <DisplayString>Exact match</DisplayString>
-  </Type>
-</AutoVisualizer>
-";
-
-            LoadFromString(xml);
-
-            var remoteValue = RemoteValueFakeUtil.CreateClass("MyCustomType<int>", "dummy", "");
-            var varInfo = CreateVarInfo(remoteValue);
-
-            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("Exact match"));
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("Low Priority Value"));
         }
 
         [Test]

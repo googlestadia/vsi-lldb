@@ -426,9 +426,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// </summary>
         public class MatchScore : IComparable<MatchScore>
         {
-            public MatchScore(PriorityType priority)
+            public MatchScore()
             {
-                Priority = priority;
             }
 
             /// <summary>
@@ -448,11 +447,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             /// ]]></example>
             public int ArgCountDifference { get; set; }
 
-            /// <summary>
-            /// Value of Priority attribute of the visualizer.
-            /// </summary>
-            public PriorityType Priority { get; set; }
-
             public int CompareTo(MatchScore other)
             {
                 if (ExactTypeMatchCount != other.ExactTypeMatchCount)
@@ -461,14 +455,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     return ExactTypeMatchCount.CompareTo(other.ExactTypeMatchCount);
                 }
 
-                if (ArgCountDifference != other.ArgCountDifference)
-                {
-                    // Since lower is better, do other.CompareTo(this).
-                    return other.ArgCountDifference.CompareTo(ArgCountDifference);
-                }
-
-                // Since higher is better, do this.CompareTo(other).
-                return Priority.CompareTo(other.Priority);
+                // Since lower is better, do other.CompareTo(this).
+                return other.ArgCountDifference.CompareTo(ArgCountDifference);
             }
         }
     }
