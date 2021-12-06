@@ -223,8 +223,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
                 using (var step = stepsRecorder.NewStep(ExpressionEvaluationEngine.LLDB_EVAL))
                 {
-                    value = await variable.EvaluateExpressionLldbEvalAsync(
-                        displayName, expression, natvisScope.ContextVariables);
+                    value = await EvaluateExpressionLldbEvalAsync(variable, expression, displayName,
+                                                                  natvisScope);
                     errorCode = (LldbEvalErrorCode)Enum.ToObject(typeof(LldbEvalErrorCode),
                                                                  value.ErrorCode);
 
@@ -441,6 +441,25 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             return variable.EvaluateExpressionAsync(displayName, vsExpression);
+        }
+
+        /// <summary>
+        /// Tries to resolve the given expression in the context of the variable using lldb-eval.
+        /// Returns a variable representing the result of the evaluation or a variable with error
+        /// if the expression can't be evaluated using lldb-eval.
+        /// </summary>
+        Task<IVariableInformation> EvaluateExpressionLldbEvalAsync(IVariableInformation variable,
+                                                                   VsExpression vsExpression,
+                                                                   string displayName,
+                                                                   NatvisScope natvisScope)
+        {
+            if (variable.IsPointer)
+            {
+                variable = variable.Dereference();
+            }
+
+            return variable.EvaluateExpressionLldbEvalAsync(displayName, vsExpression,
+                                                            natvisScope?.ContextVariables);
         }
 
         /// <summary>

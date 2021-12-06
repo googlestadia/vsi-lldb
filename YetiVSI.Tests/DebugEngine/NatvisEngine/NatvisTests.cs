@@ -4103,15 +4103,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item2 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item2 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item2.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 12));
-            item2.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item2.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS2);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS2);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
             item1.AddChild(item2);
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS3);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS3);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4157,15 +4158,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item2 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item2 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item2.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 12));
-            item2.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item2.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS2);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS2);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
             item1.AddChild(item2);
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS3);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS3);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4215,9 +4217,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(nLogSpy.GetOutput(), Does.Contain("<LinkedListItems>"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("<ValueNode>"));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS1);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS1);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
-            item0.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item0.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
             var remoteValue = RemoteValueFakeUtil.CreateClass("LinkedList<int>", "myList", "");
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
@@ -4258,15 +4261,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item2 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item2 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item2.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 12));
-            item2.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item2.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS2);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS2);
             // No _value child added to |item1|.
             item1.AddChild(item2);
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS3);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS3);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4313,11 +4317,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4367,11 +4372,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4430,11 +4436,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head_1", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head_1", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4479,11 +4486,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("ModuleName"));
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4525,11 +4533,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("ModuleVersionMin"));
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4571,11 +4580,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("ModuleVersionMax"));
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4616,11 +4626,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4664,11 +4675,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4724,12 +4736,13 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             LoadFromString(xml);
 
             RemoteValueFake item1 =
-                RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
             RemoteValueFake item0 =
-                RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4771,12 +4784,13 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             LoadFromString(xml);
 
             RemoteValueFake item1 =
-                RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
             RemoteValueFake item0 =
-                RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4817,11 +4831,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4866,11 +4881,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -4968,11 +4984,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -5025,10 +5042,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(item1);
 
             var remoteValue = RemoteValueFakeUtil.CreateClass("LinkedList<int>", "myList", "");
@@ -5069,10 +5087,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(item1);
 
             var remoteValue = RemoteValueFakeUtil.CreateClass("LinkedList<int>", "myList", "");
@@ -5121,11 +5140,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -5177,11 +5197,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -5233,11 +5254,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS2);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS2);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
             // No next pointer.
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS3);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS3);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -5280,15 +5301,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item2 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item2 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item2.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 12));
-            item2.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item2.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS2);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS2);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
             item1.AddChild(item2);
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS3);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS3);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -5326,15 +5348,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item2 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item2 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item2.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 12));
-            item2.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item2.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS2);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS2);
             // Missing value node.
             item1.AddChild(item2);
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS3);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS3);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -5382,11 +5405,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -5437,11 +5461,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 ";
             LoadFromString(xml);
 
-            var item1 = RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS1);
+            var item1 = RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS1);
             item1.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 11));
-            item1.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item1.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
-            var item0 = RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS2);
+            var item0 = RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS2);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
             item0.AddChild(item1);
 
@@ -5500,9 +5525,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             LoadFromString(xml);
 
             RemoteValueFake item0 =
-                RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS1);
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS1);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleString("_value", "listValue"));
-            item0.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item0.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
             RemoteValueFake remoteValue =
                 RemoteValueFakeUtil.CreateClass("LinkedList", "myList", "");
@@ -5539,9 +5565,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             LoadFromString(xml);
 
             RemoteValueFake item0 =
-                RemoteValueFakeUtil.CreatePointer("Node", "_head", MEM_ADDRESS1);
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_head", MEM_ADDRESS1);
             item0.AddChild(RemoteValueFakeUtil.CreateSimpleString("_value", "listValue"));
-            item0.AddChild(RemoteValueFakeUtil.CreatePointer("Node", "_next", MEM_ADDRESS_NULL));
+            item0.AddChild(
+                RemoteValueFakeUtil.CreateClassPointer("Node", "_next", MEM_ADDRESS_NULL));
 
             RemoteValueFake remoteValue =
                 RemoteValueFakeUtil.CreateClass("LinkedList", "myList", "");
@@ -6140,25 +6167,32 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //   20      21
             // 30  31  32  33
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS4);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS4);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
-            var node_30 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_30 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
             node_30.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 30));
 
-            var node_31 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_31 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_31.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 31));
 
-            var node_32 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS3);
+            var node_32 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS3);
             node_32.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 32));
 
-            var node_33 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS4);
+            var node_33 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS4);
             node_33.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 33));
 
             node_10.AddChild(node_20);
@@ -6262,13 +6296,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS3);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS3);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -6340,13 +6377,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS4);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS4);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -6405,13 +6445,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS3);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS3);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -6461,13 +6504,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS3);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS3);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -6533,13 +6579,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS3);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS3);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -6604,13 +6653,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS3);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS3);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -6665,13 +6717,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS3);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS3);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -6736,10 +6791,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS4);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS4);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
             node_10.AddChild(node_20);
@@ -6787,13 +6844,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS3);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS3);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -6857,13 +6917,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS3);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS3);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -6927,10 +6990,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             var remoteValue = RemoteValueFakeUtil.CreateClass("CustomTreeType", "myTree", "");
@@ -6985,13 +7050,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS3);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS3);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS1);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS2);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -7055,13 +7123,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS3);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS3);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -7125,13 +7196,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS3);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS3);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -7195,13 +7269,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       ??
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             // |node_10| does not have a _pValue child.
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS3);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS3);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -7258,9 +7335,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS3);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS3);
 
             node_10.AddChild(node_20);
             node_10.AddChild(node_21);
@@ -7311,7 +7391,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             LoadFromString(xml);
 
             RemoteValueFake head =
-                RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             head.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 99));
             AddNullTreePointers("TreeNode", "_pLeft", "_pRight", head);
 
@@ -7351,7 +7431,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             LoadFromString(xml);
 
             RemoteValueFake head =
-                RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             head.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 99));
             AddNullTreePointers("TreeNode", "_pLeft", "_pRight", head);
 
@@ -7397,13 +7477,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS3);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS3);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -7462,13 +7545,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS3);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS3);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -7527,13 +7613,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS3);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS3);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -7589,13 +7678,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS3);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS3);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             // link broken from 10 to 20.
@@ -7649,13 +7741,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             node_10.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 10));
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS3);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS3);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);
@@ -7706,13 +7801,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             //       10
             //   20      21
 
-            var node_10 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pHead", MEM_ADDRESS1);
+            var node_10 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pHead", MEM_ADDRESS1);
             // Missing value node.
 
-            var node_20 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pLeft", MEM_ADDRESS2);
+            var node_20 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pLeft", MEM_ADDRESS2);
             node_20.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 20));
 
-            var node_21 = RemoteValueFakeUtil.CreatePointer("TreeNode", "_pRight", MEM_ADDRESS3);
+            var node_21 =
+                RemoteValueFakeUtil.CreateClassPointer("TreeNode", "_pRight", MEM_ADDRESS3);
             node_21.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_pValue", 21));
 
             node_10.AddChild(node_20);

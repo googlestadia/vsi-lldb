@@ -197,6 +197,10 @@ namespace YetiVSI.Test.TestSupport
             var classType = new SbTypeStub(className, TypeFlags.IS_CLASS);
             var pointerType = new SbTypeStub(className + "*", TypeFlags.IS_POINTER, classType);
             remoteValue.SetTypeInfo(pointerType);
+            // TODO: Improve support for dereferenced values. Without dereferenced
+            // value, natvis tests fail. Setting itself as a dereferenced value doesn't break
+            // tests, but it's not ideal.
+            remoteValue.SetDereference(remoteValue);
             return remoteValue;
         }
 
