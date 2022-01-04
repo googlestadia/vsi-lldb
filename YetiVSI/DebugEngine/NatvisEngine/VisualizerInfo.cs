@@ -13,6 +13,7 @@
 // limitations under the License.
 
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace YetiVSI.DebugEngine.NatvisEngine
@@ -61,17 +62,34 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         private void ResolveWildcards(TypeName vizType, TypeName exactType,
                                       List<string> resolvedWildcards)
         {
-            if (vizType.IsWildcard)
-            {
-                resolvedWildcards.Add(exactType.FullyQualifiedName);
-                return;
-            }
+            Debug.Assert(!vizType.IsWildcard, "The top-level type should not be a wildcard");
 
             // At this point, the `exactType` should be matched to the Natvis visualizer `vizType`.
-            // Therefore, it's assumed that it holds `vizType.Args.Count == exactType.Args.Count`.
+            // That means that it holds `vizType.Args.Count <= exactType.Args.Count`. In the case
+            // of inequality, the last argument in `vizType.Args` should be a wildcard, which
+            // applies to all the remaining arguments of `exactType`.
+            Debug.Assert(vizType.Args.Count <= exactType.Args.Count, "Invalid type match");
+            Debug.Assert(
+                vizType.Args.Count == exactType.Args.Count ||
+                    (vizType.Args.Count > 0 && vizType.Args[vizType.Args.Count - 1].IsWildcard),
+                "Invalid type match");
+
             for (int i = 0; i < vizType.Args.Count; ++i)
             {
-                ResolveWildcards(vizType.Args[i], exactType.Args[i], resolvedWildcards);
+                if (vizType.Args[i].IsWildcard)
+                {
+                    resolvedWildcards.Add(exactType.Args[i].FullyQualifiedName);
+                }
+                else
+                {
+                    ResolveWildcards(vizType.Args[i], exactType.Args[i], resolvedWildcards);
+                }
+            }
+
+            // Add any remaining elements of `exactType`.
+            for (int i = vizType.Args.Count; i < exactType.Args.Count; ++i)
+            {
+                resolvedWildcards.Add(exactType.Args[i].FullyQualifiedName);
             }
         }
     }

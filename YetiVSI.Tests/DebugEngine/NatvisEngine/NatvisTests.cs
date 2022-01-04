@@ -9753,6 +9753,32 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
+        public async Task TemplateWildcardReplacesMultipleTypesAsync()
+        {
+            // TODO: The following visualizer shouldn't accept type e.g.
+            // "TmplA<TmplB<int>, int>". This should be fixed by pre-compiling all Natvis
+            // expressions.
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""TmplA&lt;TmplB&lt;*&gt;,*&gt;"">
+    <DisplayString>{($T4)($T5)($T1 + $T2 + $T3)}</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+
+            LoadFromString(xml);
+
+            var data = RemoteValueFakeUtil.CreateSimpleInt("0", 0);
+            var remoteValue = RemoteValueFakeUtil.CreateClass(
+                "TmplA<TmplB<2, 3, 4>, TmplC<int>, float>", "var", "");
+            remoteValue.AddValueFromExpression("(TmplC<int>)(float)(2 + 3 + 4)", data);
+
+            var varInfo = CreateVarInfo(remoteValue);
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("0"));
+        }
+
+        [Test]
         public async Task TemplateTypeAcceptNegativeConstantAsync()
         {
             var xml = @"
