@@ -90,6 +90,8 @@ namespace YetiVSI.Test.DebugEngine
         IWatchpoint _mockWatchpoint;
         IGgpDebugProgram _mockProgram;
 
+        FakeMainThreadContext _threadContext;
+
         [SetUp]
         public void SetUp()
         {
@@ -116,11 +118,11 @@ namespace YetiVSI.Test.DebugEngine
 
             _mockListenerSubscriber = Substitute.For<LldbListenerSubscriber>(_mockSbListener);
 
-            var threadContext = new FakeMainThreadContext();
+            _threadContext = new FakeMainThreadContext();
 
             _eventManager =
                 new LldbEventManager
-                    .Factory(new BoundBreakpointEnumFactory(), threadContext.JoinableTaskContext)
+                    .Factory(new BoundBreakpointEnumFactory(), _threadContext.JoinableTaskContext)
                     .Create(_mockDebugEngineHandler, _mockBreakpointManager, _mockProgram,
                             _mockSbProcess, _mockListenerSubscriber);
 
@@ -133,6 +135,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             var lldbEventManager = _eventManager as LldbEventManager;
             lldbEventManager?.UnsubscribeFromChanges();
+            _threadContext.Dispose();
         }
 
         [Test]

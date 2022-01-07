@@ -26,21 +26,28 @@ namespace Google.Tests.VisualStudioFake.Util
     {
         class TestException : Exception { }
 
-        JoinableTaskContext taskContext;
+        FakeMainThreadContext _mainThreadContext;
+        JoinableTaskContext _taskContext;
 
         [SetUp]
         public void Setup()
         {
-            var mainThreadContext = new FakeMainThreadContext();
-            taskContext = mainThreadContext.JoinableTaskContext;
+            _mainThreadContext = new FakeMainThreadContext();
+            _taskContext = _mainThreadContext.JoinableTaskContext;
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _mainThreadContext.Dispose();
         }
 
         [Test]
         public void RunOnMainThread()
         {
-            Assert.Throws<TestException>(() => taskContext.RunOnMainThread(() =>
+            Assert.Throws<TestException>(() => _taskContext.RunOnMainThread(() =>
             {
-                Assert.That(taskContext.IsOnMainThread, Is.True);
+                Assert.That(_taskContext.IsOnMainThread, Is.True);
                 throw new TestException();
             }));
         }

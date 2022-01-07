@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using DebuggerGrpcClient;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
@@ -23,7 +22,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using YetiCommon;
@@ -37,7 +35,6 @@ using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
 using YetiVSI.DebugEngine.CoreDumps;
-using YetiVSI.DebugEngine.Interfaces;
 using YetiVSI.GameLaunch;
 using YetiVSI.ProjectSystem.Abstractions;
 
@@ -244,8 +241,6 @@ namespace YetiVSI.DebugEngine
 
                 var vsiService =
                     (YetiVSIService) _serviceManager.RequireGlobalService(typeof(YetiVSIService));
-                var envDteService =
-                    (EnvDTE.DTE) _serviceManager.GetGlobalService(typeof(EnvDTE.DTE));
                 var extensionOptions = vsiService.Options;
                 var debuggerOptions = vsiService.DebuggerOptions;
                 var sessionNotifier =
@@ -261,9 +256,9 @@ namespace YetiVSI.DebugEngine
                                        _exitDialogUtil, _preflightBinaryChecker,
                                        _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
                                        _debugEngineCommands, _debugEventCallbackDecorator,
-                                       envDteService?.RegistryRoot, sessionNotifier,
-                                       _symbolSettingsProvider, _deployLldbServer, _gameLauncher,
-                                       _debugEventRecorder, _expressionEvaluationRecorder);
+                                       sessionNotifier, _symbolSettingsProvider, _deployLldbServer,
+                                       _gameLauncher, _debugEventRecorder,
+                                       _expressionEvaluationRecorder);
             }
         }
 
@@ -397,7 +392,7 @@ namespace YetiVSI.DebugEngine
                            Params.Factory paramsFactory, IRemoteDeploy remoteDeploy,
                            IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
-                           string vsRegistryRoot, ISessionNotifier sessionNotifier,
+                           ISessionNotifier sessionNotifier,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
                            IGameLauncher gameLauncher, DebugEventRecorder debugEventRecorder,
                            ExpressionEvaluationRecorder expressionEvaluationRecorder) : base(self)
@@ -460,7 +455,7 @@ namespace YetiVSI.DebugEngine
             Trace.WriteLine("Debug session started.");
             Trace.WriteLine($"Extension version: {Versions.GetExtensionVersion()}");
             Trace.WriteLine($"SDK version: {Versions.GetSdkVersion()}");
-            Trace.WriteLine($"VS version: {Versions.GetVsVersion(vsRegistryRoot)}");
+            Trace.WriteLine($"VS version: {VsVersion.GetVisualStudioVersion()}");
         }
 
         public override Guid Id { get; }

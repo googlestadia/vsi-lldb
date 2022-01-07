@@ -18,11 +18,13 @@ using Google.VisualStudioFake.API;
 using Google.VisualStudioFake.Internal;
 using Google.VisualStudioFake.Util;
 using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using TestsCommon.TestSupport;
 using YetiCommon;
 using YetiVSI.ProjectSystem.Abstractions;
@@ -47,6 +49,8 @@ namespace YetiVSI.Test.GameLaunch
 
         NLogSpy _nLogSpy;
         MediumTestDebugEngineFactoryCompRoot _compRoot;
+
+        FakeMainThreadContext _threadContext;
         JoinableTaskContext _taskContext;
         VSFakeCompRoot _vsFakeCompRoot;
 
@@ -59,7 +63,22 @@ namespace YetiVSI.Test.GameLaunch
             _nLogSpy = NLogSpy.CreateUnique(nameof(LaunchApiMediumTests));
             _nLogSpy.Attach();
 
-            _taskContext = new FakeMainThreadContext().JoinableTaskContext;
+            _threadContext = new FakeMainThreadContext();
+            _taskContext = _threadContext.JoinableTaskContext;
+
+            // TODO: Use https://aka.ms/vssdktestfx or https://github.com/josetr/VsixTesting
+            // for tests.
+            // Some code in the extension uses ThreadHelper, which points to global Dispatcher and
+            // TaskContext by default. In tests we need to point it to our "fake" context.
+            typeof(ThreadHelper)
+                .GetField("uiThreadDispatcher", BindingFlags.Static | BindingFlags.NonPublic)
+                .SetValue(null, _threadContext.Dispatcher);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _threadContext.Dispose();
         }
 
         [Test]

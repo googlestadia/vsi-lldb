@@ -124,9 +124,8 @@ namespace YetiVSI
                                                Type serviceType)
         {
             await _taskContext.Factory.SwitchToMainThreadAsync();
-            var dte = await GetServiceAsync(typeof(EnvDTE.DTE)) as EnvDTE._DTE;
-            return new MetricsService(_taskContext,
-                                      Versions.Populate(dte?.RegistryRoot));
+            string vsVersion = await VsVersion.GetVisualStudioVersionAsync(this);
+            return new MetricsService(_taskContext, Versions.Populate(vsVersion));
         }
 
         Task<object> CreateSDebugEngineManagerAsync(IAsyncServiceContainer container,

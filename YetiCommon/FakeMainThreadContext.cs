@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio.Threading;
+using Microsoft.VisualStudio.Threading;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,7 +45,9 @@ namespace YetiCommon
         /// </summary>
         public JoinableTaskContext JoinableTaskContext { get; }
 
-        private readonly Dispatcher dispatcher;
+        public Dispatcher Dispatcher { get; }
+
+        readonly Thread _mainThread;
 
         /// <summary>
         /// Creates a new FakeMainThreadContext and spins up a new thread.
@@ -53,7 +55,7 @@ namespace YetiCommon
         public FakeMainThreadContext()
         {
             var dispatcherSource = new TaskCompletionSource<Dispatcher>();
-            var thread = new Thread(() =>
+            _mainThread = new Thread(() =>
             {
                 // Create a dispatcher for the current thread.
                 dispatcherSource.SetResult(Dispatcher.CurrentDispatcher);
@@ -61,24 +63,27 @@ namespace YetiCommon
                 // Tell the current dispatcher to process work items until it is shut down.
                 Dispatcher.Run();
             });
-            thread.Name = nameof(FakeMainThreadContext);
-            thread.IsBackground = true;
-            thread.Start();
+            _mainThread.Name = nameof(FakeMainThreadContext);
+            _mainThread.Start();
 
             // Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or
             // JoinableTaskFactory.Run instead.
 #pragma warning disable VSTHRD002
-            dispatcher = dispatcherSource.Task.Result;
+            Dispatcher = dispatcherSource.Task.Result;
 #pragma warning restore VSTHRD002
 
-            JoinableTaskContext = new JoinableTaskContext(thread,
-                new DispatcherSynchronizationContext(dispatcher));
+            JoinableTaskContext = new JoinableTaskContext(_mainThread,
+                new DispatcherSynchronizationContext(Dispatcher));
         }
 
         /// <summary>
         /// Disposes of the FakeMainThreadContext, and signals that the underlying thread should
         /// stop running.
         /// </summary>
-        public void Dispose() => dispatcher.InvokeShutdown();
+        public void Dispose()
+        {
+            Dispatcher.InvokeShutdown();
+            _mainThread.Join();
+        }
     }
 }

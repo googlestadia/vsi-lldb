@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Xml;
 
 namespace YetiCommon
@@ -85,18 +83,15 @@ namespace YetiCommon
             }
         }
 
-        const string ProfileKeyName = "Profile";
-        const string BuildNumValueName = "BuildNum";
-
         // Populates a Versions struct using the local environment.
         // If a field cannot be populated, it is set to the empty string.
-        public static Versions Populate(string vsRegistryRoot)
+        public static Versions Populate(string vsVersion)
         {
             return new Versions
             {
                 FullSdkVersionString = GetFullSdkVersionString(),
-                VsVersion = GetVsVersion(vsRegistryRoot),
                 ExtensionVersion = GetExtensionVersion(),
+                VsVersion = vsVersion ?? "",
             };
         }
 
@@ -131,45 +126,6 @@ namespace YetiCommon
             return SdkVersion.Create(version);
         }
 
-        // Attempts to get the VS version from the Windows Registry.
-        // Using HKCU\<VS registry root>\Profile\BuildNum.
-        // ex. HKCU\Software\Microsoft\VisualStudio\14.0\Profile\BuildNum
-        // If the version cannot be read, logs an error and returns the empty string.
-        public static string GetVsVersion(string vsRegistryRoot)
-        {
-            if (string.IsNullOrEmpty(vsRegistryRoot))
-            {
-                Trace.WriteLine("Failed to get VS version: missing VS registry path");
-                return "";
-            }
-            var vsProfilePath = vsRegistryRoot + "\\" + ProfileKeyName;
-            try
-            {
-                var vsProfileKey = Registry.CurrentUser.OpenSubKey(vsProfilePath, false);
-                if (vsProfileKey == null)
-                {
-                    Trace.WriteLine(
-                        string.Format("Failed to get VS version: could not open key: {0}",
-                            vsProfilePath));
-                    return "";
-                }
-                var vsVersion = (string)vsProfileKey.GetValue(BuildNumValueName);
-                if (string.IsNullOrEmpty(vsVersion))
-                {
-                    Trace.WriteLine(
-                        string.Format("Failed to get VS version: could not read value: {0}\\{1}",
-                            vsProfilePath, BuildNumValueName));
-                    return "";
-                }
-                return vsVersion;
-            }
-            catch (Exception e)
-            {
-                Trace.WriteLine(string.Format("Failed to get VS version: {0}", e.ToString()));
-            }
-            return "";
-        }
-
         /// <summary>
         /// Attempts to get the extension version from the vsixmanifest file.
         /// The path of the manifest can be overridden for testing.
@@ -202,9 +158,9 @@ namespace YetiCommon
 
         // SDK version found in the installed 'VERSION' file, or empty if SDK was not found.
         public string FullSdkVersionString { get; set; }
-        // Visual Studio version found on the Help->About page.
-        public string VsVersion { get; set; }
         // Extension version found in the VSIX manifest file, or empty if the file was not found.
         public string ExtensionVersion { get; set; }
+        // Visual Studio version found on the Help->About page.
+        public string VsVersion { get; set; }
     }
 }
