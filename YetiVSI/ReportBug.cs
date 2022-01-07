@@ -1,7 +1,12 @@
-﻿using Microsoft.VisualStudio.Shell;
+﻿using Microsoft.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Shell;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Linq;
 using YetiCommon;
+using YetiCommon.Logging;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
 using Task = System.Threading.Tasks.Task;
@@ -10,31 +15,79 @@ namespace YetiVSI
 {
     class ReportBug
     {
-        private static ReportBug _reportBug;
+        readonly static string _description_template = @"
+Information:
+* Stadia for Visual Studio version: __VSIX_VERSION__
+* Visual Studio version: __VS_VERSION__
 
-        private ActionRecorder _actionRecorder;
+For Run/Debug related issues, attach the log files from __LOG_PATH__
+__CURRENT_LOG__
+---
 
-        private ReportBug(IMetrics metrics)
+Explain your issue here.
+".Trim();
+
+        static ReportBug _reportBug;
+
+        readonly ActionRecorder _actionRecorder;
+        readonly string _vsVersion;
+        readonly string _projectId;
+
+        ReportBug(IMetrics metrics, string vsVersion, string projectId)
         {
             var dsm = new DebugSessionMetrics(metrics);
             dsm.UseNewDebugSessionId();
             _actionRecorder = new ActionRecorder(dsm);
+            _vsVersion = vsVersion;
+            _projectId = projectId;
         }
 
         public void Execute()
         {
             _actionRecorder.RecordSuccess(ActionType.ReportFeedback);
 
+            var currentLog = YetiLog.IsInitialized
+                ? $"Current log file is {YetiLog.CurrentLogFile.NormalizePath()}\n"
+                : "";
+
+            var description = _description_template
+                .Replace("__VSIX_VERSION__", Versions.GetExtensionVersion())
+                .Replace("__VS_VERSION__", _vsVersion)
+                .Replace("__LOG_PATH__", SDKUtil.GetLoggingPath())
+                .Replace("__CURRENT_LOG__", currentLog);
+
+            var queryParams = new Dictionary<string, string>
+            {
+                { "subject", "Problem with Stadia for Visual Studio" },
+                { "description", description },
+                { "category", "Developer / Development / API Question" },
+                { "subcategory", "Visual Studio" },
+                { "sdk_version", Versions.GetSdkVersion().ToString() },
+                { "project_id", _projectId }
+            };
+
+            string QueryEncode(string input)
+            {
+                return Uri.EscapeDataString(input.Replace(Environment.NewLine, "\n"));
+            }
+            var query = string.Join(
+                "&", queryParams.Select(p => $"{QueryEncode(p.Key)}={QueryEncode(p.Value)}"));
+            var url = @"https://community.stadia.dev/s/contact-support-form?" + query;
+
             // Open the URL in the default browser.
             // Disposing the process object doesn't kill the actual process.
-            var p = Process.Start(@"https://community.stadia.dev/s/contactsupport");
-            p.Dispose();
+            Process.Start(url).Dispose();
         }
 
         public static async Task InitializeAsync(AsyncPackage package)
         {
             var metrics = (IMetrics)await package.GetServiceAsync(typeof(SMetrics));
-            _reportBug = new ReportBug(metrics);
+            var vsVersion = await VsVersion.GetVisualStudioVersionAsync(package);
+
+            var configFactory = new SdkConfig.Factory(new JsonUtil());
+            var projectId = configFactory.LoadOrDefault().ProjectId;
+
+            _reportBug = new ReportBug(metrics, vsVersion, projectId);
 
 #pragma warning disable VSSDK006 // IMenuCommandService must always exist.
             var mcs =

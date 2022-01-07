@@ -39,6 +39,8 @@ namespace YetiCommon.Logging
         const string CallSequenceTargetName = "file-call-sequence";
         const string CallSequenceLoggerSuffix = "CallSequenceDiagram";
 
+        public static bool IsInitialized => logFactory != null;
+
         /// <summary>
         /// Performs one-time setup for NLog configuration.
         /// This configuration is shared by all VSI components.
