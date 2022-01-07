@@ -27,8 +27,7 @@ namespace YetiCommon
 
             public Factory(JsonUtil jsonUtil)
             {
-                if (jsonUtil == null) { throw new ArgumentNullException(nameof(jsonUtil));}
-                this.jsonUtil = jsonUtil;
+                this.jsonUtil = jsonUtil ?? throw new ArgumentNullException(nameof(jsonUtil));
             }
 
             // For test substitution.
@@ -36,17 +35,12 @@ namespace YetiCommon
 
             public virtual CredentialConfig LoadOrDefault()
             {
-                return new CredentialConfig(
-                    jsonUtil, Path.Combine(SDKUtil.GetCredentialsPath(), "config.json"));
+                return jsonUtil.LoadOrDefault<CredentialConfig>(
+                    Path.Combine(SDKUtil.GetCredentialsPath(), "config.json"));
             }
         }
 
         [JsonProperty("defaultAccount")]
         public string DefaultAccount { get; set; }
-
-        private CredentialConfig(JsonUtil jsonUtil, string path)
-        {
-            this = jsonUtil.LoadOrDefault<CredentialConfig>(path);
-        }
     }
 }

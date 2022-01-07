@@ -610,8 +610,7 @@ namespace YetiVSI.DebugEngine
 
                     // Note that Path.Combine works for both relative and full paths.
                     // It returns cmd if cmd starts with '/' or '\'.
-                    var remoteTargetPath =
-                        Path.Combine(YetiConstants.RemoteGamePath, cmd);
+                    var remoteTargetPath = Path.Combine(YetiConstants.RemoteGamePath, cmd);
 
                     // This field should be initialized in LaunchLldbDebuggerInBackground
                     if (_libPaths == null)
@@ -737,7 +736,7 @@ namespace YetiVSI.DebugEngine
                     _attachedTimer = _actionRecorder.CreateStartedTimer();
                     _sessionNotifier.NotifySessionLaunched(
                         new SessionLaunchedEventArgs(_launchOption, _attachedProgram));
-                    Trace.WriteLine("LLDB successfully attached");
+                    Trace.WriteLine("LLDB successfully attached.");
                 }
             }
             catch (AttachException e)
@@ -748,20 +747,20 @@ namespace YetiVSI.DebugEngine
             }
             catch (TaskAbortedException e) when (e.InnerException != null)
             {
-                Trace.WriteLine("Aborting attach because the debug session was aborted: " +
-                                e.InnerException);
+                Trace.WriteLine(
+                    $"Aborting attach because the debug session was aborted: {e.InnerException}");
                 exitInfo = ExitInfo.Error(e.InnerException);
                 result = VSConstants.E_ABORT;
             }
             catch (YetiDebugTransportException e)
             {
-                Trace.WriteLine($"Failed to start debug transport: {e.ToString()}");
+                Trace.WriteLine($"Failed to start debug transport: {e}");
                 exitInfo = ExitInfo.Error(e);
                 result = VSConstants.E_ABORT;
             }
             catch (DeployException e)
             {
-                Trace.WriteLine($"Aborted due to DeployException: {e.ToString()}");
+                Trace.WriteLine($"Aborted due to DeployException: {e}");
                 exitInfo = ExitInfo.Error(e);
                 result = VSConstants.E_ABORT;
             }
@@ -953,6 +952,11 @@ namespace YetiVSI.DebugEngine
                 });
 
             var completed = loadSymbolsTask.RunAndRecord(action);
+            if (!completed)
+            {
+                // The operation was cancelled by the user, the task doesn't have a Result.
+                return VSConstants.E_ABORT;
+            }
 
             if (loadSymbolsTask.Result.SuggestToEnableSymbolStore &&
                 _vsiService.Options.ShowSuggestionToEnableSymbolsServer != ShowOption.NeverShow &&
@@ -974,9 +978,7 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
-            return completed
-                ? loadSymbolsTask.Result.ResultCode
-                : VSConstants.E_ABORT;
+            return loadSymbolsTask.Result.ResultCode;
         }
 
         public override int SetJustMyCodeState(int fUpdate, uint dwModules,

@@ -328,7 +328,7 @@ namespace YetiVSI.DebugEngine
                     break;
                 }
 
-                Trace.WriteLine("Attaching to pid " + processId);
+                Trace.WriteLine($"Attaching to pid {processId}");
                 var debugAttachAction = _actionRecorder.CreateToolAction(ActionType.DebugAttach);
 
                 SbProcess debuggerProcess = null;
@@ -596,7 +596,7 @@ namespace YetiVSI.DebugEngine
             string moduleName = Path.GetFileName(module.Path);
             string modulePath = _taskContext.Factory.Run(() =>
             {
-                return _moduleFileFinder.FindFileAsync(moduleName, module.Id, false, searchLog, 
+                return _moduleFileFinder.FindFileAsync(moduleName, module.Id, false, searchLog,
                                                        false);
             });
 

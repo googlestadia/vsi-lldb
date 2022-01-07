@@ -81,12 +81,6 @@ namespace YetiCommon
             return Path.Combine(sdkPath, "dev", "bin");
         }
 
-        public static string GetToolchainBinariesPath()
-        {
-            var sdkPath = GetSDKPath();
-            return Path.Combine(sdkPath, "BaseSDK", "LLVM", "9.0.1", "bin");
-        }
-
         // Returns a path to the SSH dir packaged with the Yeti SDK.
         public static string GetSshPath()
         {

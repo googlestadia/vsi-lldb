@@ -141,12 +141,10 @@ namespace YetiVSI.DebugEngine
                 {
                     Trace.WriteLine($"Listener was stopped");
                 }
-                catch (Exception exception)
+                catch (Exception e)
                 {
-                    Trace.WriteLine(
-                        "Internal error: Failed to receive event from listener due to " +
-                        exception.Message);
-                    ExceptionOccured?.Invoke(null, new ExceptionOccuredEventArgs(exception));
+                    Trace.WriteLine($"Internal error: Failed to receive event from listener: {e}");
+                    ExceptionOccured?.Invoke(null, new ExceptionOccuredEventArgs(e));
                 }
             }, _tokenSource.Token);
 

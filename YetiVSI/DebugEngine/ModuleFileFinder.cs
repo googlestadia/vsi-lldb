@@ -126,16 +126,14 @@ namespace YetiVSI.DebugEngine
             return fileReference.Location;
         }
 
-        public void RecordMetrics(LoadSymbolData loadSymbolData)
+        public void RecordMetrics(LoadSymbolData data)
         {
-            loadSymbolData.FlatSymbolStoresCount =
-                _symbolStore.GetAllStores().OfType<IFlatSymbolStore>().Count();
-            loadSymbolData.StructuredSymbolStoresCount =
-                _symbolStore.GetAllStores().OfType<IStructuredSymbolStore>().Count();
-            loadSymbolData.HttpSymbolStoresCount =
-                _symbolStore.GetAllStores().OfType<IHttpSymbolStore>().Count();
-            loadSymbolData.StadiaSymbolStoresCount =
-                _symbolStore.GetAllStores().OfType<IStadiaSymbolStore>().Count();
+            var stores = _symbolStore.GetAllStores().ToList();
+
+            data.FlatSymbolStoresCount = stores.OfType<IFlatSymbolStore>().Count();
+            data.StructuredSymbolStoresCount = stores.OfType<IStructuredSymbolStore>().Count();
+            data.HttpSymbolStoresCount = stores.OfType<IHttpSymbolStore>().Count();
+            data.StadiaSymbolStoresCount = stores.OfType<IStadiaSymbolStore>().Count();
         }
     }
 }

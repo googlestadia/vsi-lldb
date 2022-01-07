@@ -23,7 +23,6 @@ using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
-using Microsoft.VisualStudio.Threading;
 
 namespace YetiVSI.DebugEngine
 {
@@ -84,7 +83,7 @@ namespace YetiVSI.DebugEngine
         {
             // Check that the remote binary has a build id and try to match it against
             // the local candidates to find the matching local binary.
-            IEnumerable<string> localCandidatePaths = new List<string>();
+            var localCandidatePaths = new List<string>();
             try
             {
                 var dataRecorder = new DataRecorder(action,
@@ -103,13 +102,12 @@ namespace YetiVSI.DebugEngine
                 }
 
                 // Log the remote Build ID for debugging purposes.
-                dataRecorder.ValidRemoveBuildId();
-                Trace.WriteLine("Remote build ID: " + remoteBuildId.ToString());
+                dataRecorder.ValidRemoteBuildId();
+                Trace.WriteLine($"Remote build ID: {remoteBuildId}");
 
                 // Make sure there is a local binary with the same name.
-                localCandidatePaths =
-                    FindExecutableCandidates(libPaths, executable);
-                if (!localCandidatePaths.Any())
+                localCandidatePaths = FindExecutableCandidates(libPaths, executable);
+                if (localCandidatePaths.Count == 0)
                 {
                     dataRecorder.LocalBinaryCheckResult(
                         DebugPreflightCheckData.Types.LocalBinarySearchResult.NoCandidates);
@@ -184,8 +182,8 @@ namespace YetiVSI.DebugEngine
                 }
 
                 // Log the remote Build ID for debugging purposes.
-                dataRecorder.ValidRemoveBuildId();
-                Trace.WriteLine("Remote build ID: " + remoteBuildId.ToString());
+                dataRecorder.ValidRemoteBuildId();
+                Trace.WriteLine($"Remote build ID: {remoteBuildId}");
             }
             catch (BinaryFileUtilException e)
             {
@@ -231,14 +229,15 @@ namespace YetiVSI.DebugEngine
             return false;
         }
 
-        private IEnumerable<string> FindExecutableCandidates(
+        private List<string> FindExecutableCandidates(
             IEnumerable<string> executable_paths, string executable_name)
         {
             return executable_paths
                 .Select(path => Path.Combine(
                     FileUtil.RemoveQuotesFromPath(path),
                     FileUtil.RemoveQuotesFromPath(executable_name)))
-                .Where(file => fileSystem.File.Exists(file));
+                .Where(file => fileSystem.File.Exists(file))
+                .ToList();
         }
 
         private class NoLocalCandidatesException : ConfigurationException
@@ -267,7 +266,7 @@ namespace YetiVSI.DebugEngine
                 RecordData(new DebugPreflightCheckData() {CheckType = type});
             }
 
-            public void ValidRemoveBuildId()
+            public void ValidRemoteBuildId()
             {
                 RecordData(new DebugPreflightCheckData()
                 {
