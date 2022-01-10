@@ -279,7 +279,7 @@ namespace YetiVSI.DebugEngine
                         process, programId, _debugEngine, callback, stadiaDebugger.Debugger,
                         stadiaDebugger.Target, listenerSubscriber, lldbDebuggerProcess,
                         stadiaDebugger.Debugger.GetCommandInterpreter(), true,
-                        new NullExceptionManager(), _moduleSearchLogHolder, remotePid: 0);
+                        null, _moduleSearchLogHolder, remotePid: 0);
                 }
 
                 // Get process ID.

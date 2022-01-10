@@ -418,7 +418,7 @@ namespace YetiVSI.DebugEngine
         }
 
         public void SetExceptions(IEnumerable<EXCEPTION_INFO> exceptions) =>
-            _exceptionManager.SetExceptions(exceptions);
+            _exceptionManager?.SetExceptions(exceptions);
 
         public uint RemotePid { get; }
 
