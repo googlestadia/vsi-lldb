@@ -25,7 +25,6 @@ namespace YetiVSI.Test
     class EnvDTEUtilTests
     {
         readonly DTE2 dte2 = Substitute.For<DTE2>();
-        readonly EnvDteUtil.Factory envDteUtilFactory = new EnvDteUtil.Factory();
         readonly JoinableTaskContext taskContext = new JoinableTaskContext();
 
         [Test]
@@ -35,7 +34,7 @@ namespace YetiVSI.Test
             dte2.Solution.Returns(solution);
             var projects = new List<Project>();
             solution.Projects.GetEnumerator().Returns(projects.GetEnumerator());
-            var envDteUtil = envDteUtilFactory.Create(taskContext, dte2);
+            var envDteUtil = new EnvDteUtil(taskContext, dte2);
             var results = envDteUtil.GetSolutionProjects();
             Assert.AreEqual(0, results.Count);
         }
@@ -48,7 +47,7 @@ namespace YetiVSI.Test
             dte2.Solution.Returns(solution);
             var projects = new List<Project> { nullProject };
             solution.Projects.GetEnumerator().Returns(projects.GetEnumerator());
-            var envDteUtil = envDteUtilFactory.Create(taskContext, dte2);
+            var envDteUtil = new EnvDteUtil(taskContext, dte2);
             var results = envDteUtil.GetSolutionProjects();
             Assert.AreEqual(0, results.Count);
         }
@@ -61,7 +60,7 @@ namespace YetiVSI.Test
             Project project = Substitute.For<Project>();
             var solutionProjects = new List<Project> { project };
             solution.Projects.GetEnumerator().Returns(solutionProjects.GetEnumerator());
-            var envDteUtil = envDteUtilFactory.Create(taskContext, dte2);
+            var envDteUtil = new EnvDteUtil(taskContext, dte2);
             var results = envDteUtil.GetSolutionProjects();
             Assert.AreEqual(1, results.Count);
             Assert.AreEqual(project, results[0]);
@@ -81,7 +80,7 @@ namespace YetiVSI.Test
             project.ProjectItems.GetEnumerator().Returns(folderProjects.GetEnumerator());
             var subProject = Substitute.For<Project>();
             projectItem.SubProject.Returns(subProject);
-            var envDteUtil = envDteUtilFactory.Create(taskContext, dte2);
+            var envDteUtil = new EnvDteUtil(taskContext, dte2);
             var results = envDteUtil.GetSolutionProjects();
             Assert.AreEqual(1, results.Count);
             Assert.AreEqual(subProject, results[0]);

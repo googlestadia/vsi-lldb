@@ -173,8 +173,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var taskContext = GetJoinableTaskContext();
             var dte2 = Substitute.For<DTE2>();
-            var envDteUtilFactory = new EnvDteUtil.Factory();
-            var dte2Util = envDteUtilFactory.Create(taskContext, dte2);
+            var dte2Util = new EnvDteUtil(taskContext, dte2);
             _solutionExplorer = new SolutionExplorer(taskContext, null, dte2Util);
 
             return _solutionExplorer;

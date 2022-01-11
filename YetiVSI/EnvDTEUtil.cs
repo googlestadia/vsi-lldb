@@ -29,18 +29,10 @@ namespace YetiVSI
 
     public class EnvDteUtil : IEnvDteUtil
     {
-        public class Factory
-        {
-            virtual public EnvDteUtil Create(JoinableTaskContext taskContext, DTE2 dte2)
-            {
-                return new EnvDteUtil(taskContext, dte2);
-            }
-        }
-
         readonly JoinableTaskContext taskContext;
         readonly DTE2 dte2;
 
-        EnvDteUtil(JoinableTaskContext taskContext, DTE2 dte2)
+        public EnvDteUtil(JoinableTaskContext taskContext, DTE2 dte2)
         {
             this.taskContext = taskContext;
             this.dte2 = dte2;

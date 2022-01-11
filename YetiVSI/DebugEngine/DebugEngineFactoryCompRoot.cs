@@ -700,8 +700,7 @@ namespace YetiVSI.DebugEngine
                 JoinableTaskContext taskContext = GetJoinableTaskContext();
                 var vcProjectInfoFactory = new VsProjectInfo.Factory();
                 var dte2 = Package.GetGlobalService(typeof(DTE)) as DTE2;
-                var envDteUtilFactory = new EnvDteUtil.Factory();
-                var envDteUtil = envDteUtilFactory.Create(taskContext, dte2);
+                var envDteUtil = new EnvDteUtil(taskContext, dte2);
                 _solutionExplorer =
                     new SolutionExplorer(taskContext, vcProjectInfoFactory, envDteUtil);
             }
