@@ -18,9 +18,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using YetiCommon;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Interfaces;
+using YetiVSITestsCommon;
 
 namespace YetiVSI.Test.DebugEngine
 {

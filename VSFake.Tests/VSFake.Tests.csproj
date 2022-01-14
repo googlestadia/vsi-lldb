@@ -15,8 +15,6 @@
     <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="$(ThirdPartyRootDir)TestsCommon\TestsCommon.csproj" />
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon\YetiCommon.csproj" />
     <ProjectReference Include="..\VSFake\VSFake.csproj" />
   </ItemGroup>
   <ItemGroup>

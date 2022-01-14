@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using YetiCommon;
 
 namespace DebuggerGrpcClient.Tests
 {
@@ -30,15 +29,13 @@ namespace DebuggerGrpcClient.Tests
         readonly Status rpcStatus = new Status(StatusCode.Aborted, "test error");
 
         GrpcConnection connection;
-        FakeMainThreadContext mainThreadContext;
         JoinableTaskContext taskContext;
 
         [SetUp]
         public void SetUp()
         {
             var callInvokerFactory = new PipeCallInvokerFactory();
-            mainThreadContext = new FakeMainThreadContext();
-            taskContext = mainThreadContext.JoinableTaskContext;
+            taskContext = new JoinableTaskContext();
             connection = new GrpcConnection(taskContext.Factory, callInvokerFactory.Create());
         }
 
@@ -46,7 +43,7 @@ namespace DebuggerGrpcClient.Tests
         public void TearDown()
         {
             connection.Shutdown();
-            mainThreadContext.Dispose();
+            taskContext.Dispose();
         }
 
         [Test]

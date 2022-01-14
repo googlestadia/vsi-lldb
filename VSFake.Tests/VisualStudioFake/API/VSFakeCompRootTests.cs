@@ -16,7 +16,6 @@
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
-using System;
 
 namespace Google.Tests.VisualStudioFake
 {
