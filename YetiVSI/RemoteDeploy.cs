@@ -31,8 +31,6 @@ namespace YetiVSI
         public DeployException(string message, Exception e) : base(message, e)
         {
         }
-
-        public string UserDetails => ToString();
     }
 
     // An interface for deploying files to a gamelet.
@@ -192,7 +190,7 @@ namespace YetiVSI
                 }
                 catch (ProcessException e)
                 {
-                    Trace.WriteLine("Error running custom deploy command: " + e);
+                    Trace.WriteLine($"Error running custom deploy command: {e.Demystify()}");
                     record.CustomDeploy(stopwatch.ElapsedMilliseconds, e);
                     throw new DeployException(
                         ErrorStrings.ErrorRunningCustomDeployCommand(e.Message), e);
@@ -210,7 +208,7 @@ namespace YetiVSI
             }
             catch (ProcessException e)
             {
-                Trace.WriteLine("Error setting executable permissions: " + e.ToString());
+                Trace.WriteLine($"Error setting executable permissions: {e.Demystify()}");
                 record.Chmod(e);
                 throw new DeployException(ErrorStrings.FailedToSetExecutablePermissions(e.Message),
                                           e);

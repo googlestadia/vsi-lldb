@@ -514,7 +514,7 @@ namespace YetiVSI
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Failed to load a setting for {prop.Name}: {e}");
+                Trace.WriteLine($"Failed to load a setting for {prop.Name}: {e.Demystify()}");
             }
         }
     }

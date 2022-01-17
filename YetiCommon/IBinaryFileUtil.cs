@@ -77,8 +77,6 @@ namespace YetiCommon
 
     public class BinaryFileUtilException : Exception, IUserVisibleError
     {
-        public string UserDetails { get { return ToString(); } }
-
         public BinaryFileUtilException(string message) : base(message) { }
 
         public BinaryFileUtilException(string message, Exception e) : base(message, e) { }

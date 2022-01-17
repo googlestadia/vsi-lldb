@@ -67,8 +67,9 @@ namespace YetiVSI
                 catch (Exception ex) when (ex is Microsoft.VisualStudio.ProjectSystem
                     .ProjectException || ex is COMException)
                 {
-                    Trace.WriteLine($"Warning: Failed to create VcProjectAdapter for project " +
-                        $"{vcProject.Name} of type {vcProject.Kind}.{Environment.NewLine}{ex}");
+                    Trace.WriteLine(
+                        $"Warning: Failed to create VcProjectAdapter for project " +
+                        $"{vcProject.Name} of type {vcProject.Kind}. {ex.Demystify()}");
                     return null;
                 }
             }

@@ -114,7 +114,7 @@ namespace YetiVSI.Test.GameLaunch
             IVsiGameLaunch result = _target.CreateLaunch(_launchParams);
 
             Assert.That(result, Is.Not.Null);
-            _dialogUtil.DidNotReceiveWithAnyArgs().ShowError(Arg.Any<string>(), Arg.Any<string>());
+            _dialogUtil.DidNotReceiveWithAnyArgs().ShowError(Arg.Any<string>());
 
             if (string.IsNullOrEmpty(sdkWarning))
             {

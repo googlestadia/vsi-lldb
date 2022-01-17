@@ -154,7 +154,8 @@ namespace YetiVSI.DebugEngine
                 }
                 catch (Exception e)
                 {
-                    Trace.WriteLine($"Unexpected error while reading {lldbinitPath}: {e}");
+                    Trace.WriteLine(
+                        $"Unexpected error while reading {lldbinitPath}: {e.Demystify()}");
                     return;
                 }
 

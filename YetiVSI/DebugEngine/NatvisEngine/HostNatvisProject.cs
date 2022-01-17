@@ -54,8 +54,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
             catch (Exception e)
             {
-                Trace.WriteLine("WARNING: Failed to find Natvis files in solution. Exception: " +
-                    e.ToString());
+                Trace.WriteLine(
+                    $"WARNING: Failed to find Natvis files in solution: {e.Demystify()}");
             }
             return paths;
         }

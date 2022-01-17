@@ -40,8 +40,8 @@ namespace YetiVSI.DebugEngine.CoreDumpViewer
             }
             catch (SystemException exception)
             {
-                Trace.WriteLine($"Couldn't parse modules in core file {filename}\n" +
-                                $"Exception: {exception}");
+                Trace.WriteLine(
+                    $"Couldn't parse modules in core file {filename}: {exception.Demystify()}");
                 MessageBox.Show("Error", ErrorStrings.CorruptedCoreFile,
                                 MessageBoxButton.OK, MessageBoxImage.Error);
             }

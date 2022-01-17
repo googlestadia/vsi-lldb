@@ -76,7 +76,7 @@ namespace YetiVSI.DebugEngine
 
         void LldbListenerOnExceptionOccured(object sender, ExceptionOccuredEventArgs e)
         {
-            Trace.WriteLine("Exception in listener: " + e);
+            Trace.WriteLine($"Exception in listener: {e.Exception.Demystify()}");
             _debugEngineHandler.Abort(_program, ExitInfo.Error(e.Exception));
         }
 

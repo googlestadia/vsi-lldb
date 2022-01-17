@@ -68,8 +68,8 @@ namespace YetiVSI
             }
             catch (ProcessException e)
             {
-                Trace.WriteLine("Optimistic SSH check failed; fallback to calling EnableSSH; " +
-                    "error: " + e.ToString());
+                Trace.WriteLine(
+                    $"SSH check failed; fallback to calling EnableSSH; error: {e.Demystify()}");
             }
 
             // Generate a new key, if necessary, and upload it to the gamelet.

@@ -513,7 +513,7 @@ namespace YetiVSI.DebugEngine
                 var module = _lldbTarget.GetModuleAtIndex(i);
                 if (module == null)
                 {
-                    Trace.WriteLine("Unable to retrieve module " + i);
+                    Trace.WriteLine($"Unable to retrieve module {i}");
                     continue;
                 }
                 modules.Add(module);
@@ -532,7 +532,7 @@ namespace YetiVSI.DebugEngine
                 var thread = _lldbProcess.GetThreadAtIndex(i);
                 if (thread == null)
                 {
-                    Trace.WriteLine("Failed to get thread at index: " + i);
+                    Trace.WriteLine($"Failed to get thread at index: {i}");
                     return new List<RemoteThread>();
                 }
                 threads.Add(thread);
@@ -564,14 +564,14 @@ namespace YetiVSI.DebugEngine
             // and freeze Visual Studio ((internal)).
             CONTEXT_INFO[] contextInfo = new CONTEXT_INFO[1];
             startMemoryContext.GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, contextInfo);
-            ulong address;
-            if (DebugEngineUtil.GetAddressFromString(contextInfo[0].bstrAddress, out address))
+            string addressStr = contextInfo[0].bstrAddress;
+
+            if (DebugEngineUtil.GetAddressFromString(addressStr, out ulong address))
             {
-                SbError error;
                 try
                 {
                     countRead = Convert.ToUInt32(_lldbProcess.ReadMemory(address, memory,
-                        countToRead, out error));
+                        countToRead, out SbError error));
                     if (error.Fail() || countRead == 0)
                     {
                         countRead = 0;
@@ -581,8 +581,7 @@ namespace YetiVSI.DebugEngine
                 }
                 catch (OverflowException e)
                 {
-                    Trace.WriteLine($"Warning: Failed to read memory.{Environment.NewLine}" +
-                        $"{e.ToString()}");
+                    Trace.WriteLine($"Warning: Failed to read memory: {e.Demystify()}");
                     countRead = 0;
                     return VSConstants.E_FAIL;
                 }
@@ -595,14 +594,14 @@ namespace YetiVSI.DebugEngine
         {
             CONTEXT_INFO[] contextInfos = new CONTEXT_INFO[1];
             startMemoryContext.GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, contextInfos);
-            ulong address;
-            if (!DebugEngineUtil.GetAddressFromString(contextInfos[0].bstrAddress, out address))
+            string addressStr = contextInfos[0].bstrAddress;
+
+            if (!DebugEngineUtil.GetAddressFromString(addressStr, out ulong address))
             {
-                Trace.WriteLine($"Failed to convert {contextInfos[0].bstrAddress} to address");
+                Trace.WriteLine($"Failed to convert {addressStr} to address");
                 return VSConstants.E_FAIL;
             }
-            SbError error;
-            var bytesWrote = _lldbProcess.WriteMemory(address, buffer, count, out error);
+            var bytesWrote = _lldbProcess.WriteMemory(address, buffer, count, out SbError error);
             if (error.Fail())
             {
                 Trace.WriteLine($"Error: {error.GetCString()}");
@@ -627,8 +626,6 @@ namespace YetiVSI.DebugEngine
 
         public class TerminateProcessException : Exception, IUserVisibleError
         {
-            public string UserDetails { get { return null; } }
-
             public TerminateProcessException(string message) : base(message) { }
 
             public TerminateProcessException(string message, Exception inner) : base(message, inner)

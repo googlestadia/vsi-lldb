@@ -255,32 +255,32 @@ namespace YetiVSI.DebugEngine
                 var process = _remoteThread.GetProcess();
                 if (process == null)
                 {
-                    Trace.WriteLine("Error: Failed to obtain process." +
-                                    " Unable to set next statement");
+                    Trace.WriteLine(
+                        "Error: Failed to obtain process. Unable to set next statement");
                     return VSConstants.E_FAIL;
                 }
 
                 var target = process.GetTarget();
                 if (target == null)
                 {
-                    Trace.WriteLine("Error: Failed to obtain target." +
-                                    " Unable to set next statement");
+                    Trace.WriteLine(
+                        "Error: Failed to obtain target. Unable to set next statement");
                     return VSConstants.E_FAIL;
                 }
 
                 var address = target.ResolveLoadAddress(codeContext.GetAddress());
                 if (address == null)
                 {
-                    Trace.WriteLine("Error: Failed to obtain address." +
-                                    " Unable to set next statement");
+                    Trace.WriteLine(
+                        "Error: Failed to obtain address. Unable to set next statement");
                     return VSConstants.E_FAIL;
                 }
 
                 var lineEntry = address.GetLineEntry();
                 if (lineEntry == null)
                 {
-                    Trace.WriteLine("Error: Failed to obtain line entry." +
-                                    " Unable to set next statement");
+                    Trace.WriteLine(
+                        "Error: Failed to obtain line entry. Unable to set next statement");
                     return VSConstants.E_FAIL;
                 }
 

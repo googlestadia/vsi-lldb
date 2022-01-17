@@ -101,7 +101,7 @@ namespace YetiVSI.CoreAttach
             }
             catch (Exception exception)
             {
-                Trace.WriteLine(exception);
+                Trace.WriteLine($"CoreAttachWindow ctor failed: {exception.Demystify()}");
                 throw;
             }
         }
@@ -142,7 +142,7 @@ namespace YetiVSI.CoreAttach
 
             SetCurrentInstance(selected);
         }
-        
+
         void SetCurrentInstance(Gamelet instance)
         {
             _instance = instance;
@@ -177,7 +177,7 @@ namespace YetiVSI.CoreAttach
             }
             catch (ProcessException e)
             {
-                Trace.WriteLine($"Unable to query instance crash dumps: {e}");
+                Trace.WriteLine($"Unable to query instance crash dumps: {e.Demystify()}");
                 GameletMessageTextBox.Text = ErrorStrings.ErrorQueryingCoreFiles(e.Message);
                 CoreList.ItemsSource = new List<CoreListEntry>();
             }
@@ -315,10 +315,8 @@ namespace YetiVSI.CoreAttach
                 }
                 catch (ProcessException ex)
                 {
-                    Trace.WriteLine($"Failed to download core file.{Environment.NewLine}" +
-                                    $"{ex}");
-                    _dialogUtil.ShowError(ErrorStrings.FailedToDownloadCore(ex.Message),
-                                          ex.ToString());
+                    Trace.WriteLine($"Failed to download core file: {ex.Demystify()}");
+                    _dialogUtil.ShowError(ErrorStrings.FailedToDownloadCore(ex.Message), ex);
                     return;
                 }
 
@@ -365,15 +363,15 @@ namespace YetiVSI.CoreAttach
                     vsDebugger.LaunchDebugTargets4(1, debugTargets, processInfo);
                 });
             }
-            catch (COMException except)
+            catch (COMException ex)
             {
-                Trace.WriteLine($"Failed to start debugger: {except}");
+                Trace.WriteLine($"Failed to start debugger: {ex.Demystify()}");
 
                 // Both DebugEngine and Visual Studio already show error dialogs if DebugEngine
                 // has to abort while it's attaching, no need to show another dialog in that case.
-                if (except.ErrorCode != VSConstants.E_ABORT)
+                if (ex.ErrorCode != VSConstants.E_ABORT)
                 {
-                    _dialogUtil.ShowError(ErrorStrings.FailedToStartDebugger, except.ToString());
+                    _dialogUtil.ShowError(ErrorStrings.FailedToStartDebugger, ex);
                 }
             }
             finally

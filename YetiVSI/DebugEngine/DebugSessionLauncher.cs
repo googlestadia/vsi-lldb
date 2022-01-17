@@ -673,25 +673,25 @@ namespace YetiVSI.DebugEngine
             var error = platform.Run(shellCommand);
             if (error.Fail())
             {
-                Trace.WriteLine("Unable to find process: " + error.GetCString());
+                Trace.WriteLine($"Unable to find process: {error.GetCString()}");
                 return false;
             }
             string output = shellCommand.GetOutput();
             if (string.IsNullOrEmpty(output))
             {
-                Trace.WriteLine("Unable to find process '" + executable + "'");
+                Trace.WriteLine($"Unable to find process '{executable}'");
                 return false;
             }
             string[] pids = output.Split(' ');
             if (pids.Length > 1)
             {
-                Trace.WriteLine("Unable to select process, multiple instances of '" + executable +
-                                "' are running");
+                Trace.WriteLine(
+                    $"Unable to select process, multiple instances of '{executable}' are running");
                 return false;
             }
             if (!uint.TryParse(pids[0], out pid))
             {
-                Trace.WriteLine("Unable to convert pid '" + pids[0] + "' to int");
+                Trace.WriteLine($"Unable to convert pid '{pids[0]}' to int");
                 return false;
             }
             return true;

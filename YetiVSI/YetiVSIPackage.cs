@@ -17,7 +17,6 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,9 +39,6 @@ namespace YetiVSI
     [InstalledProductRegistration("#110", "#112", "1.74.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(_packageGuidString)]
-    [SuppressMessage("StyleCop.CSharp.DocumentationRules",
-                     "SA1650:ElementDocumentationMustBeSpelledCorrectly",
-                     Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideOptionPage(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 0, true)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideProfile(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 110, true,

@@ -162,7 +162,7 @@ namespace YetiVSI
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Error processing NoSourceWindow: {e}");
+                Trace.WriteLine($"Error processing NoSourceWindow: {e.Demystify()}");
 
                 if (_vsiService.DebuggerOptions[DebuggerOption.EXCEPTION_METRICS] ==
                     DebuggerOptionState.ENABLED)

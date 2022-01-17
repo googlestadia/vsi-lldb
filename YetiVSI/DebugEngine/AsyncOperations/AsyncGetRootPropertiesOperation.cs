@@ -90,7 +90,8 @@ namespace YetiVSI.DebugEngine.AsyncOperations
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Error processing async get root properties request: {e}");
+                Trace.WriteLine(
+                    $"Error processing async get root properties request: {e.Demystify()}");
                 _completionHandler.OnComplete(e.HResult, 0, null);
             }
             finally

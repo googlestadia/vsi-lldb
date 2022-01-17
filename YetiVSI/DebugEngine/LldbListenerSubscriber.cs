@@ -143,7 +143,8 @@ namespace YetiVSI.DebugEngine
                 }
                 catch (Exception e)
                 {
-                    Trace.WriteLine($"Internal error: Failed to receive event from listener: {e}");
+                    Trace.WriteLine(
+                        $"Internal error: Failed to receive event from listener: {e.Demystify()}");
                     ExceptionOccured?.Invoke(null, new ExceptionOccuredEventArgs(e));
                 }
             }, _tokenSource.Token);

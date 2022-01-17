@@ -637,14 +637,14 @@ namespace YetiVSI.DebugEngine
                     }
                     else
                     {
-                        Trace.WriteLine("Failed to get target process ID; skipping " +
-                                        "remote build id check");
+                        Trace.WriteLine(
+                            "Failed to get target process ID; skipping remote build id check");
                     }
                 }
             }
             catch (PreflightBinaryCheckerException e)
             {
-                _dialogUtil.ShowWarning(e.Message, e.UserDetails);
+                _dialogUtil.ShowWarning(e.Message, e);
             }
 
             // Attaching the debugger is a synchronous operation that runs on a background thread.
@@ -736,26 +736,27 @@ namespace YetiVSI.DebugEngine
             }
             catch (AttachException e)
             {
-                Trace.WriteLine(e.Message);
+                Trace.WriteLine($"Attach failed: {e.Demystify()}");
                 exitInfo = ExitInfo.Error(e);
                 result = e.Result;
             }
             catch (TaskAbortedException e) when (e.InnerException != null)
             {
                 Trace.WriteLine(
-                    $"Aborting attach because the debug session was aborted: {e.InnerException}");
+                    $"Aborting attach because the debug session was aborted: " +
+                    $"{e.InnerException.Demystify()}");
                 exitInfo = ExitInfo.Error(e.InnerException);
                 result = VSConstants.E_ABORT;
             }
             catch (YetiDebugTransportException e)
             {
-                Trace.WriteLine($"Failed to start debug transport: {e}");
+                Trace.WriteLine($"Failed to start debug transport: {e.Demystify()}");
                 exitInfo = ExitInfo.Error(e);
                 result = VSConstants.E_ABORT;
             }
             catch (DeployException e)
             {
-                Trace.WriteLine($"Aborted due to DeployException: {e}");
+                Trace.WriteLine($"Aborted due to DeployException: {e.Demystify()}");
                 exitInfo = ExitInfo.Error(e);
                 result = VSConstants.E_ABORT;
             }
@@ -1067,7 +1068,7 @@ namespace YetiVSI.DebugEngine
                 }
                 catch (SerializationException e)
                 {
-                    Trace.WriteLine($"Failed to parse launch arguments: {e}");
+                    Trace.WriteLine($"Failed to parse launch arguments: {e.Demystify()}");
                     return VSConstants.E_FAIL;
                 }
             }
@@ -1133,7 +1134,7 @@ namespace YetiVSI.DebugEngine
 
             foreach (string path in libPaths)
             {
-                Trace.WriteLine("Adding LLDB search path: " + path);
+                Trace.WriteLine($"Adding LLDB search path: {path}");
             }
 
             return libPaths;
@@ -1310,9 +1311,9 @@ namespace YetiVSI.DebugEngine
                     {
                         File.Delete(_coreFilePath);
                     }
-                    catch (UnauthorizedAccessException exception)
+                    catch (UnauthorizedAccessException e)
                     {
-                        Trace.WriteLine($"Warning: Deletion failed with exception: {exception}");
+                        Trace.WriteLine($"Warning: Deletion failed with exception: {e.Message}");
                         Trace.WriteLine($"Retrying in {_deleteTimeout.TotalSeconds} seconds.");
                     }
 
@@ -1430,8 +1431,6 @@ namespace YetiVSI.DebugEngine
 
         public class AttachException : Exception, IUserVisibleError
         {
-            public string UserDetails => null;
-
             public int Result { get; }
 
             public AttachException(int result, string message) : base(message)

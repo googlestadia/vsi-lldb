@@ -13,8 +13,6 @@
 // limitations under the License.
 
 ﻿using DebuggerApi;
-using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace YetiVSI.DebugEngine.Variables
 {
@@ -25,8 +23,6 @@ namespace YetiVSI.DebugEngine.Variables
         public RemoteValueDefaultFormat()
         {
         }
-
-        const uint MAX_CHILD_BATCH_SIZE = 100;
 
         public virtual ValueFormat GetValueFormat(ValueFormat fallbackValueFormat)
             => fallbackValueFormat;

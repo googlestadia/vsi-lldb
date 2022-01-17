@@ -277,8 +277,9 @@ namespace YetiVSI.DebuggerOptions
                     $"Error - See logs for more info.");
                 // The exception message will be printed to the command window by Visual Studio.
 
-                Trace.WriteLine($"ERROR: Caught unexpected exception executing " +
-                    $"'Stadia.Debugger' command.{Environment.NewLine}" + ex.ToString());
+                Trace.WriteLine(
+                    $"ERROR: Caught unexpected exception executing 'Stadia.Debugger' command: " +
+                    $"{ex.Demystify()}");
                 throw;
             }
         }

@@ -391,9 +391,9 @@ namespace YetiVSI.DebugEngine
             case enum_BP_PASSCOUNT_STYLE.BP_PASSCOUNT_EQUAL:
                 if (hitCount != _passCount.dwPassCount)
                 {
-                    Trace.WriteLine(string.Format(
-                        "Error: watchpoint's hit count {0} != its pass count {1} on hit", hitCount,
-                        _passCount.dwPassCount));
+                    Trace.WriteLine(
+                        "Error: watchpoint's hit count != its pass count on hit: " +
+                        $"{hitCount} != {_passCount.dwPassCount}");
                 }
 
                 // The watchpoint has reached its pass count.

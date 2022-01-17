@@ -119,8 +119,8 @@ namespace YetiVSI.PortSupplier
             }
             catch (Exception e) when (e is SshKeyException || e is CloudException)
             {
-                Trace.WriteLine(e.ToString());
-                _dialogUtil.ShowError(ErrorStrings.FailedToEnableSsh(e.Message), e.ToString());
+                Trace.WriteLine($"GetProcessList failed: {e.Demystify()}");
+                _dialogUtil.ShowError(ErrorStrings.FailedToEnableSsh(e.Message), e);
                 return new List<ProcessListEntry>();
             }
 
@@ -168,9 +168,8 @@ namespace YetiVSI.PortSupplier
             }
             catch (ProcessException e)
             {
-                Trace.WriteLine("ProcessException:" + e);
-                _dialogUtil.ShowError(ErrorStrings.ErrorQueryingGameletProcesses(e.Message),
-                                      e.ToString());
+                Trace.WriteLine($"ProcessException: {e.Demystify()}");
+                _dialogUtil.ShowError(ErrorStrings.ErrorQueryingGameletProcesses(e.Message), e);
                 processes = new List<IDebugProcess2>();
             }
 

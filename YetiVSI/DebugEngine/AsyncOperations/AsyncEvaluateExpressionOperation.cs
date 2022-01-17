@@ -72,7 +72,7 @@ namespace YetiVSI.DebugEngine.AsyncOperations
             }
             catch (Exception e)
             {
-                Trace.WriteLine("Error processing async evaluate request: " + e);
+                Trace.WriteLine($"Error processing async evaluate request: {e.Demystify()}");
                 _completionHandler.OnComplete(e.HResult, null);
             }
             finally

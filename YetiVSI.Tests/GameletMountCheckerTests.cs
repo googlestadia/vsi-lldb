@@ -433,7 +433,8 @@ namespace YetiVSI.Test
             bool result = mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration);
 
             Assert.That(result, Is.False);
-            _dialogUtil.Received(1).ShowError(Arg.Any<string>(), Arg.Any<string>());
+            _dialogUtil.Received(1)
+                .ShowError(Arg.Any<string>(), Arg.Any<ProcessExecutionException>());
         }
 
         GameletMountChecker CreateMountCheckerWithSpecifiedProcMountsInfo(

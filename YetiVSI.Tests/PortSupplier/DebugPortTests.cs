@@ -189,7 +189,7 @@ namespace YetiVSI.Test.PortSupplier
             Assert.AreEqual(0, count);
 
             _dialogUtil.Received().ShowError(Arg.Is<string>(x => x.Contains("test exception")),
-                                             Arg.Any<string>());
+                                             Arg.Any<ProcessException>());
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
                                  DeveloperEventStatus.Types.Code.Success);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiProcessList,
@@ -213,7 +213,7 @@ namespace YetiVSI.Test.PortSupplier
             Assert.AreEqual(0, count);
 
             _dialogUtil.Received().ShowError(Arg.Is<string>(x => x.Contains("test exception")),
-                                             Arg.Any<string>());
+                                             Arg.Any<SshKeyException>());
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
                                  DeveloperEventStatus.Types.Code.InternalError);
         }

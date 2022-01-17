@@ -73,7 +73,8 @@ namespace YetiVSI.LoadSymbols
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Error while attempting to substitute LoadSymbols command: {e}");
+                Trace.WriteLine(
+                    $"Error while attempting to substitute LoadSymbols command: {e.Demystify()}");
             }
         }
 
@@ -124,7 +125,7 @@ namespace YetiVSI.LoadSymbols
             {
                 // Users will see that module is not loaded via Modules window,
                 // thus not showing any extra messages.
-                Trace.WriteLine($"Error while loading symbols: {e}");
+                Trace.WriteLine($"Error while loading symbols: {e.Demystify()}");
 
                 if (_vsiService.DebuggerOptions[DebuggerOption.EXCEPTION_METRICS] ==
                     DebuggerOptionState.ENABLED)

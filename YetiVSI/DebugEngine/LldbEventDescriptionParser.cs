@@ -51,7 +51,8 @@ namespace YetiVSI.DebugEngine
                 }
                 catch (JsonException e)
                 {
-                    Trace.WriteLine($"Exception while deserializing {toDeserialize}: {e}");
+                    Trace.WriteLine(
+                        $"Exception while deserializing {toDeserialize}: {e.Demystify()}");
                 }
             }
 

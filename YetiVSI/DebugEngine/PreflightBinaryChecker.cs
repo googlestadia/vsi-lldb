@@ -28,28 +28,14 @@ namespace YetiVSI.DebugEngine
 {
     public class PreflightBinaryCheckerException : Exception, IUserVisibleError
     {
-        private string userDetails;
         public PreflightBinaryCheckerException(string msg, Exception inEx) : base(msg, inEx) { }
         public PreflightBinaryCheckerException(string msg, string userDetails, Exception inEx) :
             base(msg, inEx)
         {
-            this.userDetails = userDetails;
+            UserDetails = userDetails;
         }
 
-        public string UserDetails
-        {
-            get
-            {
-                if (userDetails != null)
-                {
-                    return userDetails;
-                }
-                else
-                {
-                    return ToString();
-                }
-            }
-        }
+        public string UserDetails { get; }
     }
 
     /// <summary>
@@ -131,8 +117,9 @@ namespace YetiVSI.DebugEngine
             }
             catch (BinaryFileUtilException e)
             {
-                Trace.WriteLine($"Failed to read build ID for '{remoteTargetPath}' " +
-                    $"on '{target.GetString()}': " + e.ToString());
+                Trace.WriteLine(
+                    $"Failed to read build ID for '{remoteTargetPath}' " +
+                    $"on '{target.GetString()}': {e.Demystify()}");
                 throw new PreflightBinaryCheckerException(
                     ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(e.Message), e);
             }
@@ -187,8 +174,10 @@ namespace YetiVSI.DebugEngine
             }
             catch (BinaryFileUtilException e)
             {
-                Trace.WriteLine($"Failed to read build ID for '{remoteTargetPath}' " +
-                    $"on '{target.GetString()}': " + e.ToString());
+                Trace.WriteLine(
+                    $"Failed to read build ID for '{remoteTargetPath}' " +
+                    $"on '{target.GetString()}': {e.Demystify()}");
+
                 throw new PreflightBinaryCheckerException(
                     ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(e.Message), e);
             }
@@ -223,7 +212,7 @@ namespace YetiVSI.DebugEngine
                 catch (BinaryFileUtilException e)
                 {
                     Trace.WriteLine(
-                        $"Failed to read build ID for '{path}': " + e.ToString());
+                        $"Failed to read build ID for '{path}': {e.Demystify()}");
                 }
             }
             return false;

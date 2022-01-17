@@ -50,5 +50,8 @@
     <PackageReference Include="Microsoft.VisualStudio.Threading">
       <Version>15.8.209</Version>
     </PackageReference>
+    <PackageReference Include="Ben.Demystifier">
+      <Version>0.4.1</Version>
+    </PackageReference>
   </ItemGroup>
 </Project>

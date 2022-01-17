@@ -298,8 +298,8 @@ namespace YetiVSI
             }
             catch (Exception e)
             {
-                Trace.WriteLine(e.ToString());
-                _dialogUtil.ShowError(e.Message, e.ToString());
+                Trace.WriteLine($"QueryDebugTargetsAsync failed: {e.Demystify()}");
+                _dialogUtil.ShowError(e.Message, e);
                 return new IDebugLaunchSettings[] { };
             }
         }

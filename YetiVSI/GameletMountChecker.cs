@@ -179,8 +179,7 @@ namespace YetiVSI
             catch (ProcessException e)
             {
                 Trace.WriteLine($"Error reading /proc/mounts file: {e.Message}");
-                _dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message),
-                                      e.ToString());
+                _dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message), e);
                 return content;
             }
             finally

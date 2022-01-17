@@ -141,7 +141,7 @@ namespace YetiVSI
 
         async Task ScpAsync(ProcessStartInfo startInfo, ProcessManager processManager)
         {
-            // TODO ((internal)) : Instead of showing the command window, we should find someway to
+            // TODO ((internal)): Instead of showing the command window, we should find someway to
             // parse stdout, or use an SSH library, and update the dialog window progress bar.
             using (IProcess process = _remoteProcessFactory.CreateVisible(startInfo, int.MaxValue))
             {

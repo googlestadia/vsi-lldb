@@ -44,14 +44,29 @@ namespace YetiVSI
         bool ShowYesNoWarning(string message, string caption);
 
         /// <summary>
-        /// Displays an error dialog, with an optional details section.
+        /// Displays an error dialog.
         /// </summary>
-        void ShowError(string message, string details = null);
+        void ShowError(string message);
 
         /// <summary>
-        ///  Displays a warning dialog, with an optional details section.
+        /// Displays an error dialog with an exception stacktrace.
         /// </summary>
-        void ShowWarning(string message, string details = null);
+        void ShowError(string message, Exception e);
+
+        /// <summary>
+        /// Displays an error dialog with a detailed message.
+        /// </summary>
+        void ShowErrorWithDetails(string message, string details);
+
+        /// <summary>
+        ///  Displays a warning dialog.
+        /// </summary>
+        void ShowWarning(string message);
+
+        /// <summary>
+        /// Displays a warning dialog with an exception stacktrace.
+        /// </summary>
+        void ShowWarning(string message, Exception e);
 
         /// <summary>
         /// Displays a warning dialog with 'I don't want to see this' button
@@ -93,24 +108,39 @@ namespace YetiVSI
         public bool ShowYesNo(string message, string caption)
         {
             var result = MessageBox.Show(message, caption, MessageBoxButtons.YesNo);
-            return result == DialogResult.Yes ? true : false;
+            return result == DialogResult.Yes;
         }
 
         public bool ShowYesNoWarning(string message, string caption)
         {
             var result = MessageBox.Show(message, caption, MessageBoxButtons.YesNo,
                                          MessageBoxIcon.Warning);
-            return result == DialogResult.Yes ? true : false;
+            return result == DialogResult.Yes;
         }
 
-        public void ShowError(string message, string details = null)
+        public void ShowError(string message)
+        {
+            ShowDetailsDialog(ErrorStrings.DialogTitleError, message, null);
+        }
+
+        public void ShowError(string message, Exception e)
+        {
+            ShowDetailsDialog(ErrorStrings.DialogTitleError, message, e.Demystify().ToString());
+        }
+
+        public void ShowErrorWithDetails(string message, string details)
         {
             ShowDetailsDialog(ErrorStrings.DialogTitleError, message, details);
         }
 
-        public void ShowWarning(string message, string details = null)
+        public void ShowWarning(string message)
         {
-            ShowDetailsDialog(ErrorStrings.DialogTitleWarning, message, details);
+            ShowDetailsDialog(ErrorStrings.DialogTitleWarning, message, null);
+        }
+
+        public void ShowWarning(string message, Exception e)
+        {
+            ShowDetailsDialog(ErrorStrings.DialogTitleWarning, message, e.Demystify().ToString());
         }
 
         public bool ShowOkNoMoreWithDocumentationDisplayWarning(

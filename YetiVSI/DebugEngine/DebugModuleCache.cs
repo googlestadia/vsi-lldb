@@ -159,7 +159,7 @@ namespace YetiVSI.DebugEngine
                         catch (Exception e)
                         {
                             Trace.WriteLine(
-                                $"Warning: ModuleAdded handler failed with exception: {e}");
+                                $"Warning: ModuleAdded handler failed: {e.Demystify()}");
                         }
                     });
                 };
@@ -183,7 +183,7 @@ namespace YetiVSI.DebugEngine
                         catch (Exception e)
                         {
                             Trace.WriteLine(
-                                $"Warning: ModuleRemoved handler failed with exception: {e}");
+                                $"Warning: ModuleRemoved handler failed: {e.Demystify()}");
                         }
                     });
                     return true;

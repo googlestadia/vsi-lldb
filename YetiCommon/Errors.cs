@@ -72,11 +72,7 @@ namespace YetiCommon
     /// An exception implements this interface to wrap user visible messages. When such exceptions
     /// are thrown, they should be caught, then messages should be displayed to users.
     /// </summary>
-    public interface IUserVisibleError
-    {
-        // UserDetails is nullable
-        string UserDetails { get; }
-    }
+    public interface IUserVisibleError { }
 
     /// <summary>
     /// Exceptions implementing this tag are reported as a game launch failure.

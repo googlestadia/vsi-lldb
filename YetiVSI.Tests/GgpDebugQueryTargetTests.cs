@@ -263,7 +263,7 @@ namespace YetiVSI.Test
                                                         new ProcessException("ssh failed")));
 
             await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
-            _dialogUtil.Received().ShowError("deploy exception", Arg.Any<string>());
+            _dialogUtil.Received().ShowError("deploy exception", Arg.Any<DeployException>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDeployBinary,
                                  DeveloperEventStatus.Types.Code.ExternalToolUnavailable);
@@ -276,7 +276,7 @@ namespace YetiVSI.Test
             _applicationClient.LoadByNameOrIdAsync(_testApplicationName).Returns(application);
 
             await QueryDebugTargetsAsync(0);
-            _dialogUtil.Received().ShowError(Arg.Any<string>(), Arg.Any<string>());
+            _dialogUtil.Received().ShowError(Arg.Any<string>(), Arg.Any<InvalidStateException>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.InvalidObjectState);
@@ -288,7 +288,7 @@ namespace YetiVSI.Test
             _project.GetApplicationAsync().Returns("");
 
             await QueryDebugTargetsAsync(0);
-            _dialogUtil.Received().ShowError(Arg.Any<string>(), Arg.Any<string>());
+            _dialogUtil.Received().ShowError(Arg.Any<string>(), Arg.Any<ConfigurationException>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.InvalidConfiguration);
@@ -573,9 +573,8 @@ namespace YetiVSI.Test
             Assert.AreEqual(0, launchSettings.Count);
             _dialogUtil.Received(1)
                 .ShowError(
-                    Arg.Is<string>(s => s.Contains("web player endpoint option") &&
-                                       s.Contains("it isn't compatible with external IDs")),
-                    Arg.Any<string>());
+                    Arg.Is<string>(s => s.Contains("web player endpoint option") &&                                                 s.Contains("it isn't compatible with external IDs")),
+                    Arg.Any<ConfigurationException>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
                                  DeveloperEventStatus.Types.Code.InvalidConfiguration);
@@ -631,7 +630,7 @@ namespace YetiVSI.Test
                 .Throw(c => new Exception("Oops!"));
 
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);
-            _dialogUtil.Received().ShowError("Oops!", Arg.Any<string>());
+            _dialogUtil.Received().ShowError("Oops!", Arg.Any<Exception>());
             Assert.That(result.Count, Is.EqualTo(0));
         }
 

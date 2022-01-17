@@ -217,7 +217,7 @@ namespace YetiVSI.Test.GameLaunch
                 _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _);
 
             Assert.That(result, Is.False);
-            _dialogUtil.Received(1).ShowError(Arg.Any<string>(), Arg.Any<string>());
+            _dialogUtil.Received(1).ShowError(Arg.Any<string>(), Arg.Any<CloudException>());
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
                                  DeveloperEventStatus.Types.Code.InternalError);
         }
@@ -277,7 +277,7 @@ namespace YetiVSI.Test.GameLaunch
                 _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _);
 
             Assert.That(result, Is.False);
-            _dialogUtil.ShowError(Arg.Any<string>(), Arg.Any<string>());
+            _dialogUtil.ShowError(Arg.Any<string>(), Arg.Any<ProcessException>());
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsClearLogs,
                                  DeveloperEventStatus.Types.Code.ExternalToolUnavailable);
         }

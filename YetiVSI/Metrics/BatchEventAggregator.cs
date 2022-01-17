@@ -110,7 +110,7 @@ namespace YetiVSI.Metrics
             catch (Exception e)
             {
                 _exceptionRecorder.Record(MethodBase.GetCurrentMethod(), e);
-                Trace.WriteLine($"Batch summary retrieval failed with exception: {e}");
+                Trace.WriteLine($"Batch summary retrieval failed with exception: {e.Demystify()}");
             }
         }
 

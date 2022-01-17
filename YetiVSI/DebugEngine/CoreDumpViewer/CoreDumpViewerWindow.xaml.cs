@@ -85,8 +85,7 @@ namespace YetiVSI.DebugEngine.CoreDumpViewer
                 }
                 else
                 {
-                    string errorMessage = $"Failed to start debugger: {exception}";
-                    Trace.WriteLine(errorMessage);
+                    Trace.WriteLine($"Failed to start debugger: {exception.Demystify()}");
                     MessageBox.Show(ErrorStrings.FailedToStartDebugger, "Core dump debugger",
                                     MessageBoxButton.OK, MessageBoxImage.Error);
                 }

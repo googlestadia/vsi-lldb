@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerGrpcClient;
 using Grpc.Core;
 using System;
 using System.Diagnostics;
@@ -31,15 +30,15 @@ namespace YetiVSI.DebugEngine.Exit
     /// </summary>
     public class ExitDialogUtil
     {
+        readonly Action<string, Exception> showErrorDialog;
         readonly Action<string, string> showErrorDialogWithDetails;
-        readonly Action<string> showErrorDialog;
-        readonly object thisLock = new object();
 
         public ExitDialogUtil(IDialogUtil dialogUtil, DialogExecutionContext executionContext)
         {
+            showErrorDialog = (message, ex) =>
+                executionContext(() => dialogUtil.ShowError(message, ex));
             showErrorDialogWithDetails = (message, details) =>
-                executionContext(() => dialogUtil.ShowError(message, details));
-            showErrorDialog = message => executionContext(() => dialogUtil.ShowError(message));
+                executionContext(() => dialogUtil.ShowErrorWithDetails(message, details));
         }
 
         /// <summary>
@@ -47,19 +46,26 @@ namespace YetiVSI.DebugEngine.Exit
         /// </summary>
         public void ShowExitDialog(Exception ex)
         {
-            Trace.WriteLine("Aborting debug session: " + ex);
+            Trace.WriteLine($"Aborting debug session: {ex.Demystify()}");
 
             if (ex is ProcessExecutionException)
             {
-                showErrorDialogWithDetails(ErrorStrings.ProcessExitedUnexpectedly, ex.ToString());
+                showErrorDialog(ErrorStrings.ProcessExitedUnexpectedly, ex);
             }
             else if (ex is RpcException)
             {
-                showErrorDialogWithDetails(ErrorStrings.RpcFailure, ex.ToString());
+                showErrorDialog(ErrorStrings.RpcFailure, ex);
             }
             else if (ex is IUserVisibleError)
             {
-                showErrorDialogWithDetails(ex.Message, ((IUserVisibleError)ex).UserDetails);
+                if (ex is PreflightBinaryCheckerException preflightError)
+                {
+                    showErrorDialogWithDetails(ex.Message, preflightError.UserDetails);
+                }
+                else
+                {
+                    showErrorDialog(ex.Message, ex);
+                }
             }
         }
     }

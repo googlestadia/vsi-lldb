@@ -34,8 +34,6 @@ namespace YetiVSI
 {
     public class YetiDebugTransportException : Exception, IUserVisibleError
     {
-        public string UserDetails => null;
-
         public YetiDebugTransportException(string message) : base(message)
         {
         }
@@ -317,9 +315,8 @@ namespace YetiVSI
                 }
                 catch (ProcessException e)
                 {
-                    Trace.WriteLine($"Failed to start {item.Name}: {e.Message}");
-                    _dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message),
-                                         e.ToString());
+                    Trace.WriteLine($"Failed to start {item.Name}: {e.Demystify()}");
+                    _dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message), e);
                     return false;
                 }
             }

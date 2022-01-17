@@ -71,7 +71,7 @@ namespace YetiVSI.LLDBShell
         {
             taskContext.ThrowIfNotOnMainThread();
 
-            Trace.WriteLine(string.Format("Executing LLDB Shell command '{0}'", command));
+            Trace.WriteLine($"Executing LLDB Shell command '{command}'");
 
             if (debuggers.Count == 0)
             {

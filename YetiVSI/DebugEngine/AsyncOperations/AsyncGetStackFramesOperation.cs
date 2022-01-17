@@ -81,7 +81,7 @@ namespace YetiVSI.DebugEngine.AsyncOperations
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Error processing async get frames request: {e}");
+                Trace.WriteLine($"Error processing async get frames request: {e.Demystify()}");
                 _completionHandler.OnComplete(e.HResult, null);
             }
             finally

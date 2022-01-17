@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerGrpcClient;
 using Grpc.Core;
 using NSubstitute;
 using NUnit.Framework;
@@ -40,7 +39,7 @@ namespace YetiVSI.Test.DebugEngine.Exit
         {
             exitDialogUtil.ShowExitDialog(new ProcessExecutionException("hey now", 2));
             dialogUtil.Received().ShowError(ErrorStrings.ProcessExitedUnexpectedly,
-                Arg.Is<string>(s => s.Contains("hey now")));
+                Arg.Is<ProcessExecutionException>(s => s.Message.Contains("hey now")));
         }
 
         [Test]
@@ -51,7 +50,7 @@ namespace YetiVSI.Test.DebugEngine.Exit
                 new RpcException(new Status(statusCode, "some detail")));
 
             dialogUtil.Received().ShowError(ErrorStrings.RpcFailure,
-                Arg.Is<string>(s => s.Contains("some detail")));
+                Arg.Is<RpcException>(s => s.Message.Contains("some detail")));
         }
 
         [Test]
@@ -61,7 +60,7 @@ namespace YetiVSI.Test.DebugEngine.Exit
                 new RpcException(new Status(StatusCode.FailedPrecondition, "some detail")));
 
             dialogUtil.Received().ShowError(ErrorStrings.RpcFailure,
-                Arg.Is<string>(s => s.Contains("some detail")));
+                Arg.Is<RpcException>(s => s.Message.Contains("some detail")));
         }
 
         [Test]
@@ -69,7 +68,9 @@ namespace YetiVSI.Test.DebugEngine.Exit
         {
             exitDialogUtil.ShowExitDialog(new AttachException(5, "A message"));
 
-            dialogUtil.Received().ShowError(Arg.Is<string>(s => s.Contains("A message")), null);
+            dialogUtil.Received().ShowError(
+                Arg.Is<string>(s => s.Contains("A message")),
+                Arg.Is<AttachException>(e => e.Message.Contains("A message")));
         }
     }
 }

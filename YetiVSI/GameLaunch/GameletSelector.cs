@@ -332,7 +332,7 @@ namespace YetiVSI.GameLaunch
             catch (Exception e) when (e is CloudException || e is SshKeyException)
             {
                 Trace.Write($"Received exception while enabling ssh.\n{e}");
-                _dialogUtil.ShowError(ErrorStrings.FailedToEnableSsh(e.Message), e.ToString());
+                _dialogUtil.ShowError(ErrorStrings.FailedToEnableSsh(e.Message), e);
                 return false;
             }
         }
@@ -410,8 +410,7 @@ namespace YetiVSI.GameLaunch
             catch (ProcessException e)
             {
                 Trace.WriteLine($"Error clearing instance logs: {e.Message}");
-                _dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message),
-                                      e.ToString());
+                _dialogUtil.ShowError(ErrorStrings.FailedToStartRequiredProcess(e.Message), e);
                 return false;
             }
         }

@@ -125,7 +125,7 @@ namespace YetiVSI.PortSupplier
             }
             catch (CloudException e)
             {
-                Trace.WriteLine(e.ToString());
+                Trace.WriteLine($"LoadByNameOrIdAsync failed: {e.Demystify()}");
                 _dialogUtil.ShowError(e.Message);
                 return VSConstants.S_OK;
             }
@@ -177,7 +177,7 @@ namespace YetiVSI.PortSupplier
             }
             catch (CloudException e)
             {
-                Trace.WriteLine(e.ToString());
+                Trace.WriteLine($"ListGameletsAsync failed: {e.Demystify()}");
                 _dialogUtil.ShowError(e.Message);
                 _ports.Clear();
             }

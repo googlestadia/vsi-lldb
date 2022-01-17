@@ -61,8 +61,10 @@ namespace YetiVSI
             }
         }
 
-        void DocumentationLinkClick(object sender, RoutedEventArgs e) =>
-            Process.Start(_documentationLink);
+        void DocumentationLinkClick(object sender, RoutedEventArgs e)
+        {
+            Process.Start(_documentationLink).Dispose();
+        }
 
         void OkClick(object sender, RoutedEventArgs e)
         {
@@ -81,16 +83,16 @@ namespace YetiVSI
                     path = Path.GetDirectoryName(path);
                 }
 
-                Process.Start(path);
+                Process.Start(path).Dispose();
             }
             catch (InvalidOperationException ex)
             {
-                Trace.WriteLine(ex);
+                Trace.WriteLine($"Open logs failed: {ex.Demystify()}");
                 LogsLink.Text = ErrorStrings.FailedToOpenLogsBecauseLoggingNotInitialized;
             }
             catch (Exception ex) when (ex is Win32Exception || ex is FileNotFoundException)
             {
-                Trace.WriteLine(ex);
+                Trace.WriteLine($"Open logs failed: {ex.Demystify()}");
                 LogsLink.Text = ErrorStrings.FailedToOpenLogsBecauseLogFileMayNotExist(path);
             }
         }

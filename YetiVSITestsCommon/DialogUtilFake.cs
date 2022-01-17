@@ -79,15 +79,27 @@ namespace YetiVSITestsCommon
 
         public void ShowMessage(string message) => RecordMessage(message, null, MessageType.Info);
 
-        public void ShowWarning(string message, string details = null)
+        public void ShowWarning(string message)
         {
             if (_silencedWarningFragments.Exists(message.Contains))
             {
                 return;
             }
 
-            RecordMessage(message, details, MessageType.Warning);
-            Trace.WriteLine($"{message} \n\n {details}");
+            RecordMessage(message, null, MessageType.Warning);
+            Trace.WriteLine($"{message}");
+        }
+
+        public void ShowWarning(string message, Exception e)
+        {
+            if (_silencedWarningFragments.Exists(message.Contains))
+            {
+                return;
+            }
+
+            e = e.Demystify();
+            RecordMessage(message, e.ToString(), MessageType.Warning);
+            Trace.WriteLine($"{message} \n\n {e}");
         }
 
         public bool ShowOkNoMoreDisplayWarning(string message, string[] settingPath)
@@ -110,7 +122,24 @@ namespace YetiVSITestsCommon
             return ShowOkNoMoreDisplayWarning(message, settingPath);
         }
 
-        public void ShowError(string message, string details = null)
+        public void ShowError(string message)
+        {
+            RecordMessage(message, null, MessageType.Error);
+            string text = $"{message}";
+            Trace.WriteLine(text);
+            throw new DialogException(text);
+        }
+
+        public void ShowError(string message, Exception e)
+        {
+            e = e.Demystify();
+            RecordMessage(message, e.ToString(), MessageType.Error);
+            string text = $"{message} \n\n {e}";
+            Trace.WriteLine(text);
+            throw new DialogException(text);
+        }
+
+        public void ShowErrorWithDetails(string message, string details)
         {
             RecordMessage(message, details, MessageType.Error);
             string text = $"{message} \n\n {details}";

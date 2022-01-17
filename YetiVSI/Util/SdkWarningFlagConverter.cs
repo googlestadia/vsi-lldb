@@ -55,8 +55,7 @@ namespace YetiVSI.Util
             {
                 Trace.WriteLine($"Could not convert value '{value}' " +
                                 $"of type '{nameof(SdkIncompatibilityWarning)}'" +
-                                $" to type '{destinationType}'. " +
-                                $"Exception: '{e.Message}'. Stack trace: '{e.StackTrace}'.");
+                                $" to type '{destinationType}': {e.Demystify()}");
             }
 
             return Convert.ToString(value);
@@ -91,8 +90,7 @@ namespace YetiVSI.Util
             catch (Exception e)
             {
                 Trace.WriteLine($"Could not convert value '{value}' " +
-                                $"to type '{nameof(SdkIncompatibilityWarning)}'. " +
-                                $"Exception: '{e.Message}'. Stack trace: '{e.StackTrace}'.");
+                                $"to type '{nameof(SdkIncompatibilityWarning)}': {e.Demystify()}");
             }
 
             return new SdkIncompatibilityWarning();

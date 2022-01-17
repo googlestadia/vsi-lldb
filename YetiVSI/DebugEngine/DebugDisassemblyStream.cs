@@ -487,19 +487,12 @@ namespace YetiVSI.DebugEngine
                         continue;
                     }
                     // Only accept the instructions if our start instruction is there.
-                    try
+                    startIndex = instructions.BinarySearch(startInstruction,
+                                                            new InstructionComparator());
+                    if (startIndex >= 0)
                     {
-                        startIndex = instructions.BinarySearch(startInstruction,
-                                                               new InstructionComparator());
-                        if (startIndex >= 0)
-                        {
-                            validInstructions = instructions;
-                            break;
-                        }
-                    }
-                    catch (InvalidOperationException e)
-                    {
-                        Trace.WriteLine(e);
+                        validInstructions = instructions;
+                        break;
                     }
                 }
 
@@ -517,8 +510,8 @@ namespace YetiVSI.DebugEngine
                 if (validInstructions == null || seekIndex < 0 ||
                     seekIndex >= validInstructions.Count)
                 {
-                    Trace.WriteLine($"Failed to seek backwards. Seek index {seekIndex} is out " +
-                                    "of range");
+                    Trace.WriteLine(
+                        $"Failed to seek backwards. Seek index {seekIndex} is out of range");
                     return VSConstants.E_FAIL;
                 }
                 _address = validInstructions[seekIndex].Address;
