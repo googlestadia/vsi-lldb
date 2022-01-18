@@ -25,6 +25,7 @@ __CURRENT_LOG__
 ---
 
 Explain your issue here.
+__DETAILS__
 ".Trim();
 
         static ReportBug _reportBug;
@@ -42,7 +43,7 @@ Explain your issue here.
             _projectId = projectId;
         }
 
-        public void Execute()
+        public void Execute(string details)
         {
             _actionRecorder.RecordSuccess(ActionType.ReportFeedback);
 
@@ -50,11 +51,16 @@ Explain your issue here.
                 ? $"Current log file is {YetiLog.CurrentLogFile.NormalizePath()}\n"
                 : "";
 
+            var detailsMsg = string.IsNullOrEmpty(details)
+                ? ""
+                : $"\n---\n{details}";
+
             var description = _description_template
                 .Replace("__VSIX_VERSION__", Versions.GetExtensionVersion())
                 .Replace("__VS_VERSION__", _vsVersion)
                 .Replace("__LOG_PATH__", SDKUtil.GetLoggingPath())
-                .Replace("__CURRENT_LOG__", currentLog);
+                .Replace("__CURRENT_LOG__", currentLog)
+                .Replace("__DETAILS__", detailsMsg);
 
             var queryParams = new Dictionary<string, string>
             {
@@ -95,12 +101,12 @@ Explain your issue here.
 #pragma warning restore VSSDK006
 
             var cmdId = new CommandID(YetiConstants.CommandSetGuid, PkgCmdID.cmdidReportBug);
-            mcs.AddCommand(new MenuCommand((s, e) => _reportBug.Execute(), cmdId));
+            mcs.AddCommand(new MenuCommand((s, e) => _reportBug.Execute(null), cmdId));
         }
 
-        public static void TriggerCommand()
+        public static void TriggerCommand(string details)
         {
-            _reportBug?.Execute();
+            _reportBug?.Execute(details);
         }
     }
 }

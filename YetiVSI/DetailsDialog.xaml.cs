@@ -23,41 +23,66 @@ namespace YetiVSI
 {
     public partial class DetailsDialog
     {
-        string _documentationLink;
+        readonly string _details;
+        readonly string _documentationLink;
 
-        public DetailsDialog(string title, string message, string details, bool dontShowAgainButton,
-                             string documentationLink = "", string documentationText = "",
-                             string[] dontShowAgainSettingPath = null)
+        public DetailsDialog(string title, string message, string details)
+            : this(title, message, details, null, null, null)
         {
+        }
+
+        public DetailsDialog(string title, string message, string documentationLink,
+                             string documentationText, string[] dontShowAgainSettingPath)
+            : this(title, message, null, documentationLink, documentationText,
+                   dontShowAgainSettingPath)
+        {
+        }
+
+        private DetailsDialog(string title, string message, string details,
+                              string documentationLink, string documentationText,
+                              string[] dontShowAgainSettingPath)
+        {
+            _details = details;
+            _documentationLink = documentationLink;
+
             InitializeComponent();
+
             Title = title;
             Message.Text = message;
-            if (!string.IsNullOrEmpty(details))
+
+            // Handle details.
+            if (details != null)
             {
                 Details.Text = details;
+                DetailsExpander.Visibility = Visibility.Visible;
             }
             else
             {
-                DetailsExpander.Visibility = Visibility.Collapsed;
+                DetailsExpander.Visibility = Visibility.Hidden;
             }
 
-            DontShowAgain.Visibility = dontShowAgainButton ? Visibility.Visible : Visibility.Hidden;
-            if (dontShowAgainSettingPath != null)
-            {
-                DontShowAgain.ToolTip =
-                    ErrorStrings.DontShowAgainSettingHint(dontShowAgainSettingPath);
-            }
-
+            // Handle documentation text and link.
             if (!string.IsNullOrEmpty(documentationLink) &&
                 !string.IsNullOrEmpty(documentationText))
             {
                 DocumentationBlock.Visibility = Visibility.Visible;
                 DocumentationText.Text = documentationText;
-                _documentationLink = documentationLink;
             }
             else
             {
                 DocumentationBlock.Visibility = Visibility.Hidden;
+            }
+
+            // Handle the "don't show again" button.
+            if (dontShowAgainSettingPath != null)
+            {
+                DontShowAgain.Visibility = Visibility.Visible;
+                DontShowAgain.ToolTip =
+                    ErrorStrings.DontShowAgainSettingHint(dontShowAgainSettingPath);
+            }
+            else
+            {
+                DontShowAgain.Visibility = Visibility.Hidden;
             }
         }
 
@@ -99,7 +124,7 @@ namespace YetiVSI
 
         void ReportBug(object sender, RoutedEventArgs e)
         {
-            YetiVSI.ReportBug.TriggerCommand();
+            YetiVSI.ReportBug.TriggerCommand(_details);
         }
 
         void DetailsExpanded(object sender, RoutedEventArgs e)

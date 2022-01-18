@@ -113,8 +113,8 @@ namespace YetiVSI
 
         public bool ShowYesNoWarning(string message, string caption)
         {
-            var result = MessageBox.Show(message, caption, MessageBoxButtons.YesNo,
-                                         MessageBoxIcon.Warning);
+            var result =
+                MessageBox.Show(message, caption, MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             return result == DialogResult.Yes;
         }
 
@@ -143,22 +143,27 @@ namespace YetiVSI
             ShowDetailsDialog(ErrorStrings.DialogTitleWarning, message, e.Demystify().ToString());
         }
 
-        public bool ShowOkNoMoreWithDocumentationDisplayWarning(
-            string message, string documentationLink, string documentationText,
-            string[] settingPath) =>
-            ShowDetailsNoMoreDisplayDialog(
-                ErrorStrings.DialogTitleWarning, message, documentationLink, documentationText,
-                settingPath);
+        public bool ShowOkNoMoreWithDocumentationDisplayWarning(string message,
+                                                                string documentationLink,
+                                                                string documentationText,
+                                                                string[] settingPath)
+        {
+            return ShowDetailsNoMoreDisplayDialog(ErrorStrings.DialogTitleWarning, message,
+                                                  documentationLink, documentationText,
+                                                  settingPath);
+        }
 
-        public bool ShowOkNoMoreDisplayWarning(string message, string[] settingPath) =>
-            ShowDetailsNoMoreDisplayDialog(ErrorStrings.DialogTitleWarning, message, string.Empty,
-                                           string.Empty, settingPath);
+        public bool ShowOkNoMoreDisplayWarning(string message, string[] settingPath)
+        {
+            return ShowDetailsNoMoreDisplayDialog(ErrorStrings.DialogTitleWarning, message,
+                                                  string.Empty, string.Empty, settingPath);
+        }
 
         static void ShowDetailsDialog(string title, string message, string details)
         {
             if (System.Windows.Application.Current.Dispatcher.CheckAccess())
             {
-                var dialog = new DetailsDialog(title, message, details, false);
+                var dialog = new DetailsDialog(title, message, details);
                 dialog.ShowModal();
             }
             else
@@ -172,13 +177,12 @@ namespace YetiVSI
 
         static bool ShowDetailsNoMoreDisplayDialog(string title, string message,
                                                    string documentationLink,
-                                                   string documentationText,
-                                                   string[] settingPath)
+                                                   string documentationText, string[] settingPath)
         {
             if (System.Windows.Application.Current.Dispatcher.CheckAccess())
             {
-                var dialog = new DetailsDialog(title, message, null, true, documentationLink,
-                                               documentationText, settingPath);
+                var dialog = new DetailsDialog(title, message, documentationLink, documentationText,
+                                               settingPath);
                 dialog.ShowModal();
                 return dialog.DialogResult == true;
             }

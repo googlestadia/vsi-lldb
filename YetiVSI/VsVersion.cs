@@ -2,7 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using VsShell = Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell;
 
 namespace YetiVSI
 {
@@ -29,14 +29,14 @@ namespace YetiVSI
 
         public static string GetVisualStudioVersion()
         {
-            VsShell.ThreadHelper.ThrowIfNotOnUIThread();
-            var vsAppId = VsShell.Package.GetGlobalService(typeof(IVsAppId)) as IVsAppId;
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var vsAppId = Package.GetGlobalService(typeof(IVsAppId)) as IVsAppId;
             return GetVersion(vsAppId);
         }
 
-        public static async Task<string> GetVisualStudioVersionAsync(VsShell.AsyncPackage package)
+        public static async Task<string> GetVisualStudioVersionAsync(AsyncPackage package)
         {
-            await VsShell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var vsAppId = await package.GetServiceAsync(typeof(IVsAppId)) as IVsAppId;
             return GetVersion(vsAppId);
         }
