@@ -155,7 +155,6 @@ namespace YetiVSI.DebugEngine
             readonly IDebugProgramFactory _debugProgramFactory;
             readonly IDebugThreadFactory _debugThreadFactory;
             readonly DebugModule.Factory _debugModuleFactory;
-            readonly DebugModuleCache.Factory _debugModuleCacheFactory;
             readonly IDebugStackFrameFactory _debugStackFrameFactory;
             readonly LldbEventManager.Factory _eventManagerFactory;
             readonly ILLDBShell _lldbShell;
@@ -168,7 +167,6 @@ namespace YetiVSI.DebugEngine
                            IDebugEngineHandlerFactory debugEngineHandlerFactory,
                            ITaskExecutor taskExecutor, LldbEventManager.Factory eventManagerFactory,
                            IDebugProgramFactory debugProgramFactory,
-                           DebugModuleCache.Factory debugModuleCacheFactory,
                            DebugModule.Factory debugModuleFactory,
                            IDebugThreadFactory debugThreadFactory,
                            IDebugStackFrameFactory debugStackFrameFactory,
@@ -183,7 +181,6 @@ namespace YetiVSI.DebugEngine
                 _taskExecutor = taskExecutor;
                 _eventManagerFactory = eventManagerFactory;
                 _debugProgramFactory = debugProgramFactory;
-                _debugModuleCacheFactory = debugModuleCacheFactory;
                 _debugModuleFactory = debugModuleFactory;
                 _debugThreadFactory = debugThreadFactory;
                 _debugStackFrameFactory = debugStackFrameFactory;
@@ -214,8 +211,7 @@ namespace YetiVSI.DebugEngine
                 var moduleFileLoader = _moduleFileLoaderFactory.Create(symbolLoader, binaryLoader,
                                                                        isCoreAttach,
                                                                        moduleSearchLogHolder);
-
-                var debugModuleCache = _debugModuleCacheFactory.Create(
+                var debugModuleCache = new DebugModuleCache(
                     (lldbModule, loadOrder, ggpProgram) => _debugModuleFactory.Create(
                         moduleFileLoader, moduleSearchLogHolder, lldbModule, loadOrder,
                         debugEngineHandler, ggpProgram));

@@ -121,8 +121,6 @@ namespace YetiVSI.DebugEngine
 
         CloudRunner _cloudRunner;
 
-        IDispatcher _dispatcher;
-
         IChromeLauncher _chromeLauncher;
 
         public class DebugEngineCommands : IDebugEngineCommands
@@ -226,7 +224,6 @@ namespace YetiVSI.DebugEngine
                 GetFactoryDecorator().Decorate(new DebugModule.Factory(
                     cancelableTaskFactory, actionRecorder, moduleFileLoadRecorderFactory,
                     GetSymbolSettingsProvider()));
-            var debugModuleCacheFactory = new DebugModuleCache.Factory(GetDispatcher());
             var debugMemoryContextFactory =
                 GetFactoryDecorator().Decorate(new DebugMemoryContext.Factory());
 
@@ -340,7 +337,7 @@ namespace YetiVSI.DebugEngine
                         GetFactoryDecorator().Decorate<IDebugEngineHandlerFactory>(
                             new DebugEngineHandler.Factory(GetJoinableTaskContext())),
                         GetTaskExecutor(), eventManagerFactory, debugProgramFactory,
-                        debugModuleCacheFactory, debugModuleFactory, debugThreadAsyncFactory,
+                        debugModuleFactory, debugThreadAsyncFactory,
                         debugStackFrameFactory, lldbShell, breakpointManagerFactory,
                         symbolLoaderFactory, binaryLoaderFactory, moduleFileLoaderFactory));
             bool fastExpressionEvaluation = GetVsiService().Options.FastExpressionEvaluation ==
@@ -535,16 +532,6 @@ namespace YetiVSI.DebugEngine
             }
 
             return _taskExecutor;
-        }
-
-        public virtual IDispatcher GetDispatcher()
-        {
-            if (_dispatcher == null)
-            {
-                _dispatcher = new MainThreadDispatcher();
-            }
-
-            return _dispatcher;
         }
 
         public virtual IVariableNameTransformer GetVariableNameTransformer()

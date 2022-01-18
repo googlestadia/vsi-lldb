@@ -153,8 +153,13 @@ namespace YetiVSI.DebugEngine
         // Certain events require, allow, or do not allow program or thread objects
         // to be sent with them. Reference:
         // https://docs.microsoft.com/en-us/visualstudio/extensibility/debugger/supported-event-types
-        public int SendEvent(DebugEvent evnt, IGgpDebugProgram program, IDebugThread2 thread) =>
-            _taskContext.Factory.Run(async () => await SendEventAsync(evnt, program, thread));
+        public int SendEvent(DebugEvent evnt, IGgpDebugProgram program, IDebugThread2 thread)
+        {
+            return _taskContext.Factory.Run(async () =>
+            {
+                return await SendEventAsync(evnt, program, thread);
+            });
+        }
 
         public int SendEvent(DebugEvent evnt, IGgpDebugProgram program,
                              RemoteThread thread) => SendEvent(evnt, program,

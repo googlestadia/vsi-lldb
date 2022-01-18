@@ -30,14 +30,12 @@ namespace YetiVSI.DebugEngine
     public interface IDebugModuleCache
     {
         /// <summary>
-        /// Raised when a new DebugModule is created and added to the cache. Handlers may still be
-        /// invoked for a short period after unsubscribing.
+        /// Raised when a new DebugModule is created and added to the cache.
         /// </summary>
         event EventHandler<ModuleAddedEventArgs> ModuleAdded;
 
         /// <summary>
-        /// Raised when an existing DebugModule is removed from the cache. Handlers may still be
-        /// invoked for a short period after unsubscribing.
+        /// Raised when an existing DebugModule is removed from the cache.
         /// </summary>
         event EventHandler<ModuleRemovedEventArgs> ModuleRemoved;
 
@@ -104,38 +102,18 @@ namespace YetiVSI.DebugEngine
         public delegate IDebugModule3 ModuleCreator(SbModule lldbModule, uint loadOrder,
                                                     IGgpDebugProgram program);
 
-        public class Factory
-        {
-            readonly IDispatcher mainThreadDispatcher;
-
-            public Factory(IDispatcher mainThreadDispatcher)
-            {
-                this.mainThreadDispatcher = mainThreadDispatcher;
-            }
-
-            public virtual IDebugModuleCache Create(ModuleCreator moduleCreator) =>
-                new DebugModuleCache(moduleCreator, SbModuleEqualityComparer.Instance,
-                    mainThreadDispatcher);
-        }
-
         public event EventHandler<ModuleAddedEventArgs> ModuleAdded;
         public event EventHandler<ModuleRemovedEventArgs> ModuleRemoved;
 
         readonly ModuleCreator moduleCreator;
-        readonly IEqualityComparer<SbModule> sbModuleEqualityComparer;
-        readonly IDispatcher mainThreadDispatcher;
 
         Dictionary<SbModule, IDebugModule3> cache;
         uint nextLoadOrder = 0;
 
-        DebugModuleCache(ModuleCreator moduleCreator,
-                         IEqualityComparer<SbModule> sbModuleEqualityComparer,
-                         IDispatcher mainThreadDispatcher)
+        public DebugModuleCache(ModuleCreator moduleCreator)
         {
             this.moduleCreator = moduleCreator;
-            this.sbModuleEqualityComparer = sbModuleEqualityComparer;
-            this.mainThreadDispatcher = mainThreadDispatcher;
-            cache = new Dictionary<SbModule, IDebugModule3>(sbModuleEqualityComparer);
+            cache = new Dictionary<SbModule, IDebugModule3>(SbModuleEqualityComparer.Instance);
         }
 
         public IDebugModule3 GetOrCreate(SbModule lldbModule, IGgpDebugProgram program)
@@ -147,21 +125,15 @@ namespace YetiVSI.DebugEngine
                     module = moduleCreator(lldbModule, nextLoadOrder++, program);
                     cache.Add(lldbModule, module);
 
-                    // TODO: Simplify inter-thread interactions in the VSI, and as part
-                    // of that find a less ad-hoc solution to ModuleAdded/Removed event thread
-                    // safety issues
-                    mainThreadDispatcher.Post(() =>
+                    try
                     {
-                        try
-                        {
-                            ModuleAdded?.Invoke(Self, new ModuleAddedEventArgs(module));
-                        }
-                        catch (Exception e)
-                        {
-                            Trace.WriteLine(
-                                $"Warning: ModuleAdded handler failed: {e.Demystify()}");
-                        }
-                    });
+                        ModuleAdded?.Invoke(Self, new ModuleAddedEventArgs(module));
+                    }
+                    catch (Exception e)
+                    {
+                        Trace.WriteLine(
+                            $"Warning: ModuleAdded handler failed: {e.Demystify()}");
+                    }
                 };
                 return module;
             }
@@ -174,18 +146,15 @@ namespace YetiVSI.DebugEngine
                 if (cache.TryGetValue(lldbModule, out IDebugModule3 module))
                 {
                     cache.Remove(lldbModule);
-                    mainThreadDispatcher.Post(() =>
+                    try
                     {
-                        try
-                        {
-                            ModuleRemoved?.Invoke(Self, new ModuleRemovedEventArgs(module));
-                        }
-                        catch (Exception e)
-                        {
-                            Trace.WriteLine(
-                                $"Warning: ModuleRemoved handler failed: {e.Demystify()}");
-                        }
-                    });
+                        ModuleRemoved?.Invoke(Self, new ModuleRemovedEventArgs(module));
+                    }
+                    catch (Exception e)
+                    {
+                        Trace.WriteLine(
+                            $"Warning: ModuleRemoved handler failed: {e.Demystify()}");
+                    }
                     return true;
                 }
                 return false;
@@ -196,8 +165,13 @@ namespace YetiVSI.DebugEngine
         {
             lock (cache)
             {
-                var deadModules = cache.Keys.Except(liveModules, sbModuleEqualityComparer).ToList();
-                foreach (var module in deadModules) { Remove(module); }
+                var comparer = SbModuleEqualityComparer.Instance;
+                var deadModules = cache.Keys.Except(liveModules, comparer).ToList();
+
+                foreach (var module in deadModules)
+                {
+                    Remove(module);
+                }
             }
         }
     }

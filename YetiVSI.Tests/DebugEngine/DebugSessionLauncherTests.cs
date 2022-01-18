@@ -33,7 +33,6 @@ using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
 using YetiVSI.Test.TestSupport.DebugEngine;
 using YetiVSI.Test.TestSupport.Lldb;
-using YetiVSI.Util;
 using YetiVSITestsCommon;
 using static YetiVSI.DebugEngine.DebugEngine;
 
@@ -498,7 +497,6 @@ namespace YetiVSI.Test.DebugEngine
                                          debugDocumentContextFactory, debugCodeContextFactory,
                                          threadsEnumFactory, moduleEnumFactory,
                                          codeContextEnumFactory),
-                new DebugModuleCache.Factory(new SynchronousDispatcher()),
                 new DebugModule.Factory(
                     FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false),
                     _actionRecorder, moduleFileLoadRecorderFactory,

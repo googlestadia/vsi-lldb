@@ -16,7 +16,6 @@
 using NUnit.Framework;
 using NSubstitute;
 using YetiVSI.DebugEngine;
-using YetiVSI.Metrics;
 using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 
@@ -32,9 +31,7 @@ namespace YetiVSI.Test.DebugEngine
         [SetUp]
         public void SetUp()
         {
-            var debugModuleCacheFactory = new DebugModuleCache.Factory(
-                new YetiVSI.Util.SynchronousDispatcher());
-            debugModuleCache = debugModuleCacheFactory.Create(
+            debugModuleCache = new DebugModuleCache(
                 Substitute.For<DebugModuleCache.ModuleCreator>());
             moduleAddedHandler = Substitute.For<EventHandler<ModuleAddedEventArgs>>();
             moduleRemovedHandler = Substitute.For<EventHandler<ModuleRemovedEventArgs>>();

@@ -266,7 +266,6 @@
     <Compile Include="Util\IWindowsRegistry.cs" />
     <Compile Include="Util\JoinableTaskContextExtensions.cs" />
     <Compile Include="Util\LldbCommandUtil.cs" />
-    <Compile Include="Util\MainThreadDispatcher.cs" />
     <Compile Include="Util\SdkWarningFlagConverter.cs" />
     <Compile Include="Util\WindowsRegistry.cs" />
     <Compile Include="DebugEngine\DebugBreakpointResolution.cs" />
