@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc.Models;
 using NUnit.Framework;
 
 namespace YetiCommon.Tests
@@ -20,12 +19,10 @@ namespace YetiCommon.Tests
     [TestFixture]
     class ChromeClientLaunchCommandFormatterTests
     {
-        const string LauncherDir = "the/launcherDir";
-
         [Test]
         public void TestCreateAndParseWithLaunchName()
         {
-            var launchCommand = new ChromeClientLaunchCommandFormatter(new JsonUtil(), LauncherDir);
+            var launchCommand = new ChromeClientLaunchCommandFormatter();
             string launchName = "launchName";
             var launchParams = new LaunchParams()
             {

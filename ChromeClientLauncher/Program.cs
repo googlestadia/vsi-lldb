@@ -26,58 +26,50 @@ namespace ChromeClientLauncher
     {
         static void Main(string[] args)
         {
-            var consoleTraceListener = new ConsoleTraceListener
-            {
-                Name = "mainConsoleTracer"
-            };
+            var consoleTraceListener = new ConsoleTraceListener { Name = "mainConsoleTracer" };
             Trace.Listeners.Add(consoleTraceListener);
 
             try
             {
-                var jsonUtil = new JsonUtil();
+                var gameLauncher =
+                    new ChromeClientsLauncher
+                        .Factory(new ChromeClientLaunchCommandFormatter(),
+                                 new SdkConfig.Factory(new JsonUtil()),
+                                 new ChromeLauncher(new BackgroundProcess.Factory()))
+                        .Create(args[0]);
 
-                var gameLauncher = new ChromeClientsLauncher
-                                       .Factory(new ChromeClientLaunchCommandFormatter(jsonUtil),
-                                                new SdkConfig.Factory(jsonUtil),
-                                                new ChromeLauncher(new BackgroundProcess.Factory()))
-                                       .Create(args[0]);
-
-                string launchName = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
-                string launchUrl;
                 if (gameLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
                 {
                     return;
                 }
 
+                string launchName = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
+                string launchUrl;
+
                 switch (gameLauncher.LaunchParams.Endpoint)
                 {
                     case StadiaEndpoint.TestClient:
-                    {
-                        launchUrl = gameLauncher.MakeTestClientUrl(launchName);
-                        break;
-                    }
+                        {
+                            launchUrl = gameLauncher.MakeTestClientUrl(launchName);
+                            break;
+                        }
                     case StadiaEndpoint.PlayerEndpoint:
-                    {
-                        string launchId = launchName.Split('/').Last();
-                        launchUrl = gameLauncher.MakePlayerClientUrl(launchId);
-                        break;
-                    }
+                        {
+                            string launchId = launchName.Split('/').Last();
+                            launchUrl = gameLauncher.MakePlayerClientUrl(launchId);
+                            break;
+                        }
                     default:
                         throw new ArgumentOutOfRangeException(
-                            "Endpoint is not supported: " + gameLauncher.LaunchParams.Endpoint);
+                            $"Endpoint is not supported: {gameLauncher.LaunchParams.Endpoint}");
                 }
 
                 gameLauncher.LaunchGame(launchUrl, Directory.GetCurrentDirectory());
             }
-            catch (Exception ex) when (LogException(ex))
+            catch (Exception ex)
             {
+                Console.Error.WriteLine($"Unable to launch chrome client, reason: {ex.Message}");
             }
-        }
-
-        static bool LogException(Exception ex)
-        {
-            Console.Error.WriteLine($"Unable to launch chrome client, reason: {ex.Message}");
-            return false;
         }
     }
 }

@@ -158,9 +158,8 @@ namespace YetiVSI.Test
             _gameletSelector = Substitute.For<IGameletSelector>();
             _gameletSelectorFactory = Substitute.For<IGameletSelectorFactory>();
             _gameletSelectorFactory.Create(Arg.Any<ActionRecorder>()).Returns(_gameletSelector);
-            var serializer = new JsonUtil();
-            _launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
-            _paramsFactory = new YetiVSI.DebugEngine.DebugEngine.Params.Factory(serializer);
+            _launchCommandFormatter = new ChromeClientLaunchCommandFormatter();
+            _paramsFactory = new YetiVSI.DebugEngine.DebugEngine.Params.Factory(new JsonUtil());
 
             _gameLauncher = Substitute.For<IGameLauncher>();
             _gameLaunch = Substitute.For<IVsiGameLaunch>();

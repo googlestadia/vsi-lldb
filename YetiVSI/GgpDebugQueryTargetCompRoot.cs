@@ -90,9 +90,8 @@ namespace YetiVSI
                 _dialogUtil, cloudRunner, GetGameletSelectorWindowFactory(),
                 GetCancelableTaskFactory(), gameletClientFactory, sshManager, remoteCommand,
                 gameLaunchManager, taskContext);
-            var serializer = new JsonUtil();
-            var launchCommandFormatter = new ChromeClientLaunchCommandFormatter(serializer);
-            var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(serializer);
+            var launchCommandFormatter = new ChromeClientLaunchCommandFormatter();
+            var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(new JsonUtil());
             var identityClient = new IdentityClient(cloudRunner);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),

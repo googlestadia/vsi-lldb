@@ -323,8 +323,8 @@ namespace YetiVSI.DebugEngine
                 vsOutputWindow, GetVsiService());
 
             var testClientLauncherFactory = new ChromeClientsLauncher.Factory(
-                new ChromeClientLaunchCommandFormatter(GetJsonUtil()), GetSdkConfigFactory(),
-                GetChromeLauncher(backgroundProcessFactory));
+                new ChromeClientLaunchCommandFormatter(),
+                GetSdkConfigFactory(), GetChromeLauncher(backgroundProcessFactory));
 
             var exitDialogUtil = new ExitDialogUtil(GetDialogUtil(), GetDialogExecutionContext());
             var preflightBinaryChecker =

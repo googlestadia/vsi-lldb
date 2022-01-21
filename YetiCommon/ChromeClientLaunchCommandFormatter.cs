@@ -24,20 +24,13 @@ namespace YetiCommon
     /// </summary>
     public class ChromeClientLaunchCommandFormatter
     {
-        readonly ISerializer serializer;
-        readonly string launcherPath;
+        readonly JsonUtil _jsonUtil;
+        readonly string _launcherPath;
 
-        public ChromeClientLaunchCommandFormatter(ISerializer serializer)
-            : this(serializer, YetiConstants.RootDir)
+        public ChromeClientLaunchCommandFormatter()
         {
-        }
-
-        public ChromeClientLaunchCommandFormatter(ISerializer serializer, string launcherDir)
-        {
-            if (launcherDir == null) { throw new ArgumentNullException(nameof(launcherDir)); }
-
-            this.serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
-            this.launcherPath = Path.Combine(launcherDir, "ChromeClientLauncher.exe");
+            _jsonUtil = new JsonUtil();
+            _launcherPath = Path.Combine(YetiConstants.RootDir, "ChromeClientLauncher.exe");
         }
 
         /// <summary>
@@ -45,7 +38,7 @@ namespace YetiCommon
         /// </summary>
         public string CreateWithLaunchName(LaunchParams launchParams,
                                            string launchName) =>
-            $"/c \"\"{launcherPath}\" {EncodeLaunchParams(launchParams)} " +
+            $"/c \"\"{_launcherPath}\" {EncodeLaunchParams(launchParams)} " +
             $"{EncodeLaunchName(launchName)}\"";
 
         /// <summary>
@@ -61,7 +54,7 @@ namespace YetiCommon
                 throw new ArgumentNullException(nameof(command));
             }
 
-            var ccCmd = $"/c \"\"{launcherPath}\" ";
+            var ccCmd = $"/c \"\"{_launcherPath}\" ";
             if (!command.StartsWith(ccCmd))
             {
                 throw new ArgumentException($"launch command is malformed: {command}");
@@ -88,7 +81,7 @@ namespace YetiCommon
         /// Decode a base64 encoded representation of launch parameters.
         /// </summary>
         public LaunchParams DecodeLaunchParams(string encodedParams) =>
-            serializer.Deserialize<LaunchParams>(
+            _jsonUtil.Deserialize<LaunchParams>(
                 Encoding.UTF8.GetString(
                     Convert.FromBase64String(encodedParams)));
 
@@ -98,7 +91,7 @@ namespace YetiCommon
         public string EncodeLaunchParams(LaunchParams launchParams) =>
             Convert.ToBase64String(
                 Encoding.UTF8.GetBytes(
-                    serializer.Serialize(launchParams)));
+                    _jsonUtil.Serialize(launchParams)));
 
         /// <summary>
         /// base64 encode launch name
