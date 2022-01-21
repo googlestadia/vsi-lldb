@@ -125,8 +125,6 @@ namespace YetiVSI.Test.DebugEngine
             var preflightBinaryChecker =
                 new PreflightBinaryChecker(GetFileSystem(), binaryFileUtil);
 
-            var paramsFactory = new YetiVSI.DebugEngine.DebugEngine.Params.Factory(GetJsonUtil());
-
             var cancelableTaskFactory = GetCancelableTaskFactory();
             bool deployLldbServer = true;
             IDebugEngineFactory factory = new YetiVSI.DebugEngine.DebugEngine.Factory(
@@ -134,7 +132,7 @@ namespace YetiVSI.Test.DebugEngine
                 _stadiaLldbDebuggerFactory, yetiTransport, actionRecorder, null,
                 moduleFileLoadRecorderFactory, moduleFileFinder,testClientLauncherFactory,
                 GetNatvis(), GetNatvisDiagnosticLogger(), exitDialogUtil, preflightBinaryChecker,
-                _debugSessionLauncherFactory, paramsFactory, _remoteDeploy, cancelableTaskFactory,
+                _debugSessionLauncherFactory, _remoteDeploy, cancelableTaskFactory,
                 _dialogUtil, _vsiService, GetNatvisLoggerOutputWindowListener(),
                 GetSolutionExplorer(), debugEngineCommands,
                 GetDebugEventCallbackDecorator(vsiService.DebuggerOptions),

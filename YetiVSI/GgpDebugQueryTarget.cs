@@ -17,6 +17,7 @@ using GgpGrpc.Models;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
 using Microsoft.VisualStudio.Threading;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -51,7 +52,6 @@ namespace YetiVSI
         readonly IGameletSelectorFactory _gameletSelectorFactory;
         readonly Versions.SdkVersion _sdkVersion;
         readonly ChromeClientLaunchCommandFormatter _launchCommandFormatter;
-        readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
         readonly IGameLauncher _gameLauncher;
         readonly JoinableTaskContext _taskContext;
         readonly IProjectPropertiesMetricsParser _projectPropertiesParser;
@@ -69,7 +69,6 @@ namespace YetiVSI
                                    IGameletSelectorFactory gameletSelectorFactory,
                                    ICloudRunner cloudRunner, Versions.SdkVersion sdkVersion,
                                    ChromeClientLaunchCommandFormatter launchCommandFormatter,
-                                   DebugEngine.DebugEngine.Params.Factory paramsFactory,
                                    IYetiVSIService yetiVsiService, IGameLauncher gameLauncher,
                                    JoinableTaskContext taskContext,
                                    IProjectPropertiesMetricsParser projectPropertiesParser,
@@ -90,7 +89,6 @@ namespace YetiVSI
             _gameletSelectorFactory = gameletSelectorFactory;
             _sdkVersion = sdkVersion;
             _launchCommandFormatter = launchCommandFormatter;
-            _paramsFactory = paramsFactory;
             _gameLauncher = gameLauncher;
             _taskContext = taskContext;
             _projectPropertiesParser = projectPropertiesParser;
@@ -189,10 +187,12 @@ namespace YetiVSI
 
                 if (!launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
                 {
-                    var parameters = _paramsFactory.Create();
-                    parameters.TargetIp = new SshTarget(gamelet).GetString();
-                    parameters.DebugSessionId = _metrics.DebugSessionId;
-                    debugLaunchSettings.Options = _paramsFactory.Serialize(parameters);
+                    var parameters = new DebugEngine.DebugEngine.Params
+                    {
+                        TargetIp = new SshTarget(gamelet).GetString(),
+                        DebugSessionId = _metrics.DebugSessionId
+                    };
+                    debugLaunchSettings.Options = JsonConvert.SerializeObject(parameters);
                 }
 
                 if (launchParams.Orbit)

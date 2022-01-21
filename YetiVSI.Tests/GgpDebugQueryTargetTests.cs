@@ -17,6 +17,7 @@ using GgpGrpc.Models;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
 using Microsoft.VisualStudio.Threading;
+using Newtonsoft.Json;
 using NSubstitute;
 using NUnit.Framework;
 using System;
@@ -68,7 +69,6 @@ namespace YetiVSI.Test
         IGameletSelector _gameletSelector;
         IGameletSelectorFactory _gameletSelectorFactory;
         ChromeClientLaunchCommandFormatter _launchCommandFormatter;
-        YetiVSI.DebugEngine.DebugEngine.Params.Factory _paramsFactory;
         readonly int _outVariableIndex = 4;
         IAsyncProject _project;
         string _targetPath;
@@ -159,7 +159,6 @@ namespace YetiVSI.Test
             _gameletSelectorFactory = Substitute.For<IGameletSelectorFactory>();
             _gameletSelectorFactory.Create(Arg.Any<ActionRecorder>()).Returns(_gameletSelector);
             _launchCommandFormatter = new ChromeClientLaunchCommandFormatter();
-            _paramsFactory = new YetiVSI.DebugEngine.DebugEngine.Params.Factory(new JsonUtil());
 
             _gameLauncher = Substitute.For<IGameLauncher>();
             _gameLaunch = Substitute.For<IVsiGameLaunch>();
@@ -178,7 +177,7 @@ namespace YetiVSI.Test
                                                            _testAccountClientFactory,
                                                            _gameletSelectorFactory, cloudRunner,
                                                            _sdkVersion, _launchCommandFormatter,
-                                                           _paramsFactory, _yetiVsiService,
+                                                           _yetiVsiService,
                                                            _gameLauncher, taskContext,
                                                            _projectPropertiesParser,
                                                            _identityClient);
@@ -311,7 +310,9 @@ namespace YetiVSI.Test
             Assert.AreEqual(DebugLaunchOptions.MergeEnvironment, launchSettings[0].LaunchOptions);
             Assert.AreEqual(YetiConstants.DebugEngineGuid, launchSettings[0].LaunchDebugEngineGuid);
             Assert.AreEqual(_testProjectDir, launchSettings[0].CurrentDirectory);
-            var parameters = _paramsFactory.Deserialize(launchSettings[0].Options);
+
+            var parameters = JsonConvert.DeserializeObject<YetiVSI.DebugEngine.DebugEngine.Params>(
+                launchSettings[0].Options);
             Assert.AreEqual(parameters.TargetIp, $"{_testGameletIp}:44722");
             Assert.AreEqual(parameters.DebugSessionId, _testDebugSessionId);
             Assert.AreEqual(await _project.GetTargetPathAsync(), launchSettings[0].Executable);

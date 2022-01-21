@@ -19,6 +19,7 @@ using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -51,7 +52,6 @@ namespace YetiVSI.CoreAttach
         readonly IDialogUtil _dialogUtil;
         readonly ActionRecorder _actionRecorder;
         readonly DebugSessionMetrics _debugSessionMetrics;
-        readonly DebugEngine.DebugEngine.Params.Factory _paramsFactory;
         readonly string _developerAccount;
         Gamelet _instance;
 
@@ -96,7 +96,6 @@ namespace YetiVSI.CoreAttach
 
                 InitializeComponent();
                 _instanceSelectionWindowFactory = new ProjectInstanceSelection.Factory();
-                _paramsFactory = new DebugEngine.DebugEngine.Params.Factory(jsonUtil);
                 SelectInstanceOnInit();
             }
             catch (Exception exception)
@@ -352,14 +351,17 @@ namespace YetiVSI.CoreAttach
                     // are empty. Use core path and temp directory as placeholders.
                     debugTargets[0].bstrExe = coreFilePath;
                     debugTargets[0].bstrCurDir = Path.GetTempPath();
-                    var parameters = _paramsFactory.Create();
-                    parameters.CoreFilePath = coreFilePath;
-                    parameters.DebugSessionId = _debugSessionMetrics.DebugSessionId;
-                    parameters.DeleteCoreFile = deleteAfter;
-                    debugTargets[0].bstrOptions = _paramsFactory.Serialize(parameters);
+
+                    var parameters = new DebugEngine.DebugEngine.Params
+                    {
+                        CoreFilePath = coreFilePath,
+                        DebugSessionId = _debugSessionMetrics.DebugSessionId,
+                        DeleteCoreFile = deleteAfter
+                    };
+                    debugTargets[0].bstrOptions = JsonConvert.SerializeObject(parameters);
                     debugTargets[0].guidLaunchDebugEngine = YetiConstants.DebugEngineGuid;
-                    VsDebugTargetProcessInfo[] processInfo =
-                        new VsDebugTargetProcessInfo[debugTargets.Length];
+
+                    var processInfo = new VsDebugTargetProcessInfo[debugTargets.Length];
                     vsDebugger.LaunchDebugTargets4(1, debugTargets, processInfo);
                 });
             }

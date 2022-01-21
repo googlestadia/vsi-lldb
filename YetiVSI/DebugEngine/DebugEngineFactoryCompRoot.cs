@@ -353,7 +353,6 @@ namespace YetiVSI.DebugEngine
                 attachedProgramFactory, actionRecorder, moduleFileLoadRecorderFactory,
                 exceptionManagerFactory, moduleFileFinder, dumpModulesProvider,
                 moduleSearchLogHolder, GetSymbolSettingsProvider(), coreAttachWarningDialog);
-            var paramsFactory = new Params.Factory(GetJsonUtil());
             var vsiLaunchFactory = new VsiGameLaunchFactory(gameletFactory.Create(GetCloudRunner()),
                                                             GetCancelableTaskFactory(),
                                                             gameLaunchManager, actionRecorder,
@@ -378,7 +377,7 @@ namespace YetiVSI.DebugEngine
                 stadiaLldbDebuggerFactory, yetiTransport, actionRecorder, symbolServerHttpClient,
                 moduleFileLoadRecorderFactory, moduleFileFinder, testClientLauncherFactory,
                 GetNatvis(), GetNatvisDiagnosticLogger(), exitDialogUtil, preflightBinaryChecker,
-                debugSessionLauncherFactory, paramsFactory, remoteDeploy, cancelableTaskFactory,
+                debugSessionLauncherFactory, remoteDeploy, cancelableTaskFactory,
                 GetDialogUtil(), _vsiService,
                 GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(),
                 debugEngineCommands,

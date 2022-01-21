@@ -91,16 +91,15 @@ namespace YetiVSI
                 GetCancelableTaskFactory(), gameletClientFactory, sshManager, remoteCommand,
                 gameLaunchManager, taskContext);
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter();
-            var paramsFactory = new DebugEngine.DebugEngine.Params.Factory(new JsonUtil());
             var identityClient = new IdentityClient(cloudRunner);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,
                                            credentialManager, testAccountClientFactory,
                                            gameletSelectorFactory, cloudRunner, sdkVersion,
-                                           launchCommandFormatter, paramsFactory, yetiVsiService,
-                                           gameLauncher, taskContext,
-                                           new ProjectPropertiesMetricsParser(), identityClient);
+                                           launchCommandFormatter, yetiVsiService, gameLauncher,
+                                           taskContext, new ProjectPropertiesMetricsParser(),
+                                           identityClient);
         }
 
         public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();

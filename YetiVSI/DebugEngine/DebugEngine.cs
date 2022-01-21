@@ -15,6 +15,7 @@
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -26,17 +27,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
+using YetiVSI.DebugEngine.CoreDumps;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.NatvisEngine;
 using YetiVSI.DebuggerOptions;
+using YetiVSI.GameLaunch;
 using YetiVSI.LoadSymbols;
 using YetiVSI.Metrics;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
-using YetiVSI.DebugEngine.CoreDumps;
-using YetiVSI.GameLaunch;
-using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.DebugEngine
 {
@@ -161,7 +162,6 @@ namespace YetiVSI.DebugEngine
             readonly ExitDialogUtil _exitDialogUtil;
             readonly PreflightBinaryChecker _preflightBinaryChecker;
             readonly IDebugSessionLauncherFactory _debugSessionLauncherFactory;
-            readonly Params.Factory _paramsFactory;
             readonly IRemoteDeploy _remoteDeploy;
             readonly CancelableTask.Factory _cancelableTaskFactory;
             readonly IDialogUtil _dialogUtil;
@@ -188,7 +188,7 @@ namespace YetiVSI.DebugEngine
                            ExitDialogUtil exitDialogUtil,
                            PreflightBinaryChecker preflightBinaryChecker,
                            IDebugSessionLauncherFactory debugSessionLauncherFactory,
-                           Params.Factory paramsFactory, IRemoteDeploy remoteDeploy,
+                           IRemoteDeploy remoteDeploy,
                            CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
                            IYetiVSIService vsiService,
                            NatvisLoggerOutputWindowListener natvisLogListener,
@@ -215,7 +215,6 @@ namespace YetiVSI.DebugEngine
                 _exitDialogUtil = exitDialogUtil;
                 _preflightBinaryChecker = preflightBinaryChecker;
                 _debugSessionLauncherFactory = debugSessionLauncherFactory;
-                _paramsFactory = paramsFactory;
                 _remoteDeploy = remoteDeploy;
                 _cancelableTaskFactory = cancelableTaskFactory;
                 _dialogUtil = dialogUtil;
@@ -254,7 +253,7 @@ namespace YetiVSI.DebugEngine
                                        _moduleFileLoadRecorderFactory, _moduleFileFinder,
                                        _testClientLauncherFactory, _natvisExpander, _natvisLogger,
                                        _exitDialogUtil, _preflightBinaryChecker,
-                                       _debugSessionLauncherFactory, _paramsFactory, _remoteDeploy,
+                                       _debugSessionLauncherFactory, _remoteDeploy,
                                        _debugEngineCommands, _debugEventCallbackDecorator,
                                        sessionNotifier, _symbolSettingsProvider, _deployLldbServer,
                                        _gameLauncher, _debugEventRecorder,
@@ -279,31 +278,6 @@ namespace YetiVSI.DebugEngine
 
         public class Params
         {
-            public class Factory
-            {
-                ISerializer _serializer;
-
-                public Factory(ISerializer serializer)
-                {
-                    _serializer = serializer;
-                }
-
-                public Params Deserialize(string json)
-                {
-                    return _serializer.Deserialize<Params>(json);
-                }
-
-                public string Serialize(Params parameters)
-                {
-                    return _serializer.Serialize(parameters);
-                }
-
-                public Params Create()
-                {
-                    return new Params();
-                }
-            }
-
             public string TargetIp { get; set; }
             public string CoreFilePath { get; set; }
             public bool DeleteCoreFile { get; set; }
@@ -334,7 +308,6 @@ namespace YetiVSI.DebugEngine
         readonly ExitDialogUtil _exitDialogUtil;
         readonly PreflightBinaryChecker _preflightBinaryChecker;
         readonly IDebugSessionLauncherFactory _debugSessionLauncherFactory;
-        readonly Params.Factory _paramsFactory;
         readonly IRemoteDeploy _remoteDeploy;
         readonly IDebugEngineCommands _debugEngineCommands;
         readonly DebugEventCallbackTransform _debugEventCallbackDecorator;
@@ -389,7 +362,7 @@ namespace YetiVSI.DebugEngine
                            ExitDialogUtil exitDialogUtil,
                            PreflightBinaryChecker preflightBinaryChecker,
                            IDebugSessionLauncherFactory debugSessionLauncherFactory,
-                           Params.Factory paramsFactory, IRemoteDeploy remoteDeploy,
+                           IRemoteDeploy remoteDeploy,
                            IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            ISessionNotifier sessionNotifier,
@@ -426,7 +399,6 @@ namespace YetiVSI.DebugEngine
             _exitDialogUtil = exitDialogUtil;
             _preflightBinaryChecker = preflightBinaryChecker;
             _debugSessionLauncherFactory = debugSessionLauncherFactory;
-            _paramsFactory = paramsFactory;
             _remoteDeploy = remoteDeploy;
             _debugEngineCommands = debugEngineCommands;
             _debugEventCallbackDecorator = debugEventCallbackDecorator;
@@ -1031,7 +1003,7 @@ namespace YetiVSI.DebugEngine
             _workingDirectory = dir;
             if (!string.IsNullOrEmpty(options))
             {
-                var parameters = _paramsFactory.Deserialize(options);
+                var parameters = JsonConvert.DeserializeObject<Params>(options);
                 _coreFilePath = parameters.CoreFilePath;
                 _debugSessionMetrics.DebugSessionId = parameters.DebugSessionId;
                 _deleteCoreFileAtCleanup = parameters.DeleteCoreFile;
