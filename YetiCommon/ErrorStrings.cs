@@ -24,7 +24,7 @@ namespace YetiCommon
     public static class ErrorStrings
     {
         public const string EmptyBuildId = "The file must have a non-empty build ID.";
-        public const string MalformedBuildID = "The build-id section is malformed.";
+        public const string MalformedBuildId = "The build-id section is malformed.";
         public const string MalformedDebugLink = "The debuglink section is malformed.";
         public const string MalformedDebugDir = "The debug_info_dir section is malformed.";
         public const string NoDebugLink = "Unable to extract the file's debuglink section.";

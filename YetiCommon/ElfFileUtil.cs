@@ -106,7 +106,7 @@ namespace YetiCommon
                 // Indicates the build ID section is malformed.
                 throw new InvalidBuildIdException(
                     ErrorStrings.FailedToReadBuildId(
-                        filepath, ErrorStrings.MalformedBuildID),
+                        filepath, ErrorStrings.MalformedBuildId),
                     e);
             }
         }
