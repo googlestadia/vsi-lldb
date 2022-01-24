@@ -12,47 +12,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Castle.DynamicProxy;
-using DebuggerGrpcClient;
-using GgpGrpc.Cloud;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Threading;
-using SymbolStores;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.IO.Abstractions;
 using System.Net;
 using System.Net.Cache;
 using System.Net.Http;
+using System.Runtime.Serialization;
+using Castle.DynamicProxy;
+using DebuggerGrpcClient;
+using EnvDTE;
+using EnvDTE80;
+using GgpGrpc.Cloud;
+using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+using SymbolStores;
 using YetiCommon;
 using YetiCommon.CastleAspects;
+using YetiCommon.Cloud;
 using YetiCommon.ExceptionRecorder;
 using YetiCommon.Logging;
 using YetiCommon.MethodRecorder;
 using YetiCommon.PerformanceTracing;
 using YetiVSI.DebugEngine.CastleAspects;
+using YetiVSI.DebugEngine.CoreDumps;
+using YetiVSI.DebugEngine.DiagnosticTools;
 using YetiVSI.DebugEngine.Exit;
+using YetiVSI.DebugEngine.Interfaces;
 using YetiVSI.DebugEngine.NatvisEngine;
 using YetiVSI.DebugEngine.Variables;
 using YetiVSI.DebuggerOptions;
+using YetiVSI.GameLaunch;
 using YetiVSI.LLDBShell;
 using YetiVSI.Metrics;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 using static YetiVSI.DebugEngine.DebugEngine;
-using System.IO;
-using System.Diagnostics;
-using Microsoft.VisualStudio.Shell;
-using EnvDTE;
-using EnvDTE80;
-using System;
-using System.Runtime.Serialization;
-using Microsoft.VisualStudio.Debugger.Interop;
-using YetiVSI.DebugEngine.DiagnosticTools;
-using YetiVSI.DebugEngine.Interfaces;
-using YetiCommon.Cloud;
-using YetiVSI.DebugEngine.CoreDumps;
-using YetiVSI.GameLaunch;
-using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.DebugEngine
 {

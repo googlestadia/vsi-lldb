@@ -27,69 +27,69 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class ModuleFileFinderTests
     {
-        const string SEARCH_PATHS = @"path";
-        const string FILENAME = "foo";
-        static BuildId UUID = new BuildId("0123");
-        const string PATH_IN_STORE = @"path\foo";
+        const string _searchPaths = @"path";
+        const string _filename = "foo";
+        static BuildId _uuid = new BuildId("0123");
+        const string _pathInStore = @"path\foo";
 
-        StringWriter searchLog;
-        IFileReference fileReference;
-        ISymbolStore mockSymbolStore;
-        SymbolPathParser mockSymbolPathParser;
-        ModuleFileFinder moduleFileFinder;
+        StringWriter _searchLog;
+        IFileReference _fileReference;
+        ISymbolStore _mockSymbolStore;
+        SymbolPathParser _mockSymbolPathParser;
+        ModuleFileFinder _moduleFileFinder;
 
         [SetUp]
         public void SetUp()
         {
-            searchLog = new StringWriter();
+            _searchLog = new StringWriter();
 
-            fileReference = Substitute.For<IFileReference>();
-            fileReference.IsFilesystemLocation.Returns(true);
-            fileReference.Location.Returns(PATH_IN_STORE);
+            _fileReference = Substitute.For<IFileReference>();
+            _fileReference.IsFilesystemLocation.Returns(true);
+            _fileReference.Location.Returns(_pathInStore);
 
-            mockSymbolStore = Substitute.For<ISymbolStore>();
-            mockSymbolStore.FindFileAsync(FILENAME, UUID, true, Arg.Any<TextWriter>(), false)
-                .Returns(Task.FromResult(fileReference));
+            _mockSymbolStore = Substitute.For<ISymbolStore>();
+            _mockSymbolStore.FindFileAsync(_filename, _uuid, true, Arg.Any<TextWriter>(), false)
+                .Returns(Task.FromResult(_fileReference));
 
-            mockSymbolPathParser = Substitute.For<SymbolPathParser>();
-            mockSymbolPathParser.Parse(SEARCH_PATHS).Returns(mockSymbolStore);
-            moduleFileFinder = new ModuleFileFinder(mockSymbolPathParser);
+            _mockSymbolPathParser = Substitute.For<SymbolPathParser>();
+            _mockSymbolPathParser.Parse(_searchPaths).Returns(_mockSymbolStore);
+            _moduleFileFinder = new ModuleFileFinder(_mockSymbolPathParser);
         }
 
         [Test]
         public async Task FindFileAsync()
         {
-            moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
+            _moduleFileFinder.SetSearchPaths(_searchPaths);
             Assert.AreEqual(
-                PATH_IN_STORE,
-                await moduleFileFinder.FindFileAsync(FILENAME, UUID, true, searchLog, false));
+                _pathInStore,
+                await _moduleFileFinder.FindFileAsync(_filename, _uuid, true, _searchLog, false));
 
-            StringAssert.Contains("Searching for", searchLog.ToString());
+            StringAssert.Contains("Searching for", _searchLog.ToString());
         }
 
         [Test]
         public void FindFile_NullFilename()
         {
-            moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
+            _moduleFileFinder.SetSearchPaths(_searchPaths);
             Assert.ThrowsAsync<ArgumentNullException>(
-                () => moduleFileFinder.FindFileAsync(null, UUID, true, searchLog, false));
+                () => _moduleFileFinder.FindFileAsync(null, _uuid, true, _searchLog, false));
         }
-        
+
         [Test]
         public async Task FindFile_EmptyBuildIdAsync()
         {
-            mockSymbolStore.FindFileAsync(FILENAME, BuildId.Empty, true,
+            _mockSymbolStore.FindFileAsync(_filename, BuildId.Empty, true,
                                           Arg.Any<TextWriter>(), false)
-                .Returns(Task.FromResult(fileReference));
+                .Returns(Task.FromResult(_fileReference));
 
-            moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
+            _moduleFileFinder.SetSearchPaths(_searchPaths);
             Assert.AreEqual(
-                PATH_IN_STORE,
-                await moduleFileFinder.FindFileAsync(FILENAME, BuildId.Empty, true,
-                                                     searchLog, false));
+                _pathInStore,
+                await _moduleFileFinder.FindFileAsync(_filename, BuildId.Empty, true,
+                                                     _searchLog, false));
 
-            StringAssert.Contains(ErrorStrings.ModuleBuildIdUnknown(FILENAME),
-                                  searchLog.ToString());
+            StringAssert.Contains(ErrorStrings.ModuleBuildIdUnknown(_filename),
+                                  _searchLog.ToString());
         }
 
         [Test]
@@ -99,54 +99,66 @@ namespace YetiVSI.Test.DebugEngine
             // unnecessary assumptions about the order visual studio calls SetSearchPaths and
             // LoadSymbols.
 
-            Assert.IsNull(await moduleFileFinder.FindFileAsync(FILENAME, UUID, true,
-                                                               searchLog, false));
+            Assert.IsNull(await _moduleFileFinder.FindFileAsync(_filename, _uuid, true,
+                                                               _searchLog, false));
 
-            StringAssert.Contains("Failed to find file", searchLog.ToString());
+            StringAssert.Contains("Failed to find file", _searchLog.ToString());
         }
 
         [Test]
         public async Task FindFile_SearchFailedAsync()
         {
-            mockSymbolStore.FindFileAsync(FILENAME, UUID, true, Arg.Any<TextWriter>(), false)
+            _mockSymbolStore.FindFileAsync(_filename, _uuid, true, Arg.Any<TextWriter>(), false)
                 .Returns(Task.FromResult((IFileReference)null));
 
-            moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
-            Assert.IsNull(await moduleFileFinder.FindFileAsync(FILENAME, UUID, true,
-                                                               searchLog, false));
+            _moduleFileFinder.SetSearchPaths(_searchPaths);
+            Assert.IsNull(await _moduleFileFinder.FindFileAsync(_filename, _uuid, true,
+                                                               _searchLog, false));
 
-            StringAssert.Contains("Failed to find file", searchLog.ToString());
+            StringAssert.Contains("Failed to find file", _searchLog.ToString());
         }
 
         [Test]
         public async Task FindFile_NotFilesystemLocationAsync()
         {
-            fileReference.IsFilesystemLocation.Returns(false);
+            _fileReference.IsFilesystemLocation.Returns(false);
 
-            moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
+            _moduleFileFinder.SetSearchPaths(_searchPaths);
             Assert.IsNull(
-                await moduleFileFinder.FindFileAsync(FILENAME, UUID, true, searchLog, false));
+                await _moduleFileFinder.FindFileAsync(_filename, _uuid, true, _searchLog, false));
 
-            StringAssert.Contains("Unable to load file", searchLog.ToString());
+            StringAssert.Contains("Unable to load file", _searchLog.ToString());
         }
 
         [Test]
         public void RecordMetrics()
         {
             var sequence = new SymbolStoreSequence(Substitute.For<IBinaryFileUtil>());
-            for (int i = 0; i < 4; ++i) sequence.AddStore(Substitute.For<IFlatSymbolStore>());
-            for (int i = 0; i < 3; ++i) sequence.AddStore(Substitute.For<IStructuredSymbolStore>());
-            for (int i = 0; i < 2; ++i) sequence.AddStore(Substitute.For<IHttpSymbolStore>());
+            for (int i = 0; i < 4; ++i)
+            {
+                sequence.AddStore(Substitute.For<IFlatSymbolStore>());
+            }
+
+            for (int i = 0; i < 3; ++i)
+            {
+                sequence.AddStore(Substitute.For<IStructuredSymbolStore>());
+            }
+
+            for (int i = 0; i < 2; ++i)
+            {
+                sequence.AddStore(Substitute.For<IHttpSymbolStore>());
+            }
+
             sequence.AddStore(Substitute.For<IStadiaSymbolStore>());
 
-            mockSymbolPathParser = Substitute.For<SymbolPathParser>();
-            mockSymbolPathParser.Parse(SEARCH_PATHS).Returns(sequence);
-            moduleFileFinder = new ModuleFileFinder(mockSymbolPathParser);
+            _mockSymbolPathParser = Substitute.For<SymbolPathParser>();
+            _mockSymbolPathParser.Parse(_searchPaths).Returns(sequence);
+            _moduleFileFinder = new ModuleFileFinder(_mockSymbolPathParser);
 
             var data = new LoadSymbolData();
 
-            moduleFileFinder.SetSearchPaths(SEARCH_PATHS);
-            moduleFileFinder.RecordMetrics(data);
+            _moduleFileFinder.SetSearchPaths(_searchPaths);
+            _moduleFileFinder.RecordMetrics(data);
 
             Assert.AreEqual(4, data.FlatSymbolStoresCount);
             Assert.AreEqual(3, data.StructuredSymbolStoresCount);

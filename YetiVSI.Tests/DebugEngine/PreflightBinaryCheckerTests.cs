@@ -33,45 +33,45 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class PreflightBinaryCheckerTests
     {
-        MockFileSystem fileSystem;
-        IBinaryFileUtil binaryFileUtil;
-        IMetrics metrics;
-        IAction action;
-        PreflightBinaryChecker checker;
+        MockFileSystem _fileSystem;
+        IBinaryFileUtil _binaryFileUtil;
+        IMetrics _metrics;
+        IAction _action;
+        PreflightBinaryChecker _checker;
 
         // Note: we don't strictly require the executable file names to be the same.
-        static readonly string executable = "foo.elf";
-        static readonly uint remoteTargetPid = 1234;
-        static readonly string remoteTargetPath = "/proc/1234/exe";
+        static readonly string _executable = "foo.elf";
+        static readonly uint _remoteTargetPid = 1234;
+        static readonly string _remoteTargetPath = "/proc/1234/exe";
 
-        static readonly SshTarget target = new SshTarget("127.0.0.1:22");
-        static readonly BuildId validBuildId = new BuildId("AA");
-        static readonly BuildId validBuildId2 = new BuildId("BB");
-        static readonly string[] searchPaths = { "/path1", "/path2" };
-        static readonly List<string> localPaths =
-            searchPaths.Select(path => Path.Combine(path, executable)).ToList();
+        static readonly SshTarget _target = new SshTarget("127.0.0.1:22");
+        static readonly BuildId _validBuildId = new BuildId("AA");
+        static readonly BuildId _validBuildId2 = new BuildId("BB");
+        static readonly string[] _searchPaths = { "/path1", "/path2" };
+        static readonly List<string> _localPaths =
+            _searchPaths.Select(path => Path.Combine(path, _executable)).ToList();
 
         [SetUp]
         public void SetUp()
         {
-            fileSystem = new MockFileSystem();
-            binaryFileUtil = Substitute.For<IBinaryFileUtil>();
-            metrics = Substitute.For<IMetrics>();
-            checker = new PreflightBinaryChecker(fileSystem, binaryFileUtil);
-            action = new ActionRecorder(metrics).CreateToolAction(
+            _fileSystem = new MockFileSystem();
+            _binaryFileUtil = Substitute.For<IBinaryFileUtil>();
+            _metrics = Substitute.For<IMetrics>();
+            _checker = new PreflightBinaryChecker(_fileSystem, _binaryFileUtil);
+            _action = new ActionRecorder(_metrics).CreateToolAction(
                 ActionType.DebugPreflightBinaryChecks);
         }
 
         [Test]
         public async Task CheckRemoteBinaryOnAttachSucceedsAsync()
         {
-            binaryFileUtil.ReadBuildIdAsync(remoteTargetPath, target)
-                .Returns(Task.FromResult(validBuildId));
+            _binaryFileUtil.ReadBuildIdAsync(_remoteTargetPath, _target)
+                .Returns(Task.FromResult(_validBuildId));
 
-            await action.RecordAsync(checker.CheckRemoteBinaryOnAttachAsync(remoteTargetPid,
-                target, action));
+            await _action.RecordAsync(_checker.CheckRemoteBinaryOnAttachAsync(_remoteTargetPid,
+                                          _target, _action));
 
-            metrics.Received().RecordEvent(
+            _metrics.Received().RecordEvent(
                 DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck,
                 Arg.Is<DeveloperLogEvent>(m =>
                     m.StatusCode == DeveloperEventStatus.Types.Code.Success &&
@@ -85,14 +85,14 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void CheckRemoteBinaryFailsInvalidBuildId()
         {
-            binaryFileUtil.ReadBuildIdAsync(remoteTargetPath, target).Returns(
+            _binaryFileUtil.ReadBuildIdAsync(_remoteTargetPath, _target).Returns(
                 Task.FromException<BuildId>(new InvalidBuildIdException("test")));
 
             Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
-                await action.RecordAsync(checker.CheckRemoteBinaryOnAttachAsync(remoteTargetPid,
-                    target, action)));
+                await _action.RecordAsync(_checker.CheckRemoteBinaryOnAttachAsync(_remoteTargetPid,
+                                              _target, _action)));
 
-            metrics.Received().RecordEvent(
+            _metrics.Received().RecordEvent(
                 DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck,
                 Arg.Is<DeveloperLogEvent>(m =>
                     m.StatusCode == DeveloperEventStatus.Types.Code.InvalidConfiguration &&
@@ -106,16 +106,16 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void CheckRemoteBinaryFailsToReadBuildId()
         {
-            binaryFileUtil.ReadBuildIdAsync(remoteTargetPath, target).Returns(
+            _binaryFileUtil.ReadBuildIdAsync(_remoteTargetPath, _target).Returns(
                 Task.FromException<BuildId>(new BinaryFileUtilException("test",
                     new ProcessExecutionException("inner", 1))));
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
-                await action.RecordAsync(checker.CheckRemoteBinaryOnAttachAsync(remoteTargetPid,
-                    target, action)));
+                await _action.RecordAsync(_checker.CheckRemoteBinaryOnAttachAsync(_remoteTargetPid,
+                                              _target, _action)));
             Assert.IsInstanceOf<BinaryFileUtilException>(ex.InnerException);
 
-            metrics.Received().RecordEvent(
+            _metrics.Received().RecordEvent(
                 DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck,
                 Arg.Is<DeveloperLogEvent>(m =>
                     m.StatusCode ==
@@ -130,18 +130,18 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void CheckRemoteBinaryFailsToRunRemoteCommand()
         {
-            binaryFileUtil.ReadBuildIdAsync(remoteTargetPath, target).Returns(
+            _binaryFileUtil.ReadBuildIdAsync(_remoteTargetPath, _target).Returns(
                 Task.FromException<BuildId>(new BinaryFileUtilException("test",
                     new ProcessException("inner"))));
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
-                await action.RecordAsync(checker.CheckRemoteBinaryOnAttachAsync(remoteTargetPid,
-                    target, action)));
+                await _action.RecordAsync(_checker.CheckRemoteBinaryOnAttachAsync(_remoteTargetPid,
+                                              _target, _action)));
             Assert.IsInstanceOf<BinaryFileUtilException>(ex.InnerException);
             Assert.AreEqual(ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(
                 ex.InnerException.Message), ex.Message);
 
-            metrics.Received().RecordEvent(
+            _metrics.Received().RecordEvent(
                 DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck,
                 Arg.Is<DeveloperLogEvent>(m =>
                     m.StatusCode ==
@@ -156,21 +156,21 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task CheckLocalAndRemoteBinarySucceedsAsync()
         {
-            fileSystem.AddDirectory(searchPaths[0]);
-            fileSystem.AddFile(localPaths[0], new MockFileData(""));
-            fileSystem.AddDirectory(searchPaths[1]);
-            fileSystem.AddFile(localPaths[1], new MockFileData(""));
+            _fileSystem.AddDirectory(_searchPaths[0]);
+            _fileSystem.AddFile(_localPaths[0], new MockFileData(""));
+            _fileSystem.AddDirectory(_searchPaths[1]);
+            _fileSystem.AddFile(_localPaths[1], new MockFileData(""));
 
             // Make the 2nd local file match the remote file, to force skipping the first file.
-            binaryFileUtil.ReadBuildIdAsync(remoteTargetPath, target).Returns(
-                Task.FromResult(validBuildId));
-            binaryFileUtil.ReadBuildIdAsync(localPaths[0]).Returns(Task.FromResult(validBuildId2));
-            binaryFileUtil.ReadBuildIdAsync(localPaths[1]).Returns(Task.FromResult(validBuildId));
+            _binaryFileUtil.ReadBuildIdAsync(_remoteTargetPath, _target).Returns(
+                Task.FromResult(_validBuildId));
+            _binaryFileUtil.ReadBuildIdAsync(_localPaths[0]).Returns(Task.FromResult(_validBuildId2));
+            _binaryFileUtil.ReadBuildIdAsync(_localPaths[1]).Returns(Task.FromResult(_validBuildId));
 
-            await action.RecordAsync(checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                searchPaths, executable, target, remoteTargetPath, action));
+            await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
+                _searchPaths, _executable, _target, _remoteTargetPath, _action));
 
-            metrics.Received().RecordEvent(
+            _metrics.Received().RecordEvent(
                 DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck,
                 Arg.Is<DeveloperLogEvent>(m =>
                     m.StatusCode == DeveloperEventStatus.Types.Code.Success &&
@@ -186,15 +186,15 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void CheckLocalAndRemoteBinaryFailsNoCandidates()
         {
-            binaryFileUtil.ReadBuildIdAsync(remoteTargetPath, target).Returns(
-                Task.FromResult(validBuildId));
+            _binaryFileUtil.ReadBuildIdAsync(_remoteTargetPath, _target).Returns(
+                Task.FromResult(_validBuildId));
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
-                await action.RecordAsync(checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                searchPaths, executable, target, remoteTargetPath, action)));
-            Assert.AreEqual(ErrorStrings.UnableToFindExecutable(executable), ex.Message);
+                await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
+                _searchPaths, _executable, _target, _remoteTargetPath, _action)));
+            Assert.AreEqual(ErrorStrings.UnableToFindExecutable(_executable), ex.Message);
 
-            metrics.Received().RecordEvent(
+            _metrics.Received().RecordEvent(
                 DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck,
                 Arg.Is<DeveloperLogEvent>(m =>
                     m.StatusCode == DeveloperEventStatus.Types.Code.InvalidConfiguration &&
@@ -210,21 +210,21 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void CheckLocalAndRemoteBinaryFailsInvalidRemoteBuildId()
         {
-            fileSystem.AddDirectory(searchPaths[0]);
-            fileSystem.AddFile(localPaths[0], new MockFileData(""));
-            binaryFileUtil.ReadBuildIdAsync(localPaths[0]).Returns(Task.FromResult(validBuildId));
+            _fileSystem.AddDirectory(_searchPaths[0]);
+            _fileSystem.AddFile(_localPaths[0], new MockFileData(""));
+            _binaryFileUtil.ReadBuildIdAsync(_localPaths[0]).Returns(Task.FromResult(_validBuildId));
 
-            binaryFileUtil.ReadBuildIdAsync(remoteTargetPath, target).Returns(
+            _binaryFileUtil.ReadBuildIdAsync(_remoteTargetPath, _target).Returns(
                 Task.FromException<BuildId>(new InvalidBuildIdException("test")));
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
-                await action.RecordAsync(checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                    searchPaths, executable, target, remoteTargetPath, action)));
+                await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
+                    _searchPaths, _executable, _target, _remoteTargetPath, _action)));
             Assert.IsInstanceOf<BinaryFileUtilException>(ex.InnerException);
             Assert.AreEqual(ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(
                 ex.InnerException.Message), ex.Message);
 
-            metrics.Received().RecordEvent(
+            _metrics.Received().RecordEvent(
                 DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck,
                 Arg.Is<DeveloperLogEvent>(m =>
                     m.StatusCode == DeveloperEventStatus.Types.Code.InvalidConfiguration &&
@@ -238,25 +238,25 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void CheckLocalAndRemoteBinaryFailsReadLocal()
         {
-            fileSystem.AddDirectory(searchPaths[0]);
-            fileSystem.AddFile(localPaths[0], new MockFileData(""));
-            binaryFileUtil.ReadBuildIdAsync(localPaths[0])
+            _fileSystem.AddDirectory(_searchPaths[0]);
+            _fileSystem.AddFile(_localPaths[0], new MockFileData(""));
+            _binaryFileUtil.ReadBuildIdAsync(_localPaths[0])
                 .Returns(Task.FromException<BuildId>(new BinaryFileUtilException("test")));
 
-            binaryFileUtil.ReadBuildIdAsync(remoteTargetPath, target).Returns(
-                Task.FromResult(validBuildId));
+            _binaryFileUtil.ReadBuildIdAsync(_remoteTargetPath, _target).Returns(
+                Task.FromResult(_validBuildId));
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
-                await action.RecordAsync(checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                    searchPaths, executable, target, remoteTargetPath, action)));
-            Assert.AreEqual(ErrorStrings.UnableToFindExecutableMatchingRemoteBinary(executable,
-                remoteTargetPath), ex.Message);
+                await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
+                    _searchPaths, _executable, _target, _remoteTargetPath, _action)));
+            Assert.AreEqual(ErrorStrings.UnableToFindExecutableMatchingRemoteBinary(_executable,
+                _remoteTargetPath), ex.Message);
 
 
             // Note that the local build id failure results in an invalid configuration error
             // because we don't propagate the original BinaryFileUtilException but rather throw
             // our own ConfigurationException. (We may have failed on more than one file.)
-            metrics.Received().RecordEvent(
+            _metrics.Received().RecordEvent(
                 DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck,
                 Arg.Is<DeveloperLogEvent>(m =>
                     m.StatusCode == DeveloperEventStatus.Types.Code.InvalidConfiguration &&
@@ -272,20 +272,20 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void CheckLocalAndRemoteBinaryFailsMismatch()
         {
-            fileSystem.AddDirectory(searchPaths[0]);
-            fileSystem.AddFile(localPaths[0], new MockFileData(""));
-            binaryFileUtil.ReadBuildIdAsync(localPaths[0]).Returns(Task.FromResult(validBuildId2));
+            _fileSystem.AddDirectory(_searchPaths[0]);
+            _fileSystem.AddFile(_localPaths[0], new MockFileData(""));
+            _binaryFileUtil.ReadBuildIdAsync(_localPaths[0]).Returns(Task.FromResult(_validBuildId2));
 
-            binaryFileUtil.ReadBuildIdAsync(remoteTargetPath, target).Returns(
-                Task.FromResult(validBuildId));
+            _binaryFileUtil.ReadBuildIdAsync(_remoteTargetPath, _target).Returns(
+                Task.FromResult(_validBuildId));
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
-                await action.RecordAsync(checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                    searchPaths, executable, target, remoteTargetPath, action)));
-            Assert.AreEqual(ErrorStrings.UnableToFindExecutableMatchingRemoteBinary(executable,
-                remoteTargetPath), ex.Message);
+                await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
+                    _searchPaths, _executable, _target, _remoteTargetPath, _action)));
+            Assert.AreEqual(ErrorStrings.UnableToFindExecutableMatchingRemoteBinary(_executable,
+                _remoteTargetPath), ex.Message);
 
-            metrics.Received().RecordEvent(
+            _metrics.Received().RecordEvent(
                 DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck,
                 Arg.Is<DeveloperLogEvent>(m =>
                     m.StatusCode == DeveloperEventStatus.Types.Code.InvalidConfiguration &&
@@ -296,18 +296,6 @@ namespace YetiVSI.Test.DebugEngine
                             .ValidRemoteBuildId &&
                     m.DebugPreflightCheckData.LocalBinarySearchResult ==
                         DebugPreflightCheckData.Types.LocalBinarySearchResult.BinaryMismatch));
-        }
-
-        Expression<Predicate<string>> MatchWithParam(
-            Func<string, string> messageWithParams)
-        {
-            return s => Regex.IsMatch(s, messageWithParams("(.+)"));
-        }
-
-        Expression<Predicate<string>> MatchWithParam(
-            Func<string, string, string> messageWithParams)
-        {
-            return s => Regex.IsMatch(s, messageWithParams("(.+)", "(.+)"));
         }
     }
 }

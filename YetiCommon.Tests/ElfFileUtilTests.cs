@@ -25,51 +25,51 @@ namespace YetiCommon.Tests
     [TestFixture]
     public class ElfFileUtilTests
     {
-        static string fakeGameletIp = "127.0.0.1";
-        static string fakeGameletPort = "1234";
-        static string fakeFilename = @"C:\src\test.debug";
-        static string fakeRemoteFilename = @"/mnt/developer/test.debug";
+        static readonly string _fakeGameletIp = "127.0.0.1";
+        static readonly string _fakeGameletPort = "1234";
+        static readonly string _fakeFilename = @"C:\src\test.debug";
+        static readonly string _fakeRemoteFilename = @"/mnt/developer/test.debug";
 
-        ElfFileUtil elfFileUtil;
-        IProcess mockProcess;
-        IProcess mockRemoteProcess;
-        ManagedProcess.Factory mockProcessFactory;
-        LogSpy logSpy;
+        ElfFileUtil _elfFileUtil;
+        IProcess _mockProcess;
+        IProcess _mockRemoteProcess;
+        ManagedProcess.Factory _mockProcessFactory;
+        LogSpy _logSpy;
 
         [SetUp]
         public void SetUp()
         {
-            mockProcess = Substitute.For<IProcess>();
-            mockProcess.ProcessName.Returns(YetiConstants.ObjDumpWinExecutable);
-            mockProcess.Id.Returns(1234);
-            mockProcessFactory = Substitute.For<ManagedProcess.Factory>();
-            mockProcessFactory
+            _mockProcess = Substitute.For<IProcess>();
+            _mockProcess.ProcessName.Returns(YetiConstants.ObjDumpWinExecutable);
+            _mockProcess.Id.Returns(1234);
+            _mockProcessFactory = Substitute.For<ManagedProcess.Factory>();
+            _mockProcessFactory
                 .Create(Arg.Is<ProcessStartInfo>(
                     x => x.FileName.Contains(YetiConstants.ObjDumpWinExecutable) &&
-                        x.Arguments.Contains(fakeFilename)))
-                .Returns(mockProcess);
+                        x.Arguments.Contains(_fakeFilename)))
+                .Returns(_mockProcess);
 
-            mockRemoteProcess = Substitute.For<IProcess>();
-            mockRemoteProcess.ProcessName.Returns(YetiConstants.SshWinExecutable);
-            mockRemoteProcess.Id.Returns(1234);
-            mockProcessFactory
+            _mockRemoteProcess = Substitute.For<IProcess>();
+            _mockRemoteProcess.ProcessName.Returns(YetiConstants.SshWinExecutable);
+            _mockRemoteProcess.Id.Returns(1234);
+            _mockProcessFactory
                 .Create(Arg.Is<ProcessStartInfo>(
                     x => x.FileName.Contains(YetiConstants.SshWinExecutable) &&
-                        x.Arguments.Contains("cloudcast@" + fakeGameletIp) &&
-                        x.Arguments.Contains("-p " + fakeGameletPort) &&
+                        x.Arguments.Contains("cloudcast@" + _fakeGameletIp) &&
+                        x.Arguments.Contains("-p " + _fakeGameletPort) &&
                         x.Arguments.Contains(YetiConstants.ObjDumpLinuxExecutable) &&
-                        x.Arguments.Contains(fakeRemoteFilename)))
-                .Returns(mockRemoteProcess);
-            elfFileUtil = new ElfFileUtil(mockProcessFactory);
+                        x.Arguments.Contains(_fakeRemoteFilename)))
+                .Returns(_mockRemoteProcess);
+            _elfFileUtil = new ElfFileUtil(_mockProcessFactory);
 
-            logSpy = new LogSpy();
-            logSpy.Attach();
+            _logSpy = new LogSpy();
+            _logSpy.Attach();
         }
 
         [TearDown]
         public void TearDown()
         {
-            logSpy.Detach();
+            _logSpy.Detach();
         }
 
         [TestCase("5D852C71-CC0C-0389-B7CD-7CECCF2FAE51-4FB3D058",
@@ -95,12 +95,12 @@ namespace YetiCommon.Tests
         })]
         public async Task ReadBuildIdAsync(string buildIdStr, string[] outputLines)
         {
-            mockProcess.When(x => x.RunToExitAsync()).Do(x =>
+            _mockProcess.When(x => x.RunToExitAsync()).Do(x =>
             {
-                OutputTestData(mockProcess, outputLines);
+                OutputTestData(_mockProcess, outputLines);
             });
 
-            var buildId = await elfFileUtil.ReadBuildIdAsync(fakeFilename);
+            var buildId = await _elfFileUtil.ReadBuildIdAsync(_fakeFilename);
 
             Assert.AreEqual(new BuildId(buildIdStr), buildId);
         }
@@ -138,14 +138,14 @@ namespace YetiCommon.Tests
         })]
         public void ReadBuildId_InvalidBuildId(string descriptionUnused, string[] outputLines)
         {
-            mockProcess.When(x => x.RunToExitAsync()).Do(x =>
+            _mockProcess.When(x => x.RunToExitAsync()).Do(x =>
             {
-                OutputTestData(mockProcess, outputLines);
+                OutputTestData(_mockProcess, outputLines);
             });
 
             var ex = Assert.ThrowsAsync<InvalidBuildIdException>(
-                () => elfFileUtil.ReadBuildIdAsync(fakeFilename));
-            Assert.That(ex, Has.Message.Contain(fakeFilename));
+                () => _elfFileUtil.ReadBuildIdAsync(_fakeFilename));
+            Assert.That(ex, Has.Message.Contain(_fakeFilename));
         }
 
         [Test]
@@ -153,28 +153,28 @@ namespace YetiCommon.Tests
         {
             var outputLines = new string[] { "output on error" };
             var errorLines = new string[] { "error on error" };
-            mockProcess.RunToExitAsync().Returns(1).AndDoes(x =>
+            _mockProcess.RunToExitAsync().Returns(1).AndDoes(x =>
             {
-                OutputTestData(mockProcess, outputLines, errorLines);
+                OutputTestData(_mockProcess, outputLines, errorLines);
             });
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.ReadBuildIdAsync(fakeFilename));
+                () => _elfFileUtil.ReadBuildIdAsync(_fakeFilename));
             Assert.IsInstanceOf<ProcessExecutionException>(ex.InnerException);
-            Assert.That(ex, Has.Message.Contain(fakeFilename));
+            Assert.That(ex, Has.Message.Contain(_fakeFilename));
 
-            Assert.That(logSpy.GetOutput(), Contains.Substring(outputLines[0]));
-            Assert.That(logSpy.GetOutput(), Contains.Substring(errorLines[0]));
+            Assert.That(_logSpy.GetOutput(), Contains.Substring(outputLines[0]));
+            Assert.That(_logSpy.GetOutput(), Contains.Substring(errorLines[0]));
         }
 
         [Test]
         public void ReadBuildId_ProcessException()
         {
-            mockProcess.RunToExitAsync().Returns(
+            _mockProcess.RunToExitAsync().Returns(
                 Task.FromException<int>(new ProcessException("test")));
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.ReadBuildIdAsync(fakeFilename));
+                () => _elfFileUtil.ReadBuildIdAsync(_fakeFilename));
             Assert.IsInstanceOf<ProcessException>(ex.InnerException);
             // Note: message doesn't need to include filename.
         }
@@ -191,12 +191,12 @@ namespace YetiCommon.Tests
             })]
         public async Task ReadBuildId_RemoteAsync(string buildIdStr, string[] outputLines)
         {
-            mockRemoteProcess.When(x => x.RunToExitAsync()).Do(x =>
+            _mockRemoteProcess.When(x => x.RunToExitAsync()).Do(x =>
             {
-                OutputTestData(mockRemoteProcess, outputLines);
+                OutputTestData(_mockRemoteProcess, outputLines);
             });
-            SshTarget target = new SshTarget(fakeGameletIp + ":" + fakeGameletPort);
-            var buildId = await elfFileUtil.ReadBuildIdAsync(fakeRemoteFilename, target);
+            SshTarget target = new SshTarget(_fakeGameletIp + ":" + _fakeGameletPort);
+            var buildId = await _elfFileUtil.ReadBuildIdAsync(_fakeRemoteFilename, target);
             Assert.AreEqual(new BuildId(buildIdStr), buildId);
         }
 
@@ -205,20 +205,20 @@ namespace YetiCommon.Tests
         {
             var outputLines = new string[] { "output on error" };
             var errorLines = new string[] { "error on error" };
-            mockRemoteProcess.RunToExitAsync().Returns(1).AndDoes(x =>
+            _mockRemoteProcess.RunToExitAsync().Returns(1).AndDoes(x =>
             {
-                OutputTestData(mockRemoteProcess, outputLines, errorLines);
+                OutputTestData(_mockRemoteProcess, outputLines, errorLines);
             });
-            SshTarget target = new SshTarget(fakeGameletIp + ":" + fakeGameletPort);
+            SshTarget target = new SshTarget(_fakeGameletIp + ":" + _fakeGameletPort);
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.ReadBuildIdAsync(fakeRemoteFilename, target));
+                () => _elfFileUtil.ReadBuildIdAsync(_fakeRemoteFilename, target));
             Assert.IsInstanceOf<ProcessExecutionException>(ex.InnerException);
             Assert.That(ex, Has.Message.Contain(YetiConstants.ObjDumpLinuxExecutable));
-            Assert.That(ex, Has.Message.Contain(fakeRemoteFilename));
+            Assert.That(ex, Has.Message.Contain(_fakeRemoteFilename));
 
-            Assert.That(logSpy.GetOutput(), Contains.Substring(outputLines[0]));
-            Assert.That(logSpy.GetOutput(), Contains.Substring(errorLines[0]));
+            Assert.That(_logSpy.GetOutput(), Contains.Substring(outputLines[0]));
+            Assert.That(_logSpy.GetOutput(), Contains.Substring(errorLines[0]));
         }
 
         [Test]
@@ -226,30 +226,30 @@ namespace YetiCommon.Tests
         {
             var outputLines = new string[] { "output on error" };
             var errorLines = new string[] { "error on error" };
-            mockRemoteProcess.RunToExitAsync().Returns(255).AndDoes(x =>
+            _mockRemoteProcess.RunToExitAsync().Returns(255).AndDoes(x =>
             {
-                OutputTestData(mockRemoteProcess, outputLines, errorLines);
+                OutputTestData(_mockRemoteProcess, outputLines, errorLines);
             });
-            SshTarget target = new SshTarget(fakeGameletIp + ":" + fakeGameletPort);
+            SshTarget target = new SshTarget(_fakeGameletIp + ":" + _fakeGameletPort);
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.ReadBuildIdAsync(fakeRemoteFilename, target));
+                () => _elfFileUtil.ReadBuildIdAsync(_fakeRemoteFilename, target));
             Assert.IsInstanceOf<ProcessExecutionException>(ex.InnerException);
             // Note: message doesn't need to include remote filename.
 
-            Assert.That(logSpy.GetOutput(), Contains.Substring(outputLines[0]));
-            Assert.That(logSpy.GetOutput(), Contains.Substring(errorLines[0]));
+            Assert.That(_logSpy.GetOutput(), Contains.Substring(outputLines[0]));
+            Assert.That(_logSpy.GetOutput(), Contains.Substring(errorLines[0]));
         }
 
         [Test]
         public void ReadBuildId_Remote_ProcessException()
         {
-            mockRemoteProcess.RunToExitAsync().Returns(
+            _mockRemoteProcess.RunToExitAsync().Returns(
                 Task.FromException<int>(new ProcessException("test")));
-            SshTarget target = new SshTarget(fakeGameletIp + ":" + fakeGameletPort);
+            SshTarget target = new SshTarget(_fakeGameletIp + ":" + _fakeGameletPort);
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.ReadBuildIdAsync(fakeRemoteFilename, target));
+                () => _elfFileUtil.ReadBuildIdAsync(_fakeRemoteFilename, target));
             Assert.IsInstanceOf<ProcessException>(ex.InnerException);
             // Note: message doesn't need to include remote filename.
         }
@@ -275,12 +275,12 @@ namespace YetiCommon.Tests
             })]
         public async Task ReadSymbolFileNameAsync(string expectedFilename, string[] outputLines)
         {
-            mockProcess.When(x => x.RunToExitAsync()).Do(x =>
+            _mockProcess.When(x => x.RunToExitAsync()).Do(x =>
             {
-                OutputTestData(mockProcess, outputLines);
+                OutputTestData(_mockProcess, outputLines);
             });
 
-            var filename = await elfFileUtil.ReadSymbolFileNameAsync(fakeFilename);
+            var filename = await _elfFileUtil.ReadSymbolFileNameAsync(_fakeFilename);
 
             Assert.AreEqual(expectedFilename, filename);
         }
@@ -314,13 +314,13 @@ namespace YetiCommon.Tests
         public void ReadSymbolFileName_InvalidDebugLink(
             string descriptionUnused, string[] outputLines)
         {
-            mockProcess.When(x => x.RunToExitAsync()).Do(x =>
+            _mockProcess.When(x => x.RunToExitAsync()).Do(x =>
             {
-                OutputTestData(mockProcess, outputLines);
+                OutputTestData(_mockProcess, outputLines);
             });
 
             Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.ReadSymbolFileNameAsync(fakeFilename));
+                () => _elfFileUtil.ReadSymbolFileNameAsync(_fakeFilename));
         }
 
         [Test]
@@ -328,28 +328,28 @@ namespace YetiCommon.Tests
         {
             var outputLines = new string[] { "output on error" };
             var errorLines = new string[] { "error on error" };
-            mockProcess.RunToExitAsync().Returns(1).AndDoes(x =>
+            _mockProcess.RunToExitAsync().Returns(1).AndDoes(x =>
             {
-                OutputTestData(mockProcess, outputLines, errorLines);
+                OutputTestData(_mockProcess, outputLines, errorLines);
             });
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.ReadSymbolFileNameAsync(fakeFilename));
+                () => _elfFileUtil.ReadSymbolFileNameAsync(_fakeFilename));
             Assert.IsInstanceOf<ProcessExecutionException>(ex.InnerException);
-            Assert.That(ex, Has.Message.Contain(fakeFilename));
+            Assert.That(ex, Has.Message.Contain(_fakeFilename));
 
-            Assert.That(logSpy.GetOutput(), Contains.Substring(outputLines[0]));
-            Assert.That(logSpy.GetOutput(), Contains.Substring(errorLines[0]));
+            Assert.That(_logSpy.GetOutput(), Contains.Substring(outputLines[0]));
+            Assert.That(_logSpy.GetOutput(), Contains.Substring(errorLines[0]));
         }
 
         [Test]
         public void ReadSymbolFileName_ProcessException()
         {
-            mockProcess.RunToExitAsync().Returns(
+            _mockProcess.RunToExitAsync().Returns(
                 Task.FromException<int>(new ProcessException("test")));
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.ReadSymbolFileNameAsync(fakeFilename));
+                () => _elfFileUtil.ReadSymbolFileNameAsync(_fakeFilename));
             Assert.IsInstanceOf<ProcessException>(ex.InnerException);
             // Note: exception message doesn't need to contain filename
         }
@@ -357,7 +357,7 @@ namespace YetiCommon.Tests
         [Test]
         public async Task ReadSymbolFileDir_SuccessAsync()
         {
-            string[] outputLines = new string[] {
+            string[] outputLines = new[] {
                 @"",
                 @"C:\Users\jarin\source\repos\StadiaCppProject1\GGP\Debug\StadiaCppProject1:     file format elf64-x86-64",
                 @"",
@@ -368,12 +368,12 @@ namespace YetiCommon.Tests
                 @" 0030 505c4465 6275675c                    P\Debug\        ",
             };
 
-            mockProcess.When(x => x.RunToExitAsync()).Do(x =>
+            _mockProcess.When(x => x.RunToExitAsync()).Do(x =>
             {
-                OutputTestData(mockProcess, outputLines);
+                OutputTestData(_mockProcess, outputLines);
             });
 
-            var directory = await elfFileUtil.ReadSymbolFileDirAsync(fakeFilename);
+            var directory = await _elfFileUtil.ReadSymbolFileDirAsync(_fakeFilename);
 
             Assert.That(directory,
                         Is.EqualTo(@"C:\Users\jarin\source\repos\StadiaCppProject1\GGP\Debug\"));
@@ -388,23 +388,23 @@ namespace YetiCommon.Tests
                 @"",
             };
 
-            mockProcess.When(x => x.RunToExitAsync()).Do(x =>
+            _mockProcess.When(x => x.RunToExitAsync()).Do(x =>
             {
-                OutputTestData(mockProcess, outputLines);
+                OutputTestData(_mockProcess, outputLines);
             });
 
             Assert.ThrowsAsync<BinaryFileUtilException>(
-                async () => await elfFileUtil.ReadSymbolFileDirAsync(fakeFilename));
+                async () => await _elfFileUtil.ReadSymbolFileDirAsync(_fakeFilename));
         }
 
         [Test]
         public void ReadSymbolFileDir_ProcessException()
         {
-            mockProcess.RunToExitAsync().Returns(
+            _mockProcess.RunToExitAsync().Returns(
                 Task.FromException<int>(new ProcessException("test")));
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                async () => await elfFileUtil.ReadSymbolFileDirAsync(fakeFilename));
+                async () => await _elfFileUtil.ReadSymbolFileDirAsync(_fakeFilename));
             Assert.IsInstanceOf<ProcessException>(ex.InnerException);
         }
 
@@ -458,13 +458,14 @@ Idx Name          Size     VMA          Type
 
             var outputLines = output.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             var errorLines = Array.Empty<string>();
-            mockProcess.RunToExitAsync().Returns(0).AndDoes(
-                x => { OutputTestData(mockProcess, outputLines, errorLines); });
+            _mockProcess.RunToExitAsync().Returns(0).AndDoes(
+                x => { OutputTestData(_mockProcess, outputLines, errorLines); });
 
             Assert.DoesNotThrowAsync(
-                () => elfFileUtil.VerifySymbolFileAsync(fakeFilename, isDebugInfoFile));
+                () => _elfFileUtil.VerifySymbolFileAsync(_fakeFilename, isDebugInfoFile));
         }
 
+        [Test]
         public async Task VerifySymbolFile_Executable_SuccessAsync()
         {
             string output = @"
@@ -507,12 +508,13 @@ Idx Name          Size     VMA          Type
 
             var outputLines = output.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             var errorLines = Array.Empty<string>();
-            mockProcess.RunToExitAsync().Returns(0).AndDoes(
-                x => { OutputTestData(mockProcess, outputLines, errorLines); });
+            _mockProcess.RunToExitAsync().Returns(0).AndDoes(
+                x => { OutputTestData(_mockProcess, outputLines, errorLines); });
 
-            await elfFileUtil.VerifySymbolFileAsync(fakeFilename, false);
+            await _elfFileUtil.VerifySymbolFileAsync(_fakeFilename, false);
         }
-
+        
+        [Test]
         public void VerifySymbolFile_NoDebugInfo()
         {
             string output = @"
@@ -555,15 +557,16 @@ Idx Name          Size     VMA          Type
 
             var outputLines = output.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             var errorLines = Array.Empty<string>();
-            mockProcess.RunToExitAsync().Returns(0).AndDoes(
-                x => { OutputTestData(mockProcess, outputLines, errorLines); });
+            _mockProcess.RunToExitAsync().Returns(0).AndDoes(
+                x => { OutputTestData(_mockProcess, outputLines, errorLines); });
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.VerifySymbolFileAsync(fakeFilename, true));
+                () => _elfFileUtil.VerifySymbolFileAsync(_fakeFilename, true));
             Assert.That(
-                ex, Has.Message.Contain(ErrorStrings.MissingDebugInfoInSymbolFile(fakeFilename)));
+                ex, Has.Message.Contain(ErrorStrings.MissingDebugInfoInSymbolFile(_fakeFilename)));
         }
 
+        [Test]
         public void VerifySymbolFile_NoDebugInfo_ConfusingSuffix()
         {
             string output = @"
@@ -606,30 +609,30 @@ Idx Name          Size     VMA          Type
 
             var outputLines = output.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             var errorLines = Array.Empty<string>();
-            mockProcess.RunToExitAsync().Returns(0).AndDoes(
-                x => { OutputTestData(mockProcess, outputLines, errorLines); });
+            _mockProcess.RunToExitAsync().Returns(0).AndDoes(
+                x => { OutputTestData(_mockProcess, outputLines, errorLines); });
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.VerifySymbolFileAsync(fakeFilename, true));
+                () => _elfFileUtil.VerifySymbolFileAsync(_fakeFilename, true));
             Assert.That(
-                ex, Has.Message.Contain(ErrorStrings.MissingDebugInfoInSymbolFile(fakeFilename)));
+                ex, Has.Message.Contain(ErrorStrings.MissingDebugInfoInSymbolFile(_fakeFilename)));
         }
 
         [Test]
         public void VerifySymbolFile_Truncated([Values(false, true)] bool isDebugInfoFile)
         {
             string errorOutput =
-                @"C:\Program Files\GGP SDK\BaseSDK\LLVM\9.0.1\bin\llvm - objdump.exe: " +
+                @"C:\Program Files\GGP SDK\BaseSDK\LLVM\9.0.1\bin\llvm-objdump.exe: " +
                 "error: 'abcd.debug': section table goes past the end of file";
 
             var outputLines = Array.Empty<string>();
-            var errorLines = new string[] { errorOutput };
-            mockProcess.RunToExitAsync().Returns(1).AndDoes(
-                x => { OutputTestData(mockProcess, outputLines, errorLines); });
+            var errorLines = new[] { errorOutput };
+            _mockProcess.RunToExitAsync().Returns(1).AndDoes(
+                x => { OutputTestData(_mockProcess, outputLines, errorLines); });
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.VerifySymbolFileAsync(fakeFilename, isDebugInfoFile));
-            Assert.That(ex, Has.Message.Contain(ErrorStrings.SymbolFileTruncated(fakeFilename)));
+                () => _elfFileUtil.VerifySymbolFileAsync(_fakeFilename, isDebugInfoFile));
+            Assert.That(ex, Has.Message.Contain(ErrorStrings.SymbolFileTruncated(_fakeFilename)));
         }
 
         [Test]
@@ -641,13 +644,13 @@ Idx Name          Size     VMA          Type
 
             var outputLines = Array.Empty<string>();
             var errorLines = new string[] { errorOutput };
-            mockProcess.RunToExitAsync().Returns(1).AndDoes(
-                x => { OutputTestData(mockProcess, outputLines, errorLines); });
+            _mockProcess.RunToExitAsync().Returns(1).AndDoes(
+                x => { OutputTestData(_mockProcess, outputLines, errorLines); });
 
             var ex = Assert.ThrowsAsync<BinaryFileUtilException>(
-                () => elfFileUtil.VerifySymbolFileAsync(fakeFilename, isDebugInfoFile));
+                () => _elfFileUtil.VerifySymbolFileAsync(_fakeFilename, isDebugInfoFile));
             Assert.That(ex,
-                        Has.Message.Contain(ErrorStrings.InvalidSymbolFileFormat(fakeFilename)));
+                        Has.Message.Contain(ErrorStrings.InvalidSymbolFileFormat(_fakeFilename)));
         }
 
         void OutputTestData(IProcess process, string[] outputLines,

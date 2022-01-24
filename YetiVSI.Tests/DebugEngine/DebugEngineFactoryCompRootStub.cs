@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using DebuggerGrpcClient;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -19,6 +20,7 @@ using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+using Grpc.Core.Interceptors;
 using Microsoft.VisualStudio.Debugger.Interop;
 using TestsCommon.TestSupport;
 using YetiCommon;
@@ -67,6 +69,8 @@ namespace YetiVSI.Test.DebugEngine
         /// Generate light-weight version of <see cref="DebugEngineFactoryCompRoot"/>
         /// with most methods and properties mocked for testing.
         /// </summary>
+        /// <param name="stadiaLldbDebuggerFactory"><see cref="IStadiaLldbDebuggerFactory"/>
+        /// instance.</param>
         /// <param name="factory"><see cref="IDebugSessionLauncherFactory"/> instance to use
         /// instead of created one.
         /// </param>
@@ -90,8 +94,8 @@ namespace YetiVSI.Test.DebugEngine
         public override IDebugEngineFactory CreateDebugEngineFactory()
         {
             ServiceManager serviceManager = CreateServiceManager();
-            var joinableTaskContext = GetJoinableTaskContext();
-            var vsiService = GetVsiService();
+            JoinableTaskContext joinableTaskContext = GetJoinableTaskContext();
+            YetiVSIService vsiService = GetVsiService();
             joinableTaskContext.ThrowIfNotOnMainThread();
 
             var debugEngineCommands =
@@ -103,10 +107,11 @@ namespace YetiVSI.Test.DebugEngine
             var processFactory = new ManagedProcess.Factory();
             var binaryFileUtil = new ElfFileUtil(processFactory);
 
-            IModuleFileFinder moduleFileFinder = Substitute.For<IModuleFileFinder>();
+            var moduleFileFinder = Substitute.For<IModuleFileFinder>();
             var moduleFileLoadRecorderFactory =
                 new ModuleFileLoadMetricsRecorder.Factory(moduleFileFinder);
-            var grpcInterceptors = CreateGrpcInterceptors(vsiService.DebuggerOptions);
+            List<Interceptor> grpcInterceptors =
+                CreateGrpcInterceptors(vsiService.DebuggerOptions);
             var vsOutputWindow =
                 serviceManager.GetGlobalService(typeof(SVsOutputWindow)) as IVsOutputWindow;
             var callInvokerFactory = new PipeCallInvokerFactory();
@@ -208,7 +213,7 @@ namespace YetiVSI.Test.DebugEngine
                 return _symbolSettingsProvider;
             }
 
-            var taskContext = GetJoinableTaskContext();
+            JoinableTaskContext taskContext = GetJoinableTaskContext();
             var symbolSettingsManager = Substitute.For<IVsDebuggerSymbolSettingsManager120A>();
             var debuggerService = Substitute.For<IVsDebugger2>();
             bool symbolServerEnabled = GetVsiService().Options.SymbolServerSupport ==

@@ -89,7 +89,7 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_WithMultipeCachesAsync()
+        public async Task FindFile_WithMultipleCachesAsync()
         {
             await _storeB.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
             _storeSequence.AddStore(_cacheA);
@@ -290,8 +290,6 @@ namespace SymbolStores.Tests
             Assert.False(sequenceB.DeepEquals(sequenceA));
         }
 
-#region SymbolStoreBaseTests functions
-
         protected override ISymbolStore GetEmptyStore()
         {
             _storeSequence.AddStore(_storeA);
@@ -304,7 +302,5 @@ namespace SymbolStores.Tests
             _storeSequence.AddStore(_storeA);
             return _storeSequence;
         }
-
-#endregion
     }
 }

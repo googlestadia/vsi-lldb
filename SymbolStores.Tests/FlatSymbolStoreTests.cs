@@ -79,9 +79,8 @@ namespace SymbolStores.Tests
         public async Task FindFile_ReadBuildIdFailureAsync()
         {
             var mockBinaryFileUtil = Substitute.For<IBinaryFileUtil>();
-            mockBinaryFileUtil.ReadBuildIdAsync(Arg.Any<string>()).Returns<BuildId>(x => {
-                throw new BinaryFileUtilException("test exception");
-            });
+            mockBinaryFileUtil.ReadBuildIdAsync(Arg.Any<string>())
+                .Returns<BuildId>(x => throw new BinaryFileUtilException("test exception"));
             var store = new FlatSymbolStore(_fakeFileSystem, mockBinaryFileUtil, _storePath);
             _fakeBuildIdWriter.WriteBuildId(Path.Combine(_storePath, _filename), _buildId);
 
@@ -112,8 +111,6 @@ namespace SymbolStores.Tests
             Assert.False(storeB.DeepEquals(storeA));
         }
 
-#region SymbolsStoreBaseTests functions
-
         protected override ISymbolStore GetEmptyStore()
         {
             return new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, _storePath);
@@ -125,7 +122,5 @@ namespace SymbolStores.Tests
             return Task.FromResult<ISymbolStore>(
                 new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, _storePath));
         }
-
-#endregion
     }
 }

@@ -208,12 +208,16 @@ namespace SymbolStores.Tests
                 () => store.AddFileAsync(_sourceSymbolFile, filename, buildId));
         }
 
-        // Gets a valid store of the type being tested that contains no files. Does not need to be
-        // unique.
+        /// <summary>
+        /// Gets a valid store of the type being tested that contains no files. Does not need to be
+        /// unique.
+        /// </summary>
         protected abstract ISymbolStore GetEmptyStore();
 
-        // Gets a store of the type being tested that contains a file with the filename `FILENAME`
-        // and build id `BUILD_ID`
+        /// <summary>
+        /// Gets a store of the type being tested that contains a file with the filename `FILENAME`
+        /// and build id `BUILD_ID`
+        /// </summary>
         protected abstract Task<ISymbolStore> GetStoreWithFileAsync();
     }
 }
