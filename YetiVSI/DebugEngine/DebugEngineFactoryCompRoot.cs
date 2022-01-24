@@ -137,7 +137,7 @@ namespace YetiVSI.DebugEngine
                 _allowNatvisReload = allowNatvisReload;
             }
 
-#region IDebugEngineCommands
+            #region IDebugEngineCommands
 
             public void LogNatvisStats(TextWriter writer, int verbosityLevel)
             {
@@ -170,7 +170,7 @@ namespace YetiVSI.DebugEngine
                 return true;
             }
 
-#endregion
+            #endregion
         }
 
         /// <summary>
@@ -194,15 +194,16 @@ namespace YetiVSI.DebugEngine
 
             var processFactory = new ManagedProcess.Factory();
             var binaryFileUtil = new ElfFileUtil(processFactory);
-
-            var symbolServerRequestHandler = new WebRequestHandler(){
+            var moduleParser = new ModuleParser();
+            var symbolServerRequestHandler = new WebRequestHandler()
+            {
                 AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip,
                 UseDefaultCredentials = true,
                 CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore),
             };
             var symbolServerHttpClient = new HttpClient(symbolServerRequestHandler);
             var symbolPathParser = new SymbolPathParser(
-                GetFileSystem(), binaryFileUtil, symbolServerHttpClient,
+                GetFileSystem(), moduleParser, symbolServerHttpClient,
                 new CrashReportClient(GetCloudRunner()),
                 SDKUtil.GetDefaultSymbolCachePath(), SDKUtil.GetDefaultSymbolStorePath(),
                 YetiConstants.SymbolServerExcludeList);
@@ -212,7 +213,6 @@ namespace YetiVSI.DebugEngine
             var moduleFileLoadRecorderFactory =
                 new ModuleFileLoadMetricsRecorder.Factory(moduleFileFinder);
 
-            var moduleParser = new ModuleParser();
             var symbolLoaderFactory =
                 new SymbolLoader.Factory(moduleParser, moduleFileFinder);
             var binaryLoaderFactory = new BinaryLoader.Factory(moduleFileFinder);
@@ -416,7 +416,7 @@ namespace YetiVSI.DebugEngine
         {
             if (_vsiService == null)
             {
-                _vsiService = (YetiVSIService) CreateServiceManager().RequireGlobalService(
+                _vsiService = (YetiVSIService)CreateServiceManager().RequireGlobalService(
                     typeof(YetiVSIService));
             }
 
@@ -436,7 +436,7 @@ namespace YetiVSI.DebugEngine
                     GetVsiService().Options.SymbolServerSupport == SymbolServerSupport.ENABLED;
 
                 var debuggerService =
-                    (IVsDebugger2) new ServiceManager().GetGlobalService(typeof(SVsShellDebugger));
+                    (IVsDebugger2)new ServiceManager().GetGlobalService(typeof(SVsShellDebugger));
 
                 _symbolSettingsProvider = new SymbolSettingsProvider(
                     symbolManager, debuggerService, symbolServerEnabled, GetJoinableTaskContext());

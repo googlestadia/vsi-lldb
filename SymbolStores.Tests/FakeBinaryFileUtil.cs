@@ -12,29 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.IO.Abstractions;
-using TestsCommon.TestSupport;
+using System.IO.Abstractions;
+using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace SymbolStores.Tests
 {
     class FakeBinaryFileUtil : IBinaryFileUtil
     {
         readonly IFileSystem _fileSystem;
-        readonly Dictionary<string, string> _verificationFailures
-            = new Dictionary<string, string>();
 
         public FakeBinaryFileUtil(IFileSystem fileSystem)
         {
-            this._fileSystem = fileSystem;
-        }
-
-        public void AddVerificationFailureFor(BuildId buildId, string errorString)
-        {
-            _verificationFailures.Add(buildId.ToString(), errorString);
+            _fileSystem = fileSystem;
         }
 
         // Instead of properly parsing the file, just read its entire contents as binary and
@@ -43,25 +34,6 @@ namespace SymbolStores.Tests
         {
             BuildId buildID = new BuildId(_fileSystem.File.ReadAllText(filepath));
             return await Task.FromResult(buildID);
-        }
-
-        public Task<string> ReadSymbolFileNameAsync(string filepath)
-        {
-            throw new NotImplementedTestDoubleException();
-        }
-
-        public Task<string> ReadSymbolFileDirAsync(string filepath)
-        {
-            throw new NotImplementedTestDoubleException();
-        }
-
-        public async Task VerifySymbolFileAsync(string filepath, bool isDebugInfoFile)
-        {
-            BuildId buildId = await ReadBuildIdAsync(filepath);
-            if (_verificationFailures.TryGetValue(buildId.ToString(), out string errorString))
-            {
-                throw new BinaryFileUtilException(errorString);
-            }
         }
     }
 }

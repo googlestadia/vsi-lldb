@@ -35,11 +35,11 @@ namespace SymbolStores
     public class FlatSymbolStore : SymbolStoreBase, IFlatSymbolStore
     {
         readonly IFileSystem _fileSystem;
-        readonly IBinaryFileUtil _binaryFileUtil;
+        readonly IModuleParser _moduleParser;
         [JsonProperty("Path")]
-        string _path;
+        readonly string _path;
 
-        public FlatSymbolStore(IFileSystem fileSystem, IBinaryFileUtil binaryFileUtil, string path)
+        public FlatSymbolStore(IFileSystem fileSystem, IModuleParser moduleParser, string path)
             : base(false, false)
         {
             if (string.IsNullOrEmpty(path))
@@ -49,7 +49,7 @@ namespace SymbolStores
             }
 
             _fileSystem = fileSystem;
-            _binaryFileUtil = binaryFileUtil;
+            _moduleParser = moduleParser;
             _path = path;
         }
 
@@ -86,19 +86,19 @@ namespace SymbolStores
 
             if (buildId != BuildId.Empty)
             {
-                try
+                // TODO: pass correct isElf value
+                BuildIdInfo actualBuildId = _moduleParser.ParseBuildIdInfo(filepath, true);
+
+                if (actualBuildId.HasError)
                 {
-                    BuildId actualBuildId = await _binaryFileUtil.ReadBuildIdAsync(filepath);
-                    if (actualBuildId != buildId)
-                    {
-                        await log.WriteLineAndTraceAsync(
-                            Strings.BuildIdMismatch(filepath, buildId, actualBuildId));
-                        return null;
-                    }
+                    await log.WriteLineAndTraceAsync(actualBuildId.Error);
+                    return null;
                 }
-                catch (BinaryFileUtilException e)
+
+                if (actualBuildId.Data != buildId)
                 {
-                    await log.WriteLineAndTraceAsync(e.Message);
+                    await log.WriteLineAndTraceAsync(
+                        Strings.BuildIdMismatch(filepath, buildId, actualBuildId.Data));
                     return null;
                 }
             }

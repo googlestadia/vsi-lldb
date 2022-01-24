@@ -24,22 +24,24 @@ using YetiCommon;
 
 namespace SymbolStores
 {
-    // Parses lists of symbol paths, given in the format used by the _NT_SYMBOL_PATH environment
-    // variable.
-    // This format consists of a semicolon-delimited list of path elements, in which each path
-    // element can either represent a symbol server, a cache, or a symbol store path.
-    // If the path element begins with "srv*" or "symsrv*symsrv.dll*" it represents a server, and
-    // the remainder of the path element represents an asterisk-seperated list of symbol store
-    // paths.
-    // If the path element begins with "cache*" it represents a cache, but uses the same syntax as
-    // regular symbol servers.
-    // If the path element does not begin with "srv*", "symsrv*", or "cache*", then it is an
-    // unadorned path that represents either a flat or structured symbol store. Structured stores
-    // are disambiguated by the existence of a marker file named "pingme.txt".
+    /// <summary>
+    /// Parses lists of symbol paths, given in the format used by the _NT_SYMBOL_PATH environment
+    /// variable.
+    /// This format consists of a semicolon-delimited list of path elements, in which each path
+    /// element can either represent a symbol server, a cache, or a symbol store path.
+    /// If the path element begins with "srv*" or "symsrv*symsrv.dll*" it represents a server, and
+    /// the remainder of the path element represents an asterisk-seperated list of symbol store
+    /// paths.
+    /// If the path element begins with "cache*" it represents a cache, but uses the same syntax as
+    /// regular symbol servers.
+    /// If the path element does not begin with "srv*", "symsrv*", or "cache*", then it is an
+    /// unadorned path that represents either a flat or structured symbol store. Structured stores
+    /// are disambiguated by the existence of a marker file named "pingme.txt".
+    /// </summary>
     public class SymbolPathParser
     {
         readonly IFileSystem _fileSystem;
-        readonly IBinaryFileUtil _binaryFileUtil;
+        readonly IModuleParser _moduleParser;
         readonly HttpClient _httpClient;
         readonly ICrashReportClient _crashReportClient;
 
@@ -54,13 +56,13 @@ namespace SymbolStores
         // parsed.
         readonly ISet<string> _hostExcludeList;
 
-        public SymbolPathParser(IFileSystem fileSystem, IBinaryFileUtil binaryFileUtil,
+        public SymbolPathParser(IFileSystem fileSystem, IModuleParser moduleParser,
                                 HttpClient httpClient, ICrashReportClient crashReportClient,
                                 string defaultCachePath, string defaultSymbolStorePath,
                                 IEnumerable<string> hostExcludeList = null)
         {
             _fileSystem = fileSystem;
-            _binaryFileUtil = binaryFileUtil;
+            _moduleParser = moduleParser;
             _httpClient = httpClient;
             _crashReportClient = crashReportClient;
             _defaultCachePath = defaultCachePath;
@@ -84,7 +86,7 @@ namespace SymbolStores
 
             Trace.WriteLine($"Parsing symbol paths: '{symbolPaths}'");
 
-            var storeSequence = new SymbolStoreSequence(_binaryFileUtil);
+            var storeSequence = new SymbolStoreSequence(_moduleParser);
 
             foreach (string pathElement in symbolPaths.Split(';'))
             {
@@ -154,7 +156,7 @@ namespace SymbolStores
                 else
                 {
                     storeSequence.AddStore(
-                        new FlatSymbolStore(_fileSystem, _binaryFileUtil, pathElement));
+                        new FlatSymbolStore(_fileSystem, _moduleParser, pathElement));
                 }
             }
 

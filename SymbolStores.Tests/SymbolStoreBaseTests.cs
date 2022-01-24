@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using NUnit.Framework;
 using System;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Threading.Tasks;
+using NSubstitute;
+using NUnit.Framework;
 using YetiCommon;
 
 namespace SymbolStores.Tests
@@ -32,7 +33,7 @@ namespace SymbolStores.Tests
         protected static readonly BuildId _buildId = new BuildId("1234");
 
         protected MockFileSystem _fakeFileSystem;
-        protected FakeBinaryFileUtil _fakeBinaryFileUtil;
+        protected IModuleParser _moduleParser;
         protected FakeBuildIdWriter _fakeBuildIdWriter;
         protected FileReference _sourceSymbolFile;
         protected StringWriter _log;
@@ -42,7 +43,12 @@ namespace SymbolStores.Tests
         public virtual void SetUp()
         {
             _fakeFileSystem = new MockFileSystem();
-            _fakeBinaryFileUtil = new FakeBinaryFileUtil(_fakeFileSystem);
+            _moduleParser = Substitute.For<IModuleParser>();
+            _moduleParser.ParseBuildIdInfo(Arg.Is<string>(x => x.EndsWith(_filename)), true)
+                .Returns(new BuildIdInfo() { Data = _buildId });
+            _moduleParser.IsValidElf(Arg.Any<string>(), Arg.Any<bool>(), out string _)
+                .Returns(true);
+
             _fakeBuildIdWriter = new FakeBuildIdWriter(_fakeFileSystem);
             _fakeBuildIdWriter.WriteBuildId(_sourceFilepath, _buildId);
             _sourceSymbolFile = new FileReference(_fakeFileSystem, _sourceFilepath);
@@ -53,12 +59,10 @@ namespace SymbolStores.Tests
         public async Task FindFile_ExistsAsync()
         {
             var store = await GetStoreWithFileAsync();
-
             var fileReference = await store.FindFileAsync(_filename, _buildId, true,
                                                           _log, _forceLoad);
             await fileReference.CopyToAsync(_destFilepath);
 
-            Assert.AreEqual(_buildId, await _fakeBinaryFileUtil.ReadBuildIdAsync(_destFilepath));
             StringAssert.Contains(Strings.FileFound(""), _log.ToString());
         }
 
@@ -66,11 +70,9 @@ namespace SymbolStores.Tests
         public async Task FindFile_NoLogAsync()
         {
             var store = await GetStoreWithFileAsync();
-
             var fileReference = await store.FindFileAsync(_filename, _buildId);
             await fileReference.CopyToAsync(_destFilepath);
-
-            Assert.AreEqual(_buildId, await _fakeBinaryFileUtil.ReadBuildIdAsync(_destFilepath));
+            Assert.IsEmpty(_log.ToString());
         }
 
         [Test]
@@ -105,8 +107,6 @@ namespace SymbolStores.Tests
             var fileReference = await store.AddFileAsync(_sourceSymbolFile, _filename,
                                                          _buildId, _log);
 
-            Assert.AreEqual(_buildId,
-                            await _fakeBinaryFileUtil.ReadBuildIdAsync(fileReference.Location));
             StringAssert.Contains(Strings.CopiedFile(_filename, fileReference.Location),
                                   _log.ToString());
         }
@@ -135,8 +135,6 @@ namespace SymbolStores.Tests
 
             var fileReference = await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
             await fileReference.CopyToAsync(_destFilepath);
-
-            Assert.AreEqual(_buildId, await _fakeBinaryFileUtil.ReadBuildIdAsync(_destFilepath));
         }
 
         [Test]

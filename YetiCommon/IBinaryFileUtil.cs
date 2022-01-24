@@ -39,19 +39,6 @@ namespace YetiCommon
         /// the case when the build id has length zero.
         /// </exception>
         Task<BuildId> ReadBuildIdAsync(string filepath, SSH.SshTarget target = null);
-
-
-        /// <summary>
-        /// Verifies that the symbol file is a valid elf file. Optionally, it checks if the file
-        /// contains .debug_info section.
-        /// </summary>
-        ///
-        /// <exception cref="BinaryFileUtilException">
-        /// Thrown on verification failure, including when the file cannot be found or if it is not
-        /// en elf file or if no .debug_info section was find. If there was an error executing the
-        /// tool used to extract information, the InnerException will be a ProcessException.
-        /// </exception>
-        Task VerifySymbolFileAsync(string filepath, bool isDebugInfoFile);
     }
 
     public class BinaryFileUtilException : Exception, IUserVisibleError

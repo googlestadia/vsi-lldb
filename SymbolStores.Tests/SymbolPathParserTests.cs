@@ -21,6 +21,7 @@ using Newtonsoft.Json;
 using NSubstitute;
 using NUnit.Framework;
 using TestsCommon.TestSupport;
+using YetiCommon;
 
 namespace SymbolStores.Tests
 {
@@ -39,7 +40,7 @@ namespace SymbolStores.Tests
         const string _httpStore = @"http://example.com/symbols";
 
         MockFileSystem _fakeFileSystem;
-        FakeBinaryFileUtil _fakeBinaryFileUtil;
+        IModuleParser _moduleParser;
         HttpClient _httpClient;
         ICrashReportClient _crashReportClient;
         SymbolPathParser _pathParser;
@@ -49,7 +50,7 @@ namespace SymbolStores.Tests
         public void SetUp()
         {
             _fakeFileSystem = new MockFileSystem();
-            _fakeBinaryFileUtil = new FakeBinaryFileUtil(_fakeFileSystem);
+            _moduleParser = Substitute.For<IModuleParser>();
             _httpClient = new HttpClient(new FakeHttpMessageHandler());
             _crashReportClient = Substitute.For<ICrashReportClient>();
 
@@ -58,7 +59,7 @@ namespace SymbolStores.Tests
 
             _fakeFileSystem.AddFile(Path.Combine(_stadiaStore, StadiaSymbolStore.MarkerFileName),
                                    new MockFileData(""));
-            _pathParser = new SymbolPathParser(_fakeFileSystem, _fakeBinaryFileUtil, _httpClient,
+            _pathParser = new SymbolPathParser(_fakeFileSystem, _moduleParser, _httpClient,
                                               _crashReportClient, null, null);
             _logSpy = new LogSpy();
             _logSpy.Attach();
@@ -81,7 +82,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse("");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             AssertEqualStores(expected, store);
         }
 
@@ -90,7 +91,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse(";;");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             AssertEqualStores(expected, store);
         }
 
@@ -99,8 +100,8 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse(_flatStore);
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
-            expected.AddStore(new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil, 
+            var expected = new SymbolStoreSequence(_moduleParser);
+            expected.AddStore(new FlatSymbolStore(_fakeFileSystem, _moduleParser,
                                                   _flatStore));
             AssertEqualStores(expected, store);
         }
@@ -110,7 +111,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse(_initializedStore);
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             expected.AddStore(new StructuredSymbolStore(_fakeFileSystem, _initializedStore));
             AssertEqualStores(expected, store);
         }
@@ -120,7 +121,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse($"cache*{_cacheA};{_httpStore}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var cache = new SymbolServer(isCache: true);
             cache.AddStore(new StructuredSymbolStore(_fakeFileSystem, _cacheA));
             expected.AddStore(cache);
@@ -133,12 +134,12 @@ namespace SymbolStores.Tests
         [Test]
         public void Parse_HttpStore_DefaultCache()
         {
-            _pathParser = new SymbolPathParser(_fakeFileSystem, _fakeBinaryFileUtil, _httpClient,
+            _pathParser = new SymbolPathParser(_fakeFileSystem, _moduleParser, _httpClient,
                                               _crashReportClient, _defaultCache, null);
 
             var store = _pathParser.Parse(_httpStore);
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _defaultCache));
             server.AddStore(new HttpSymbolStore(_fakeFileSystem, _httpClient, _httpStore));
@@ -151,7 +152,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse(_httpStore);
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             AssertEqualStores(expected, store);
         }
 
@@ -159,12 +160,12 @@ namespace SymbolStores.Tests
         public void Parse_HttpStore_Excluded()
         {
             _pathParser =
-                new SymbolPathParser(_fakeFileSystem, _fakeBinaryFileUtil, _httpClient,
+                new SymbolPathParser(_fakeFileSystem, _moduleParser, _httpClient,
                                      _crashReportClient, null, null, new[] { "example.com" });
 
             var store = _pathParser.Parse(_httpStore);
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             AssertEqualStores(expected, store);
         }
 
@@ -173,7 +174,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse($"cache*{_cacheA};{_stadiaStore}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var cache = new SymbolServer(isCache: true);
             cache.AddStore(new StructuredSymbolStore(_fakeFileSystem, _cacheA));
             expected.AddStore(cache);
@@ -187,12 +188,12 @@ namespace SymbolStores.Tests
         [Test]
         public void Parse_StadiaStore_DefaultCache()
         {
-            _pathParser = new SymbolPathParser(_fakeFileSystem, _fakeBinaryFileUtil, _httpClient,
+            _pathParser = new SymbolPathParser(_fakeFileSystem, _moduleParser, _httpClient,
                                               _crashReportClient, _defaultCache, null);
 
             var store = _pathParser.Parse(_stadiaStore);
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _defaultCache));
             server.AddStore(new StadiaSymbolStore(_fakeFileSystem, _httpClient,
@@ -206,7 +207,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse(_stadiaStore);
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             AssertEqualStores(expected, store);
         }
 
@@ -215,7 +216,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse($"cache*{_cacheA}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var cache = new SymbolServer(isCache: true);
             cache.AddStore(new StructuredSymbolStore(_fakeFileSystem, _cacheA));
             expected.AddStore(cache);
@@ -227,7 +228,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse($"cache*{_cacheA}*{_cacheB}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var cache = new SymbolServer(isCache: true);
             cache.AddStore(new StructuredSymbolStore(_fakeFileSystem, _cacheA));
             cache.AddStore(new StructuredSymbolStore(_fakeFileSystem, _cacheB));
@@ -238,12 +239,12 @@ namespace SymbolStores.Tests
         [Test]
         public void Parse_DefaultCache()
         {
-            _pathParser = new SymbolPathParser(_fakeFileSystem, _fakeBinaryFileUtil, _httpClient,
+            _pathParser = new SymbolPathParser(_fakeFileSystem, _moduleParser, _httpClient,
                                               _crashReportClient, _defaultCache, null);
 
             var store = _pathParser.Parse($"cache*");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var cache = new SymbolServer(isCache: true);
             cache.AddStore(new StructuredSymbolStore(_fakeFileSystem, _defaultCache));
             expected.AddStore(cache);
@@ -255,7 +256,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse($"cache*");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var cache = new SymbolServer(isCache: true);
             expected.AddStore(cache);
             AssertEqualStores(expected, store);
@@ -264,12 +265,12 @@ namespace SymbolStores.Tests
         [Test]
         public void Parse_CacheWithHttpStore()
         {
-            _pathParser = new SymbolPathParser(_fakeFileSystem, _fakeBinaryFileUtil, _httpClient,
+            _pathParser = new SymbolPathParser(_fakeFileSystem, _moduleParser, _httpClient,
                                               _crashReportClient, _defaultCache, null);
 
             var store = _pathParser.Parse($"cache*{_httpStore}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var cache = new SymbolServer(isCache: true);
             cache.AddStore(new StructuredSymbolStore(_fakeFileSystem, _defaultCache));
             cache.AddStore(new HttpSymbolStore(_fakeFileSystem, _httpClient, _httpStore));
@@ -283,7 +284,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse($"srv*{_storeA}*{_storeB}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _storeA));
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _storeB));
@@ -296,7 +297,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse("srv*");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             expected.AddStore(server);
             AssertEqualStores(expected, store);
@@ -307,7 +308,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse($"srv*{_storeA}*{_httpStore}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _storeA));
             server.AddStore(new HttpSymbolStore(_fakeFileSystem, _httpClient, _httpStore));
@@ -321,7 +322,7 @@ namespace SymbolStores.Tests
             var store = _pathParser.Parse($"srv*{_storeA}*{_stadiaStore}");
 
             // Stadia store not supported in symsrv configuration.
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _storeA));
             expected.AddStore(server);
@@ -331,12 +332,12 @@ namespace SymbolStores.Tests
         [Test]
         public void Parse_DefaultStore()
         {
-            _pathParser = new SymbolPathParser(_fakeFileSystem, _fakeBinaryFileUtil, _httpClient,
+            _pathParser = new SymbolPathParser(_fakeFileSystem, _moduleParser, _httpClient,
                                               _crashReportClient, null, _defaultStore);
 
             var store = _pathParser.Parse($"srv*");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _defaultStore));
             expected.AddStore(server);
@@ -348,7 +349,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse($"srv*");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             expected.AddStore(server);
             AssertEqualStores(expected, store);
@@ -359,7 +360,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse($"srv*{_storeA}*{_httpStore}*{_storeB}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _storeA));
             server.AddStore(new HttpSymbolStore(_fakeFileSystem, _httpClient, _httpStore));
@@ -372,12 +373,12 @@ namespace SymbolStores.Tests
         [Test]
         public void Parse_DownstreamHttpStore_DefaultCache()
         {
-            _pathParser = new SymbolPathParser(_fakeFileSystem, _fakeBinaryFileUtil, _httpClient,
+            _pathParser = new SymbolPathParser(_fakeFileSystem, _moduleParser, _httpClient,
                                               _crashReportClient, _defaultCache, null);
 
             var store = _pathParser.Parse($"srv*{_httpStore}*{_storeB}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _defaultCache));
             server.AddStore(new HttpSymbolStore(_fakeFileSystem, _httpClient, _httpStore));
@@ -392,7 +393,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse($"symsrv*symsrv.dll*{_storeA}*{_storeB}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _storeA));
             server.AddStore(new StructuredSymbolStore(_fakeFileSystem, _storeB));
@@ -405,7 +406,7 @@ namespace SymbolStores.Tests
         {
             var store = _pathParser.Parse("symsrv*symsrv.dll*");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var server = new SymbolServer(isCache: false);
             expected.AddStore(server);
             AssertEqualStores(expected, store);
@@ -419,7 +420,7 @@ namespace SymbolStores.Tests
 
             var store = _pathParser.Parse("symsrv*unsupported.dll*");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             AssertEqualStores(expected, store);
             StringAssert.Contains(Strings.UnsupportedSymbolServer("unsupported.dll"),
                                   logSpy.GetOutput());
@@ -431,11 +432,11 @@ namespace SymbolStores.Tests
             var store = _pathParser.Parse(
                 $"cache*{_cacheA};{_flatStore};{_initializedStore};srv*{_storeA}*{_storeB}");
 
-            var expected = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var expected = new SymbolStoreSequence(_moduleParser);
             var cache = new SymbolServer(isCache: true);
             cache.AddStore(new StructuredSymbolStore(_fakeFileSystem, _cacheA));
             expected.AddStore(cache);
-            expected.AddStore(new FlatSymbolStore(_fakeFileSystem, _fakeBinaryFileUtil,
+            expected.AddStore(new FlatSymbolStore(_fakeFileSystem, _moduleParser,
                                                   _flatStore));
             expected.AddStore(new StructuredSymbolStore(_fakeFileSystem, _initializedStore));
             var server = new SymbolServer(isCache: false);

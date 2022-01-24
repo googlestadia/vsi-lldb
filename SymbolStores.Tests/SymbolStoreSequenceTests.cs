@@ -40,7 +40,7 @@ namespace SymbolStores.Tests
         {
             base.SetUp();
 
-            _storeSequence = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            _storeSequence = new SymbolStoreSequence(_moduleParser);
 
             _cacheA = new StructuredSymbolStore(_fakeFileSystem, _cacheAPath, isCache: true);
             _cacheB = new StructuredSymbolStore(_fakeFileSystem, _cacheBPath, isCache: true);
@@ -176,7 +176,14 @@ namespace SymbolStores.Tests
 
             _fakeBuildIdWriter.WriteBuildId(storeAPath, _buildId);
             _sourceSymbolFile = new FileReference(_fakeFileSystem, storeAPath);
-            _fakeBinaryFileUtil.AddVerificationFailureFor(_buildId, "Symbol verification error");
+            _moduleParser
+                .IsValidElf(Arg.Is<string>
+                                (x => x.EndsWith(_filename)), Arg.Any<bool>(), out string _)
+                .Returns(x =>
+                {
+                    x[2] = "Symbol verification error";
+                    return false;
+                });
 
             _storeSequence.AddStore(_cacheA);
             _storeSequence.AddStore(_storeA);
@@ -187,6 +194,7 @@ namespace SymbolStores.Tests
                 _filename, _buildId, true, logWriter, false);
 
             Assert.That(fileReference, Is.Null);
+            Assert.IsEmpty(_log.ToString());
         }
 
         [Test]
@@ -205,8 +213,24 @@ namespace SymbolStores.Tests
                                              _filename);
             _fakeBuildIdWriter.WriteBuildId(cacheAPath, badBuildId);
             _sourceSymbolFile = new FileReference(_fakeFileSystem, cacheAPath);
+            _moduleParser
+                .IsValidElf(
+                cacheAPath,
+                Arg.Any<bool>(),
+                out string _)
+                .Returns(x =>
+                {
+                    BuildId buildId = new BuildId(
+                        _fakeFileSystem.File.ReadAllText(x[0].ToString()));
+                    if (buildId == badBuildId)
+                    {
+                        x[2] = "Symbol verification error";
+                        return false;
+                    }
 
-            _fakeBinaryFileUtil.AddVerificationFailureFor(badBuildId, "Symbol verification error");
+                    x[2] = "";
+                    return true;
+                });
 
             _storeSequence.AddStore(_cacheA);
             _storeSequence.AddStore(_storeA);
@@ -218,13 +242,7 @@ namespace SymbolStores.Tests
 
             Assert.That(fileReference.Location,
                         Is.EqualTo((await _cacheA.FindFileAsync(_filename, _buildId)).Location));
-
-            Assert.That(await _fakeBinaryFileUtil.ReadBuildIdAsync(
-                            (await _storeA.FindFileAsync(_filename, _buildId)).Location),
-                        Is.EqualTo(_buildId));
-            Assert.That(await _fakeBinaryFileUtil.ReadBuildIdAsync(
-                            (await _cacheA.FindFileAsync(_filename, _buildId)).Location),
-                        Is.EqualTo(_buildId));
+            Assert.IsEmpty(_log.ToString());
         }
 
         [Test]
@@ -232,7 +250,7 @@ namespace SymbolStores.Tests
         {
             _storeSequence.AddStore(_storeA);
             _storeSequence.AddStore(_cacheA);
-            var subStoreSequence = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var subStoreSequence = new SymbolStoreSequence(_moduleParser);
             subStoreSequence.AddStore(_storeB);
             _storeSequence.AddStore(subStoreSequence);
 
@@ -244,8 +262,8 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_NoStores()
         {
-            var sequenceA = new SymbolStoreSequence(_fakeBinaryFileUtil);
-            var sequenceB = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var sequenceA = new SymbolStoreSequence(_moduleParser);
+            var sequenceB = new SymbolStoreSequence(_moduleParser);
 
             Assert.True(sequenceA.DeepEquals(sequenceB));
             Assert.True(sequenceB.DeepEquals(sequenceA));
@@ -254,10 +272,10 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_WithStores()
         {
-            var sequenceA = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var sequenceA = new SymbolStoreSequence(_moduleParser);
             sequenceA.AddStore(_storeA);
             sequenceA.AddStore(_storeB);
-            var sequenceB = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var sequenceB = new SymbolStoreSequence(_moduleParser);
             sequenceB.AddStore(_storeA);
             sequenceB.AddStore(_storeB);
 
@@ -268,9 +286,9 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_StoresNotEquals()
         {
-            var sequenceA = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var sequenceA = new SymbolStoreSequence(_moduleParser);
             sequenceA.AddStore(_storeA);
-            var sequenceB = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var sequenceB = new SymbolStoreSequence(_moduleParser);
             sequenceB.AddStore(_storeB);
 
             Assert.False(sequenceA.DeepEquals(sequenceB));
@@ -280,10 +298,10 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_DifferentLengths()
         {
-            var sequenceA = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var sequenceA = new SymbolStoreSequence(_moduleParser);
             sequenceA.AddStore(_storeA);
             sequenceA.AddStore(_storeB);
-            var sequenceB = new SymbolStoreSequence(_fakeBinaryFileUtil);
+            var sequenceB = new SymbolStoreSequence(_moduleParser);
             sequenceB.AddStore(_storeA);
 
             Assert.False(sequenceA.DeepEquals(sequenceB));

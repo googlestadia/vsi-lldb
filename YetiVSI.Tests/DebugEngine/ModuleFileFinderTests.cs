@@ -133,7 +133,7 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void RecordMetrics()
         {
-            var sequence = new SymbolStoreSequence(Substitute.For<IBinaryFileUtil>());
+            var sequence = new SymbolStoreSequence(Substitute.For<IModuleParser>());
             for (int i = 0; i < 4; ++i)
             {
                 sequence.AddStore(Substitute.For<IFlatSymbolStore>());

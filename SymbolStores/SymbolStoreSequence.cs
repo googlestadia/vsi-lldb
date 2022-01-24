@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,21 +23,23 @@ using YetiCommon.Logging;
 
 namespace SymbolStores
 {
-    // Represents a list of symbol stores that are searched sequentially.
-    // If a store's IsCache property is set to true it will be used to cache files found later in
-    // the list. Each cache overrides previous caches, and caches do not cascade.
+    /// <summary>
+    /// Represents a list of symbol stores that are searched sequentially.
+    /// If a store's IsCache property is set to true it will be used to cache files found later in
+    /// the list. Each cache overrides previous caches, and caches do not cascade.
+    /// </summary>
     public class SymbolStoreSequence : SymbolStoreBase
     {
         public bool HasCache => _stores.Any(s => s.IsCache == true);
 
-        readonly IBinaryFileUtil _binaryFileUtil;
+        readonly IModuleParser _moduleParser;
 
         [JsonProperty("Stores")]
         readonly IList<ISymbolStore> _stores;
 
-        public SymbolStoreSequence(IBinaryFileUtil binaryFileUtil) : base(false, false)
+        public SymbolStoreSequence(IModuleParser moduleParser) : base(false, false)
         {
-            _binaryFileUtil = binaryFileUtil;
+            _moduleParser = moduleParser;
             _stores = new List<ISymbolStore>();
         }
 
@@ -46,7 +48,7 @@ namespace SymbolStores
             _stores.Add(store);
         }
 
-#region SymbolStoreBase functions
+        #region SymbolStoreBase functions
 
         public override IEnumerable<ISymbolStore> Substores => _stores;
 
@@ -104,10 +106,8 @@ namespace SymbolStores
 
         public override Task<IFileReference> AddFileAsync(IFileReference sourceFilepath,
                                                           string filename, BuildId buildId,
-                                                          TextWriter log)
-        {
+                                                          TextWriter log) =>
             throw new NotSupportedException(Strings.CopyToStoreSequenceNotSupported);
-        }
 
         public override bool DeepEquals(ISymbolStore otherStore)
         {
@@ -116,32 +116,38 @@ namespace SymbolStores
                 && _stores.Zip(other._stores, Tuple.Create)
                     .All(x => x.Item1.DeepEquals(x.Item2));
         }
-#endregion
+        #endregion
 
         async Task<bool> VerifySymbolFileAsync(string filepath, BuildId buildId,
                                                bool isDebugInfoFile, TextWriter log)
         {
-            try
+            if (!_moduleParser.IsValidElf(filepath, isDebugInfoFile, out string errorMessage))
             {
-                await _binaryFileUtil.VerifySymbolFileAsync(filepath, isDebugInfoFile);
-                if (buildId != BuildId.Empty)
-                {
-                    var actualBuildId = await _binaryFileUtil.ReadBuildIdAsync(filepath);
-                    if (actualBuildId != buildId)
-                    {
-                        string errorMessage =
-                            Strings.BuildIdMismatch(filepath, buildId, actualBuildId);
-                        await log.WriteLineAndTraceAsync(errorMessage);
-                        return false;
-                    }
-                }
-            }
-            catch (BinaryFileUtilException e)
-            {
-                await log.WriteLineAndTraceAsync(e.Message);
+                await log.WriteLineAndTraceAsync(errorMessage);
                 return false;
             }
-            return true;
+
+            if (buildId == BuildId.Empty)
+            {
+                return true;
+            }
+
+            BuildIdInfo actualBuildId = _moduleParser.ParseBuildIdInfo(filepath, true);
+            if (actualBuildId.HasError)
+            {
+                await log.WriteLineAndTraceAsync(actualBuildId.Error);
+                return false;
+            }
+
+            if (actualBuildId.Data == buildId)
+            {
+                return true;
+            }
+
+            string buildIdMismatch =
+                Strings.BuildIdMismatch(filepath, buildId, actualBuildId.Data);
+            await log.WriteLineAndTraceAsync(buildIdMismatch);
+            return false;
         }
     }
 }
