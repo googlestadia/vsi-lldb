@@ -40,27 +40,6 @@ namespace YetiCommon
         /// </exception>
         Task<BuildId> ReadBuildIdAsync(string filepath, SSH.SshTarget target = null);
 
-        /// <summary>
-        /// Parses a binary file and returns the name of the matching symbol file.
-        /// </summary>
-        ///
-        /// <exception cref="BinaryFileUtilException">
-        /// Thrown on failure, including when the file cannot be found or
-        /// the symbol file name cannot be extracted. If there was an error executing the tool used
-        /// to extract information, the InnerException will be a ProcessException.
-        /// </exception>
-        Task<string> ReadSymbolFileNameAsync(string filepath);
-
-        /// <summary>
-        /// Parses a binary file and returns the directory of the debug symbol file.
-        /// </summary>
-        ///
-        /// <exception cref="BinaryFileUtilException">
-        /// Thrown on failure, including when the file cannot be found or the symbol file directory
-        /// cannot be extracted. If there was an error executing the tool used to extract
-        /// information, the InnerException will be a ProcessException.
-        /// </exception>
-        Task<string> ReadSymbolFileDirAsync(string filepath);
 
         /// <summary>
         /// Verifies that the symbol file is a valid elf file. Optionally, it checks if the file

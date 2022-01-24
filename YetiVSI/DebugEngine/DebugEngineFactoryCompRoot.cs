@@ -212,8 +212,9 @@ namespace YetiVSI.DebugEngine
             var moduleFileLoadRecorderFactory =
                 new ModuleFileLoadMetricsRecorder.Factory(moduleFileFinder);
 
+            var moduleParser = new ModuleParser();
             var symbolLoaderFactory =
-                new SymbolLoader.Factory(binaryFileUtil, moduleFileFinder);
+                new SymbolLoader.Factory(moduleParser, moduleFileFinder);
             var binaryLoaderFactory = new BinaryLoader.Factory(moduleFileFinder);
 
             var cancelableTaskFactory = GetCancelableTaskFactory();
@@ -723,7 +724,6 @@ namespace YetiVSI.DebugEngine
         public virtual List<IInterceptor> CreateApiAspects()
         {
             DebuggerOptions.DebuggerOptions debuggerOptions = GetVsiService().DebuggerOptions;
-            DebugSessionMetrics debugSessionMetrics = GetDebugSessionMetrics();
 
             // Creates aspects for tracing, exception handling and metrics.
             // Additionally, it creates gRPC interceptors for use in the DebugTransport.

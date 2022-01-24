@@ -16,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -107,106 +106,6 @@ namespace YetiCommon
                 throw new InvalidBuildIdException(
                     ErrorStrings.FailedToReadBuildId(
                         filepath, ErrorStrings.MalformedBuildId),
-                    e);
-            }
-        }
-
-        /// <summary>
-        /// Parses an elf binary or symbol file and returns the debug symbol file directory encoded
-        /// in the .note.debug_info_dir section of the file.
-        /// </summary>
-        /// <param name="filepath">The local file path.</param>
-        /// <returns>A non-empty string.</returns>
-        /// <exception cref="BinaryFileUtilException">
-        /// Thrown when an error is encountered reading or parsing the debug symbol file directory.
-        /// InnerException contains more details.
-        /// </exception>
-
-        public async Task<string> ReadSymbolFileDirAsync(string filepath)
-        {
-            try
-            {
-                List<string> outputLines =
-                    await ReadSectionFromFileAsync(".note.debug_info_dir", filepath, null);
-                var hexString = ParseHexDump(outputLines);
-                var symbolFileDir = ParseObjdumpHexString(hexString);
-                if (string.IsNullOrEmpty(symbolFileDir))
-                {
-                    throw new BinaryFileUtilException(
-                        ErrorStrings.FailedToReadSymbolFileDir(filepath, ErrorStrings.NoDebugDir));
-                }
-                return symbolFileDir;
-            }
-            catch (ProcessExecutionException e)
-            {
-                LogObjdumpOutput(e);
-
-                // objdump returned a non-zero exit code.
-                throw new BinaryFileUtilException(
-                    ErrorStrings.FailedToReadSymbolFileDir(filepath, e.Message), e);
-            }
-            catch (ProcessException e)
-            {
-                // objdump failed to launch. The specific filepath was never accessed,
-                // so it is not part of the error.
-                throw new BinaryFileUtilException(ErrorStrings.FailedToReadSymbolFileDir(e.Message),
-                                                  e);
-            }
-            catch (FormatException e)
-            {
-                throw new BinaryFileUtilException(ErrorStrings.FailedToReadSymbolFileDir(
-                                                      filepath, ErrorStrings.MalformedDebugDir),
-                                                  e);
-            }
-        }
-
-        /// <summary>
-        /// Parses an elf binary or symbol file and returns the debug symbol file name encoded
-        /// in the .gnu_debuglink section of the file.
-        /// </summary>
-        /// <param name="filepath">The local file path.</param>
-        /// <returns>A non-empty string.</returns>
-        /// <exception cref="BinaryFileUtilException">
-        /// Thrown when an error is encountered reading or parsing the debug symbol file name.
-        /// InnerException contains more details.
-        /// </exception>
-        public async Task<string> ReadSymbolFileNameAsync(string filepath)
-        {
-            List<string> outputLines;
-            try
-            {
-                outputLines = await ReadSectionFromFileAsync(".gnu_debuglink", filepath, null);
-                var hexString = ParseHexDump(outputLines);
-                var symbolFileName = ParseObjdumpHexString(hexString);
-                if (string.IsNullOrEmpty(symbolFileName))
-                {
-                    throw new BinaryFileUtilException(
-                        ErrorStrings.FailedToReadSymbolFileName(
-                            filepath, ErrorStrings.NoDebugLink));
-                }
-                return symbolFileName;
-            }
-            catch (ProcessExecutionException e)
-            {
-                LogObjdumpOutput(e);
-
-                // objdump returned a non-zero exit code
-                throw new BinaryFileUtilException(
-                    ErrorStrings.FailedToReadSymbolFileName(filepath, e.Message), e);
-            }
-            catch (ProcessException e)
-            {
-                // objdump failed to launch. The specific filepath was never accessed,
-                // so it is not part of the error.
-                throw new BinaryFileUtilException(
-                    ErrorStrings.FailedToReadSymbolFileName(e.Message), e);
-            }
-            catch (FormatException e)
-            {
-                // Indicates the debug link section is malformed.
-                throw new BinaryFileUtilException(
-                    ErrorStrings.FailedToReadSymbolFileName(
-                        filepath, ErrorStrings.MalformedDebugLink),
                     e);
             }
         }
@@ -392,25 +291,6 @@ namespace YetiCommon
         }
 
         /// <summary>
-        /// Given the hex-encoded content of a section with a string (such as debuglink),
-        /// this method decodes and returns the string.
-        /// </summary>
-        /// <param name="hexString">The content of the section represented in hex.</param>
-        /// <returns>A valid ASCII string or the empty string.</returns>
-        /// <exception cref="FormatException">
-        /// Thrown when the input does not encode a valid ASCII string.
-        /// </exception>
-        string ParseObjdumpHexString(string hexString)
-        {
-            // Convert a string of hex digits into an array of raw byte values.
-            var rawBytes = PairChars(hexString).Select(s => Convert.ToByte(s, 16));
-
-            // Interpret rawBytes as a zero-terminated ASCII character string.
-            // TODO: figure out Unicode support.
-            return Encoding.ASCII.GetString(rawBytes.TakeWhile(b => b != 0).ToArray());
-        }
-
-        /// <summary>
         /// Parses a hex dump in the format outputted by objdump, and returns just the hex digits.
         /// </summary>
         /// <param name="hexDumpOutput">The raw output of the 'objdump' process.</param>
@@ -427,23 +307,6 @@ namespace YetiCommon
                 }
             }
             return hexString.ToString();
-        }
-
-        /// <summary>
-        /// Pairs up adjacent characters in a string: "abcdef" => {"ab", "cd", "ef"}.
-        /// </summary>
-        /// <param name="input">A string with an even length (possibly empty).</param>
-        /// <returns>A sequence of strings (possibly empty); each element has length 2.</returns>
-        static IEnumerable<string> PairChars(string input)
-        {
-            if (input.Length % 2 != 0)
-            {
-                throw new FormatException($"Got {input.Length} digits, but wanted an even length");
-            }
-            for (var i = 0; i < input.Length; i += 2)
-            {
-                yield return input.Substring(i, 2);
-            }
         }
     }
 }

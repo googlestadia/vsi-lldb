@@ -523,7 +523,7 @@ namespace YetiVSI.Test.DebugEngine
                                                       new DebugWatchpointResolution.Factory(),
                                                       new BreakpointErrorEnumFactory(),
                                                       new BoundBreakpointEnumFactory())),
-                new SymbolLoader.Factory(mockBinaryFileUtil, moduleFileFinder),
+                new SymbolLoader.Factory(Substitute.For<IModuleParser>(), moduleFileFinder),
                 new BinaryLoader.Factory(moduleFileFinder),
                 Substitute.For<IModuleFileLoaderFactory>());
 

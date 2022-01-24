@@ -280,8 +280,7 @@ namespace YetiCommon
                     return true;
                 }
 
-                if (elfReader.TryGetSection(_debugInfoName, out ISection buildIdSection)
-                    && buildIdSection != null)
+                if (elfReader.TryGetSection(_debugInfoName, out ISection buildIdSection))
                 {
                     return true;
                 }
