@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -43,15 +43,14 @@ namespace YetiVSI.DebugEngine
     /// </summary>
     public class PreflightBinaryChecker
     {
-        const string PID_EXE_PATH_TEMPLATE = "/proc/{0}/exe";
+        const string _pidExePathTemplate = "/proc/{0}/exe";
 
-        private IFileSystem fileSystem;
-        private IBinaryFileUtil binaryFileUtil;
-
-        public PreflightBinaryChecker(IFileSystem fileSystem, IBinaryFileUtil binaryFileUtil)
+        readonly IFileSystem _fileSystem;
+        readonly IModuleParser _moduleParser;
+        public PreflightBinaryChecker(IFileSystem fileSystem, IModuleParser moduleParser)
         {
-            this.fileSystem = fileSystem;
-            this.binaryFileUtil = binaryFileUtil;
+            _fileSystem = fileSystem;
+            _moduleParser = moduleParser;
         }
 
         /// <summary>
@@ -63,6 +62,7 @@ namespace YetiVSI.DebugEngine
         /// <param name="executable">Name of the binary to look for locally and remotely</param>
         /// <param name="target">The machine that should have a valid remote binary</param>
         /// <param name="remoteTargetPath">Remote path where the binary is expected to be</param>
+        /// <param name="action">An action to be recorded as a metrics log event.</param>
         public async Task CheckLocalAndRemoteBinaryOnLaunchAsync(
             IEnumerable<string> libPaths, string executable, SshTarget target,
             string remoteTargetPath, IAction action)
@@ -70,22 +70,13 @@ namespace YetiVSI.DebugEngine
             // Check that the remote binary has a build id and try to match it against
             // the local candidates to find the matching local binary.
             var localCandidatePaths = new List<string>();
+            var dataRecorder = new DataRecorder(action,
+                DebugPreflightCheckData.Types.CheckType.RunAndAttach);
             try
             {
-                var dataRecorder = new DataRecorder(action,
-                DebugPreflightCheckData.Types.CheckType.RunAndAttach);
                 // Get the remote build id and only continue if this step succeeds.
-                BuildId remoteBuildId;
-                try
-                {
-                    remoteBuildId = await binaryFileUtil.ReadBuildIdAsync(remoteTargetPath,
-                        target);
-                }
-                catch (BinaryFileUtilException e) when (dataRecorder.RemoteBuildIdError(e))
-                {
-                    Debug.Fail("Exception should never be caught");
-                    throw;
-                }
+                BuildId remoteBuildId =
+                        await _moduleParser.ParseRemoteBuildIdInfoAsync(remoteTargetPath, target);
 
                 // Log the remote Build ID for debugging purposes.
                 dataRecorder.ValidRemoteBuildId();
@@ -102,7 +93,7 @@ namespace YetiVSI.DebugEngine
 
                 // Check local candidates to find one matching the remote build id.
                 // Ignore local candidates that are missing a build id.
-                if (await HasMatchingBuildIdAsync(
+                if (HasMatchingBuildId(
                         localCandidatePaths, executable, remoteTargetPath, remoteBuildId))
                 {
                     dataRecorder.LocalBinaryCheckResult(
@@ -117,6 +108,7 @@ namespace YetiVSI.DebugEngine
             }
             catch (BinaryFileUtilException e)
             {
+                dataRecorder.RemoteBuildIdError(e);
                 Trace.WriteLine(
                     $"Failed to read build ID for '{remoteTargetPath}' " +
                     $"on '{target.GetString()}': {e.Demystify()}");
@@ -147,96 +139,83 @@ namespace YetiVSI.DebugEngine
         /// </summary>
         /// <param name="pid">Process ID of the remote process that we will check</param>
         /// <param name="target">The machine that should have a valid remote binary</param>
+        /// <param name="action">An action to be recorded as a metrics log event.</param>
         public async Task CheckRemoteBinaryOnAttachAsync(uint pid, SshTarget target,
-            IAction action)
+                                                         IAction action)
         {
-            var remoteTargetPath = string.Format(PID_EXE_PATH_TEMPLATE, pid);
+            var remoteTargetPath = string.Format(_pidExePathTemplate, pid);
+            var dataRecorder =
+                new DataRecorder(action, DebugPreflightCheckData.Types.CheckType.AttachOnly);
             try
             {
-                var dataRecorder =
-                    new DataRecorder(action, DebugPreflightCheckData.Types.CheckType.AttachOnly);
-
-                BuildId remoteBuildId;
-                try
-                {
-                    remoteBuildId = await binaryFileUtil.ReadBuildIdAsync(remoteTargetPath,
-                        target);
-                }
-                catch (BinaryFileUtilException e) when (dataRecorder.RemoteBuildIdError(e))
-                {
-                    Debug.Fail("Exception should never be caught");
-                    throw;
-                }
-
+                BuildId remoteBuildId =
+                    await _moduleParser.ParseRemoteBuildIdInfoAsync(remoteTargetPath, target);
                 // Log the remote Build ID for debugging purposes.
                 dataRecorder.ValidRemoteBuildId();
                 Trace.WriteLine($"Remote build ID: {remoteBuildId}");
             }
             catch (BinaryFileUtilException e)
             {
+                dataRecorder.RemoteBuildIdError(e);
                 Trace.WriteLine(
-                    $"Failed to read build ID for '{remoteTargetPath}' " +
-                    $"on '{target.GetString()}': {e.Demystify()}");
+                $"Failed to read build ID for '{remoteTargetPath}' " +
+                $"on '{target.GetString()}': {e.Demystify()}");
 
                 throw new PreflightBinaryCheckerException(
                     ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(e.Message), e);
             }
         }
 
-        async Task<bool> HasMatchingBuildIdAsync(IEnumerable<string> localCandidatePaths, string executable,
+        bool HasMatchingBuildId(IEnumerable<string> localCandidatePaths, string executable,
             string remoteTargetPath, BuildId remoteBuildId)
         {
             // TODO: re-write this using LINQ and Optional<T, TException>
             foreach (var path in localCandidatePaths)
             {
-                try
-                {
-                    var localBuildId = await binaryFileUtil.ReadBuildIdAsync(path);
-                    if (localBuildId == remoteBuildId)
-                    {
-                        Trace.WriteLine(
-                            $"Found local copy of '{executable}' at '{path}' " +
-                            $"matching build ID of remote binary '{remoteTargetPath}'");
-                        return true;
-                    }
-                    else
-                    {
-                        Trace.WriteLine(
-                            $"Mismatched build ID {localBuildId} " +
-                            $"for local binary '{path}' " +
-                            $"and build ID {remoteBuildId} " +
-                            $"for remote binary {remoteTargetPath}");
-                    }
-
-                }
-                catch (BinaryFileUtilException e)
+                var localBuildId = _moduleParser.ParseBuildIdInfo(path, true);
+                if (localBuildId.HasError)
                 {
                     Trace.WriteLine(
-                        $"Failed to read build ID for '{path}': {e.Demystify()}");
+                        $"Failed to read build ID for '{path}': {localBuildId.Error}");
+                    continue;
                 }
+
+                if (localBuildId.Data == remoteBuildId)
+                {
+                    Trace.WriteLine(
+                        $"Found local copy of '{executable}' at '{path}' " +
+                        $"matching build ID of remote binary '{remoteTargetPath}'");
+                    return true;
+                }
+
+                Trace.WriteLine(
+                    $"Mismatched build ID {localBuildId} " +
+                    $"for local binary '{path}' " +
+                    $"and build ID {remoteBuildId} " +
+                    $"for remote binary {remoteTargetPath}");
             }
             return false;
         }
 
-        private List<string> FindExecutableCandidates(
-            IEnumerable<string> executable_paths, string executable_name)
+        List<string> FindExecutableCandidates(
+            IEnumerable<string> executablePaths, string executableName)
         {
-            return executable_paths
+            return executablePaths
                 .Select(path => Path.Combine(
                     FileUtil.RemoveQuotesFromPath(path),
-                    FileUtil.RemoveQuotesFromPath(executable_name)))
-                .Where(file => fileSystem.File.Exists(file))
+                    FileUtil.RemoveQuotesFromPath(executableName)))
+                .Where(file => _fileSystem.File.Exists(file))
                 .ToList();
         }
 
-        private class NoLocalCandidatesException : ConfigurationException
+        class NoLocalCandidatesException : ConfigurationException
         {
             public NoLocalCandidatesException() : base("No local candidates")
             {
             }
         }
 
-        private class NoMatchingLocalCandidatesException : ConfigurationException
+        class NoMatchingLocalCandidatesException : ConfigurationException
         {
             public NoMatchingLocalCandidatesException() : base("No matching local candidates")
             {
@@ -247,12 +226,12 @@ namespace YetiVSI.DebugEngine
         // away some proto-handling details in the main workflow.
         class DataRecorder
         {
-            readonly IAction action;
+            readonly IAction _action;
 
             public DataRecorder(IAction action, DebugPreflightCheckData.Types.CheckType type)
             {
-                this.action = action;
-                RecordData(new DebugPreflightCheckData() {CheckType = type});
+                this._action = action;
+                RecordData(new DebugPreflightCheckData() { CheckType = type });
             }
 
             public void ValidRemoteBuildId()
@@ -292,13 +271,13 @@ namespace YetiVSI.DebugEngine
             public void LocalBinaryCheckResult(
                 DebugPreflightCheckData.Types.LocalBinarySearchResult result)
             {
-                RecordData(new DebugPreflightCheckData() {LocalBinarySearchResult = result});
+                RecordData(new DebugPreflightCheckData() { LocalBinarySearchResult = result });
             }
 
             void RecordData(DebugPreflightCheckData data)
             {
-                action.UpdateEvent(
-                    new DeveloperLogEvent() {DebugPreflightCheckData = data});
+                _action.UpdateEvent(
+                    new DeveloperLogEvent() { DebugPreflightCheckData = data });
             }
         }
     }

@@ -105,8 +105,6 @@ namespace YetiVSI.Test.DebugEngine
             var backgroundProcessFactory = new BackgroundProcess.Factory();
 
             var processFactory = new ManagedProcess.Factory();
-            var binaryFileUtil = new ElfFileUtil(processFactory);
-
             var moduleFileFinder = Substitute.For<IModuleFileFinder>();
             var moduleFileLoadRecorderFactory =
                 new ModuleFileLoadMetricsRecorder.Factory(moduleFileFinder);
@@ -128,7 +126,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var exitDialogUtil = new ExitDialogUtil(_dialogUtil, GetDialogExecutionContext());
             var preflightBinaryChecker =
-                new PreflightBinaryChecker(GetFileSystem(), binaryFileUtil);
+                new PreflightBinaryChecker(GetFileSystem(), new ModuleParser());
 
             var cancelableTaskFactory = GetCancelableTaskFactory();
             bool deployLldbServer = true;

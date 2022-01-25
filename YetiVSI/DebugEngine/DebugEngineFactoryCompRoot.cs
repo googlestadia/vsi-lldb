@@ -193,7 +193,6 @@ namespace YetiVSI.DebugEngine
             var backgroundProcessFactory = new BackgroundProcess.Factory();
 
             var processFactory = new ManagedProcess.Factory();
-            var binaryFileUtil = new ElfFileUtil(processFactory);
             var moduleParser = new ModuleParser();
             var symbolServerRequestHandler = new WebRequestHandler()
             {
@@ -329,7 +328,7 @@ namespace YetiVSI.DebugEngine
 
             var exitDialogUtil = new ExitDialogUtil(GetDialogUtil(), GetDialogExecutionContext());
             var preflightBinaryChecker =
-                new PreflightBinaryChecker(GetFileSystem(), binaryFileUtil);
+                new PreflightBinaryChecker(GetFileSystem(), moduleParser);
             var lldbShell = serviceManager.GetGlobalService(typeof(SLLDBShell)) as ILLDBShell;
             var attachedProgramFactory =
                 GetFactoryDecorator().Decorate<ILldbAttachedProgramFactory>(

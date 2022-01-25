@@ -484,7 +484,6 @@ namespace YetiVSI.Test.DebugEngine
             var moduleFileFinder = Substitute.For<IModuleFileFinder>();
             var moduleFileLoadRecorderFactory =
                 new ModuleFileLoadMetricsRecorder.Factory(moduleFileFinder);
-            var mockBinaryFileUtil = Substitute.For<IBinaryFileUtil>();
             var lldbShell = Substitute.For<ILLDBShell>();
             var symbolSettingsProvider = Substitute.For<ISymbolSettingsProvider>();
 
