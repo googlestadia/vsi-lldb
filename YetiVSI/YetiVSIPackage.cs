@@ -20,6 +20,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using EnvDTE;
+using EnvDTE80;
 using YetiCommon;
 using YetiCommon.Logging;
 using YetiVSI.Attributes;
@@ -32,6 +34,7 @@ using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
 using Task = System.Threading.Tasks.Task;
+using Microsoft;
 
 namespace YetiVSI
 {
@@ -55,6 +58,8 @@ namespace YetiVSI
     {
         const string _packageGuidString = "5fc8481d-4b1a-4cdc-b123-fd6d32fc4096";
         JoinableTaskContext _taskContext;
+        DTEEvents _packageDteEvents;
+        MetricsService _metricsService;
 
         /// <summary>
         /// Initialization of the package; this method is called right after the
@@ -62,12 +67,17 @@ namespace YetiVSI
         /// initialization code that rely on services provided by VisualStudio.
         /// </summary>
         protected override async Task InitializeAsync(
-           CancellationToken cancellationToken,
-           IProgress<ServiceProgressData> progress)
+            CancellationToken cancellationToken,
+            IProgress<ServiceProgressData> progress)
         {
             var serviceManager = new ServiceManager();
             _taskContext = serviceManager.GetJoinableTaskContext();
             AddServices();
+            _metricsService = (MetricsService)await GetServiceAsync(typeof(SMetrics));
+            // MetricsService was registered in `AddServices`, so it should be present.
+            Assumes.Present(_metricsService);
+            _metricsService.RecordEvent(DeveloperEventType.Types.Type.VsiInitialized,
+                                        new DeveloperLogEvent());
 
             await InitializeAsync(_taskContext);
         }
@@ -77,6 +87,16 @@ namespace YetiVSI
             YetiLog.Initialize("YetiVSI", DateTime.Now);
 
             await taskContext.Factory.SwitchToMainThreadAsync();
+
+            var applicationObj = (DTE2) await GetServiceAsync(typeof(DTE));
+            Assumes.Present(applicationObj);
+            _packageDteEvents = applicationObj.Events.DTEEvents;
+            // Microsoft documentation states that `OnBeginShutdown` is for internal use only.
+            // However there are multiple opensource projects which use this api.
+            // The other closest thing we could use is `QueryClose` or `CanClose` methods
+            // from AsyncPackage. But those methods are executed each time visual studio
+            // attempts to close, which can happen multiple times during visual studio session.
+            _packageDteEvents.OnBeginShutdown += HandleVisualStudioShutDown;
 
             CoreAttachCommand.Register(this);
             LLDBShellCommandTarget.Register(taskContext, this);
@@ -160,6 +180,12 @@ namespace YetiVSI
             {
                 YetiLog.ToggleGrpcLogging(args.State == DebuggerOptionState.ENABLED);
             }
+        }
+
+        void HandleVisualStudioShutDown()
+        {
+            _metricsService.RecordEvent(DeveloperEventType.Types.Type.VsiShutdown,
+                                        new DeveloperLogEvent());
         }
     }
 } // namespace YetiVSI
