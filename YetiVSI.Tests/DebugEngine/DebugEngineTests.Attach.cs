@@ -47,8 +47,10 @@ namespace YetiVSI.Test.DebugEngine
         IMetrics _metrics;
 
         [Test]
-        public void AttachNotImplementedForAutoAttach()
+        public async Task AttachNotImplementedForAutoAttachAsync()
         {
+            await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+
             IGgpDebugEngine debugEngine = CreateGgpDebugEngine();
 
             int result = debugEngine.Attach(null, null, _celtPrograms, null,
@@ -58,8 +60,11 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void AttachNeedsNumProgramsToEqual1([Values] enum_ATTACH_REASON attachReason)
+        public async Task
+        AttachNeedsNumProgramsToEqual1Async([Values] enum_ATTACH_REASON attachReason)
         {
+            await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+
             IGgpDebugEngine debugEngine = CreateGgpDebugEngine();
 
             int result = debugEngine.Attach(null, null, 2, null, attachReason);
@@ -68,8 +73,10 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void AttachToCoreWithEmptyTargetSucceeds()
+        public async Task AttachToCoreWithEmptyTargetSucceedsAsync()
         {
+            await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+
             int calls = 0;
             SshTarget expectedTarget = null;
             var attachReason = enum_ATTACH_REASON.ATTACH_REASON_LAUNCH;
@@ -100,8 +107,10 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void AttachToGameletWithUnknownTargetFailsAsUserAbortedOperation()
+        public async Task AttachToGameletWithUnknownTargetFailsAsUserAbortedOperationAsync()
         {
+            await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+
             var gamelet = new Gamelet { IpAddr = "" };
             var attachReason = enum_ATTACH_REASON.ATTACH_REASON_USER;
             IGgpDebugEngine debugEngine = CreateGgpDebugEngine();
@@ -123,8 +132,11 @@ namespace YetiVSI.Test.DebugEngine
         [TestCase(enum_ATTACH_REASON.ATTACH_REASON_LAUNCH)]
         // AttachToCore
         [TestCase(enum_ATTACH_REASON.ATTACH_REASON_USER)]
-        public void RemoteDeployNotCalledDuringAttachToCore(enum_ATTACH_REASON attachReason)
+        public async Task
+        RemoteDeployNotCalledDuringAttachToCoreAsync(enum_ATTACH_REASON attachReason)
         {
+            await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+
             var gamelet = new Gamelet { IpAddr = _gameletIp };
             var expectedTarget = new SshTarget(gamelet);
             IDebugSessionLauncher debugSessionLauncher =

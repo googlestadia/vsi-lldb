@@ -104,7 +104,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Exercise
 
-            _natvisScanner.LoadFromRegistry(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.SetRegistryRoot(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.Reload();
 
             Assert.That(_nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(_nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
@@ -135,7 +136,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Exercise
 
-            _natvisScanner.LoadFromRegistry(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.SetRegistryRoot(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.Reload();
 
             Assert.That(_nLogSpy.GetOutput(), Does.Contain("ERROR"));
             Assert.That(_nLogSpy.GetOutput(), Does.Contain("Could not find"));
@@ -165,7 +167,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Exercise
 
-            _natvisScanner.LoadFromRegistry(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.SetRegistryRoot(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.Reload();
 
             Assert.That(_nLogSpy.GetOutput(), Does.Contain("ERROR"));
             Assert.That(_nLogSpy.GetOutput(), Does.Contain(
@@ -193,7 +196,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Exercise
 
-            _natvisScanner.LoadFromRegistry(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.SetRegistryRoot(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.Reload();
 
             Assert.That(_nLogSpy.GetOutput(), Does.Contain("ERROR"));
             Assert.That(_nLogSpy.GetOutput(), Does.Not.Contain(
@@ -237,7 +241,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Exercise
 
-            _natvisScanner.LoadFromRegistry(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.SetRegistryRoot(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.Reload();
 
             Assert.That(_nLogSpy.GetOutput(), Does.Contain("ERROR"));
             Assert.That(_nLogSpy.GetOutput(), Does.Contain(_systemDirNatvisFilepath));
@@ -270,7 +275,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             _mockFileSystem.AddFile(_systemDirNatvisFilepath, new MockFileData(_validNatvis));
 
-            _natvisScanner.LoadFromRegistry(@"Microsoft\Visual Studio\1.2.3");
+            _natvisScanner.SetRegistryRoot(@"Microsoft\Visual Studio\1.2.3");
 
             _nLogSpy.Clear();
 

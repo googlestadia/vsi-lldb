@@ -24,23 +24,30 @@ using YetiVSI.LLDBShell;
 using YetiVSI.Test.MediumTestsSupport;
 using YetiVSI.Util;
 using YetiVSITestsCommon.Services;
+using YetiVSITestsCommon;
+using System.Threading.Tasks;
 
 namespace YetiVSI.Test.DebugEngine
 {
     [TestFixture]
     partial class DebugEngineTests
     {
+        FakeMainThreadContext _mainThreadContext;
+
         [SetUp]
         public void SetUp()
         {
             // TODO: Don't output an actual log file to disk.
             YetiLog.Initialize(nameof(DebugEngineTests), DateTime.Now);
+
+            _mainThreadContext = new FakeMainThreadContext();
         }
 
         [TearDown]
         public void TearDown()
         {
             YetiLog.Uninitialize();
+            _mainThreadContext.Dispose();
         }
 
         /// <summary>
@@ -50,8 +57,10 @@ namespace YetiVSI.Test.DebugEngine
         /// aspects.  This test verifies that all factories can be decorated successfully.
         /// </summary>
         [Test]
-        public void TestDebugEngineConstructor()
+        public async Task TestDebugEngineConstructorAsync()
         {
+            await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+
             var lldbShell = TestDummyGenerator.Create<SLLDBShell>();
             var vsiService = new YetiVSIService(OptionPageGrid.CreateForTesting());
             var metrics = TestDummyGenerator.Create<IMetrics>();

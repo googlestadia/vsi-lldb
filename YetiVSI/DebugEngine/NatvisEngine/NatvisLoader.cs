@@ -93,11 +93,13 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             // operations (possibly expressions evaluation) are in progress.
             _taskExecutor.Run(() =>
             {
-                LoadProjectFiles(typeVisualizers);
                 if (_registryRoot != null)
                 {
                     LoadFromRegistry(_registryRoot, typeVisualizers);
                 }
+                // Visualizers from the project should be loaded after default visualizers to
+                // allow users to override them.
+                LoadProjectFiles(typeVisualizers);
             });
         }
 
@@ -112,13 +114,18 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             TraceWriteLine(NatvisLoggingLevel.VERBOSE,
                            "Loading Natvis files found in the project...");
             var sw = new Stopwatch();
-            sw.Start(); 
+            sw.Start();
             foreach (string path in _solutionNatvisFiles.GetFilePaths()) {
                 LoadFile(path, typeVisualizers);
             }
             sw.Stop();
             TraceWriteLine(NatvisLoggingLevel.VERBOSE,
                            $"Loaded project Natvis files in {sw.Elapsed}.");
+        }
+
+        public void SetRegistryRoot(string registryRoot)
+        {
+            _registryRoot = registryRoot;
         }
 
         /// <summary>
@@ -131,8 +138,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         public void LoadFromRegistry(string registryRoot,
                                      ICollection<NatvisVisualizerScanner.FileInfo> typeVisualizers)
         {
-            _registryRoot = registryRoot;
-
             // User directory.
             string userKey = string.Format(_userDirRegKey, registryRoot);
             if (!LoadFromRegistryKey(userKey, _userDirRegValueName, _userDirSuffix,

@@ -86,6 +86,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         const string MEM_ADDRESS3 = "0x0000000002260773";
         const string MEM_ADDRESS4 = "0x0000000002260774";
         const string MEM_ADDRESS_NULL = "0x0000000000000000";
+        const string BASIC_STRING_TYPE =
+            "std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >";
 
         public NatvisTests(ExpressionEvaluationEngineFlag expressionEvaluationEngineFlag)
         {
@@ -10310,12 +10312,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             // Don't count CustomVisualizer.None
             int customVisualizersInEnum = Enum.GetNames(typeof(CustomVisualizer)).Length - 1;
 
-            // Other visualizers that are not part of the CustomVisualizer enum:
-            // - std::__1::string
-            int miscCustomVisualizers = 1;
-
-            // Total count = customVisualizersCount + miscCustomVisualizers + <CustomType>
-            int totalCustomVisualizers = customVisualizersInEnum + miscCustomVisualizers + 1;
+            // Total count = customVisualizersCount + <CustomType>
+            int totalCustomVisualizers = customVisualizersInEnum + 1;
 
             _natvisExpander.VisualizerScanner.LogStats(writer, 10);
             string log = writer.ToString();
@@ -10577,10 +10575,27 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
-        public void CustomVisualizersDefinesStdString()
+        public void CustomVisualizersDontDefineStdStringByDefault()
         {
-            var remoteValue = RemoteValueFakeUtil.CreateClass(
-                "std::__1::string", "dummyVarName", "actualValue");
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClass(BASIC_STRING_TYPE, "dummyVarName", "actualValue");
+            remoteValue.AddValueFromExpression(
+                "this->c_str()",
+                RemoteValueFakeUtil.CreateSimpleString("strVal", "\"StringViewValue\""));
+
+            var varInfo = CreateVarInfo(remoteValue);
+
+            Assert.That(varInfo.StringView, Does.Not.Contain("StringViewValue"));
+        }
+
+        [Test]
+        public void CustomVisualizersDefinesStdStringIfEnabled()
+        {
+            _natvisExpander.VisualizerScanner.EnableStringVisualizer();
+            _natvisExpander.VisualizerScanner.Reload();
+
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClass(BASIC_STRING_TYPE, "dummyVarName", "actualValue");
             remoteValue.AddValueFromExpression("this->c_str()",
                 RemoteValueFakeUtil.CreateSimpleString("strVal", "\"StringViewValue\""));
 
@@ -10593,17 +10608,20 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public void CustomVisualizersStdStringCanBeOverridden()
         {
+            _natvisExpander.VisualizerScanner.EnableStringVisualizer();
+            _natvisExpander.VisualizerScanner.Reload();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
-  <Type Name=""std::__1::string"">
+  <Type Name=""std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;"">
     <StringView>""StringViewOverride""</StringView>
   </Type>
 </AutoVisualizer>
 ";
             LoadFromString(xml);
 
-            var remoteValue = RemoteValueFakeUtil.CreateClass(
-                "std::__1::string", "dummyVarName", "actualValue");
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClass(BASIC_STRING_TYPE, "dummyVarName", "actualValue");
             remoteValue.AddStringLiteral("StringViewOverride");
 
             var varInfo = CreateVarInfo(remoteValue);
@@ -10612,9 +10630,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(varInfo.StringView, Is.EqualTo("StringViewOverride"));
         }
 
-        #endregion
+#endregion
 
-        #region Helpers
+#region Helpers
 
         IVariableInformation CreateVarInfo(RemoteValue remoteValue, string formatSpecifier = null)
         {

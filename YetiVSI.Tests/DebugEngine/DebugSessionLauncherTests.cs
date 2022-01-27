@@ -31,6 +31,7 @@ using YetiVSI.GameLaunch;
 using YetiVSI.LLDBShell;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
+using YetiVSI.Test.MediumTestsSupport;
 using YetiVSI.Test.TestSupport.DebugEngine;
 using YetiVSI.Test.TestSupport.Lldb;
 using YetiVSITestsCommon;
@@ -80,8 +81,9 @@ namespace YetiVSI.Test.DebugEngine
             PipeCallInvoker callInvoker = callInvokerFactory.Create();
             _grpcConnection = new GrpcConnection(taskContext.Factory, callInvoker);
             _callback = Substitute.For<IDebugEventCallback2>();
-            _debuggerOptions = new YetiVSI.DebuggerOptions.DebuggerOptions
-            { [DebuggerOption.CLIENT_LOGGING] = DebuggerOptionState.DISABLED };
+            _debuggerOptions =
+                new YetiVSI.DebuggerOptions.DebuggerOptions { [DebuggerOption.CLIENT_LOGGING] =
+                                                                  DebuggerOptionState.DISABLED };
             _libPaths = new HashSet<string> { "some/path", "some/other/path", _gameBinary };
             _programId = Guid.Empty;
             _task = Substitute.For<ICancelable>();
@@ -528,13 +530,15 @@ namespace YetiVSI.Test.DebugEngine
 
             var coreAttachWarningDialog = new CoreAttachWarningDialogUtil(
                 taskContext, Substitute.For<IDialogUtil>());
+            var compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+            var natvisVisualizerScanner = compRoot.GetNatvisVisualizerScanner();
 
             return new DebugSessionLauncher.Factory(
-                taskContext, _listenerFactory,
-                connectOptionsFactory, platformShellCommandFactory, attachedProgramFactory,
-                _actionRecorder, moduleFileLoadRecorderFactory, exceptionManagerFactory,
-                moduleFileFinder, new DumpModulesProvider(_fileSystem),
-                new ModuleSearchLogHolder(), symbolSettingsProvider, coreAttachWarningDialog);
+                taskContext, _listenerFactory, connectOptionsFactory, platformShellCommandFactory,
+                attachedProgramFactory, _actionRecorder, moduleFileLoadRecorderFactory,
+                exceptionManagerFactory, moduleFileFinder, new DumpModulesProvider(_fileSystem),
+                new ModuleSearchLogHolder(), symbolSettingsProvider, coreAttachWarningDialog,
+                natvisVisualizerScanner);
         }
 
         Task<ILldbAttachedProgram> LaunchAsync(

@@ -352,7 +352,8 @@ namespace YetiVSI.DebugEngine
                 lldbPlatformConnectOptionsFactory, lldbPlatformShellCommandFactory,
                 attachedProgramFactory, actionRecorder, moduleFileLoadRecorderFactory,
                 exceptionManagerFactory, moduleFileFinder, dumpModulesProvider,
-                moduleSearchLogHolder, GetSymbolSettingsProvider(), coreAttachWarningDialog);
+                moduleSearchLogHolder, GetSymbolSettingsProvider(), coreAttachWarningDialog,
+                GetNatvisVisualizerScanner());
             var vsiLaunchFactory = new VsiGameLaunchFactory(gameletFactory.Create(GetCloudRunner()),
                                                             GetCancelableTaskFactory(),
                                                             gameLaunchManager, actionRecorder,
@@ -501,8 +502,12 @@ namespace YetiVSI.DebugEngine
         {
             if (_natvisVisualizerScanner == null)
             {
-                _natvisVisualizerScanner = new NatvisVisualizerScanner(
-                    GetNatvisDiagnosticLogger(), GetNatvisLoader(), GetJoinableTaskContext());
+                bool fullNatvisSupportEnabled =
+                    GetVsiService().Options.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED;
+
+                _natvisVisualizerScanner =
+                    new NatvisVisualizerScanner(GetNatvisDiagnosticLogger(), GetNatvisLoader(),
+                                                GetJoinableTaskContext(), fullNatvisSupportEnabled);
             }
 
             return _natvisVisualizerScanner;

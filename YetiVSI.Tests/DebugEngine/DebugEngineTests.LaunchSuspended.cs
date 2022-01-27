@@ -14,13 +14,14 @@
 
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using NSubstitute;
 using NUnit.Framework;
- using YetiCommon;
- using YetiVSI.DebugEngine;
- using YetiVSI.ProjectSystem.Abstractions;
+using YetiCommon;
+using YetiVSI.DebugEngine;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.Test.DebugEngine
 {
@@ -28,10 +29,12 @@ namespace YetiVSI.Test.DebugEngine
     partial class DebugEngineTests
     {
         [Test]
-        public void LaunchSuspendedWhenBothArgsAndOptionsCoreFilePathEmptyFails(
+        public async Task LaunchSuspendedWhenBothArgsAndOptionsCoreFilePathEmptyFailsAsync(
             [Values("", null)] string args,
             [Values("{}", "{\"CoreFilePath\":\"\"}")] string options)
         {
+            await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+
             var debugSessionLauncherFactory = Substitute.For<IDebugSessionLauncherFactory>();
             IGgpDebugEngine debugEngine = CreateGgpDebugEngine(debugSessionLauncherFactory);
             int result = debugEngine.LaunchSuspended("", null, _exePath, args, null, null, options,
@@ -41,9 +44,11 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void LaunchSuspendedWhenOptionsNullAndArgsEmptySucceeds(
-            [Values("", null)] string args)
+        public async Task
+        LaunchSuspendedWhenOptionsNullAndArgsEmptySucceedsAsync([Values("", null)] string args)
         {
+            await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+
             var debugSessionLauncherFactory = Substitute.For<IDebugSessionLauncherFactory>();
             IGgpDebugEngine debugEngine = CreateGgpDebugEngine(debugSessionLauncherFactory);
             string options = null;
@@ -55,11 +60,12 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void LaunchSuspendedWhenEndpointSetSucceeds(
+        public async Task LaunchSuspendedWhenEndpointSetSucceedsAsync(
             [Values(StadiaEndpoint.AnyEndpoint, StadiaEndpoint.PlayerEndpoint,
-                    StadiaEndpoint.TestClient)]
-            StadiaEndpoint endpoint)
+                    StadiaEndpoint.TestClient)] StadiaEndpoint endpoint)
         {
+            await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+
             var debugSessionLauncherFactory = Substitute.For<IDebugSessionLauncherFactory>();
             IGgpDebugEngine debugEngine = CreateGgpDebugEngine(debugSessionLauncherFactory);
             string options = null;

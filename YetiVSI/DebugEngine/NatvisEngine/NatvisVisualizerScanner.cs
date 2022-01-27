@@ -58,18 +58,21 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         IDictionary<string, VisualizerInfo> _visualizerCache;
         IList<FileInfo> _typeVisualizers;
+        bool _enableStringVisualizer = false;
 
         readonly NatvisDiagnosticLogger _logger;
         readonly NatvisLoader _natvisLoader;
         readonly JoinableTaskContext _taskContext;
-
+        // Should we load the entire natvis (or just built-in visualizers)?
+        readonly bool _loadEntireNatvis = false;
 
         public NatvisVisualizerScanner(NatvisDiagnosticLogger logger, NatvisLoader natvisLoader,
-                                       JoinableTaskContext taskContext)
+                                       JoinableTaskContext taskContext, bool loadEntireNatvis)
         {
             _logger = logger;
             _natvisLoader = natvisLoader;
             _taskContext = taskContext;
+            _loadEntireNatvis = loadEntireNatvis;
 
             InitDataStructures();
         }
@@ -86,8 +89,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
+            // Initialize structures and load built-in visualizers.
             InitDataStructures();
-            _natvisLoader.Reload(_typeVisualizers);
+            // Load Natvis files (from registry root and project).
+            // TODO: Consider handling changes to this option in runtime.
+            if (_loadEntireNatvis)
+            {
+                _natvisLoader.Reload(_typeVisualizers);
+            }
 
             stopwatch.Stop();
             writer?.WriteLine($"Success!!! Took {stopwatch.Elapsed}. See the Natvis pane of the " +
@@ -103,20 +112,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         }
 
         /// <summary>
-        /// Load Natvis files from project files.
-        /// </summary>
-        public void LoadProjectFiles()
-        {
-            _taskContext.ThrowIfNotOnMainThread();
-            _natvisLoader.LoadProjectFiles(_typeVisualizers);
-        }
-
-        /// <summary>
         /// Load Natvis files from registry.
         /// </summary>
-        public void LoadFromRegistry(string registryRoot)
+        public void SetRegistryRoot(string registryRoot)
         {
-            _natvisLoader.LoadFromRegistry(registryRoot, _typeVisualizers);
+            _natvisLoader.SetRegistryRoot(registryRoot);
         }
 
         #endregion
@@ -336,6 +336,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             return _visualizerCache[varTypeName];
         }
 
+        public void EnableStringVisualizer()
+        {
+            _enableStringVisualizer = true;
+        }
+
         void CreateCustomVisualizers()
         {
             string xml = @"
@@ -381,17 +386,24 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             <Item Name=""xmm14f"">xmm14,vf32</Item>
             <Item Name=""xmm15f"">xmm15,vf32</Item>
         </Expand>
-    </Type>
-" +
-// Debugging std::strings requires -fstandalone-debug, which can blow up the size significantly.
-// This is a work-around that just calls c_str() on the string.
-// TODO: It doesn't fix containers of std::strings, which still freak out.
-                @"
-    <Type Name=""std::__1::string"">
-        <DisplayString>{this->c_str()}</DisplayString>
-        <StringView>this->c_str()</StringView>
-    </Type>
-</AutoVisualizer>";
+    </Type>";
+
+            if (_enableStringVisualizer)
+            {
+                // Debugging std::strings requires -fstandalone-debug when compiled with Clang
+                // version 10 or less, which can blow up the size significantly.
+                // This is a work-around that just calls c_str() on the string.
+                // TODO: It doesn't fix containers of std::strings, which still freak
+                // out for the earlier Clang versions.
+                xml += @"
+<Type Name=""std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;"">
+    <DisplayString>{this->c_str(),s}</DisplayString>
+    <StringView>this->c_str()</StringView>
+</Type>";
+            }
+
+            // Don't forget to close the starting XML tag.
+            xml += "</AutoVisualizer>";
 
             LoadFromString(xml);
         }

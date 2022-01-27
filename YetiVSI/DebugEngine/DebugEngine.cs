@@ -419,11 +419,6 @@ namespace YetiVSI.DebugEngine
                 _natvisLogger.NatvisLogEvent += natvisLogListener.OnNatvisLogEvent;
             }
 
-            if (_extensionOptions.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED)
-            {
-                _natvisExpander.VisualizerScanner.LoadProjectFiles();
-            }
-
             Trace.WriteLine("Debug session started.");
             Trace.WriteLine($"Extension version: {Versions.GetExtensionVersion()}");
             Trace.WriteLine($"SDK version: {Versions.GetSdkVersion()}");
@@ -869,7 +864,7 @@ namespace YetiVSI.DebugEngine
         {
             if (_natvisExpander != null)
             {
-                _natvisExpander.VisualizerScanner.LoadFromRegistry(registryRoot);
+                _natvisExpander.VisualizerScanner.SetRegistryRoot(registryRoot);
             }
 
             return VSConstants.S_OK;

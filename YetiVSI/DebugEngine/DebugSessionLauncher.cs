@@ -16,20 +16,24 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using DebuggerApi;
 using DebuggerGrpcClient;
+using ELFSharp.ELF;
 using GgpGrpc.Models;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiVSI.DebugEngine.CoreDumps;
+using YetiVSI.DebugEngine.NatvisEngine;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
+using YetiVSI.Util;
 using static YetiVSI.DebugEngine.DebugEngine;
 
 namespace YetiVSI.DebugEngine
@@ -78,14 +82,14 @@ namespace YetiVSI.DebugEngine
             readonly GrpcPlatformShellCommandFactory _lldbPlatformShellCommandFactory;
             readonly LldbExceptionManager.Factory _exceptionManagerFactory;
             readonly CoreAttachWarningDialogUtil _warningDialog;
+            readonly NatvisVisualizerScanner _natvisVisualizerScanner;
 
             readonly IModuleFileFinder _moduleFileFinder;
             readonly IDumpModulesProvider _dumpModulesProvider;
             readonly IModuleSearchLogHolder _moduleSearchLogHolder;
             readonly ISymbolSettingsProvider _symbolSettingsProvider;
 
-            public Factory(JoinableTaskContext taskContext,
-                           GrpcListenerFactory lldbListenerFactory,
+            public Factory(JoinableTaskContext taskContext, GrpcListenerFactory lldbListenerFactory,
                            GrpcPlatformConnectOptionsFactory lldbPlatformConnectOptionsFactory,
                            GrpcPlatformShellCommandFactory lldbPlatformShellCommandFactory,
                            ILldbAttachedProgramFactory attachedProgramFactory,
@@ -96,7 +100,8 @@ namespace YetiVSI.DebugEngine
                            IDumpModulesProvider dumpModulesProvider,
                            IModuleSearchLogHolder moduleSearchLogHolder,
                            ISymbolSettingsProvider symbolSettingsProvider,
-                           CoreAttachWarningDialogUtil warningDialog)
+                           CoreAttachWarningDialogUtil warningDialog,
+                           NatvisVisualizerScanner natvisVisualizerScanner)
             {
                 _taskContext = taskContext;
                 _lldbListenerFactory = lldbListenerFactory;
@@ -111,10 +116,10 @@ namespace YetiVSI.DebugEngine
                 _moduleSearchLogHolder = moduleSearchLogHolder;
                 _symbolSettingsProvider = symbolSettingsProvider;
                 _warningDialog = warningDialog;
+                _natvisVisualizerScanner = natvisVisualizerScanner;
             }
 
-            public IDebugSessionLauncher Create(IDebugEngine3 debugEngine,
-                                                string coreFilePath,
+            public IDebugSessionLauncher Create(IDebugEngine3 debugEngine, string coreFilePath,
                                                 string executableFileName,
                                                 IVsiGameLaunch gameLaunch) =>
                 new DebugSessionLauncher(_taskContext, _lldbListenerFactory,
@@ -122,13 +127,14 @@ namespace YetiVSI.DebugEngine
                                          _lldbPlatformShellCommandFactory, _attachedProgramFactory,
                                          debugEngine, _actionRecorder,
                                          _moduleFileLoadRecorderFactory, coreFilePath,
-                                         executableFileName,
-                                         _exceptionManagerFactory, _moduleFileFinder,
-                                         _dumpModulesProvider, _moduleSearchLogHolder,
-                                         _symbolSettingsProvider, _warningDialog, gameLaunch);
+                                         executableFileName, _exceptionManagerFactory,
+                                         _moduleFileFinder, _dumpModulesProvider,
+                                         _moduleSearchLogHolder, _symbolSettingsProvider,
+                                         _warningDialog, gameLaunch, _natvisVisualizerScanner);
         }
 
         const string _lldbConnectUrl = "connect://localhost";
+        readonly static Regex _clangVersionRegex = new Regex("clang version ([0-9]+)");
 
         readonly TimeSpan _launchTimeout = TimeSpan.FromSeconds(60);
         readonly TimeSpan _launchRetryDelay = TimeSpan.FromMilliseconds(500);
@@ -153,6 +159,7 @@ namespace YetiVSI.DebugEngine
         readonly ISymbolSettingsProvider _symbolSettingsProvider;
         readonly CoreAttachWarningDialogUtil _warningDialog;
         readonly IVsiGameLaunch _gameLaunch;
+        readonly NatvisVisualizerScanner _natvisVisualizerScanner;
 
         public DebugSessionLauncher(
             JoinableTaskContext taskContext, GrpcListenerFactory lldbListenerFactory,
@@ -163,10 +170,11 @@ namespace YetiVSI.DebugEngine
             ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
             string coreFilePath, string executableFileName,
             LldbExceptionManager.Factory exceptionManagerFactory,
-            IModuleFileFinder moduleFileFinder,
-            IDumpModulesProvider dumpModulesProvider, IModuleSearchLogHolder moduleSearchLogHolder,
+            IModuleFileFinder moduleFileFinder, IDumpModulesProvider dumpModulesProvider,
+            IModuleSearchLogHolder moduleSearchLogHolder,
             ISymbolSettingsProvider symbolSettingsProvider,
-            CoreAttachWarningDialogUtil warningDialog, IVsiGameLaunch gameLaunch)
+            CoreAttachWarningDialogUtil warningDialog, IVsiGameLaunch gameLaunch,
+            NatvisVisualizerScanner natvisVisualizerScanner)
         {
             _taskContext = taskContext;
             _lldbListenerFactory = lldbListenerFactory;
@@ -185,6 +193,7 @@ namespace YetiVSI.DebugEngine
             _symbolSettingsProvider = symbolSettingsProvider;
             _warningDialog = warningDialog;
             _gameLaunch = gameLaunch;
+            _natvisVisualizerScanner = natvisVisualizerScanner;
         }
 
         public async Task<ILldbAttachedProgram> LaunchAsync(
@@ -275,6 +284,10 @@ namespace YetiVSI.DebugEngine
                         lldbDebuggerProcess = LoadCore(stadiaDebugger.Target, loadCoreAction));
 
                     await _taskContext.Factory.SwitchToMainThreadAsync();
+
+                    // Load custom visualizers after successful attach.
+                    _natvisVisualizerScanner.Reload();
+
                     return _attachedProgramFactory.Create(
                         process, programId, _debugEngine, callback, stadiaDebugger.Debugger,
                         stadiaDebugger.Target, listenerSubscriber, lldbDebuggerProcess,
@@ -315,9 +328,9 @@ namespace YetiVSI.DebugEngine
 
                     try
                     {
-                        debugWaitAction.Record(() => RetryWithTimeout(
-                                                   task, TryGetRemoteProcessId, _launchRetryDelay,
-                                                   _launchTimeout, launchTimer));
+                        debugWaitAction.Record(() => RetryWithTimeout(task, TryGetRemoteProcessId,
+                                                                      _launchRetryDelay,
+                                                                      _launchTimeout, launchTimer));
                     }
                     catch (TimeoutException e)
                     {
@@ -361,6 +374,14 @@ namespace YetiVSI.DebugEngine
                     stadiaDebugger.Target, listenerSubscriber, debuggerProcess,
                     stadiaDebugger.Debugger.GetCommandInterpreter(), false, exceptionManager,
                     _moduleSearchLogHolder, processId);
+
+                // At this point the executable should always be present locally (i.e. it was found
+                // in the search path, or downloaded by LLDB into the module cache) and accessible
+                // via SbTarget object.
+                // Add compiler specific visualizers and load the Natvis.
+                ApplyCompilerSpecificNatvis(stadiaDebugger.Target);
+                _natvisVisualizerScanner.Reload();
+
                 launchSucceeded = true;
                 return attachedProgram;
             }
@@ -695,6 +716,64 @@ namespace YetiVSI.DebugEngine
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// Updates Natvis with additional default visualizers depending on how the binary was
+        /// built. An example is enabling a workaround visualizer for std::string for binaries
+        /// built with Clang version 10 or less, since the default LLDB formatter works as expected
+        /// only since Clang version 11.
+        /// </summary>
+        private void ApplyCompilerSpecificNatvis(RemoteTarget target)
+        {
+            if (target.GetNumModules() == 0)
+            {
+                return;
+            }
+
+            // Get the local executable path from the target modules.
+            var executableFile = target.GetModuleAtIndex(0).GetFileSpec();
+            var fullExecutablePath =
+                Path.Combine(executableFile.GetDirectory(), executableFile.GetFilename());
+
+            if (!ELFReader.TryLoad(fullExecutablePath, out IELF elf))
+            {
+                Trace.WriteLine($"Unable to read executable in ELF format.");
+                return;
+            }
+
+            // Check Clang version used to build the exectuable.
+            using (elf)
+            {
+                if (!elf.TryGetSection(".comment", out var commentSection))
+                {
+                    return;
+                }
+
+                try
+                {
+                    // Encoding of the .comment section is not defined.
+                    // Assume UTF-8 and hope for the best.
+                    var comment = Encoding.UTF8.GetString(commentSection.GetContents());
+                    var clangVersionMatch = _clangVersionRegex.Match(comment);
+                    if (!clangVersionMatch.Success || clangVersionMatch.Groups.Count != 2)
+                    {
+                        return;
+                    }
+
+                    // If the binary was built with LLVM version 10 or less, enable workaround
+                    // Natvis solution for "std::string".
+                    if (int.TryParse(clangVersionMatch.Groups[1].Value, out int clangVersion) &&
+                        clangVersion < 11)
+                    {
+                        _natvisVisualizerScanner.EnableStringVisualizer();
+                    }
+                }
+                catch (ArgumentException ex)
+                {
+                    Trace.WriteLine($"Error while reading comment section: {ex.Message}");
+                }
+            }
         }
 
         /// <summary>

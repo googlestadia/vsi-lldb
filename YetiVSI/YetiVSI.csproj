@@ -380,6 +380,7 @@
     <PackageReference Include="System.Net.Http" Version="4.3.3">
       <ExcludeAssets>All</ExcludeAssets>
     </PackageReference>
+    <PackageReference Include="ELFSharp" Version="2.13.2" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="VSPackage.resx">
