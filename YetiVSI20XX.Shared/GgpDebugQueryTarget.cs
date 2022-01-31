@@ -500,7 +500,9 @@ namespace YetiVSI
                 return null;
             }
 
+#pragma warning disable VSTHRD003 // Avoid awaiting foreign Tasks
             Application application = await applicationTask;
+#pragma warning restore VSTHRD003 // Avoid awaiting foreign Tasks
             if (application == null)
             {
                 return null;

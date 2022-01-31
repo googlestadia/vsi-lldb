@@ -81,13 +81,19 @@ namespace YetiVSI.Test
             Project project = Substitute.For<Project>();
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             project.Kind.Returns(ProjectKinds.vsProjectKindSolutionFolder);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             dte2.Solution.Returns(solution);
             var solutionProjects = new List<Project> { project };
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             solution.Projects.GetEnumerator().Returns(solutionProjects.GetEnumerator());
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var projectItem = Substitute.For<ProjectItem>();
             var folderProjects = new List<ProjectItem> { projectItem };
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             project.ProjectItems.GetEnumerator().Returns(folderProjects.GetEnumerator());
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var subProject = Substitute.For<Project>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             projectItem.SubProject.Returns(subProject);
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var envDteUtil = new EnvDteUtil(taskContext, dte2);

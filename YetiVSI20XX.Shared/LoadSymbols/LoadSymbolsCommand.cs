@@ -20,6 +20,7 @@ using System.Reflection;
 using System.Windows.Automation;
 using EnvDTE;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using YetiCommon;
@@ -80,12 +81,14 @@ namespace YetiVSI.LoadSymbols
 
         public void OnSessionStopped(object sender, SessionStoppedEventArgs args)
         {
+#pragma warning disable VSTHRD010
             _programs.Remove(args.Program);
             if (_programs.Count == 0 && _commandEvents != null)
             {
                 _commandEvents.BeforeExecute -= LoadSymbolsCustomCommand;
                 _commandEvents = null;
             }
+#pragma warning restore VSTHRD010
         }
 
         // We substitute the default behavior for Module > Load Symbols because for
@@ -324,9 +327,13 @@ namespace YetiVSI.LoadSymbols
         AutomationElement GetActiveWindow()
         {
             _taskContext.ThrowIfNotOnMainThread();
-
+#if VS2019
             int windowHandle = GetDte().ActiveWindow.HWnd;
             var activeWindow = AutomationElement.FromHandle(new IntPtr(windowHandle));
+#elif VS2022
+            IntPtr windowHandle = GetDte().ActiveWindow.HWnd;
+            var activeWindow = AutomationElement.FromHandle(windowHandle);
+#endif
             if (activeWindow == null)
             {
                 throw new InvalidOperationException(

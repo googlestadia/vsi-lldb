@@ -6,7 +6,6 @@
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <Import Project="$(SolutionDir)Common.props" />
-  <Import Project="$(SolutionDir)BuildRoot.props" />
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(KeyFileLocation)Key.snk</AssemblyOriginatorKeyFile>
@@ -23,10 +22,10 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectTypeGuids>{82b43b9b-a64c-4715-b499-d71e9ca2bd60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <ProjectGuid>{799D0160-8C0D-43F5-AB4C-249BE64AAA4E}</ProjectGuid>
+    <ProjectGuid>{605626AA-8D18-459D-9495-735AEC76C87F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>YetiVSI</RootNamespace>
+    <RootNamespace>YetiVSI2022</RootNamespace>
     <AssemblyName>GgpVsi</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
@@ -36,18 +35,31 @@
     <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
     <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
   </PropertyGroup>
+  <PropertyGroup>
+    <OutputBaseDir Condition="'$(JenkinsBuildRoot)' == ''">$(SolutionDir)</OutputBaseDir>
+    <OutputBaseDir Condition="'$(JenkinsBuildRoot)' != ''">$(JenkinsBuildRoot)\</OutputBaseDir>
+    <OutDir>$(OutputBaseDir)bin\$(Configuration)\YetiVSI2022\</OutDir>
+    <OutputPath>$(OutputBaseDir)bin\$(Configuration)\YetiVSI2022\</OutputPath>
+    <TargetDir>$(OutputBaseDir)bin\$(Configuration)\YetiVSI2022\</TargetDir>
+    <InternalToolchainDir>$(OutputBaseDir)Dependencies\internal_toolchain\</InternalToolchainDir>
+    <LlvmWinDir>$(InternalToolchainDir)windows\</LlvmWinDir>
+    <PythonDir>$(Pkgpython)\tools\</PythonDir>
+    <PythonVersion>36</PythonVersion>
+    <LldbEvalDir>$(SolutionDir)..\..\third_party\lldb-eval\</LldbEvalDir>
+    <DownloadPython>true</DownloadPython>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG;VS2019</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;VS2022</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>CS0612</WarningsNotAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <DefineConstants>TRACE;VS2019</DefineConstants>
+    <DefineConstants>TRACE;VS2022</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -70,15 +82,9 @@
     <VSIXSourceItem Include="@(RequiredNetFX46FacadeAssemblies)" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(SolutionDir)\source.extension.vsixmanifest">
+    <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <VSCTCompile Include="YetiVSI.vsct">
-      <ResourceName>Menus.ctmenu</ResourceName>
-      <SubType>Designer</SubType>
-    </VSCTCompile>
   </ItemGroup>
   <!-- Shared references -->
   <ItemGroup>
@@ -97,9 +103,6 @@
     <Reference Include="UIAutomationClient" />
     <Reference Include="UIAutomationTypes" />
     <Reference Include="WindowsBase" />
-    <PackageReference Include="JetBrains.Annotations">
-      <Version>2021.3.0</Version>
-    </PackageReference>
     <!--
       This is a workaround for a known issue with older MSBuild:
       https://github.com/Microsoft/dotnet/blob/master/releases/net472/KnownIssues/613745%20-%20Single-name%20references%20are%20removed%20by%20the%20SDK%20when%20targeting%204.7.2.md
@@ -179,10 +182,6 @@
           <Name>CloudGrpc</Name>
           <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
         </ProjectReference>
-        <ProjectReference Include="$(SolutionDir)Metrics.Internal\Metrics.Internal.csproj">
-          <Project>{015547F7-F521-4810-8546-0FF1D3FD19B1}</Project>
-          <Name>Metrics.Internal</Name>
-        </ProjectReference>
         <ProjectReference Include="$(SolutionDir)ProcessManagerCommon\ProcessManagerCommon.csproj">
           <Project>{e32c7e7e-7f57-4eea-90a8-2e99e9ebd697}</Project>
           <Name>ProcessManagerCommon</Name>
@@ -198,10 +197,6 @@
         <Reference Include="GgpGrpc, PublicKeyToken=b60cba24c9ed26a2">
           <HintPath>$(GGP_SDK_PATH)\dev\bin\GgpGrpc.dll</HintPath>
         </Reference>
-        <ProjectReference Include="..\Metrics.External\Metrics.External.csproj">
-          <Project>{10FE3E2A-F97E-480D-8AF9-E7719BB26F49}</Project>
-          <Name>Metrics.External</Name>
-        </ProjectReference>
       </ItemGroup>
     </Otherwise>
   </Choose>
@@ -216,18 +211,21 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="GgpVsi.DebugEngine.pkgdef">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <IncludeInVSIX>true</IncludeInVSIX>
+    <Content Include="..\YetiVSI\AdditionalFiles\vs-threading.MainThreadAssertingMethods.txt">
+      <Link>AdditionalFiles\vs-threading.MainThreadAssertingMethods.txt</Link>
     </Content>
-    <Content Include="Resources\YetiIcons.png" />
-    <Content Include="GgpVsi.PortSupplier.pkgdef">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <IncludeInVSIX>true</IncludeInVSIX>
+    <Content Include="..\YetiVSI\AdditionalFiles\vs-threading.MembersRequiringMainThread.txt">
+      <Link>AdditionalFiles\vs-threading.MembersRequiringMainThread.txt</Link>
     </Content>
-    <Content Include="GgpVsi.PortSupplier.pkgdef">
+    <Content Include="..\YetiVSI\GgpVsi.DebugEngine.pkgdef">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <Link>GgpVsi.DebugEngine.pkgdef</Link>
+    </Content>
+    <Content Include="..\YetiVSI\GgpVsi.PortSupplier.pkgdef">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <Link>GgpVsi.PortSupplier.pkgdef</Link>
     </Content>
     <Content Include="$(OutputBaseDir)bin\$(Configuration)\GgpVsi.DebugEngine.LLDBEval.dll">
       <!-- LLDBEval is an unmanaged DLL. Alternative solutions to include it caused issues, cf. (internal). -->
@@ -242,7 +240,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <AdditionalFiles Include="AdditionalFiles\*" />
+    <Content Include="..\YetiVSI\Resources\YetiIcons.png">
+      <Link>Resources\YetiIcons.png</Link>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <VSCTCompile Include="..\YetiVSI\YetiVSI.vsct">
+      <ResourceName>Menus.ctmenu</ResourceName>
+      <SubType>Designer</SubType>
+    </VSCTCompile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(ThirdPartyRootDir)ChromeClientLauncher\ChromeClientLauncher.csproj">
@@ -275,6 +281,14 @@
       <Project>{ac9da952-3ed1-4cc6-9200-3847204b92fd}</Project>
       <Name>SymbolStores</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\dev\visual_studio_integration\Metrics.Internal\Metrics.Internal.csproj">
+      <Project>{015547f7-f521-4810-8546-0ff1d3fd19b1}</Project>
+      <Name>Metrics.Internal</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Metrics.Shared\Metrics.Shared.csproj">
+      <Project>{bc01764a-f51e-4972-b17c-fe42fd961026}</Project>
+      <Name>Metrics.Shared</Name>
+    </ProjectReference>
     <ProjectReference Include="..\YetiCommon\YetiCommon.csproj">
       <Project>{a2c9f9d7-a499-4e17-bdab-4ef18f1d9a18}</Project>
       <Name>YetiCommon</Name>
@@ -294,22 +308,21 @@
       <Project>{1731F5D3-FDF7-4D5B-99FE-910E0924173A}</Project>
       <Name>YetiVSI.ProjectSystem.Abstractions</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Metrics.Shared\Metrics.Shared.csproj">
-      <Project>{BC01764A-F51E-4972-B17C-FE42FD961026}</Project>
-      <Name>Metrics.Shared</Name>
-    </ProjectReference>
   </ItemGroup>
   <!-- Shared references -->
   <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations">
+      <Version>2021.3.0</Version>
+    </PackageReference>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils">
       <Version>2.3.4</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.Debugger.Interop.15.0">
-      <Version>15.9.28307</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>13.0.1</Version>
       <GeneratePathProperty>true</GeneratePathProperty>
+    </PackageReference>
+    <PackageReference Include="System.Management">
+      <Version>4.7.0</Version>
     </PackageReference>
     <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>$(SolutionDir)lib\Microsoft.VisualStudio.ProjectEngine.15.0.27729.1\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
@@ -325,12 +338,11 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.SDK">
-      <Version>15.0.1</Version>
+      <Version>17.0.32112.339</Version>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VSSDK.BuildTools">
-      <!-- v16 is used since v15 doesn't allow Visual Studio 2022 to build the project -->
-      <Version>16.11.35</Version>
+      <Version>17.0.5234</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -438,7 +450,7 @@
   </Target>
   <!-- If DeployPythonAndToolchainDependencies is off, the code references local paths.
        This code stores the local paths in files, so that C# can get them. -->
-  <Target Name="CreateLocalPythonDirFile" Condition="!$(DeployPythonAndToolchainDependencies)" AfterTargets="Build">
+  <Target Name="CreateLocalPythonDirFile" Condition="!$(DeployPythonAndToolchainDependencies)" BeforeTargets="PrepareForBuild">
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile File="$(IntermediateOutputPath)local_python_dir.txt" Lines="$(PythonDir)" Overwrite="true" />
   </Target>
@@ -465,5 +477,5 @@
       </EmbeddedResource>
     </ItemGroup>
   </Target>
-  <Import Project="AdditionalLibSuppression.targets" />
+  <Import Project="..\YetiVSI\AdditionalLibSuppression.targets" />
 </Project>

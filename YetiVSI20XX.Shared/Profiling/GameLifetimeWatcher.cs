@@ -77,7 +77,9 @@ namespace YetiVSI.Profiling
 
             try
             {
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
                 Task.WaitAll(_watcherTask);
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
             }
             catch (AggregateException ex) when (ex.InnerExceptions.Count == 1 &&
                 ex.InnerExceptions[0] is TaskCanceledException)

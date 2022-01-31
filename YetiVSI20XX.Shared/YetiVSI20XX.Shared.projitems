@@ -1,0 +1,332 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>c1c1b655-9998-4acd-99b4-91b39225b59e</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>YetiVSI20XX.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumpViewer\Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)AdditionalFiles\vs-threading.MainThreadAssertingMethods.txt" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)AdditionalFiles\vs-threading.MembersRequiringMainThread.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AD7FrameInfoCreator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Attributes\ProvideStadiaExceptionAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CancelableTask.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandWindowWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CoreAttach\CoreAttachCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CoreAttach\CoreAttachWindow.xaml.cs">
+      <DependentUpon>CoreAttachWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)CoreAttach\CoreListRequest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngineUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AD7Constants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AsyncExpressionEvaluator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AsyncOperations\AsyncDebugPropertyInfoProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AsyncOperations\AsyncDebugRootPropertyInfoProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AsyncOperations\AsyncEvaluateExpressionOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AsyncOperations\AsyncGetPropertiesOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AsyncOperations\AsyncGetRootPropertiesOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AsyncOperations\AsyncGetStackFramesOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AsyncOperations\FrameVariablesProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AsyncOperations\ListDebugEntityInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\AsyncOperations\StackFramesProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\BinaryLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CastleAspects\DebugEngineProxyHook.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CastleAspects\InteropBoundaryAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\ChildrenProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CommandDebugProperty.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumps\CoreAttachWarningDialogUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumps\DumpModulesProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumps\ElfHeader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumps\FileSection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumps\HeaderUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumps\ModuleReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumps\NoteSection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumps\ProgramHeader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumpViewer\CoreDumpViewerFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumpViewer\CoreDumpViewerPackage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumpViewer\CoreDumpViewerWindow.xaml.cs">
+      <DependentUpon>CoreDumpViewerWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumpViewer\DesignerPane.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumpViewer\ModuleNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumpViewer\ViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugAsyncExpression.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugAsyncProperty.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugAsyncStackFrame.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugAsyncThread.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugBoundBreakpoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugBreakpointError.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugBreakpointResolution.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugCodeContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugDisassemblyStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugDocumentContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugEngine.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugEngineEntry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugEngineFactoryCompRoot.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugEngineFlags.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugEngineHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugEngineManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugEnums.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugEvents.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugModuleCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugPendingBreakpoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugProgram.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugProgramNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugSessionLauncher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugWatchpoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DebugWatchpointResolution.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\DiagnosticTools\CallSequenceLoggedDebugEventCallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\ErrorDebugProperty.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Exit\ExitDialogUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Exit\ExitInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\ExpressionConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\ExpressionEvaluationFailed.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\FrameInfoEnum.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\IDebugEngineCommands.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Interfaces\IBreakpointManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Interfaces\IEventManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Interfaces\IExceptionManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Interfaces\ITaskExecutor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Interfaces\ITransportSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\ISymbolSettingsProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\LinuxSignals.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\LldbAttachedProgram.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\LldbBreakpointManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\LldbEventDescriptionParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\LldbEventManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\LldbExceptionManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\LldbFileUpdateListener.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\LldbListenerSubscriber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\LldbTransportSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Marshal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\ModuleFileFinder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\ModuleFileLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\ModuleFileMetricsLoadRecorder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\ArrayItemsEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\CustomListCodeBlocks.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\CustomListItemsContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\CustomListItemsEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\ExpandedItemEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\HostNatvisProject.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\INatvisEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\IndexListItemsEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\IStringElement.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\ItemEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\LeafEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\LinkedListItemsEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisCollectionEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisCompiler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisDiagnosticLogger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisEntityStore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisErrorUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisExpander.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisExpressionEvaluator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisNames.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisScope.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisSizeParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisStringFormatter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisSyntheticVariableInformation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisTextMatcher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisValidator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisVariableInformation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisVariableNameTransformer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\NatvisVisualizerScanner.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\RangedNatvisEntityDecorator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\SmartPointerEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\SseAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\SyntheticItemEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\TreeItemsEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\UnsupportedNatvisEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\VisualizerInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\VS2017\CustomListItemsType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\VS2017\NatvisXsdTypes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisLoggerOutputWindowListener.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\PreflightBinaryChecker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\RegisterSetsBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\SbModuleExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Signal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\SignalMap.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\StadiaLldbDebugger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\SymbolLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\SymbolUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\TaskExecutor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\TaskExecutorTracingHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\VariableInformationEnum.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\CStringEscapeHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\ExpandFormatSpecifierUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\ExpandVariableInformation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\ExpressionParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\FloatRadixConversionHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\FormatSpecifierUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\IChildAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\IHasChildrenLimit.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\IRemoteValueFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\IRemoteValueFormatWithSize.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\ISingleValueFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\ListChildAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\NatvisViewsUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\RangedChildAdapterDecorator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\RemoteValueChildAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\RemoteValueDefaultFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\RemoteValueExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\RemoteValueFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\RemoteValueFormatProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\RemoteValueLLDBFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\RemoteValueLLDBVectorOfFloatFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\RemoteValueNoPrefixIntegerFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\RemoteValueStringFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\ValueStringBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\Variables.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\VarInfoBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugEngine\Variables\VsExpression.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebuggerOptions\DebuggerOptionsCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DetailsDialog.xaml.cs">
+      <DependentUpon>DetailsDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)DialogUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EnvDTEUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ErrorStrings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameLaunch\CreateLaunchResult.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameLaunch\DeleteLaunchResult.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameLaunch\GameLaunchBeHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameLaunch\GameLauncher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameLaunch\GameletSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameLaunch\GameletSelectorFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameLaunch\LaunchUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameLaunch\VsiGameLaunch.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameletMountChecker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GgpDebugQueryTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GgpDebugQueryTargetCompRoot.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)InstanceSelectionWindow.xaml.cs">
+      <DependentUpon>InstanceSelectionWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)LLDBShell\ILLDBShell.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LLDBShell\LLDBShell.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LLDBShell\LLDBShellCommandTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LLDBShell\SLLDBShell.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LoadSymbols\ISessionNotifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LoadSymbols\LoadSymbolsCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LoadSymbols\SessionNotifierService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LoadSymbols\SSessionNotifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\Action.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\ActionExtensionMethods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\ActionRecorder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\ActionType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\BatchEventAggregator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\DebugEventBatch.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\DebugEventRecorder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\DebugSessionMetrics.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\EventScheduler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\ExceptionHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\ExceptionRecorder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\ExpressionEvaluationBatch.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\ExpressionEvaluationRecorder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\GameletData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\IEventBatch.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\MethodInfoExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\ProjectPropertiesMetricsParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\Timer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Metrics\TypeExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NativeMethods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NoSourceWindowHider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionPageGrid.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PkgCmdID.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortSupplier\DebugEnums.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortSupplier\DebugPort.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortSupplier\DebugPortSupplier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortSupplier\DebugProcess.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortSupplier\DebugProgram.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortSupplier\DebugProperty.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortSupplier\ProcessListRequest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ProcessManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Profiling\GameLifetimeWatcher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Profiling\LaunchWithProfilerCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Profiling\ProfilerLauncher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Profiling\SshTunnelManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Profiling\SshTunnelProcess.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ProgressDialog.xaml.cs">
+      <DependentUpon>ProgressDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)ProjectInstanceSelectionWindow.xaml.cs">
+      <DependentUpon>ProjectInstanceSelectionWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)ProjectSystemLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RemoteDeploy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RemoteFile.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReportBug.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ServiceManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SolutionExplorer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SshManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\FeatureFlagConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\IDictionaryExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\IWindowsRegistry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\JoinableTaskContextExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\LldbCommandUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\SdkWarningFlagConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\WindowsRegistry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VSCommandUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsiAccountOptionLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsProjectInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsVersion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)YetiDebugTransport.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)YetiGameletDebugger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)YetiVSIPackage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)YetiVSIService.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="$(MSBuildThisFileDirectory)CoreAttach\CoreAttachWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumpViewer\CoreDumpViewerWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumpViewer\DefaultStyleDictionary.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)DetailsDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)InstanceSelectionWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)ProgressDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)ProjectInstanceSelectionWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\VS2017\natvis-2017-modified.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\VS2017\natvis-2017-original.xsd">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)Resources\YetiIcons.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)VSPackage.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

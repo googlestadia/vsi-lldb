@@ -534,7 +534,9 @@ namespace YetiVSI.Test.DebugEngine
 
             var coreAttachWarningDialog = new CoreAttachWarningDialogUtil(
                 taskContext, Substitute.For<IDialogUtil>());
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             var natvisVisualizerScanner = compRoot.GetNatvisVisualizerScanner();
 
             return new DebugSessionLauncher.Factory(

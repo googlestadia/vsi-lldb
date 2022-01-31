@@ -113,7 +113,9 @@ namespace YetiVSI.Metrics
 
         public bool Record(Func<bool> actionFunc) { return actionFunc(); }
 
+#pragma warning disable VSTHRD003 // Avoid awaiting foreign Tasks
         public async Task RecordAsync(Task actionTask) { await actionTask; }
+#pragma warning restore VSTHRD003 // Avoid awaiting foreign Tasks
     }
 
     /// <summary>
@@ -158,7 +160,9 @@ namespace YetiVSI.Metrics
             var timer = timerFactory.CreateStarted();
             try
             {
+#pragma warning disable VSTHRD003 // Avoid awaiting foreign Tasks
                 await actionTask;
+#pragma warning restore VSTHRD003 // Avoid awaiting foreign Tasks
             }
             catch (Exception e) when (CheckRecordException(e))
             {

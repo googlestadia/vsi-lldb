@@ -35,14 +35,14 @@
     <ProjectReference Include="..\YetiVSI\YetiVSI.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Debugger.Interop.14.0">
+      <Version>14.3.25407</Version>
+    </PackageReference>
     <PackageReference Include="System.IO.Abstractions">
       <Version>2.1.0.247</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Abstractions.TestingHelpers">
       <Version>2.1.0.247</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.Debugger.Interop.14.0">
-      <Version>14.3.25407</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Shell.15.0">
       <Version>15.9.28307</Version>

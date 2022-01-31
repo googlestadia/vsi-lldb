@@ -84,7 +84,7 @@ namespace YetiVSI.DebugEngine
             {
                 return;
             }
-            outputWindowPane.OutputString("Natvis: " + args.Message + Environment.NewLine);
+            outputWindowPane.OutputStringThreadSafe("Natvis: " + args.Message + Environment.NewLine);
         }
     }
 }

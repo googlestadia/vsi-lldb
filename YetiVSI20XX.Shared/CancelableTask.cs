@@ -268,7 +268,9 @@ namespace YetiVSI
 
                     if (reportPeriod > TimeSpan.Zero)
                     {
+#pragma warning disable VSTHRD110 // Observe result of async calls
                         taskContext.Factory.RunAsync(() => GetReportTaskAsync());
+#pragma warning restore VSTHRD110 // Observe result of async calls
                     }
 
                     if (!TryJoin(joinableTask, delay))
@@ -327,7 +329,9 @@ namespace YetiVSI
         {
             if (!IsProgressCompletedOrCancelled())
             {
+#pragma warning disable VSTHRD110 // Observe result of async calls
                 taskContext.Factory.RunAsync(async () =>
+#pragma warning restore VSTHRD110 // Observe result of async calls
                 {
                     await taskContext.Factory.SwitchToMainThreadAsync();
                     progressDialog.Message = reportValue;

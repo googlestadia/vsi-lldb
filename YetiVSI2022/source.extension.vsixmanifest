@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+    <Metadata>
+        <Identity Id="GgpVSI.Google.2bde5d1f-9493-4430-bfb4-65581ad4c787" Version="1.77.0" Language="en-US" Publisher="Google Inc." />
+        <DisplayName>Stadia for Visual Studio</DisplayName>
+        <Description xml:space="preserve">Extensions to the Visual Studio user interface to support Stadia development.</Description>
+        <Icon>GGP.ico</Icon>
+        <PreviewImage>GGP.png</PreviewImage>
+    </Metadata>
+    <Installation>
+        <!--<InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[15.0,17.0)" />-->
+        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,18.0)">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
+    </Installation>
+    <Dependencies>
+        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
+    </Dependencies>
+    <Prerequisites>
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,18.0)" DisplayName="Visual Studio core editor" />
+    </Prerequisites>
+    <Assets>
+        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
+        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="File" Path="Microsoft.MIDebugEngine.pkgdef" />
+        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="File" Path="GgpVsi.DebugEngine.pkgdef" />
+        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="File" Path="GgpVsi.PortSupplier.pkgdef" />
+        <Asset Type="Microsoft.VisualStudio.ProjectTemplate" d:Source="Project" d:ProjectName="EmptyProject" d:TargetPath="|EmptyProject;TemplateProjectOutputGroup|" Path="ProjectTemplates" d:VsixSubPath="ProjectTemplates" />
+        <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="Project" d:ProjectName="ProjectWizard" Path="|ProjectWizard|" AssemblyName="|ProjectWizard;AssemblyName|" />
+        <Asset Type="Microsoft.VisualStudio.ProjectTemplate" d:Source="Project" d:ProjectName="MakefileProject" d:TargetPath="|MakefileProject;TemplateProjectOutputGroup|" Path="ProjectTemplates" d:VsixSubPath="ProjectTemplates" />
+        <Asset Type="Microsoft.VisualStudio.ProjectTemplate" d:Source="Project" d:TargetPath="|CProject;TemplateProjectOutputGroup|" Path="ProjectTemplates" d:VsixSubPath="ProjectTemplates" />
+        <Asset Type="Microsoft.VisualStudio.ProjectTemplate" d:Source="Project" d:TargetPath="|CppProject;TemplateProjectOutputGroup|" Path="ProjectTemplates" d:VsixSubPath="ProjectTemplates" />
+        <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="System.Memory.dll" AssemblyName="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
+        <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="System.Reflection.TypeExtensions.dll" AssemblyName="System.Reflection.TypeExtensions, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+        <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="System.Buffers.dll" AssemblyName="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
+        <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="System.Runtime.CompilerServices.Unsafe.dll" AssemblyName="System.Runtime.CompilerServices.Unsafe, Version=4.0.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+        <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="System.Numerics.Vectors.dll" AssemblyName="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+        <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="System.Memory.dll" AssemblyName="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
+    </Assets>
+</PackageManifest>

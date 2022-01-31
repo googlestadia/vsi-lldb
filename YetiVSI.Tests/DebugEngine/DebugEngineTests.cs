@@ -80,7 +80,9 @@ namespace YetiVSI.Test.DebugEngine
             var serviceManager = new ServiceManagerStub(metrics, lldbShell, vsiService,
                                                         vsOutputWindow, symbolSettingsManager);
             var compRoot = new MediumTestDebugEngineFactoryCompRoot(
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                 serviceManager, new JoinableTaskContext(), new GameletClientStub.Factory(),
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
                 TestDummyGenerator.Create<IWindowsRegistry>());
 
             var factory = compRoot.CreateDebugEngineFactory();

@@ -444,7 +444,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [SetUp]
         public void SetUp()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             _varInfoFactory = _compRoot.GetLldbVariableInformationFactory();
 
             _nLogSpy = _compRoot.GetNatvisDiagnosticLogSpy();
@@ -516,7 +518,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [SetUp]
         public void SetUp()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             _varInfoFactory = _compRoot.GetLldbVariableInformationFactory();
 
             _nLogSpy = _compRoot.GetNatvisDiagnosticLogSpy();

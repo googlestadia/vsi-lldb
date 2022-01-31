@@ -15,6 +15,7 @@
 using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
+using Microsoft.VisualStudio.Shell;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
@@ -30,7 +31,10 @@ namespace YetiVSI
     {
         [ImportingConstructor]
         public YetiGameletDebugger(ConfiguredProject configuredProject)
-            : base(configuredProject) { }
+            : base(configuredProject)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+        }
     }
 
     // This class implements the GgpGameletDebugger debug launcher.
@@ -40,7 +44,10 @@ namespace YetiVSI
     {
         [ImportingConstructor]
         public GgpGameletDebugger(ConfiguredProject configuredProject)
-            : base(configuredProject) { }
+            : base(configuredProject)
+        { 
+            ThreadHelper.ThrowIfNotOnUIThread();
+        }
     }
 
     public class GameletDebugger : DebugLaunchProviderBase
@@ -51,6 +58,7 @@ namespace YetiVSI
         public GameletDebugger(ConfiguredProject configuredProject)
             : base(configuredProject)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             var serviceManager = new ServiceManager();
             var dialogUtil = new DialogUtil();
             var compRoot = new GgpDebugQueryTargetCompRoot(serviceManager, dialogUtil);
@@ -60,7 +68,7 @@ namespace YetiVSI
         }
 
         public override Task<bool> CanLaunchAsync(DebugLaunchOptions launchOptions)
-            => Task.FromResult(true);
+            => System.Threading.Tasks.Task.FromResult(true);
 
         public override Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
             DebugLaunchOptions launchOptions)

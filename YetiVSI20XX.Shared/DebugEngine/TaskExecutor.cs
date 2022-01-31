@@ -51,7 +51,9 @@ namespace YetiVSI.DebugEngine
 
             _started = true;
 
+#pragma warning disable VSTHRD110 // Observe result of async calls
             _taskFactory.RunAsync(async delegate
+#pragma warning restore VSTHRD110 // Observe result of async calls
             {
                 try
                 {
