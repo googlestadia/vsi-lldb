@@ -188,9 +188,8 @@ namespace YetiVSI.DebugEngine
                            ExitDialogUtil exitDialogUtil,
                            PreflightBinaryChecker preflightBinaryChecker,
                            IDebugSessionLauncherFactory debugSessionLauncherFactory,
-                           IRemoteDeploy remoteDeploy,
-                           CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
-                           IYetiVSIService vsiService,
+                           IRemoteDeploy remoteDeploy, CancelableTask.Factory cancelableTaskFactory,
+                           IDialogUtil dialogUtil, IYetiVSIService vsiService,
                            NatvisLoggerOutputWindowListener natvisLogListener,
                            ISolutionExplorer solutionExplorer,
                            IDebugEngineCommands debugEngineCommands,
@@ -362,8 +361,7 @@ namespace YetiVSI.DebugEngine
                            ExitDialogUtil exitDialogUtil,
                            PreflightBinaryChecker preflightBinaryChecker,
                            IDebugSessionLauncherFactory debugSessionLauncherFactory,
-                           IRemoteDeploy remoteDeploy,
-                           IDebugEngineCommands debugEngineCommands,
+                           IRemoteDeploy remoteDeploy, IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            ISessionNotifier sessionNotifier,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
@@ -525,16 +523,13 @@ namespace YetiVSI.DebugEngine
             {
                 _launchOption = LaunchOption.AttachToCore;
             }
-            else
+            else if (reason == enum_ATTACH_REASON.ATTACH_REASON_LAUNCH)
             {
-                if (reason == enum_ATTACH_REASON.ATTACH_REASON_LAUNCH)
-                {
-                    _launchOption = LaunchOption.LaunchGame;
-                }
-                else if (reason == enum_ATTACH_REASON.ATTACH_REASON_USER)
-                {
-                    _launchOption = LaunchOption.AttachToGame;
-                }
+                _launchOption = LaunchOption.LaunchGame;
+            }
+            else if (reason == enum_ATTACH_REASON.ATTACH_REASON_USER)
+            {
+                _launchOption = LaunchOption.AttachToGame;
             }
 
             // If the debugger launches or attaches to core dump this initialization is called in
@@ -567,8 +562,8 @@ namespace YetiVSI.DebugEngine
                 if (_launchOption == LaunchOption.LaunchGame)
                 {
                     string cmd =
-                        _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s))
-                        ?? _executableFileName;
+                        _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s)) ??
+                        _executableFileName;
 
                     // Note that Path.Combine works for both relative and full paths.
                     // It returns cmd if cmd starts with '/' or '\'.
@@ -595,11 +590,11 @@ namespace YetiVSI.DebugEngine
                     if (attachPid.HasValue)
                     {
                         _cancelableTaskFactory.Create(TaskMessages.CheckingRemoteBinary,
-                                                        async _ =>
-                                                            await _preflightBinaryChecker
-                                                                .CheckRemoteBinaryOnAttachAsync(
-                                                                    attachPid.Value, _target,
-                                                                    preflightCheckAction))
+                                                      async _ =>
+                                                          await _preflightBinaryChecker
+                                                              .CheckRemoteBinaryOnAttachAsync(
+                                                                  attachPid.Value, _target,
+                                                                  preflightCheckAction))
                             .RunAndRecord(preflightCheckAction);
                     }
                     else
@@ -669,10 +664,11 @@ namespace YetiVSI.DebugEngine
 
                 var launcher = _debugSessionLauncherFactory.Create(
                     Self, _coreFilePath, _executableFileName, _vsiGameLaunch);
-                program = await launcher.LaunchAsync(
-                    task, process, programId, attachPid, _grpcSession.GrpcConnection,
-                    _grpcSession.GetLocalDebuggerPort(), _target?.IpAddress, _target?.Port ?? 0,
-                    _launchOption, callback, lldbDebugger);
+                program = await launcher.LaunchAsync(task, process, programId, attachPid,
+                                                     _grpcSession.GrpcConnection,
+                                                     _grpcSession.GetLocalDebuggerPort(),
+                                                     _target?.IpAddress, _target?.Port ?? 0,
+                                                     _launchOption, callback, lldbDebugger);
 
                 // Launch processes that need the game process id.
                 _yetiTransport.StartPostGame(_launchOption, _target, program.RemotePid);
@@ -709,9 +705,8 @@ namespace YetiVSI.DebugEngine
             }
             catch (TaskAbortedException e) when (e.InnerException != null)
             {
-                Trace.WriteLine(
-                    $"Aborting attach because the debug session was aborted: " +
-                    $"{e.InnerException.Demystify()}");
+                Trace.WriteLine($"Aborting attach because the debug session was aborted: " +
+                                $"{e.InnerException.Demystify()}");
                 exitInfo = ExitInfo.Error(e.InnerException);
                 result = VSConstants.E_ABORT;
             }
@@ -928,8 +923,7 @@ namespace YetiVSI.DebugEngine
                 bool showAgain = _dialogUtil.ShowOkNoMoreWithDocumentationDisplayWarning(
                     ErrorStrings.SymbolStoreEnableSuggestion,
                     ErrorStrings.SymbolStoreEnableDocumentationLink,
-                    ErrorStrings.SymbolStoreEnableDocumentationText,
-                    new[]
+                    ErrorStrings.SymbolStoreEnableDocumentationText, new[]
                     {
                         "Tools", "Options", "Stadia SDK", OptionPageGrid.LldbDebugger,
                         OptionPageGrid.SuggestToEnableSymbolStore
@@ -1128,10 +1122,15 @@ namespace YetiVSI.DebugEngine
             {
                 return await Task.Run(() =>
                 {
-                     return _stadiaLldbDebuggerFactory.Create(
-                        _grpcSession.GrpcConnection,
-                        _debuggerOptions, _libPaths,
-                        _executableFullPath, isCoreDumpAttach);
+                    return
+                        _stadiaLldbDebuggerFactory
+                            .Create(
+                                _grpcSession
+                                    .GrpcConnection,
+                                _debuggerOptions,
+                                _libPaths,
+                                _executableFullPath,
+                                isCoreDumpAttach);
                 });
             });
 
@@ -1145,15 +1144,11 @@ namespace YetiVSI.DebugEngine
         {
             _launchParams = chromeClientsLauncher.LaunchParams;
             _vsiGameLaunch = _gameLauncher.CreateLaunch(chromeClientsLauncher.LaunchParams);
-
-            if (chromeClientsLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
+            if (_vsiGameLaunch != null)
             {
-                // Developer will open an endpoint and pick up the launch by themselves.
-                // VSI doesn't need to open Chrome window.
-                return;
+                chromeClientsLauncher.MaybeLaunchChrome(_vsiGameLaunch.LaunchName,
+                                                        _vsiGameLaunch.LaunchId, _workingDirectory);
             }
-
-            _vsiGameLaunch?.LaunchInChrome(chromeClientsLauncher, _workingDirectory);
         }
 
         /// <summary>

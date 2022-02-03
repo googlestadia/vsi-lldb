@@ -21,27 +21,23 @@ using YetiVSI.ProjectSystem.Abstractions;
 namespace YetiCommon
 {
     /// <summary>
-    /// The interface to build URLs that can be used to launch a game in Chrome clients. Currently
-    /// we support Test Client and Player Portal.
+    /// Starts a Chrome client that connect to a launched game.
     /// </summary>
     public interface IChromeClientsLauncher
     {
         LaunchParams LaunchParams { get; }
 
         /// <summary>
-        /// Create a url that can be used to launch the game in the Player Portal.
+        /// Might launch Chrome with URLs that depend on LaunchParams.Endpoint:
+        /// - StadiaEndpoint.TestClient opens a Test Client in Chrome.
+        /// - StadiaEndpoint.PlayerEndpoint opens the Partner Portal.
+        /// - StadiaEndpoint.AnyEndpoint is a no-op since developers are supposed to open an
+        ///   endpoint (e.g. phone) and pick up the launch by themselves.
         /// </summary>
-        string MakePlayerClientUrl(string launchName);
-
-        /// <summary>
-        /// Create a url that can be used to launch the game in the Test Client.
-        /// </summary>
-        string MakeTestClientUrl(string launchName);
-
-        /// <summary>
-        /// Launch game by opening the url in a Chrome window.
-        /// </summary>
-        void LaunchGame(string url, string workingDirectory);
+        /// <param name="launchName">Game launch name</param>
+        /// <param name="launchId">Game launch id</param>
+        /// <param name="workingDirectory">Working directory for Chrome</param>
+        void MaybeLaunchChrome(string launchName, string launchId, string workingDirectory);
     }
 
     public class ChromeClientsLauncher : IChromeClientsLauncher
@@ -91,12 +87,35 @@ namespace YetiCommon
 
         public LaunchParams LaunchParams { get; }
 
-        public void LaunchGame(string url, string workingDirectory)
+        public void MaybeLaunchChrome(string launchName, string launchId, string workingDirectory)
         {
-            _chromeLauncher.StartChrome(url, workingDirectory, SdkConfig.ChromeProfileDir);
+            string launchUrl;
+            StadiaEndpoint endpoint = LaunchParams.Endpoint;
+            switch (endpoint)
+            {
+                case StadiaEndpoint.TestClient:
+                {
+                    launchUrl = MakeTestClientUrl(launchName);
+                    break;
+                }
+                case StadiaEndpoint.PlayerEndpoint:
+                {
+                    launchUrl = MakePlayerClientUrl(launchId);
+                    break;
+                }
+                case StadiaEndpoint.AnyEndpoint:
+                {
+                    return;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        "Endpoint not supported: " + endpoint);
+            }
+
+            _chromeLauncher.StartChrome(launchUrl, workingDirectory, SdkConfig.ChromeProfileDir);
         }
 
-        public string MakePlayerClientUrl(string launchId)
+        string MakePlayerClientUrl(string launchId)
         {
             string playerPortalUrl = SdkConfig.PlayerPortalUrlOrDefault;
             string playerClientUrl = $"{playerPortalUrl}/player/{LaunchParams.ApplicationId}";
@@ -112,7 +131,7 @@ namespace YetiCommon
             return $"{playerClientUrl}?{queryString}";
         }
 
-        public string MakeTestClientUrl(string launchName)
+        string MakeTestClientUrl(string launchName)
         {
             string portalUrl = SdkConfig.PartnerPortalUrlOrDefault;
             string testClientUrl = $"{portalUrl}/organizations/{SdkConfig.OrganizationId}/stream";

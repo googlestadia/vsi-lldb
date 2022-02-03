@@ -18,7 +18,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using YetiCommon;
-using YetiVSI.ProjectSystem.Abstractions;
 
 namespace ChromeClientLauncher
 {
@@ -31,40 +30,14 @@ namespace ChromeClientLauncher
 
             try
             {
-                var gameLauncher =
-                    new ChromeClientsLauncher
-                        .Factory(new ChromeClientLaunchCommandFormatter(),
-                                 new SdkConfig.Factory(new JsonUtil()),
-                                 new ChromeLauncher(new BackgroundProcess.Factory()))
-                        .Create(args[0]);
-
-                if (gameLauncher.LaunchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
-                {
-                    return;
-                }
+                var gameLauncher = new ChromeClientsLauncher.Factory(
+                    new ChromeClientLaunchCommandFormatter(), new SdkConfig.Factory(new JsonUtil()),
+                    new ChromeLauncher(new BackgroundProcess.Factory())).Create(args[0]);
 
                 string launchName = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
-                string launchUrl;
-
-                switch (gameLauncher.LaunchParams.Endpoint)
-                {
-                    case StadiaEndpoint.TestClient:
-                        {
-                            launchUrl = gameLauncher.MakeTestClientUrl(launchName);
-                            break;
-                        }
-                    case StadiaEndpoint.PlayerEndpoint:
-                        {
-                            string launchId = launchName.Split('/').Last();
-                            launchUrl = gameLauncher.MakePlayerClientUrl(launchId);
-                            break;
-                        }
-                    default:
-                        throw new ArgumentOutOfRangeException(
-                            $"Endpoint is not supported: {gameLauncher.LaunchParams.Endpoint}");
-                }
-
-                gameLauncher.LaunchGame(launchUrl, Directory.GetCurrentDirectory());
+                string launchId = launchName.Split('/').Last();
+                gameLauncher.MaybeLaunchChrome(launchName, launchId,
+                                               Directory.GetCurrentDirectory());
             }
             catch (Exception ex)
             {

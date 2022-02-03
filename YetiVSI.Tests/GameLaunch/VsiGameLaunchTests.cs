@@ -72,38 +72,6 @@ namespace YetiVSI.Test.GameLaunch
         }
 
         [Test]
-        public void LaunchTestClientTest()
-        {
-            _target = GetGameLaunch(false, false);
-            const string url = "https://test";
-            const string workingDir = "C:/dir";
-            _params.Endpoint = StadiaEndpoint.TestClient;
-            _launcher.MakeTestClientUrl(Arg.Any<string>()).Returns(url);
-
-            _target.LaunchInChrome(_launcher, workingDir);
-
-            _launcher.Received(1).MakeTestClientUrl(_launchName);
-            _launcher.DidNotReceive().MakePlayerClientUrl(_launchName);
-            _launcher.Received(1).LaunchGame(url, workingDir);
-        }
-
-        [Test]
-        public void LaunchOnWebTest()
-        {
-            _target = GetGameLaunch(false, false);
-            const string url = "https://test";
-            const string workingDir = "C:/dir";
-            _params.Endpoint = StadiaEndpoint.PlayerEndpoint;
-            _launcher.MakePlayerClientUrl(Arg.Any<string>()).Returns(url);
-
-            _target.LaunchInChrome(_launcher, workingDir);
-
-            _launcher.Received(1).MakePlayerClientUrl(_launchId);
-            _launcher.DidNotReceive().MakeTestClientUrl(_launchName);
-            _launcher.Received(1).LaunchGame(url, workingDir);
-        }
-
-        [Test]
         public async Task GetLaunchStateAsyncTestAsync()
         {
             _target = GetGameLaunch(false, false);

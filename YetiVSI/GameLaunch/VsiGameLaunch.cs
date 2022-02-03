@@ -41,13 +41,6 @@ namespace YetiVSI.GameLaunch
         string LaunchId { get; }
 
         /// <summary>
-        /// Constructs a URL withe the launch name and opens a Chrome tab with it.
-        /// </summary>
-        /// <param name="chromeClientsLauncher">Chrome test client launcher.</param>
-        /// <param name="workingDirectory">The working directory.</param>
-        void LaunchInChrome(IChromeClientsLauncher chromeClientsLauncher, string workingDirectory);
-
-        /// <summary>
         /// Retrieves the launch status form the backend.
         /// </summary>
         /// <returns></returns>
@@ -162,31 +155,6 @@ namespace YetiVSI.GameLaunch
         public string LaunchName { get; }
 
         public string LaunchId => LaunchName.Split('/').Last();
-
-        public void LaunchInChrome(IChromeClientsLauncher chromeClientsLauncher,
-                                   string workingDirectory)
-        {
-            string launchUrl;
-            StadiaEndpoint endpoint = chromeClientsLauncher.LaunchParams.Endpoint;
-            switch (endpoint)
-            {
-                case StadiaEndpoint.TestClient:
-                {
-                    launchUrl = chromeClientsLauncher.MakeTestClientUrl(LaunchName);
-                    break;
-                }
-                case StadiaEndpoint.PlayerEndpoint:
-                {
-                    launchUrl = chromeClientsLauncher.MakePlayerClientUrl(LaunchId);
-                    break;
-                }
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        "LaunchInChrome doesn't support this endpoint: " + endpoint);
-            }
-
-            chromeClientsLauncher.LaunchGame(launchUrl, workingDirectory);
-        }
 
         public async Task<GgpGrpc.Models.GameLaunch> GetLaunchStateAsync(IAction action) =>
             await _gameletClient.GetGameLaunchStateAsync(LaunchName, action);
