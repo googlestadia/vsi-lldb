@@ -100,52 +100,48 @@ namespace YetiVSI.DebugEngine
         {
             var info = new MODULE_INFO();
             SbFileSpec platformFileSpec = _lldbModule.GetPlatformFileSpec();
-
-            if ((enum_MODULE_INFO_FIELDS.MIF_NAME & fields) != 0)
+            if (platformFileSpec != null)
             {
-                if (platformFileSpec != null)
+                // Name
+                if (HasFlag(enum_MODULE_INFO_FIELDS.MIF_NAME))
                 {
                     info.m_bstrName = platformFileSpec.GetFilename();
                     info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_NAME;
                 }
-            }
 
-            // "URL" fills in the "Path" column in the Modules window.
-            if ((enum_MODULE_INFO_FIELDS.MIF_URL & fields) != 0)
-            {
-                // The module paths are for remote files (on Linux).
-                if (platformFileSpec != null)
+                // Path
+                if (HasFlag(enum_MODULE_INFO_FIELDS.MIF_URL))
                 {
-                    info.m_bstrUrl = FileUtil.PathCombineLinux(
-                        platformFileSpec.GetDirectory(), platformFileSpec.GetFilename());
-                }
-
-                info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_URL;
-            }
-
-            // "URLSYMBOLLOCATION" fills in the Symbol File Location column.
-            if ((enum_MODULE_INFO_FIELDS.MIF_URLSYMBOLLOCATION & fields) != 0)
-            {
-                if (_lldbModule.HasSymbolsLoaded())
-                {
-                    // The symbol paths are for local files (on Windows).
-                    SbFileSpec symbolFileSpec = _lldbModule.GetSymbolFileSpec();
-                    if (symbolFileSpec != null)
-                    {
-                        info.m_bstrUrlSymbolLocation = Path.Combine(
-                            symbolFileSpec.GetDirectory(), symbolFileSpec.GetFilename());
-                        info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_URLSYMBOLLOCATION;
-                    }
+                    // The module paths are for remote files (on Linux) when attaching to a game,
+                    // and for local paths for the postmortem debugging.
+                    string directory = platformFileSpec.GetDirectory();
+                    string filename = platformFileSpec.GetFilename();
+                    info.m_bstrUrl = directory.Contains(@"\")
+                        ? Path.Combine(directory, filename)
+                        : FileUtil.PathCombineLinux(directory, filename);
+                    info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_URL;
                 }
             }
 
-            if ((enum_MODULE_INFO_FIELDS.MIF_LOADADDRESS & fields) != 0)
+            // SymbolStatus
+            if (HasFlag(enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE))
+            {
+                if (!_lldbModule.HasSymbolsLoaded())
+                {
+                    info.m_bstrDebugMessage =
+                        "Symbols not loaded. Check 'Symbol Load Information...' for details.";
+                    info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE;
+                }
+            }
+
+            // Address (range start)
+            if (HasFlag(enum_MODULE_INFO_FIELDS.MIF_LOADADDRESS))
             {
                 info.m_addrLoadAddress = _lldbModule.GetCodeLoadAddress();
                 info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_LOADADDRESS;
             }
 
-            if ((enum_MODULE_INFO_FIELDS.MIF_PREFFEREDADDRESS & fields) != 0)
+            if (HasFlag(enum_MODULE_INFO_FIELDS.MIF_PREFFEREDADDRESS))
             {
                 // TODO: Find the actual preferred load address rather than
                 // pretending the module is loaded in the right place.
@@ -153,25 +149,38 @@ namespace YetiVSI.DebugEngine
                 // address from the library / executable seems nontrivial.
                 // If m_addrLoadAddress is a different value, VS will show a warning on the icons
                 // in the Modules window.
-                info.m_addrPreferredLoadAddress = info.m_addrLoadAddress;
+                info.m_addrPreferredLoadAddress = _lldbModule.GetCodeLoadAddress();
                 info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_PREFFEREDADDRESS;
             }
-
-            if ((enum_MODULE_INFO_FIELDS.MIF_SIZE & fields) != 0)
+            
+            // is used to calculate address's range end
+            if (HasFlag(enum_MODULE_INFO_FIELDS.MIF_SIZE))
             {
-                info.m_dwSize = (uint) _lldbModule.GetCodeSize();
+                info.m_dwSize = (uint)_lldbModule.GetCodeSize();
                 info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_SIZE;
             }
 
-            if ((enum_MODULE_INFO_FIELDS.MIF_LOADORDER & fields) != 0)
+            // Order
+            if (HasFlag(enum_MODULE_INFO_FIELDS.MIF_LOADORDER))
             {
                 info.m_dwLoadOrder = _loadOrder;
                 info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_LOADORDER;
             }
 
-            if ((enum_MODULE_INFO_FIELDS.MIF_FLAGS & fields) != 0)
+            // SymbolFile
+            if (HasFlag(enum_MODULE_INFO_FIELDS.MIF_URLSYMBOLLOCATION))
             {
-                info.m_dwModuleFlags = 0;
+                SbFileSpec symbolFileSpec = _lldbModule.GetSymbolFileSpec();
+                if (symbolFileSpec != null)
+                {
+                    info.m_bstrUrlSymbolLocation = Path.Combine(
+                        symbolFileSpec.GetDirectory(), symbolFileSpec.GetFilename());
+                    info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_URLSYMBOLLOCATION;
+                }
+            }
+
+            if (HasFlag(enum_MODULE_INFO_FIELDS.MIF_FLAGS))
+            {
                 if (_lldbModule.HasSymbolsLoaded())
                 {
                     info.m_dwModuleFlags |= enum_MODULE_FLAGS.MODULE_FLAG_SYMBOLS;
@@ -185,22 +194,10 @@ namespace YetiVSI.DebugEngine
                 info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_FLAGS;
             }
 
-            if ((enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE & fields) != 0)
-            {
-                if (!_lldbModule.HasSymbolsLoaded())
-                {
-                    var inclusionSetting = _symbolSettingsProvider.GetInclusionSettings();
-                    if (!inclusionSetting.IsModuleIncluded(ModuleName))
-                    {
-                        info.m_bstrDebugMessage = SymbolInclusionSettings.ModuleExcludedMessage;
-                    }
-                }
-
-                info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE;
-            }
-
             moduleInfo[0] = info;
             return VSConstants.S_OK;
+
+            bool HasFlag(enum_MODULE_INFO_FIELDS flag) => (flag & fields) != 0;
         }
 
         public int ReloadSymbols_Deprecated(string urlToSymbols, out string debugMessage)
@@ -240,7 +237,7 @@ namespace YetiVSI.DebugEngine
 
                 info.bstrVerboseSearchInfo = log;
                 info.dwValidFields |=
-                    (uint) enum_SYMBOL_SEARCH_INFO_FIELDS.SSIF_VERBOSE_SEARCH_INFO;
+                    (uint)enum_SYMBOL_SEARCH_INFO_FIELDS.SSIF_VERBOSE_SEARCH_INFO;
             }
 
             searchInfo[0] = info;
@@ -253,7 +250,7 @@ namespace YetiVSI.DebugEngine
 
             ICancelableTask<LoadModuleFilesResult> loadSymbolsTask = _cancelableTaskFactory.Create(
                 "Loading symbols...",
-                task => _moduleFileLoader.LoadModuleFilesAsync(new[] {_lldbModule}, task,
+                task => _moduleFileLoader.LoadModuleFilesAsync(new[] { _lldbModule }, task,
                                                           _moduleFileLoadRecorderFactory.Create(
                                                               action)));
 

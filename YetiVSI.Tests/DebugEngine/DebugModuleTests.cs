@@ -131,16 +131,31 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void GetInfoNotifiesIfModuleIsExcludedAndNotLoaded()
+        public void GetInfoNotifiesIfModuleIsNotLoaded()
         {
-            var excludedModules = new List<string>() { "excludedModule" };
-            bool useIncludeList = false;
-            _mockSymbolSettingsProvider.GetInclusionSettings().Returns(
-                new SymbolInclusionSettings(useIncludeList, excludedModules, new List<string>()));
+            _mockModule.HasSymbolsLoaded().Returns(false);
 
-            _mockModule.GetPlatformFileSpec().GetFilename().Returns("excludedModule");
+            enum_MODULE_INFO_FIELDS flags = enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE;
+            var moduleInfo = new MODULE_INFO[1];
 
-            var flags = enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE;
+            int result = _debugModule.GetInfo(flags, moduleInfo);
+            string error = "Symbols not loaded. Check 'Symbol Load Information...' for details.";
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(VSConstants.S_OK));
+                Assert.That(moduleInfo[0].dwValidFields,
+                            Is.EqualTo(flags));
+                Assert.That(moduleInfo[0].m_bstrDebugMessage,
+                            Is.EqualTo(error));
+            });
+        }
+
+        [Test]
+        public void GetInfoDoesNotSetDebugMessageIfModuleIsLoaded()
+        {
+            _mockModule.HasSymbolsLoaded().Returns(true);
+
+            enum_MODULE_INFO_FIELDS flags = enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE;
             var moduleInfo = new MODULE_INFO[1];
 
             int result = _debugModule.GetInfo(flags, moduleInfo);
@@ -148,8 +163,8 @@ namespace YetiVSI.Test.DebugEngine
             Assert.Multiple(() =>
             {
                 Assert.That(result, Is.EqualTo(VSConstants.S_OK));
-                Assert.That(moduleInfo[0].m_bstrDebugMessage,
-                            Is.EqualTo(SymbolInclusionSettings.ModuleExcludedMessage));
+                Assert.That(moduleInfo[0].dwValidFields,
+                            Is.EqualTo(enum_MODULE_INFO_FIELDS.MIF_NONE));
             });
         }
 
