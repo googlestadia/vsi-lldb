@@ -122,6 +122,7 @@ namespace YetiCommon
         /// <remarks>
         /// Output and error data handlers are guaranteed to be called before this task completes.
         /// </remarks>
+        /// <returns>The process exit code.</returns>
         Task<int> WaitForExitAsync();
 
         /// <summary>

@@ -20,49 +20,58 @@ namespace YetiCommon
 {
     public class SDKUtil
     {
-        // Returns a path to the global user configuration directory of the Yeti SDK.
+        /// <summary>
+        /// Returns a path to the global user configuration directory of the Yeti SDK. 
+        /// </summary>
         public static string GetUserConfigPath()
         {
             return Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GGP");
         }
 
-        // Returns a path to the SSH configuration directory of the Yeti SDK.
+        /// <summary>
+        /// Returns a path to the SSH configuration directory of the Yeti SDK. 
+        /// </summary>
         public static string GetSshConfigPath()
         {
             return Path.Combine(GetUserConfigPath(), "ssh");
         }
 
-        // Returns a path to the dev tools ssh key file.
+        /// <summary>
+        /// Returns a path to the dev tools ssh key file.
+        /// </summary>
         public static string GetSshKeyFilePath()
         {
             return Path.Combine(GetSshConfigPath(), "id_rsa");
         }
 
-        // Returns a path to the dev tools ssh known_hosts file.
+        /// <summary>
+        /// Returns a path to the dev tools ssh known_hosts file.
+        /// </summary>
         public static string GetSshKnownHostsFilePath()
         {
             return Path.Combine(GetSshConfigPath(), "known_hosts");
         }
 
-        // Returns a path to the user's credentials folder.
+        /// <summary>
+        /// Returns a path to the user's credentials folder.
+        /// </summary>
         public static string GetCredentialsPath()
         {
             return Path.Combine(GetUserConfigPath(), "credentials");
         }
 
+        /// <summary>
+        /// Returns a path to the folder containing SDK tool logs.
+        /// </summary>
         public static string GetLoggingPath()
         {
             return Path.Combine(GetUserConfigPath(), "logs");
         }
 
-        public static string GetSystem32Path()
-        {
-            string winPath = Environment.ExpandEnvironmentVariables("%SystemRoot%");
-            return Path.Combine(winPath, "system32");
-        }
-
-        // Returns a path to the installation dir of the Yeti SDK.
+        /// <summary>
+        /// Returns a path to the installation dir of the Yeti SDK.
+        /// </summary>
         public static string GetSDKPath()
         {
             var path = Environment.GetEnvironmentVariable("GGP_SDK_PATH");
@@ -70,25 +79,41 @@ namespace YetiCommon
             {
                 return FileUtil.RemoveTrailingSeparator(path);
             }
+
             var programFiles = Environment.ExpandEnvironmentVariables("%ProgramW6432%");
             return Path.Combine(programFiles, "GGP SDK");
         }
 
-        // Returns a path to the tools dir of the Yeti SDK.
+        /// <summary>
+        /// Returns a path to the tools dir of the Yeti SDK.
+        /// </summary>
         public static string GetSDKToolsPath()
         {
             var sdkPath = GetSDKPath();
             return Path.Combine(sdkPath, "dev", "bin");
         }
 
-        // Returns a path to the SSH dir packaged with the Yeti SDK.
+        /// <summary>
+        /// Returns a path to the SSH dir packaged with the Yeti SDK.
+        /// </summary>
         public static string GetSshPath()
         {
             var sdkPath = GetSDKPath();
             return Path.Combine(sdkPath, "tools", "OpenSSH-Win64");
         }
 
-        // Returns a list of all paths within the Yeti SDK that contain target libraries.
+        /// <summary>
+        /// Returns a path to the dir that contains Orbit.
+        /// </summary>
+        public static string GetOrbitPath()
+        {
+            var sdkPath = GetSDKPath();
+            return Path.Combine(sdkPath, "tools", "Orbit");
+        }
+
+        /// <summary>
+        /// Returns a list of all paths within the Yeti SDK that contain target libraries.
+        /// </summary>
         public static List<string> GetLibraryPaths()
         {
             string[] paths =
@@ -106,23 +131,30 @@ namespace YetiCommon
             {
                 result.Add(sdkPath + path);
             }
+
             return result;
         }
 
-        // Returns a path to the local application data directory of the Yeti SDK.
+        /// <summary>
+        /// Returns a path to the local application data directory of the Yeti SDK.
+        /// </summary>
         public static string GetLocalAppDataPath()
         {
             return Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GGP");
         }
 
-        // Returns the default symbol cache directory
+        /// <summary>
+        /// Returns the default symbol cache directory.
+        /// </summary>
         public static string GetDefaultSymbolCachePath()
         {
             return Path.Combine(GetLocalAppDataPath(), "SymbolCache");
         }
 
-        // Returns the default symbol store directory
+        /// <summary>
+        /// Returns the default symbol store directory.
+        /// </summary>
         public static string GetDefaultSymbolStorePath()
         {
             return Path.Combine(GetLocalAppDataPath(), "SymbolStore");
