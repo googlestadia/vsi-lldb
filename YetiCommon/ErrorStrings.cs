@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,8 +24,6 @@ namespace YetiCommon
     {
         public const string EmptyBuildId = "The file must have a non-empty build ID.";
         public const string MalformedBuildId = "The build-id section is malformed.";
-        public const string MalformedDebugLink = "The debuglink section is malformed.";
-        public const string MalformedDebugDir = "The debug_info_dir section is malformed.";
         public const string NoDebugLink = "Unable to extract the file's debuglink section.";
         public const string NoDebugDir = "Unable to extract the file's debug_info_dir section.";
         public const string QueryParametersWrongFormat =
@@ -50,8 +47,6 @@ namespace YetiCommon
         public static string FailedToSetJobLimitInfo(int errorCode) =>
             "Failed to set job limit info. The Windows API 'SetInformationJobObject' returned " +
             $"{errorCode}.";
-        public static string FailedToReadBuildId(string message) =>
-            $"Failed to read build ID. {message}";
         public static string FailedToReadBuildId(string filepath, string message) =>
             $"Failed to read build ID of '{filepath}'. {message}";
         public static string InvalidSymbolFileFormat(string filepath) =>
@@ -59,14 +54,6 @@ namespace YetiCommon
         public static string MissingDebugInfoInSymbolFile(string filepath) =>
             $"Failed to load '{filepath}'. " +
             "The file does not contain a debug information (.debug_info) section.";
-        public static string SymbolFileTruncated(string filepath) =>
-            $"Failed to load '{filepath}'. The file is corrupted, it appears to be truncated.";
-        public static string FailedToReadSymbolFile(string filepath, string message) =>
-            $"Failed to read symbol file '{filepath}'. {message}";
-        public static string FailedToReadSymbolFileName(string message) =>
-            $"Failed to read symbol file name. {message}";
-        public static string FailedToReadSymbolFileDir(string message) =>
-            $"Failed to read symbol file directory. {message}";
         public static string FailedToReadSymbolFileName(string filepath, string message) =>
             $"Failed to read symbol file name of '{filepath}'. {message}";
         public static string FailedToReadSymbolFileDir(string filepath, string message) =>
@@ -122,7 +109,7 @@ namespace YetiCommon
             "'Project Properties' -> 'Debugging' -> 'Custom Query Parameters'.";
 
         public static string QueryParametersIgnored(IEnumerable<string> parameters) =>
-            "The following query parameters will be ignored — they can only be set via a VSI " +
+            "The following query parameters will be ignored ï¿½ they can only be set via a VSI " +
             "setting or inferred from another configuration: " +
             string.Join(", ", parameters.Select(v => $"'{v}'")) + ".";
 
@@ -139,16 +126,13 @@ namespace YetiCommon
         public static string InvalidBinaryName(string expected, string actual) =>
             "The query parameter 'cmd' has an invalid binary name: " + 
             $"{(string.IsNullOrWhiteSpace(actual) ? "an empty value" : $"'{actual}'")}. " +
-            $"Expected: '{expected}'. " + Environment.NewLine +
+            $"Expected: '{expected}'. {Environment.NewLine}" +
             "To specify command line parameters for the binary, use the setting in " +
             "'Project Properties' -> 'Debugging' -> 'Stadia Launch Arguments'.";
 
-        public static string CodecResolutionIncompatibleError(Codec codec, VideoResolution res) =>
-            $"video_codec={codec} and client_resolution={res} are not compatible. " +
-            "Please edit 'Project Properties' -> 'Debugging' -> 'Custom Query Parameters'.";
-
-        public static string CodecDynamicRangeIncompatibleError(Codec codec, DynamicRange range) =>
-            $"video_codec={codec} and dynamic_range_type={range} are not compatible. " +
-            "Please edit 'Project Properties' -> 'Debugging' -> 'Custom Query Parameters'.";
+        public static string OrbitNotInstalled(string orbitBinaryPath) =>
+            "The Orbit CPU and System Profiler is not installed. The Orbit binary was not found " +
+            $"at {orbitBinaryPath}. Re-run the Stadia SDK Installer and include the " +
+            "\"Orbit for Stadia\" feature.";
     }
 }

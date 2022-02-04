@@ -25,12 +25,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Threading.Tasks;
+using NSubstitute.ExceptionExtensions;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
-using YetiVSI.DebugEngine;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
+using YetiVSI.Orbit;
 using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
@@ -77,6 +78,7 @@ namespace YetiVSI.Test
         IGameLauncher _gameLauncher;
         IVsiGameLaunch _gameLaunch;
         IProjectPropertiesMetricsParser _projectPropertiesParser;
+        IOrbitLauncher _orbitLauncher;
 
         [SetUp]
         public void SetUp()
@@ -168,6 +170,8 @@ namespace YetiVSI.Test
             _projectPropertiesParser.GetStadiaProjectPropertiesAsync(Arg.Any<IAsyncProject>())
                 .Returns(Task.FromResult((VSIProjectProperties) null));
 
+            _orbitLauncher = Substitute.For<IOrbitLauncher>();
+
             _ggpDebugQueryTarget = new GgpDebugQueryTarget(fileSystem, sdkConfigFactory,
                                                            gameletClientFactory,
                                                            applicationClientFactory,
@@ -177,19 +181,22 @@ namespace YetiVSI.Test
                                                            _testAccountClientFactory,
                                                            _gameletSelectorFactory, cloudRunner,
                                                            _sdkVersion, _launchCommandFormatter,
-                                                           _yetiVsiService,
-                                                           _gameLauncher, taskContext,
-                                                           _projectPropertiesParser,
-                                                           _identityClient);
+                                                           _yetiVsiService, _gameLauncher,
+                                                           taskContext, _projectPropertiesParser,
+                                                           _identityClient, _orbitLauncher);
         }
 
         [Test]
-        public async Task
-        LaunchNoDebugAsync([Values(false, true)] bool renderdoc, [Values(false, true)] bool rgp,
-                           [Values(false, true)] bool dive, [Values(false, true)] bool orbit,
-                           [Values(null, "optprintasserts")] string vulkanDriverVariant,
-                           [Values(StadiaEndpoint.PlayerEndpoint, StadiaEndpoint.TestClient,
-                                   StadiaEndpoint.AnyEndpoint)] StadiaEndpoint endpoint)
+        public async Task LaunchNoDebugAsync([Values(false, true)] bool renderdoc,
+                                             [Values(false, true)] bool rgp,
+                                             [Values(false, true)] bool dive,
+                                             [Values(false, true)] bool orbit,
+                                             [Values(null, "optprintasserts")]
+                                             string vulkanDriverVariant,
+                                             [Values(StadiaEndpoint.PlayerEndpoint,
+                                                     StadiaEndpoint.TestClient,
+                                                     StadiaEndpoint.AnyEndpoint)]
+                                             StadiaEndpoint endpoint)
         {
             _project.GetLaunchRenderDocAsync().Returns(renderdoc);
             _project.GetLaunchRgpAsync().Returns(rgp);
@@ -293,10 +300,12 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public async Task
-        LaunchDebugAsync([Values(false, true)] bool renderdoc, [Values(false, true)] bool rgp,
-                         [Values(false, true)] bool dive, [Values(false, true)] bool orbit,
-                         [Values(null, "optprintasserts")] string vulkanDriverVariant)
+        public async Task LaunchDebugAsync([Values(false, true)] bool renderdoc,
+                                           [Values(false, true)] bool rgp,
+                                           [Values(false, true)] bool dive,
+                                           [Values(false, true)] bool orbit,
+                                           [Values(null, "optprintasserts")]
+                                           string vulkanDriverVariant)
         {
             _project.GetLaunchRenderDocAsync().Returns(renderdoc);
             _project.GetLaunchRgpAsync().Returns(rgp);
@@ -311,8 +320,9 @@ namespace YetiVSI.Test
             Assert.AreEqual(YetiConstants.DebugEngineGuid, launchSettings[0].LaunchDebugEngineGuid);
             Assert.AreEqual(_testProjectDir, launchSettings[0].CurrentDirectory);
 
-            var parameters = JsonConvert.DeserializeObject<YetiVSI.DebugEngine.DebugEngine.Params>(
-                launchSettings[0].Options);
+            var parameters =
+                JsonConvert.DeserializeObject<YetiVSI.DebugEngine.DebugEngine.Params>(
+                    launchSettings[0].Options);
             Assert.AreEqual(parameters.TargetIp, $"{_testGameletIp}:44722");
             Assert.AreEqual(parameters.DebugSessionId, _testDebugSessionId);
             Assert.AreEqual(await _project.GetTargetPathAsync(), launchSettings[0].Executable);
@@ -573,7 +583,8 @@ namespace YetiVSI.Test
             Assert.AreEqual(0, launchSettings.Count);
             _dialogUtil.Received(1)
                 .ShowError(
-                    Arg.Is<string>(s => s.Contains("web player endpoint option") &&                                                 s.Contains("it isn't compatible with external IDs")),
+                    Arg.Is<string>(s => s.Contains("web player endpoint option") &&
+                                       s.Contains("it isn't compatible with external IDs")),
                     Arg.Any<ConfigurationException>());
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDebugSetupQueries,
@@ -632,6 +643,53 @@ namespace YetiVSI.Test
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);
             _dialogUtil.Received().ShowError("Oops!", Arg.Any<Exception>());
             Assert.That(result.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task LaunchWithOrbitSucceedsAsync()
+        {
+            DebugLaunchOptions debugLaunchOptions =
+                DebugLaunchOptions.NoDebug | DebugLaunchOptions.Profiling;
+            _orbitLauncher.IsOrbitInstalled().Returns(true);
+            SetupReservedGamelet();
+
+            var result = await QueryDebugTargetsAsync(debugLaunchOptions);
+
+            _orbitLauncher.Received().Launch(YetiConstants.RemoteGamePath + "path", _testGameletId);
+            Assert.That(result.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task LaunchWithOrbitNotInstalledFailsAsync()
+        {
+            DebugLaunchOptions debugLaunchOptions =
+                DebugLaunchOptions.NoDebug | DebugLaunchOptions.Profiling;
+            _orbitLauncher.IsOrbitInstalled().Returns(false);
+
+            var result = await QueryDebugTargetsAsync(debugLaunchOptions);
+
+            _dialogUtil.Received()
+                .ShowError(Arg.Is<string>(x => x.Contains("Orbit") && x.Contains("not installed")));
+            Assert.That(result.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task LaunchWithOrbitBrokenOrbitProcessFailsAsync()
+        {
+            DebugLaunchOptions debugLaunchOptions =
+                DebugLaunchOptions.NoDebug | DebugLaunchOptions.Profiling;
+            _orbitLauncher.IsOrbitInstalled().Returns(true);
+            var exceptionMsg = "Orbit process failed to launch";
+            var e = new ProcessException(exceptionMsg);
+            _orbitLauncher
+                .When(x => x.Launch(YetiConstants.RemoteGamePath + "path", _testGameletId))
+                .Do(x => { throw e; });
+            SetupReservedGamelet();
+
+            var result = await QueryDebugTargetsAsync(debugLaunchOptions);
+
+            Assert.That(result.Count, Is.EqualTo(0));
+            _dialogUtil.Received().ShowError(e.Message, e);
         }
 
         Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(

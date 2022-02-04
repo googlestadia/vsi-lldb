@@ -26,10 +26,10 @@ using System.IO.Abstractions;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
-using YetiVSI.DebugEngine;
 using YetiVSI.DebuggerOptions;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
+using YetiVSI.Orbit;
 using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Shared.Metrics;
 
@@ -56,6 +56,7 @@ namespace YetiVSI
         readonly JoinableTaskContext _taskContext;
         readonly IProjectPropertiesMetricsParser _projectPropertiesParser;
         readonly IIdentityClient _identityClient;
+        readonly IOrbitLauncher _orbitLauncher;
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
@@ -72,7 +73,7 @@ namespace YetiVSI
                                    IYetiVSIService yetiVsiService, IGameLauncher gameLauncher,
                                    JoinableTaskContext taskContext,
                                    IProjectPropertiesMetricsParser projectPropertiesParser,
-                                   IIdentityClient identityClient)
+                                   IIdentityClient identityClient, IOrbitLauncher orbitLauncher)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -93,6 +94,7 @@ namespace YetiVSI
             _taskContext = taskContext;
             _projectPropertiesParser = projectPropertiesParser;
             _identityClient = identityClient;
+            _orbitLauncher = orbitLauncher;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -109,14 +111,24 @@ namespace YetiVSI
                     return new IDebugLaunchSettings[] { };
                 }
 
+                // Check if Orbit is installed.
+                bool launchWithProfiler = launchOptions.HasFlag(DebugLaunchOptions.Profiling);
+                if (launchWithProfiler && !_orbitLauncher.IsOrbitInstalled())
+                {
+                    _dialogUtil.ShowError(
+                        YetiCommon.ErrorStrings.OrbitNotInstalled(_orbitLauncher.OrbitBinaryPath));
+                    return new IDebugLaunchSettings[] { };
+                }
                 _metrics.UseNewDebugSessionId();
                 var actionRecorder = new ActionRecorder(_metrics);
 
-                var executablePath = await project.GetGameletLaunchExecutableAsync();
-                var gameletCommand = (executablePath + " " +
+                // Path relative to /srv/game/assets.
+                var gameletExecutableRelPath = await project.GetGameletLaunchExecutableAsync();
+                var gameletCommand = (gameletExecutableRelPath + " " +
                     await project.GetGameletLaunchArgumentsAsync()).Trim();
 
-                var launchParams = new LaunchParams() {
+                var launchParams = new LaunchParams()
+                {
                     Cmd = gameletCommand,
                     RenderDoc = await project.GetLaunchRenderDocAsync(),
                     Rgp = await project.GetLaunchRgpAsync(),
@@ -160,8 +172,7 @@ namespace YetiVSI
 
                 DeployOnLaunchSetting deployOnLaunch = await project.GetDeployOnLaunchAsync();
                 launchParams.Account = _credentialManager.LoadAccount();
-                IGameletSelector gameletSelector =
-                    _gameletSelectorFactory.Create(actionRecorder);
+                IGameletSelector gameletSelector = _gameletSelectorFactory.Create(actionRecorder);
                 Gamelet gamelet;
                 using (new TestBenchmark("SelectAndPrepareGamelet", TestBenchmarkScope.Recorder))
                 {
@@ -185,32 +196,21 @@ namespace YetiVSI
                 debugLaunchSettings.LaunchOperation = DebugLaunchOperation.CreateProcess;
                 debugLaunchSettings.CurrentDirectory = await project.GetAbsoluteRootPathAsync();
 
-                if (!launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
-                {
-                    var parameters = new DebugEngine.DebugEngine.Params
-                    {
-                        TargetIp = new SshTarget(gamelet).GetString(),
-                        DebugSessionId = _metrics.DebugSessionId
-                    };
-                    debugLaunchSettings.Options = JsonConvert.SerializeObject(parameters);
-                }
-
                 if (launchParams.Orbit)
                 {
                     IAction deployOrbitLayerAction =
                         actionRecorder.CreateToolAction(ActionType.RemoteDeploy);
-                    bool isLayerDeployed =
-                        _cancelableTaskFactory
-                            .Create(TaskMessages.DeployingOrbitVulkanLayer,
-                                    async task => {
-                                        await _remoteDeploy.DeployOrbitVulkanLayerAsync(
-                                            project, new SshTarget(gamelet), task);
-                                    })
-                            .RunAndRecord(deployOrbitLayerAction);
+                    bool isLayerDeployed = _cancelableTaskFactory
+                        .Create(TaskMessages.DeployingOrbitVulkanLayer,
+                                async task =>
+                                {
+                                    await _remoteDeploy.DeployOrbitVulkanLayerAsync(
+                                        project, new SshTarget(gamelet), task);
+                                }).RunAndRecord(deployOrbitLayerAction);
 
                     if (!isLayerDeployed)
                     {
-                        return new IDebugLaunchSettings[] {};
+                        return new IDebugLaunchSettings[] { };
                     }
                 }
 
@@ -240,34 +240,34 @@ namespace YetiVSI
 
                 if (launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
                 {
+                    // Code path without debugging. Calls an RPC to launch the game and populates
+                    // debugLaunchSettings in a way that instructs Visual Studio to launch
+                    // cmd.exe -c "ChromeClientLauncher.exe <base64 encoded params>".
+
                     IVsiGameLaunch launch = _gameLauncher.CreateLaunch(launchParams);
-                    if (launch != null)
-                    {
-                        if (launchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
-                        {
-                            // We dont need to start the ChromeClientLauncher,
-                            // as we won't open a Chrome window.
-                            debugLaunchSettings.Arguments = "/c exit";
-                            await _taskContext.Factory.SwitchToMainThreadAsync();
-                            string message =
-                                string.IsNullOrWhiteSpace(launchParams.ExternalAccount)
-                                    ? TaskMessages.LaunchingDeferredGameRunFlow
-                                    : TaskMessages.LaunchingDeferredGameWithExternalId(
-                                        launchParams.ApplicationId);
-                            _dialogUtil.ShowMessage(
-                                message, TaskMessages.LaunchingDeferredGameTitle);
-                        }
-                        else
-                        {
-                            debugLaunchSettings.Arguments =
-                                _launchCommandFormatter.CreateWithLaunchName(
-                                    launchParams, launch.LaunchName);
-                        }
-                    }
-                    else
+                    if (launch == null)
                     {
                         Trace.WriteLine("Unable to retrieve launch name from the launch api.");
                         return new IDebugLaunchSettings[] { };
+                    }
+
+                    if (launchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
+                    {
+                        // We dont need to start the ChromeClientLauncher,
+                        // as we won't open a Chrome window.
+                        debugLaunchSettings.Arguments = "/c exit";
+                        await _taskContext.Factory.SwitchToMainThreadAsync();
+                        string message = string.IsNullOrWhiteSpace(launchParams.ExternalAccount)
+                            ? TaskMessages.LaunchingDeferredGameRunFlow
+                            : TaskMessages.LaunchingDeferredGameWithExternalId(
+                                launchParams.ApplicationId);
+                        _dialogUtil.ShowMessage(message, TaskMessages.LaunchingDeferredGameTitle);
+                    }
+                    else
+                    {
+                        debugLaunchSettings.Arguments =
+                            _launchCommandFormatter.CreateWithLaunchName(
+                                launchParams, launch.LaunchName);
                     }
 
                     debugLaunchSettings.Executable =
@@ -275,9 +275,20 @@ namespace YetiVSI
 
                     debugLaunchSettings.LaunchOptions = DebugLaunchOptions.NoDebug |
                         DebugLaunchOptions.MergeEnvironment;
+
+                    if (launchWithProfiler)
+                    {
+                        // Launch Orbit.
+                        string gameletExecutablePath =
+                            YetiConstants.RemoteGamePath + gameletExecutableRelPath;
+                        _orbitLauncher.Launch(gameletExecutablePath, gamelet.Id);
+                    }
                 }
                 else
                 {
+                    // Code path with debugging. Puts all parameters into debugLaunchSettings and
+                    // leaves it to the debugger to actually launch the game and start Chrome.
+
                     if (_yetiVsiService.DebuggerOptions[DebuggerOption.SKIP_WAIT_LAUNCH] ==
                         DebuggerOptionState.DISABLED)
                     {
@@ -292,6 +303,12 @@ namespace YetiVSI
                     debugLaunchSettings.Arguments =
                         _launchCommandFormatter.EncodeLaunchParams(launchParams);
                     debugLaunchSettings.LaunchOptions = DebugLaunchOptions.MergeEnvironment;
+                    var parameters = new DebugEngine.DebugEngine.Params
+                    {
+                        TargetIp = new SshTarget(gamelet).GetString(),
+                        DebugSessionId = _metrics.DebugSessionId
+                    };
+                    debugLaunchSettings.Options = JsonConvert.SerializeObject(parameters);
                 }
 
                 return new IDebugLaunchSettings[] { debugLaunchSettings };

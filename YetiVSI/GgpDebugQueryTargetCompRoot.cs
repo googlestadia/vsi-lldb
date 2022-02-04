@@ -19,6 +19,7 @@ using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
+using YetiVSI.Orbit;
 using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 
@@ -92,6 +93,8 @@ namespace YetiVSI
                 gameLaunchManager, taskContext);
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter();
             var identityClient = new IdentityClient(cloudRunner);
+            var backgroundProcessFactory = new BackgroundProcess.Factory();
+            var orbitLauncher = new OrbitLauncher(backgroundProcessFactory, fileSystem);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,
@@ -99,7 +102,7 @@ namespace YetiVSI
                                            gameletSelectorFactory, cloudRunner, sdkVersion,
                                            launchCommandFormatter, yetiVsiService, gameLauncher,
                                            taskContext, new ProjectPropertiesMetricsParser(),
-                                           identityClient);
+                                           identityClient, orbitLauncher);
         }
 
         public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();
