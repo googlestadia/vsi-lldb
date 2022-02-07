@@ -36,9 +36,8 @@ namespace YetiVSI.Test.Orbit
         {
             _mainThreadContext = new FakeMainThreadContext();
             _solutionBuildManager = Substitute.For<IVsSolutionBuildManager>();
-            _command =
-                LaunchWithOrbitCommand.CreateForTesting(_mainThreadContext.JoinableTaskContext,
-                                                        _solutionBuildManager);
+            _command = new LaunchWithOrbitCommand(_mainThreadContext.JoinableTaskContext,
+                                                  _solutionBuildManager, null);
         }
 
         [Test]
@@ -75,6 +74,7 @@ namespace YetiVSI.Test.Orbit
             testCommand.Visible = false;
             _command.OnBeforeQueryStatus(testCommand, null);
             Assert.True(testCommand.Visible);
+            Assert.True(testCommand.Enabled);
 
             // Mock a non-GGP project configuration.
             activeCfg.get_CanonicalName(out anyString).Returns(x =>
@@ -84,6 +84,7 @@ namespace YetiVSI.Test.Orbit
             });
             _command.OnBeforeQueryStatus(testCommand, null);
             Assert.False(testCommand.Visible);
+            Assert.False(testCommand.Enabled);
 
             // Try to trick it into believing it's GGP.
             activeCfg.get_CanonicalName(out anyString).Returns(x =>
@@ -93,6 +94,7 @@ namespace YetiVSI.Test.Orbit
             });
             _command.OnBeforeQueryStatus(testCommand, null);
             Assert.False(testCommand.Visible);
+            Assert.False(testCommand.Enabled);
         }
 
         [Test]

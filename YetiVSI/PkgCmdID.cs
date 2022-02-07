@@ -23,6 +23,7 @@ namespace YetiVSI
         public const int cmdidLLDBShellExec = 257;
         public const int cmdidDebuggerOptionsCommand = 258;
         public const int cmdidReportBug = 259;
-        public const int cmdidLaunchWithOrbitCommand = 260;
+        public const int cmdidLaunchWithOrbitCommandMenu = 260;
+        public const int cmdidLaunchWithOrbitCommandToolbar = 261;
     };
 }

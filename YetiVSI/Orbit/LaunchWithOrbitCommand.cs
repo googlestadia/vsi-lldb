@@ -15,6 +15,7 @@
 using System;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using EnvDTE80;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.Shell;
@@ -30,6 +31,10 @@ namespace YetiVSI.Orbit
     {
         readonly JoinableTaskContext _taskContext;
         readonly IVsSolutionBuildManager _solutionBuildManager;
+
+        // Events have to be stored in this object, see
+        // https://stackoverflow.com/questions/3874015/subscription-to-dte-events-doesnt-seem-to-work-events-dont-get-called
+        readonly EnvDTE.SelectionEvents _selectionEvents;
 
         public static LaunchWithOrbitCommand Register(JoinableTaskContext taskContext,
                                                       Package package)
@@ -52,27 +57,44 @@ namespace YetiVSI.Orbit
                 return null;
             }
 
-            var command = new LaunchWithOrbitCommand(taskContext, solutionBuildManager);
-            var commandId = new CommandID(YetiConstants.CommandSetGuid,
-                                          PkgCmdID.cmdidLaunchWithOrbitCommand);
-            var menuItem = new OleMenuCommand(command.Execute, commandId);
+            if (!(serviceProvider.GetService(typeof(EnvDTE.DTE)) is DTE2 dte2))
+            {
+                Trace.WriteLine(baseErrorMessage + "DTE2 not found.");
+                return null;
+            }
+
+            EnvDTE.SelectionEvents selectionEvents = dte2.Events.SelectionEvents;
+            var command =
+                new LaunchWithOrbitCommand(taskContext, solutionBuildManager, selectionEvents);
+            var menuCommandId = new CommandID(YetiConstants.CommandSetGuid,
+                                              PkgCmdID.cmdidLaunchWithOrbitCommandMenu);
+            var menuItem = new OleMenuCommand(command.Execute, menuCommandId);
             menuItem.BeforeQueryStatus += command.OnBeforeQueryStatus;
             commandService.AddCommand(menuItem);
+
+            var toolbarCommandId = new CommandID(YetiConstants.CommandSetGuid,
+                                                 PkgCmdID.cmdidLaunchWithOrbitCommandToolbar);
+            var toolbarItem = new OleMenuCommand(command.Execute, toolbarCommandId);
+            toolbarItem.BeforeQueryStatus += command.OnBeforeQueryStatus;
+            commandService.AddCommand(toolbarItem);
+
+            // Toggle the toolbar item if the active configuration or the startup
+            // project change (apparently, anything in VS is a selection).
+            selectionEvents.OnChange += () => { command.OnBeforeQueryStatus(toolbarItem, null); };
+
             return command;
         }
 
-        public static LaunchWithOrbitCommand CreateForTesting(JoinableTaskContext taskContext,
-                                                              IVsSolutionBuildManager
-                                                                  solutionBuildManager)
-        {
-            return new LaunchWithOrbitCommand(taskContext, solutionBuildManager);
-        }
-
-        LaunchWithOrbitCommand(JoinableTaskContext taskContext,
-                               IVsSolutionBuildManager solutionBuildManager)
+        /// <summary>
+        /// Constructor public for testing. Use Register() in production code.
+        /// </summary>
+        public LaunchWithOrbitCommand(JoinableTaskContext taskContext,
+                                      IVsSolutionBuildManager solutionBuildManager,
+                                      EnvDTE.SelectionEvents selectionEvents)
         {
             _taskContext = taskContext;
             _solutionBuildManager = solutionBuildManager;
+            _selectionEvents = selectionEvents;
         }
 
         /// <summary>
@@ -92,7 +114,9 @@ namespace YetiVSI.Orbit
                 return;
             }
 
-            command.Visible = IsGgpStartupProject();
+            bool ggpProject = IsGgpStartupProject();
+            command.Visible = ggpProject; // Works for the menu item.
+            command.Enabled = ggpProject; // Works for the toolbar item.
         }
 
         /// <summary>
