@@ -753,7 +753,7 @@
   </Target>
   <!-- If DeployPythonAndToolchainDependencies is off, the code references local paths.
        This code stores the local paths in files, so that C# can get them. -->
-  <Target Name="CreateLocalPythonDirFile" Condition="!$(DeployPythonAndToolchainDependencies)" BeforeTargets="PrepareForBuild">
+  <Target Name="CreateLocalPythonDirFile" Condition="!$(DeployPythonAndToolchainDependencies)" AfterTargets="Build">
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile File="$(IntermediateOutputPath)local_python_dir.txt" Lines="$(PythonDir)" Overwrite="true" />
   </Target>
