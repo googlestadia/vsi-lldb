@@ -55,7 +55,8 @@ namespace YetiVSI.Orbit
 
         public void Launch(string gameletExecutablePath, string gameletId)
         {
-            string args = $"--connection_target={gameletExecutablePath}@{gameletId}";
+            string args = $"--target_process=\"{gameletExecutablePath}\" " +
+                          $"--target_instance={gameletId}";
             IBackgroundProcess process =
                 _backgroundProcessFactory.Create(OrbitBinaryPath, args, SDKUtil.GetOrbitPath());
             process.Start();

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using NSubstitute;
 using NUnit.Framework;
@@ -21,7 +20,7 @@ using YetiVSI.Orbit;
 
 namespace YetiVSI.Test.Orbit
 {
-    class OrbitLauncherTest
+    class OrbitLauncherTests
     {
         BackgroundProcess.Factory _processFactory;
         MockFileSystem _mockFileSystem;
@@ -42,8 +41,10 @@ namespace YetiVSI.Test.Orbit
             string gameletId = "gamelet_id";
 
             var orbitProcess = Substitute.For<IBackgroundProcess>();
-            var args = $"--connection_target={gameletExecutablePath}@{gameletId}";
-            _processFactory.Create(_orbitLauncher.OrbitBinaryPath, args, SDKUtil.GetOrbitPath())
+            var argMatcher =
+                Arg.Is<string>(x => x.Contains(gameletExecutablePath) && x.Contains(gameletId));
+            _processFactory
+                .Create(_orbitLauncher.OrbitBinaryPath, argMatcher, SDKUtil.GetOrbitPath())
                 .Returns(orbitProcess);
 
             _orbitLauncher.Launch(gameletExecutablePath, gameletId);

@@ -38,6 +38,16 @@
         </Strings>
       </Button>
 
+      <Button guid="guidYetiVSIPackageCmdSet" id="cmdidLaunchWithOrbitCommand" priority="0x0100" type="Button">
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Parent guid="guidYetiVSIPackageCmdSet" id="yetiDebugMenuGroup" />
+        <Icon guid="guidYetiIcons" id="yetiIcon1" />
+        <Strings>
+          <ButtonText>Profile with O&amp;rbit for Stadia</ButtonText>
+        </Strings>
+      </Button>
+
       <Button guid="guidYetiVSIPackageCmdSet" id="cmdidLLDBShellExec" priority="0x0100" type="Button">
         <!-- https://docs.microsoft.com/en-us/visualstudio/extensibility/command-flag-element -->
         <CommandFlag>AllowParams</CommandFlag>
@@ -80,6 +90,7 @@
       <IDSymbol name="cmdidLLDBShellExec" value="257" />
       <IDSymbol name="cmdidDebuggerOptionsCommand" value="258" />
       <IDSymbol name="cmdidReportBug" value="259" />
+      <IDSymbol name="cmdidLaunchWithOrbitCommand" value="260" />
     </GuidSymbol>
     <GuidSymbol name="guidYetiIcons" value="{7ef24189-6258-4cf1-808b-0f513b5a50f4}">
       <IDSymbol name="yetiIcon1" value="1" />

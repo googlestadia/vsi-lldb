@@ -131,7 +131,7 @@ namespace YetiCommon
             "'Project Properties' -> 'Debugging' -> 'Stadia Launch Arguments'.";
 
         public static string OrbitNotInstalled(string orbitBinaryPath) =>
-            "The Orbit CPU and System Profiler is not installed. The Orbit binary was not found " +
+            "The Orbit for Stadia profiler is not installed. The Orbit binary was not found " +
             $"at {orbitBinaryPath}. Re-run the Stadia SDK Installer and include the " +
             "\"Orbit for Stadia\" feature.";
     }

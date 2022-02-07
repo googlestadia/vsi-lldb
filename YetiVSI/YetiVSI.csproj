@@ -215,6 +215,7 @@
     <Compile Include="GameLaunch\VsiGameLaunch.cs" />
     <Compile Include="GameletMountChecker.cs" />
     <Compile Include="Metrics\ProjectPropertiesMetricsParser.cs" />
+    <Compile Include="Orbit\LaunchWithOrbitCommand.cs" />
     <Compile Include="Orbit\OrbitLauncher.cs" />
     <Compile Include="ProjectInstanceSelectionWindow.xaml.cs">
       <DependentUpon>ProjectInstanceSelectionWindow.xaml</DependentUpon>

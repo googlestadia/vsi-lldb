@@ -31,6 +31,7 @@ using YetiVSI.DebuggerOptions;
 using YetiVSI.LLDBShell;
 using YetiVSI.LoadSymbols;
 using YetiVSI.Metrics;
+using YetiVSI.Orbit;
 using YetiVSI.Shared.Metrics;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
 using Task = System.Threading.Tasks.Task;
@@ -66,14 +67,13 @@ namespace YetiVSI
         /// package is sited, so this is the place where you can put all the
         /// initialization code that rely on services provided by VisualStudio.
         /// </summary>
-        protected override async Task InitializeAsync(
-            CancellationToken cancellationToken,
-            IProgress<ServiceProgressData> progress)
+        protected override async Task InitializeAsync(CancellationToken cancellationToken,
+                                                      IProgress<ServiceProgressData> progress)
         {
             var serviceManager = new ServiceManager();
             _taskContext = serviceManager.GetJoinableTaskContext();
             AddServices();
-            _metricsService = (MetricsService)await GetServiceAsync(typeof(SMetrics));
+            _metricsService = (MetricsService) await GetServiceAsync(typeof(SMetrics));
             // MetricsService was registered in `AddServices`, so it should be present.
             Assumes.Present(_metricsService);
             _metricsService.RecordEvent(DeveloperEventType.Types.Type.VsiInitialized,
@@ -99,6 +99,7 @@ namespace YetiVSI
             _packageDteEvents.OnBeginShutdown += HandleVisualStudioShutDown;
 
             CoreAttachCommand.Register(this);
+            LaunchWithOrbitCommand.Register(taskContext, this);
             LLDBShellCommandTarget.Register(taskContext, this);
             DebuggerOptionsCommand.Register(taskContext, this);
 
@@ -129,8 +130,8 @@ namespace YetiVSI
                                                  Type serviceType)
         {
             await _taskContext.Factory.SwitchToMainThreadAsync();
-            var vsCommandWindow = (IVsCommandWindow)
-                await GetServiceAsync(typeof(SVsCommandWindow));
+            var vsCommandWindow =
+                (IVsCommandWindow) await GetServiceAsync(typeof(SVsCommandWindow));
             var commandWindowWriter = new CommandWindowWriter(_taskContext, vsCommandWindow);
             return new LLDBShell.LLDBShell(_taskContext, commandWindowWriter);
         }
@@ -157,9 +158,9 @@ namespace YetiVSI
                                                        Type serviceType)
         {
             ISessionNotifier sessionNotifier = new SessionNotifierService();
-            var vsiService = (YetiVSIService)GetGlobalService(typeof(YetiVSIService));
+            var vsiService = (YetiVSIService) GetGlobalService(typeof(YetiVSIService));
             await _taskContext.Factory.SwitchToMainThreadAsync();
-            var metricsService = (IMetrics)await GetServiceAsync(typeof(SMetrics));
+            var metricsService = (IMetrics) await GetServiceAsync(typeof(SMetrics));
             var exceptionRecorder = new ExceptionRecorder(metricsService);
             var loadSymbolsCommand = new LoadSymbolsCommand(
                 _taskContext, this, exceptionRecorder, vsiService);
