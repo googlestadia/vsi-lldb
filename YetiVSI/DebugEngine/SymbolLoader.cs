@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using DebuggerApi;
+using JetBrains.Annotations;
 using YetiCommon;
 using YetiCommon.Logging;
 using YetiVSI.Util;
@@ -35,8 +36,8 @@ namespace YetiVSI.DebugEngine
         /// True if the module's symbols were successfully loaded or were already loaded, false
         /// otherwise.
         /// </returns>
-        /// <exception cref="ArgumentNullException">Thrown when |lldbModule| is null.</exception>
-        Task<bool> LoadSymbolsAsync(SbModule lldbModule, TextWriter searchLog,
+        Task<bool> LoadSymbolsAsync([NotNull] SbModule lldbModule,
+                                    [NotNull] TextWriter searchLog,
                                     bool useSymbolStores, bool forceLoad);
     }
 
@@ -74,18 +75,13 @@ namespace YetiVSI.DebugEngine
         public virtual async Task<bool> LoadSymbolsAsync(
             SbModule lldbModule, TextWriter searchLog, bool useSymbolStores, bool forceLoad)
         {
-            if (lldbModule == null) { throw new ArgumentNullException(nameof(lldbModule)); }
-            searchLog = searchLog ?? TextWriter.Null;
-
             // Return early if symbols are already loaded
             if (lldbModule.HasSymbolsLoaded()) { return true; }
-            
             // PE file doesn't contain symbol path.
             if (lldbModule.GetTriple() == "x86_64-pc-windows-msvc")
             {
                 return false;
             }
-
             DebugLinkLocation symbolFileLocation =
                 await GetSymbolFileDirAndNameAsync(lldbModule, searchLog);
             

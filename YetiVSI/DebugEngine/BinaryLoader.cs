@@ -16,6 +16,7 @@ using DebuggerApi;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using YetiCommon;
 using YetiCommon.CastleAspects;
 using YetiCommon.Logging;
@@ -40,10 +41,8 @@ namespace YetiVSI.DebugEngine
         /// A new (updated) module and true if the binary was loaded successfully or was already
         /// loaded, false otherwise.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when |lldbModule| is null.
-        /// </exception>
-        Task<(SbModule, bool)> LoadBinaryAsync(SbModule lldbModule, TextWriter searchLog);
+        Task<(SbModule, bool)> LoadBinaryAsync([NotNull] SbModule lldbModule,
+                                               [NotNull] TextWriter searchLog);
     }
 
     public class LldbModuleReplacedEventArgs : EventArgs
@@ -90,9 +89,6 @@ namespace YetiVSI.DebugEngine
         public virtual async Task<(SbModule, bool)> LoadBinaryAsync(
             SbModule lldbModule, TextWriter searchLog)
         {
-            if (lldbModule == null) { throw new ArgumentNullException(nameof(lldbModule)); }
-            searchLog = searchLog ?? TextWriter.Null;
-
             if (lldbModule.HasBinaryLoaded())
             {
                 return (lldbModule, true);

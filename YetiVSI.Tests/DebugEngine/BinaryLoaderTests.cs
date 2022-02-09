@@ -63,14 +63,6 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void LoadBinary_NullModule()
-        {
-            SbModule module = null;
-            Assert.ThrowsAsync<ArgumentNullException>(
-                () => _binaryLoader.LoadBinaryAsync(module, _searchLog));
-        }
-
-        [Test]
         public async Task LoadBinary_AlreadyLoadedAsync()
         {
             var loadedModule = Substitute.For<SbModule>();

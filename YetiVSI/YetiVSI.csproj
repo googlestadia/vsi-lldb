@@ -374,6 +374,9 @@
     <Reference Include="UIAutomationClient" />
     <Reference Include="UIAutomationTypes" />
     <Reference Include="WindowsBase" />
+    <PackageReference Include="JetBrains.Annotations">
+      <Version>2021.3.0</Version>
+    </PackageReference>
     <!--
       This is a workaround for a known issue with older MSBuild:
       https://github.com/Microsoft/dotnet/blob/master/releases/net472/KnownIssues/613745%20-%20Single-name%20references%20are%20removed%20by%20the%20SDK%20when%20targeting%204.7.2.md

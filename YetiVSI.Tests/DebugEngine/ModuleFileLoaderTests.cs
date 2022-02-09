@@ -199,7 +199,7 @@ namespace YetiVSI.Test.DebugEngine
 
             await AssertLoadBinaryReceivedAsync(module);
             await mockSymbolLoader.DidNotReceiveWithAnyArgs()
-                .LoadSymbolsAsync(null, null,true, false);
+                .LoadSymbolsAsync(module, null,true, false);
         }
 
         [Test]

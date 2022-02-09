@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using DebuggerApi;
-using Microsoft.VisualStudio;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using DebuggerApi;
+using JetBrains.Annotations;
+using Microsoft.VisualStudio;
 using YetiCommon;
 using YetiCommon.Logging;
 
@@ -39,15 +39,19 @@ namespace YetiVSI.DebugEngine
         /// <returns>
         /// A <see cref="LoadModuleFilesResult"/>.
         /// </returns>
-        /// <exception cref="ArgumentNullException">Thrown if any argument is null.</exception>
-        Task<LoadModuleFilesResult> LoadModuleFilesAsync(IList<SbModule> modules, ICancelable task,
-                                       IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
+        Task<LoadModuleFilesResult> LoadModuleFilesAsync(
+            [NotNull, ItemNotNull] IList<SbModule> modules,
+            [NotNull] ICancelable task,
+            [NotNull] IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
 
         /// <summary>
-        /// Same as LoadModuleFiles(IList<SbModule>, ICancelable, IModuleFileLoadMetricsRecorder),
+        /// Same as <see cref="LoadModuleFilesAsync(System.Collections.Generic.IList{DebuggerApi.SbModule},YetiVSI.ICancelable,YetiVSI.DebugEngine.IModuleFileLoadMetricsRecorder)"/>
         /// but allows user to additionally specify modules for which symbols should be loaded
         /// via SymbolInclusionSettings.
         /// </summary>
+        /// <param name="modules">List of modules to process.</param>
+        /// <param name="symbolSettings">Symbol settings with IncludeList and ExcludeList
+        /// to filter out symbols that should be skipped. </param>
         /// <param name="useSymbolStores">
         /// If true, then during loading the module the method will try to lookup module in
         /// symbol stores by the name extracted from module.
@@ -57,10 +61,19 @@ namespace YetiVSI.DebugEngine
         /// If true, then the method will not return suggestion to enable symbol store server.
         /// A <see cref="LoadModuleFilesResult.SuggestToEnableSymbolStore"/>.
         /// </param>
+        /// <param name="task">Long-running operation associated with the process.</param>
+        /// <param name="moduleFileLoadRecorder">Instance to record metrics related to the
+        /// loading of symbols and binaries.</param>
+        /// <returns>
+        /// A <see cref="LoadModuleFilesResult"/>.
+        /// </returns>
         Task<LoadModuleFilesResult> LoadModuleFilesAsync(
-            IList<SbModule> modules, SymbolInclusionSettings symbolSettings, bool useSymbolStores,
-            bool isStadiaSymbolsServerUsed, ICancelable task,
-            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
+            [NotNull, ItemNotNull] IList<SbModule> modules,
+            SymbolInclusionSettings symbolSettings,
+            bool useSymbolStores,
+            bool isStadiaSymbolsServerUsed,
+            [NotNull] ICancelable task,
+            [NotNull] IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
     }
 
     public interface IModuleFileLoaderFactory
@@ -130,8 +143,8 @@ namespace YetiVSI.DebugEngine
         readonly IBinaryLoader _binaryLoader;
         readonly bool _isCoreAttach;
         readonly IModuleSearchLogHolder _moduleSearchLogHolder;
-        readonly static IList<Regex> _importantModulesForCoreDumpDebugging =
-            new []
+        static readonly IList<Regex> _importantModulesForCoreDumpDebugging =
+            new[]
             {
                 new Regex("amdvlk64\\.so", RegexOptions.Compiled),
                 new Regex("ggpvlk\\.so", RegexOptions.Compiled),
@@ -207,25 +220,13 @@ namespace YetiVSI.DebugEngine
         }
 
         public async Task<LoadModuleFilesResult> LoadModuleFilesAsync(
-            IList<SbModule> modules, SymbolInclusionSettings symbolSettings, bool useSymbolStores,
-            bool isStadiaSymbolsServerUsed, ICancelable task,
+            IList<SbModule> modules,
+            SymbolInclusionSettings symbolSettings,
+            bool useSymbolStores,
+            bool isStadiaSymbolsServerUsed,
+            ICancelable task,
             IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
         {
-            if (modules == null)
-            {
-                throw new ArgumentNullException(nameof(modules));
-            }
-
-            if (task == null)
-            {
-                throw new ArgumentNullException(nameof(task));
-            }
-
-            if (moduleFileLoadRecorder == null)
-            {
-                throw new ArgumentNullException(nameof(moduleFileLoadRecorder));
-            }
-            
             // If LoadSymbols is called from the "Modules -> Load Symbols" context menu
             // or by clicking "Load Symbols" in "Symbols" pane in the settings, `symbolSettings`
             // will be empty. On the other hand, when LoadSymbols is called during
@@ -238,8 +239,12 @@ namespace YetiVSI.DebugEngine
             // are still recorded if the task is aborted or cancelled.
             moduleFileLoadRecorder.RecordBeforeLoad(modules);
 
-            var result = new LoadModuleFilesResult() { ResultCode = VSConstants.S_OK,
-                                                       SuggestToEnableSymbolStore = false };
+            var result = new LoadModuleFilesResult
+            {
+                ResultCode = VSConstants.S_OK,
+                SuggestToEnableSymbolStore = false
+            };
+
             for (int i = 0; i < modules.Count; ++i)
             {
                 SbModule module = modules[i];
@@ -287,7 +292,6 @@ namespace YetiVSI.DebugEngine
                         if (!loaded)
                         {
                             result.ResultCode = VSConstants.E_FAIL;
-                            continue;
                         }
                     }
                     finally

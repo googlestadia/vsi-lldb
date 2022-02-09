@@ -370,13 +370,6 @@ namespace YetiVSI.Test.DebugEngine
             StringAssert.Contains("Illegal characters", _logSpy.GetOutput());
         }
 
-        [Test]
-        public void LoadSymbols_NullModule()
-        {
-            Assert.ThrowsAsync<ArgumentNullException>(
-                () => _symbolLoader.LoadSymbolsAsync(null, _searchLog, true, false));
-        }
-
         SbModule CreateMockModule()
         {
             var mockModule = Substitute.For<SbModule>();

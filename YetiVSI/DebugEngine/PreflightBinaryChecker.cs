@@ -64,47 +64,19 @@ namespace YetiVSI.DebugEngine
         /// <param name="remoteTargetPath">Remote path where the binary is expected to be</param>
         /// <param name="action">An action to be recorded as a metrics log event.</param>
         public async Task CheckLocalAndRemoteBinaryOnLaunchAsync(
-            IEnumerable<string> libPaths, string executable, SshTarget target,
+            ISet<string> libPaths, string executable, SshTarget target,
             string remoteTargetPath, IAction action)
         {
             // Check that the remote binary has a build id and try to match it against
             // the local candidates to find the matching local binary.
-            var localCandidatePaths = new List<string>();
             var dataRecorder = new DataRecorder(action,
                 DebugPreflightCheckData.Types.CheckType.RunAndAttach);
+            BuildId remoteBuildId;
             try
             {
                 // Get the remote build id and only continue if this step succeeds.
-                BuildId remoteBuildId =
-                        await _moduleParser.ParseRemoteBuildIdInfoAsync(remoteTargetPath, target);
-
-                // Log the remote Build ID for debugging purposes.
-                dataRecorder.ValidRemoteBuildId();
-                Trace.WriteLine($"Remote build ID: {remoteBuildId}");
-
-                // Make sure there is a local binary with the same name.
-                localCandidatePaths = FindExecutableCandidates(libPaths, executable);
-                if (localCandidatePaths.Count == 0)
-                {
-                    dataRecorder.LocalBinaryCheckResult(
-                        DebugPreflightCheckData.Types.LocalBinarySearchResult.NoCandidates);
-                    throw new NoLocalCandidatesException();
-                }
-
-                // Check local candidates to find one matching the remote build id.
-                // Ignore local candidates that are missing a build id.
-                if (HasMatchingBuildId(
-                        localCandidatePaths, executable, remoteTargetPath, remoteBuildId))
-                {
-                    dataRecorder.LocalBinaryCheckResult(
-                        DebugPreflightCheckData.Types.LocalBinarySearchResult.BinaryMatch);
-                }
-                else
-                {
-                    dataRecorder.LocalBinaryCheckResult(
-                        DebugPreflightCheckData.Types.LocalBinarySearchResult.BinaryMismatch);
-                    throw new NoMatchingLocalCandidatesException();
-                }
+                remoteBuildId =
+                    await _moduleParser.ParseRemoteBuildIdInfoAsync(remoteTargetPath, target);
             }
             catch (BinaryFileUtilException e)
             {
@@ -115,21 +87,43 @@ namespace YetiVSI.DebugEngine
                 throw new PreflightBinaryCheckerException(
                     ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(e.Message), e);
             }
-            catch (NoLocalCandidatesException e)
+
+            // Log the remote Build ID for debugging purposes.
+            dataRecorder.ValidRemoteBuildId();
+            Trace.WriteLine($"Remote build ID: {remoteBuildId}");
+
+            // Make sure there is a local binary with the same name.
+            List<string> localCandidatePaths = FindExecutableCandidates(libPaths, executable);
+            if (localCandidatePaths.Count == 0)
             {
+                dataRecorder.LocalBinaryCheckResult(
+                    DebugPreflightCheckData.Types.LocalBinarySearchResult.NoCandidates);
                 Trace.WriteLine($"Unable to find executable '{executable}' on LLDB search paths.");
                 throw new PreflightBinaryCheckerException(
                     ErrorStrings.UnableToFindExecutable(executable),
-                    ErrorStrings.ExecutableCheckDetails(libPaths), e);
+                    ErrorStrings.ExecutableCheckDetails(libPaths),
+                    new NoLocalCandidatesException());
             }
-            catch (NoMatchingLocalCandidatesException e)
+
+            // Check local candidates to find one matching the remote build id.
+            // Ignore local candidates that are missing a build id.
+            if (HasMatchingBuildId(
+                    localCandidatePaths, executable, remoteTargetPath, remoteBuildId))
             {
+                dataRecorder.LocalBinaryCheckResult(
+                    DebugPreflightCheckData.Types.LocalBinarySearchResult.BinaryMatch);
+            }
+            else
+            {
+                dataRecorder.LocalBinaryCheckResult(
+                    DebugPreflightCheckData.Types.LocalBinarySearchResult.BinaryMismatch);
                 Trace.WriteLine(
                     $"No local copy of '{executable}' matched the build ID of the remote binary");
                 throw new PreflightBinaryCheckerException(
                     ErrorStrings.UnableToFindExecutableMatchingRemoteBinary(executable,
                         remoteTargetPath),
-                    ErrorStrings.BuildIdCheckDetails(localCandidatePaths, libPaths), e);
+                    ErrorStrings.BuildIdCheckDetails(localCandidatePaths, libPaths),
+                    new NoMatchingLocalCandidatesException());
             }
         }
 
@@ -143,7 +137,7 @@ namespace YetiVSI.DebugEngine
         public async Task CheckRemoteBinaryOnAttachAsync(uint pid, SshTarget target,
                                                          IAction action)
         {
-            var remoteTargetPath = string.Format(_pidExePathTemplate, pid);
+            string remoteTargetPath = string.Format(_pidExePathTemplate, pid);
             var dataRecorder =
                 new DataRecorder(action, DebugPreflightCheckData.Types.CheckType.AttachOnly);
             try
@@ -170,9 +164,9 @@ namespace YetiVSI.DebugEngine
             string remoteTargetPath, BuildId remoteBuildId)
         {
             // TODO: re-write this using LINQ and Optional<T, TException>
-            foreach (var path in localCandidatePaths)
+            foreach (string path in localCandidatePaths)
             {
-                var localBuildId = _moduleParser.ParseBuildIdInfo(path, true);
+                BuildIdInfo localBuildId = _moduleParser.ParseBuildIdInfo(path, true);
                 if (localBuildId.HasError)
                 {
                     Trace.WriteLine(
@@ -230,7 +224,7 @@ namespace YetiVSI.DebugEngine
 
             public DataRecorder(IAction action, DebugPreflightCheckData.Types.CheckType type)
             {
-                this._action = action;
+                _action = action;
                 RecordData(new DebugPreflightCheckData() { CheckType = type });
             }
 
@@ -243,7 +237,7 @@ namespace YetiVSI.DebugEngine
                 });
             }
 
-            public bool RemoteBuildIdError(BinaryFileUtilException e)
+            public void RemoteBuildIdError(BinaryFileUtilException e)
             {
                 var data = new DebugPreflightCheckData();
                 if (e is InvalidBuildIdException)
@@ -252,20 +246,24 @@ namespace YetiVSI.DebugEngine
                         DebugPreflightCheckData.Types.RemoteBuildIdCheckResult
                             .InvalidRemoteBuildId;
                 }
-                else if (e.InnerException is ProcessExecutionException)
+                else
                 {
-                    data.RemoteBuildIdCheckResult =
-                        DebugPreflightCheckData.Types.RemoteBuildIdCheckResult
-                            .RemoteBinaryError;
+                    switch (e.InnerException)
+                    {
+                        case ProcessExecutionException _:
+                            data.RemoteBuildIdCheckResult =
+                                DebugPreflightCheckData.Types.RemoteBuildIdCheckResult
+                                    .RemoteBinaryError;
+                            break;
+                        case ProcessException _:
+                            data.RemoteBuildIdCheckResult =
+                                DebugPreflightCheckData.Types.RemoteBuildIdCheckResult
+                                    .RemoteCommandError;
+                            break;
+                    }
                 }
-                else if (e.InnerException is ProcessException)
-                {
-                    data.RemoteBuildIdCheckResult =
-                        DebugPreflightCheckData.Types.RemoteBuildIdCheckResult
-                            .RemoteCommandError;
-                }
+
                 RecordData(data);
-                return false;
             }
 
             public void LocalBinaryCheckResult(

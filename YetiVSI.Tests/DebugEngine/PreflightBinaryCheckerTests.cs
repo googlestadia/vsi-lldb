@@ -12,17 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using NSubstitute;
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using NSubstitute.ExceptionExtensions;
+using NSubstitute;
+using NUnit.Framework;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.DebugEngine;
@@ -48,7 +45,7 @@ namespace YetiVSI.Test.DebugEngine
         static readonly SshTarget _target = new SshTarget("127.0.0.1:22");
         static readonly BuildId _validBuildId = new BuildId("AA");
         static readonly BuildId _validBuildId2 = new BuildId("BB");
-        static readonly string[] _searchPaths = { "/path1", "/path2" };
+        static readonly HashSet<string> _searchPaths = new HashSet<string> { "/path1", "/path2" };
         static readonly List<string> _localPaths =
             _searchPaths.Select(path => Path.Combine(path, _executable)).ToList();
 
@@ -154,9 +151,9 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task CheckLocalAndRemoteBinarySucceedsAsync()
         {
-            _fileSystem.AddDirectory(_searchPaths[0]);
+            _fileSystem.AddDirectory(_searchPaths.ElementAt(0));
             _fileSystem.AddFile(_localPaths[0], new MockFileData(""));
-            _fileSystem.AddDirectory(_searchPaths[1]);
+            _fileSystem.AddDirectory(_searchPaths.ElementAt(1));
             _fileSystem.AddFile(_localPaths[1], new MockFileData(""));
 
             // The modules are valid ELF files.
@@ -211,7 +208,7 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void CheckLocalAndRemoteBinaryFailsInvalidRemoteBuildId()
         {
-            _fileSystem.AddDirectory(_searchPaths[0]);
+            _fileSystem.AddDirectory(_searchPaths.ElementAt(0));
             _fileSystem.AddFile(_localPaths[0], new MockFileData(""));
             _moduleParser.ParseRemoteBuildIdInfoAsync(_remoteTargetPath, _target)
                 .Returns(Task.FromException<BuildId>(new InvalidBuildIdException("test")));
@@ -237,7 +234,7 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void CheckLocalAndRemoteBinaryFailsReadLocal()
         {
-            _fileSystem.AddDirectory(_searchPaths[0]);
+            _fileSystem.AddDirectory(_searchPaths.ElementAt(0));
             _fileSystem.AddFile(_localPaths[0], new MockFileData(""));
 
             var buildIdInfoInvalid = new BuildIdInfo() {Data = new BuildId("BAAD")};
@@ -271,7 +268,7 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void CheckLocalAndRemoteBinaryFailsMismatch()
         {
-            _fileSystem.AddDirectory(_searchPaths[0]);
+            _fileSystem.AddDirectory(_searchPaths.ElementAt(0));
             _fileSystem.AddFile(_localPaths[0], new MockFileData(""));
 
             var buildIdInfoInvalid = new BuildIdInfo();
