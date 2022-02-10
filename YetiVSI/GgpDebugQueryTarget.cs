@@ -29,7 +29,7 @@ using YetiCommon.SSH;
 using YetiVSI.DebuggerOptions;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
-using YetiVSI.Orbit;
+using YetiVSI.Profiling;
 using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Shared.Metrics;
 
@@ -112,13 +112,15 @@ namespace YetiVSI
                 }
 
                 // Check if Orbit is installed.
-                bool launchWithProfiler = launchOptions.HasFlag(DebugLaunchOptions.Profiling);
-                if (launchWithProfiler && !_orbitLauncher.IsOrbitInstalled())
+                bool launchWithOrbit = launchOptions.HasFlag(
+                    LaunchWithProfilerCommand.GetLaunchOption(ProfilerType.Orbit));
+                if (launchWithOrbit && !_orbitLauncher.IsOrbitInstalled())
                 {
                     _dialogUtil.ShowError(
                         YetiCommon.ErrorStrings.OrbitNotInstalled(_orbitLauncher.OrbitBinaryPath));
                     return new IDebugLaunchSettings[] { };
                 }
+
                 _metrics.UseNewDebugSessionId();
                 var actionRecorder = new ActionRecorder(_metrics);
 
@@ -276,7 +278,7 @@ namespace YetiVSI
                     debugLaunchSettings.LaunchOptions = DebugLaunchOptions.NoDebug |
                         DebugLaunchOptions.MergeEnvironment;
 
-                    if (launchWithProfiler)
+                    if (launchWithOrbit)
                     {
                         // Launch Orbit.
                         string gameletExecutablePath =

@@ -24,24 +24,30 @@ using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiVSI.Util;
 
-namespace YetiVSI.Orbit
+namespace YetiVSI.Profiling
 {
-    // A menu command to launch a game and profile it with Orbit.
-    public sealed class LaunchWithOrbitCommand
+    public enum ProfilerType
+    {
+        Orbit
+    }
+
+    // A menu command to launch a game and profile it with a profiler.
+    public sealed class LaunchWithProfilerCommand
     {
         readonly JoinableTaskContext _taskContext;
         readonly IVsSolutionBuildManager _solutionBuildManager;
+        readonly DebugLaunchOptions _profilerLaunchOption;
 
         // Events have to be stored in this object, see
         // https://stackoverflow.com/questions/3874015/subscription-to-dte-events-doesnt-seem-to-work-events-dont-get-called
         readonly EnvDTE.SelectionEvents _selectionEvents;
 
-        public static LaunchWithOrbitCommand Register(JoinableTaskContext taskContext,
-                                                      Package package)
+        public static LaunchWithProfilerCommand Register(JoinableTaskContext taskContext,
+                                                         Package package, ProfilerType profilerType)
         {
             taskContext.ThrowIfNotOnMainThread();
 
-            const string baseErrorMessage = "Failed to register LaunchWithOrbitCommand: ";
+            const string baseErrorMessage = "Failed to register LaunchWithProfilerCommand: ";
             var serviceProvider = ((IServiceProvider)package);
             if (!(serviceProvider.GetService(typeof(IVsSolutionBuildManager)) is
                 IVsSolutionBuildManager solutionBuildManager))
@@ -64,16 +70,17 @@ namespace YetiVSI.Orbit
             }
 
             EnvDTE.SelectionEvents selectionEvents = dte2.Events.SelectionEvents;
-            var command =
-                new LaunchWithOrbitCommand(taskContext, solutionBuildManager, selectionEvents);
-            var menuCommandId = new CommandID(YetiConstants.CommandSetGuid,
-                                              PkgCmdID.cmdidLaunchWithOrbitCommandMenu);
+            var command = new LaunchWithProfilerCommand(taskContext, solutionBuildManager,
+                                                        GetLaunchOption(profilerType),
+                                                        selectionEvents);
+            (int menuCmdId, int toolbarCmdId) = GetMenuAndToolbarCmdIds(profilerType);
+
+            var menuCommandId = new CommandID(YetiConstants.CommandSetGuid, menuCmdId);
             var menuItem = new OleMenuCommand(command.Execute, menuCommandId);
             menuItem.BeforeQueryStatus += command.OnBeforeQueryStatus;
             commandService.AddCommand(menuItem);
 
-            var toolbarCommandId = new CommandID(YetiConstants.CommandSetGuid,
-                                                 PkgCmdID.cmdidLaunchWithOrbitCommandToolbar);
+            var toolbarCommandId = new CommandID(YetiConstants.CommandSetGuid, toolbarCmdId);
             var toolbarItem = new OleMenuCommand(command.Execute, toolbarCommandId);
             toolbarItem.BeforeQueryStatus += command.OnBeforeQueryStatus;
             commandService.AddCommand(toolbarItem);
@@ -85,15 +92,40 @@ namespace YetiVSI.Orbit
             return command;
         }
 
+        static (int, int) GetMenuAndToolbarCmdIds(ProfilerType profilerType)
+        {
+            switch (profilerType)
+            {
+                case ProfilerType.Orbit:
+                    return (PkgCmdID.cmdidLaunchWithOrbitCommandMenu,
+                        PkgCmdID.cmdidLaunchWithOrbitCommandToolbar);
+            }
+
+            throw new NotImplementedException($"Unhandled ProfilerType {profilerType}");
+        }
+
+        public static DebugLaunchOptions GetLaunchOption(ProfilerType profilerType)
+        {
+            switch (profilerType)
+            {
+                case ProfilerType.Orbit:
+                    return DebugLaunchOptions.Profiling;
+            }
+
+            throw new NotImplementedException($"Unhandled ProfilerType {profilerType}");
+        }
+
         /// <summary>
         /// Constructor public for testing. Use Register() in production code.
         /// </summary>
-        public LaunchWithOrbitCommand(JoinableTaskContext taskContext,
-                                      IVsSolutionBuildManager solutionBuildManager,
-                                      EnvDTE.SelectionEvents selectionEvents)
+        public LaunchWithProfilerCommand(JoinableTaskContext taskContext,
+                                         IVsSolutionBuildManager solutionBuildManager,
+                                         DebugLaunchOptions profilerLaunchOption,
+                                         EnvDTE.SelectionEvents selectionEvents)
         {
             _taskContext = taskContext;
             _solutionBuildManager = solutionBuildManager;
+            _profilerLaunchOption = profilerLaunchOption;
             _selectionEvents = selectionEvents;
         }
 
@@ -109,7 +141,7 @@ namespace YetiVSI.Orbit
             var command = sender as OleMenuCommand;
             if (command == null)
             {
-                Trace.WriteLine("Failed to determine visibility of LaunchWithOrbitCommand: " +
+                Trace.WriteLine("Failed to determine visibility of LaunchWithProfilerCommand: " +
                                 "Command is not an OleMenuCommand.");
                 return;
             }
@@ -120,15 +152,15 @@ namespace YetiVSI.Orbit
         }
 
         /// <summary>
-        /// Builds and launches the startup project, starts Orbit and instructs it to attach to the
-        /// game process.
+        /// Builds and launches the startup project, starts the profiler and instructs it to attach
+        /// to the game process.
         /// Public for testing.
         /// </summary>
         public void Execute(object sender, EventArgs e)
         {
             _taskContext.ThrowIfNotOnMainThread();
 
-            var launchOptions = DebugLaunchOptions.NoDebug | DebugLaunchOptions.Profiling;
+            var launchOptions = DebugLaunchOptions.NoDebug | _profilerLaunchOption;
             int res = _solutionBuildManager.DebugLaunch((uint) launchOptions);
             if (res != VSConstants.S_OK)
             {

@@ -31,7 +31,7 @@ using YetiVSI.DebuggerOptions;
 using YetiVSI.LLDBShell;
 using YetiVSI.LoadSymbols;
 using YetiVSI.Metrics;
-using YetiVSI.Orbit;
+using YetiVSI.Profiling;
 using YetiVSI.Shared.Metrics;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
 using Task = System.Threading.Tasks.Task;
@@ -99,7 +99,7 @@ namespace YetiVSI
             _packageDteEvents.OnBeginShutdown += HandleVisualStudioShutDown;
 
             CoreAttachCommand.Register(this);
-            LaunchWithOrbitCommand.Register(taskContext, this);
+            LaunchWithProfilerCommand.Register(taskContext, this, ProfilerType.Orbit);
             LLDBShellCommandTarget.Register(taskContext, this);
             DebuggerOptionsCommand.Register(taskContext, this);
 

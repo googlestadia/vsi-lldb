@@ -16,9 +16,9 @@ using System.IO.Abstractions.TestingHelpers;
 using NSubstitute;
 using NUnit.Framework;
 using YetiCommon;
-using YetiVSI.Orbit;
+using YetiVSI.Profiling;
 
-namespace YetiVSI.Test.Orbit
+namespace YetiVSI.Test.Profiling
 {
     class OrbitLauncherTests
     {

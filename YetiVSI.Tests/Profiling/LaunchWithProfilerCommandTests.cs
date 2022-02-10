@@ -19,25 +19,28 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using NSubstitute;
 using NUnit.Framework;
-using YetiVSI.Orbit;
+using YetiVSI.Profiling;
 using YetiVSITestsCommon;
 using Task = System.Threading.Tasks.Task;
 
-namespace YetiVSI.Test.Orbit
+namespace YetiVSI.Test.Profiling
 {
-    class LaunchWithOrbitCommandTests
+    class LaunchWithProfilerCommandTests
     {
         FakeMainThreadContext _mainThreadContext;
         IVsSolutionBuildManager _solutionBuildManager;
-        LaunchWithOrbitCommand _command;
+        DebugLaunchOptions _debugLaunchOption;
+        LaunchWithProfilerCommand _command;
 
         [SetUp]
         public void SetUp()
         {
             _mainThreadContext = new FakeMainThreadContext();
             _solutionBuildManager = Substitute.For<IVsSolutionBuildManager>();
-            _command = new LaunchWithOrbitCommand(_mainThreadContext.JoinableTaskContext,
-                                                  _solutionBuildManager, null);
+            _debugLaunchOption = DebugLaunchOptions.Profiling | DebugLaunchOptions.DetachOnStop;
+            _command = new LaunchWithProfilerCommand(_mainThreadContext.JoinableTaskContext,
+                                                     _solutionBuildManager, _debugLaunchOption,
+                                                     null);
         }
 
         [Test]
@@ -103,7 +106,7 @@ namespace YetiVSI.Test.Orbit
             await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
 
             _command.Execute(null, null);
-            var launchOptions = DebugLaunchOptions.NoDebug | DebugLaunchOptions.Profiling;
+            var launchOptions = DebugLaunchOptions.NoDebug | _debugLaunchOption;
             _solutionBuildManager.Received().DebugLaunch((uint) launchOptions);
         }
     }

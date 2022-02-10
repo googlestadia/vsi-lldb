@@ -16,7 +16,7 @@ using System.IO;
 using System.IO.Abstractions;
 using YetiCommon;
 
-namespace YetiVSI.Orbit
+namespace YetiVSI.Profiling
 {
     public interface IOrbitLauncher
     {

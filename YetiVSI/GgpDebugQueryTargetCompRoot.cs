@@ -19,7 +19,7 @@ using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
-using YetiVSI.Orbit;
+using YetiVSI.Profiling;
 using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 
