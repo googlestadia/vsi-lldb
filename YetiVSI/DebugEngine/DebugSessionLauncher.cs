@@ -631,7 +631,7 @@ namespace YetiVSI.DebugEngine
                 {
                     Trace.WriteLine($"Full dump load: module {moduleName} path set to " +
                                     $"{moduleOriginPath}.");
-                    _moduleSearchLogHolder.SetSearchLog(sbModule, searchLog.ToString());
+                    _moduleSearchLogHolder.AppendSearchLog(sbModule, searchLog.ToString());
 
                     return true;
                 }

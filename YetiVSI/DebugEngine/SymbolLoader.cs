@@ -75,13 +75,12 @@ namespace YetiVSI.DebugEngine
         public virtual async Task<bool> LoadSymbolsAsync(
             SbModule lldbModule, TextWriter searchLog, bool useSymbolStores, bool forceLoad)
         {
-            // Return early if symbols are already loaded
-            if (lldbModule.HasSymbolsLoaded()) { return true; }
             // PE file doesn't contain symbol path.
             if (lldbModule.GetTriple() == "x86_64-pc-windows-msvc")
             {
                 return false;
             }
+
             DebugLinkLocation symbolFileLocation =
                 await GetSymbolFileDirAndNameAsync(lldbModule, searchLog);
             

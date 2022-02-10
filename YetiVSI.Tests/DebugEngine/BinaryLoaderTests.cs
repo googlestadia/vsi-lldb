@@ -63,32 +63,6 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public async Task LoadBinary_AlreadyLoadedAsync()
-        {
-            var loadedModule = Substitute.For<SbModule>();
-            loadedModule.GetNumSections().Returns(2ul);
-
-            (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
-                loadedModule, _searchLog);
-            Assert.True(ok);
-
-            Assert.AreSame(loadedModule, module);
-        }
-
-        [Test]
-        public async Task LoadBinary_NoBinaryNameAsync()
-        {
-            _placeholderModule.GetPlatformFileSpec().Returns((SbFileSpec)null);
-
-            (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
-                _placeholderModule, _searchLog);
-            Assert.False(ok);
-
-            Assert.AreSame(module, _placeholderModule);
-            StringAssert.Contains(ErrorStrings.BinaryFileNameUnknown, _searchLog.ToString());
-        }
-
-        [Test]
         public async Task LoadBinary_FileNotFoundAsync()
         {
             _mockModuleFileFinder.FindFileAsync(_binaryFilename, _uuid, false, _searchLog, false)

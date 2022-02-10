@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,7 +22,7 @@ using DebuggerApi;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio;
 using YetiCommon;
-using YetiCommon.Logging;
+using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.DebugEngine
 {
@@ -87,41 +88,39 @@ namespace YetiVSI.DebugEngine
     {
         string GetSearchLog(SbModule lldbModule);
 
-        void SetSearchLog(SbModule lldbModule, string log);
+        void AppendSearchLog(SbModule lldbModule, string log);
     }
 
     public class ModuleSearchLogHolder : IModuleSearchLogHolder
     {
-        // Maps platform paths to per-module symbol search logs.
-        readonly IDictionary<string, string> _logsByPlatformFileSpec =
-            new Dictionary<string, string>();
+        // Maps module Id (it's unique) to per-module symbol search logs.
+        readonly Dictionary<long, string> _logsByModuleId =
+            new Dictionary<long, string>();
 
         public string GetSearchLog(SbModule lldbModule)
         {
-            SbFileSpec platformFileSpec = lldbModule.GetPlatformFileSpec();
-            if (platformFileSpec == null)
-            {
-                return "";
-            }
-
-            string key = FileUtil.PathCombineLinux(platformFileSpec.GetDirectory(),
-                                                   platformFileSpec.GetFilename());
-            if (_logsByPlatformFileSpec.TryGetValue(key, out string log))
-            {
-                return log;
-            }
-
-            return "";
+            long id = lldbModule.GetId();
+            return _logsByModuleId.TryGetValue(id, out string log)
+                ? log
+                : "";
         }
 
-        public void SetSearchLog(SbModule lldbModule, string log)
+        public void AppendSearchLog(SbModule lldbModule, string log)
         {
-            SbFileSpec platformFileSpec = lldbModule.GetPlatformFileSpec();
-            if (platformFileSpec != null)
+            if (string.IsNullOrWhiteSpace(log))
             {
-                string key = FileUtil.PathCombineLinux(platformFileSpec.GetDirectory(),
-                                                       platformFileSpec.GetFilename());
-                _logsByPlatformFileSpec[key] = log;
+                return;
+            }
+
+            long id = lldbModule.GetId();
+
+            if (_logsByModuleId.TryGetValue(id, out string existingLog))
+            {
+                _logsByModuleId[id] = $"{existingLog}{Environment.NewLine}{log}";
+            }
+            else
+            {
+                _logsByModuleId[id] = log;
             }
         }
     }
@@ -234,10 +233,22 @@ namespace YetiVSI.DebugEngine
             // only in this case we'll be using cache when trying to load symbols from
             // remote symbolStores.
             bool forceLoad = symbolSettings?.IsManualLoad ?? true;
+            int modulesWithSymbolsCount = modules.Count(m => m.HasSymbolsLoaded());
+            int binariesLoadedCount = modules.Count(m => m.HasBinaryLoaded());
+            var loadSymbolData = new DeveloperLogEvent.Types.LoadSymbolData
+            {
+                ModulesCount = modules.Count,
+                ModulesBeforeCount = modules.Count,
+                ModulesAfterCount = modules.Count,
+                ModulesWithSymbolsLoadedBeforeCount = modulesWithSymbolsCount,
+                ModulesWithSymbolsLoadedAfterCount = modulesWithSymbolsCount,
+                BinariesLoadedBeforeCount = binariesLoadedCount,
+                BinariesLoadedAfterCount = binariesLoadedCount
+            };
 
             // Add some metrics to the event proto before attempting to load symbols, so that they
             // are still recorded if the task is aborted or cancelled.
-            moduleFileLoadRecorder.RecordBeforeLoad(modules);
+            moduleFileLoadRecorder.RecordBeforeLoad(loadSymbolData);
 
             var result = new LoadModuleFilesResult
             {
@@ -245,65 +256,18 @@ namespace YetiVSI.DebugEngine
                 SuggestToEnableSymbolStore = false
             };
 
-            for (int i = 0; i < modules.Count; ++i)
-            {
-                SbModule module = modules[i];
-                TextWriter searchLog = new StringWriter();
-                string name = module.GetPlatformFileSpec()?.GetFilename() ?? "<unknown>";
-                using (new TestBenchmark(name, TestBenchmarkScope.Recorder))
-                {
-                    try
-                    {
-                        task.ThrowIfCancellationRequested();
+            IEnumerable<SbModule> preFilteredModules =
+                PrefilterModulesByName(modules, symbolSettings);
 
-                        if (SkipModule(name, symbolSettings))
-                        {
-                            await searchLog.WriteLineAndTraceAsync(
-                                SymbolInclusionSettings.ModuleExcludedMessage);
-                            continue;
-                        }
+            List<SbModule> modulesWithBinariesLoaded = await ProcessModulePlaceholdersAsync(
+                preFilteredModules, task, isStadiaSymbolsServerUsed, loadSymbolData, result);
 
-                        task.Progress.Report($"Loading binary for {name} ({i}/{modules.Count})");
+            await ProcessModulesWithoutSymbolsAsync(
+                modulesWithBinariesLoaded, task, useSymbolStores, forceLoad, loadSymbolData,
+                result);
 
-                        (SbModule newModule, bool ok) =
-                            await _binaryLoader.LoadBinaryAsync(module, searchLog);
-                        if (!ok)
-                        {
-                            if (!isStadiaSymbolsServerUsed &&
-                                _isCoreAttach &&
-                                !result.SuggestToEnableSymbolStore &&
-                                _importantModulesForCoreDumpDebugging.Any(
-                                    expr => expr.IsMatch(name)))
-                            {
-                                result.SuggestToEnableSymbolStore = true;
-                            }
-
-                            result.ResultCode = VSConstants.E_FAIL;
-                            continue;
-                        }
-
-                        module = newModule;
-
-                        task.ThrowIfCancellationRequested();
-                        task.Progress.Report($"Loading symbols for {name} ({i}/{modules.Count})");
-                        var loaded =
-                            await _symbolLoader.LoadSymbolsAsync(
-                                module, searchLog, useSymbolStores, forceLoad);
-                        if (!loaded)
-                        {
-                            result.ResultCode = VSConstants.E_FAIL;
-                        }
-                    }
-                    finally
-                    {
-                        _moduleSearchLogHolder.SetSearchLog(module, searchLog.ToString());
-                        modules[i] = module;
-                    }
-                }
-            }
-
-            moduleFileLoadRecorder.RecordAfterLoad(modules);
-
+            // Record the final state.
+            moduleFileLoadRecorder.RecordAfterLoad(loadSymbolData);
             return result;
         }
 
@@ -312,14 +276,164 @@ namespace YetiVSI.DebugEngine
             IModuleFileLoadMetricsRecorder moduleFileLoadRecorder) =>
             LoadModuleFilesAsync(modules, null, true, true, task, moduleFileLoadRecorder);
 
-        bool SkipModule(string module, SymbolInclusionSettings settings)
+        /// <summary>
+        /// Filter out modules that should be skipped based on their name
+        /// (empty, deleted or excluded).
+        /// </summary>
+        IEnumerable<SbModule> PrefilterModulesByName(IEnumerable<SbModule> modules,
+                                                     SymbolInclusionSettings settings)
         {
-            if (settings == null)
+            foreach (SbModule sbModule in modules)
             {
-                return false;
+                string name = sbModule.GetPlatformFileSpec()?.GetFilename();
+                string error = GetReasonToSkip(name, settings);
+
+                if (string.IsNullOrEmpty(error))
+                {
+                    yield return sbModule;
+                }
+                else
+                {
+                    _moduleSearchLogHolder.AppendSearchLog(sbModule, error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// If module doesn't have a name or its name is in the list
+        /// of ExcludedModules, no further processing is needed.
+        /// </summary>
+        /// <returns>Message to be recorded in the logs.</returns>
+        string GetReasonToSkip(string moduleName, SymbolInclusionSettings settings)
+        {
+            if (string.IsNullOrWhiteSpace(moduleName))
+            {
+                return "Module name not set.";
             }
 
-            return !settings.IsModuleIncluded(module);
+            if (moduleName.EndsWith("(deleted)"))
+            {
+                return "Module marked as deleted by LLDB.";
+            }
+
+            return settings?.IsModuleIncluded(moduleName) == false
+                ? SymbolInclusionSettings.ModuleExcludedMessage
+                : null;
+        }
+
+        /// <summary>
+        /// Attempts to replace placeholder modules with matching binaries.
+        /// If this operation fails for one of the so-called "important
+        /// modules" and Stadia SymbolStore is not enabled, we'll show
+        /// a warning message suggesting to enable symbol stores in the
+        /// settings.
+        /// </summary>
+        /// <remarks>
+        /// Updates <see cref="loadSymbolData"/>'s BinariesLoadedAfterCount
+        /// property and <see cref="result"/>'s ResultCode and
+        /// SuggestToEnableSymbolStore.
+        /// </remarks>
+        /// <returns>List of modules with binaries loaded.</returns>
+        async Task<List<SbModule>> ProcessModulePlaceholdersAsync(
+            IEnumerable<SbModule> preFilteredModules,
+            ICancelable task,
+            bool isStadiaSymbolsServerUsed,
+            DeveloperLogEvent.Types.LoadSymbolData loadSymbolData,
+            LoadModuleFilesResult result)
+        {
+            var modulesWithBinary = new List<SbModule>();
+            foreach (SbModule sbModule in preFilteredModules)
+            {
+                if (sbModule.HasBinaryLoaded())
+                {
+                    modulesWithBinary.Add(sbModule);
+                    continue;
+                }
+
+                string name = sbModule.GetPlatformFileSpec().GetFilename();
+                TextWriter searchLog = new StringWriter();
+                using (new TestBenchmark($"Loading binary {name}", TestBenchmarkScope.Recorder))
+                {
+                    task.ThrowIfCancellationRequested();
+                    task.Progress.Report(
+                        $"Loading binary for {name}" +
+                        $"({sbModule.GetId()}/{loadSymbolData.ModulesCount})");
+                    (SbModule newModule, bool ok) =
+                        await _binaryLoader.LoadBinaryAsync(sbModule, searchLog);
+                    if (ok)
+                    {
+                        modulesWithBinary.Add(newModule);
+                        loadSymbolData.BinariesLoadedAfterCount++;
+                    }
+                    else
+                    {
+                        result.ResultCode = VSConstants.E_FAIL;
+                        result.SuggestToEnableSymbolStore |=
+                            ShouldAskToEnableSymbolStores(name, isStadiaSymbolsServerUsed);
+                    }
+
+                    _moduleSearchLogHolder.AppendSearchLog(sbModule, searchLog.ToString());
+                }
+            }
+
+            return modulesWithBinary;
+        }
+
+        /// <summary>
+        /// Attempts to load symbols for all modules that don't have them
+        /// loaded yet (it includes searching for a separate symbol file
+        /// locally and in the enabled symbol stores).
+        /// </summary>
+        /// <remarks>
+        /// Updates <see cref="loadSymbolData"/>'s
+        /// ModulesWithSymbolsLoadedAfterCount property and
+        /// <see cref="result"/>'s ResultCode.
+        /// </remarks>
+        async Task ProcessModulesWithoutSymbolsAsync(
+            List<SbModule> modulesWithBinariesLoaded,
+            ICancelable task,
+            bool useSymbolStores,
+            bool forceLoad,
+            DeveloperLogEvent.Types.LoadSymbolData loadSymbolData,
+            LoadModuleFilesResult result)
+        {
+            foreach (SbModule sbModule in modulesWithBinariesLoaded)
+            {
+                if (sbModule.HasSymbols())
+                {
+                    continue;
+                }
+
+                string name = sbModule.GetPlatformFileSpec().GetFilename();
+                TextWriter searchLog = new StringWriter();
+                using (new TestBenchmark($"Loading symbols {name}", TestBenchmarkScope.Recorder))
+                {
+                    task.ThrowIfCancellationRequested();
+                    task.Progress.Report(
+                        $"Loading symbols for {name} " +
+                        $"({sbModule.GetId()}/{loadSymbolData.ModulesCount})");
+                    bool ok = await _symbolLoader.LoadSymbolsAsync(
+                        sbModule, searchLog, useSymbolStores, forceLoad);
+                    if (!ok)
+                    {
+                        result.ResultCode = VSConstants.E_FAIL;
+                    }
+                    else
+                    {
+                        loadSymbolData.ModulesWithSymbolsLoadedAfterCount++;
+                    }
+
+                    _moduleSearchLogHolder.AppendSearchLog(sbModule, searchLog.ToString());
+                }
+            }
+        }
+
+        bool ShouldAskToEnableSymbolStores(string name, bool isStadiaSymbolsServerUsed)
+        {
+            return !isStadiaSymbolsServerUsed &&
+                _isCoreAttach &&
+                _importantModulesForCoreDumpDebugging.Any(
+                    expr => expr.IsMatch(name));
         }
     }
 }

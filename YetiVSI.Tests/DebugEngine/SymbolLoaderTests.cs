@@ -145,12 +145,12 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public async Task LoadSymbols_AlreadyLoadedAsync()
+        public async Task LoadSymbols_PEModulesAreSkippedAsync()
         {
             var mockModule = Substitute.For<SbModule>();
-            mockModule.HasCompileUnits().Returns(true);
+            mockModule.GetTriple().Returns("x86_64-pc-windows-msvc");
 
-            Assert.IsTrue(await _symbolLoader.LoadSymbolsAsync(mockModule, _searchLog,
+            Assert.IsFalse(await _symbolLoader.LoadSymbolsAsync(mockModule, _searchLog,
                                                                true, false));
             Assert.IsEmpty(_searchLog.ToString());
         }

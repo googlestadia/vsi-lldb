@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DebuggerApi;
 using YetiVSI.Shared.Metrics;
 using static YetiVSI.Shared.Metrics.DeveloperLogEvent.Types;
 
@@ -34,16 +34,25 @@ namespace YetiVSI.DebugEngine
         void RecordBeforeLoad(IList<SbModule> modules);
 
         /// <summary>
-        /// Records metrics about how many modules have symbols and binaries after the event.
-        /// This method should be called at the end of an event where symbols and binaries may be
-        /// loaded.
+        /// Records metrics about how many modules have symbols and binaries before the event.
+        /// This method should be called at the beginning of an event where symbols and binaries
+        /// may be loaded.
+        /// </summary>
+        void RecordBeforeLoad(LoadSymbolData loadSymbolData);
+
+        /// <summary>
+        /// Records metrics about how many modules have symbols and binaries before the event.
+        /// This method should be called at the beginning of an event where symbols and binaries
+        /// may be loaded.
         /// </summary>
         void RecordAfterLoad(IList<SbModule> modules);
 
         /// <summary>
-        /// Records that the relevant feature implementing this action is disabled.
+        /// Records metrics about how many modules have symbols and binaries after the event.
+        /// This method should be called at the end of an event where symbols and binaries may be
+        /// loaded.
         /// </summary>
-        void RecordFeatureDisabled();
+        void RecordAfterLoad(LoadSymbolData loadSymbolData);
     }
 
     public class ModuleFileLoadMetricsRecorder : IModuleFileLoadMetricsRecorder
@@ -78,37 +87,44 @@ namespace YetiVSI.DebugEngine
 
         public void RecordBeforeLoad(IList<SbModule> modules)
         {
-            var loadSymbolDataBuilder = new LoadSymbolData();
-            _moduleFileFinder.RecordMetrics(loadSymbolDataBuilder);
-            loadSymbolDataBuilder.ModulesBeforeCount = modules.Count;
-            loadSymbolDataBuilder.ModulesWithSymbolsLoadedBeforeCount =
-                modules.Count(m => m.HasSymbolsLoaded());
-            loadSymbolDataBuilder.BinariesLoadedBeforeCount =
-                modules.Count(m => m.HasBinaryLoaded());
+            var loadSymbolDataBuilder = new LoadSymbolData
+            {
+                ModulesBeforeCount = modules.Count,
+                ModulesWithSymbolsLoadedBeforeCount = modules.Count(m => m.HasSymbolsLoaded()),
+                BinariesLoadedBeforeCount = modules.Count(m => m.HasBinaryLoaded())
+            };
+
+            RecordBeforeLoad(loadSymbolDataBuilder);
+        }
+
+        public void RecordBeforeLoad(LoadSymbolData loadSymbolData)
+        {
+            // Record SymbolStore collection information.
+            _moduleFileFinder.RecordMetrics(loadSymbolData);
             _action.UpdateEvent(new DeveloperLogEvent
             {
-                LoadSymbolData = loadSymbolDataBuilder
+                LoadSymbolData = loadSymbolData
             });
         }
 
         public void RecordAfterLoad(IList<SbModule> modules)
         {
-            var loadSymbolDataBuilder = new LoadSymbolData();
-            // Update module count again if more modules were loaded during the event.
-            loadSymbolDataBuilder.ModulesAfterCount =
-                Math.Max(modules.Count, loadSymbolDataBuilder.ModulesCount.GetValueOrDefault());
-            loadSymbolDataBuilder.ModulesWithSymbolsLoadedAfterCount =
-                modules.Count(m => m.HasSymbolsLoaded());
-            loadSymbolDataBuilder.BinariesLoadedAfterCount =
-                modules.Count(m => m.HasBinaryLoaded());
-            _action.UpdateEvent(new DeveloperLogEvent {LoadSymbolData = loadSymbolDataBuilder});
+            var loadSymbolDataBuilder = new LoadSymbolData
+            {
+                // Update module count again if more modules were loaded during the event.
+                ModulesAfterCount = modules.Count,
+                ModulesWithSymbolsLoadedAfterCount = modules.Count(m => m.HasSymbolsLoaded()),
+                BinariesLoadedAfterCount = modules.Count(m => m.HasBinaryLoaded())
+            };
+
+            RecordAfterLoad(loadSymbolDataBuilder);
         }
 
-        public void RecordFeatureDisabled()
+        public void RecordAfterLoad(LoadSymbolData loadSymbolData)
         {
             _action.UpdateEvent(new DeveloperLogEvent
             {
-                StatusCode = DeveloperEventStatus.Types.Code.FeatureDisabled
+                LoadSymbolData = loadSymbolData
             });
         }
     }
