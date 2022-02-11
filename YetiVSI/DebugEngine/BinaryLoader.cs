@@ -100,8 +100,7 @@ namespace YetiVSI.DebugEngine
 
             if (TryReplaceModule(lldbModule, binaryPath, out SbModule addedModule))
             {
-                await searchLog.WriteLineAndTraceAsync(
-                    $"Successfully loaded binary '{binaryPath}'.");
+                searchLog.WriteLineAndTrace($"Successfully loaded binary '{binaryPath}'.");
                 LldbModuleReplaced?.Invoke(Self,
                                            new LldbModuleReplacedEventArgs(
                                                addedModule, lldbModule));
@@ -109,7 +108,7 @@ namespace YetiVSI.DebugEngine
                 return (addedModule, true);
             }
 
-            await searchLog.WriteLineAndTraceAsync(ErrorStrings.FailedToLoadBinary(binaryPath));
+            searchLog.WriteLineAndTrace(ErrorStrings.FailedToLoadBinary(binaryPath));
             return (lldbModule, false);
         }
 

@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using YetiCommon;
 using YetiCommon.Logging;
 
@@ -53,9 +53,9 @@ namespace SymbolStores
             _path = path;
         }
 
-#region SymbolStoreBase functions
+        #region SymbolStoreBase functions
 
-        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+        public override Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
                                                                  bool isDebugInfoFile,
                                                                  TextWriter log,
                                                                  bool forceLoad)
@@ -66,22 +66,21 @@ namespace SymbolStores
             }
 
             string filepath;
-
             try
             {
                 filepath = Path.Combine(_path, filename);
             }
             catch (ArgumentException e)
             {
-                await log.WriteLineAndTraceAsync(
+                log.WriteLineAndTrace(
                     Strings.FailedToSearchFlatStore(_path, filename, e.Message));
-                return null;
+                return Task.FromResult<IFileReference>(null);
             }
 
             if (!_fileSystem.File.Exists(filepath))
             {
-                await log.WriteLineAndTraceAsync(Strings.FileNotFound(filepath));
-                return null;
+                log.WriteLineAndTrace(Strings.FileNotFound(filepath));
+                return Task.FromResult<IFileReference>(null); 
             }
 
             if (buildId != BuildId.Empty)
@@ -91,20 +90,20 @@ namespace SymbolStores
 
                 if (actualBuildId.HasError)
                 {
-                    await log.WriteLineAndTraceAsync(actualBuildId.Error);
-                    return null;
+                    log.WriteLineAndTrace(actualBuildId.Error);
+                    return Task.FromResult<IFileReference>(null);
                 }
 
                 if (actualBuildId.Data != buildId)
                 {
-                    await log.WriteLineAndTraceAsync(
+                    log.WriteLineAndTrace(
                         Strings.BuildIdMismatch(filepath, buildId, actualBuildId.Data));
-                    return null;
+                    return Task.FromResult<IFileReference>(null);
                 }
             }
 
-            await log.WriteLineAndTraceAsync(Strings.FileFound(filepath));
-            return new FileReference(_fileSystem, filepath);
+            log.WriteLineAndTrace(Strings.FileFound(filepath));
+            return Task.FromResult<IFileReference>(new FileReference(_fileSystem, filepath));
         }
 
         public override Task<IFileReference> AddFileAsync(IFileReference source, string filename,
@@ -114,6 +113,6 @@ namespace SymbolStores
         public override bool DeepEquals(ISymbolStore otherStore) =>
             otherStore is FlatSymbolStore other && _path == other._path;
 
-#endregion
+        #endregion
     }
 }

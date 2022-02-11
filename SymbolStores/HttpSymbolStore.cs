@@ -76,7 +76,7 @@ namespace SymbolStores
 
             if (buildId == BuildId.Empty)
             {
-                await log.WriteLineAndTraceAsync(
+                log.WriteLineAndTrace(
                     Strings.FailedToSearchHttpStore(_url, filename, Strings.EmptyBuildId));
                 return null;
             }
@@ -86,7 +86,7 @@ namespace SymbolStores
                                       buildId.ToString(), encodedFilename);
             if (DoesNotExistInSymbolStore(fileUrl, forceLoad))
             {
-                await log.WriteLineAndTraceAsync(Strings.DoesNotExistInHttpStore(filename, _url));
+                log.WriteLineAndTrace(Strings.DoesNotExistInHttpStore(filename, _url));
                 return null;
             }
 
@@ -113,26 +113,26 @@ namespace SymbolStores
                     Uri connectionUri = response.RequestMessage.RequestUri;
                     if (connectionUri.Scheme != Uri.UriSchemeHttps)
                     {
-                        await log.WriteLineAndTraceAsync(
+                        log.WriteLineAndTrace(
                             Strings.ConnectionIsUnencrypted(connectionUri.Host));
                     }
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        await log.WriteLineAndTraceAsync(Strings.FileNotFoundInHttpStore(
-                                                    fileUrl, (int)response.StatusCode,
-                                                    response.ReasonPhrase));
+                        log.WriteLineAndTrace(
+                            Strings.FileNotFoundInHttpStore(
+                                fileUrl, (int)response.StatusCode, response.ReasonPhrase));
                         AddAsNonExisting(fileUrl);
                         return null;
                     }
 
-                    await log.WriteLineAndTraceAsync(Strings.FileFound(fileUrl));
+                    log.WriteLineAndTrace(Strings.FileFound(fileUrl));
                     return new HttpFileReference(_fileSystem, _httpClient, fileUrl);
                 }
             }
             catch (HttpRequestException e)
             {
-                await log.WriteLineAndTraceAsync(
+                log.WriteLineAndTrace(
                     Strings.FailedToSearchHttpStore(_url, filename, e.Message));
                 AddAsNonExisting(fileUrl);
                 return null;

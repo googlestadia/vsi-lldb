@@ -136,7 +136,7 @@ namespace SymbolStores
                 catch (Exception e) when (e is NotSupportedException || e is SymbolStoreException ||
                                           e is ArgumentException)
                 {
-                    await log.WriteLineAndTraceAsync(e.Message);
+                    log.WriteLineAndTrace(e.Message);
                 }
             }
             return fileReference;

@@ -72,7 +72,7 @@ namespace SymbolStores
 
             if (buildId == BuildId.Empty)
             {
-                await log.WriteLineAndTraceAsync(
+                log.WriteLineAndTrace(
                     Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
                 return null;
             }
@@ -81,7 +81,7 @@ namespace SymbolStores
             string symbolStoreKey = $"{filename};{buildIdHex}";
             if (DoesNotExistInSymbolStore(symbolStoreKey, forceLoad))
             {
-                await log.WriteLineAndTraceAsync(
+                log.WriteLineAndTrace(
                     Strings.DoesNotExistInStadiaStore(filename, buildIdHex));
                 return null;
             }
@@ -100,12 +100,12 @@ namespace SymbolStores
                 if (e.InnerException is RpcException inner &&
                     inner.StatusCode == StatusCode.NotFound)
                 {
-                    await log.WriteLineAndTraceAsync(
+                    log.WriteLineAndTrace(
                         Strings.FileNotFoundInStadiaStore(buildIdHex, filename));
                 }
                 else
                 {
-                    await log.WriteLineAndTraceAsync(
+                    log.WriteLineAndTrace(
                         Strings.FailedToSearchStadiaStore(filename, e.Message));
                 }
 
@@ -125,7 +125,7 @@ namespace SymbolStores
             catch (HttpRequestException e)
             {
                 AddAsNonExisting(symbolStoreKey);
-                await log.WriteLineAndTraceAsync(
+                log.WriteLineAndTrace(
                     Strings.FailedToSearchStadiaStore(filename, e.Message));
                 return null;
             }
@@ -136,7 +136,7 @@ namespace SymbolStores
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     AddAsNonExisting(symbolStoreKey);
-                    await log.WriteLineAndTraceAsync(
+                    log.WriteLineAndTrace(
                         Strings.FileNotFoundInStadiaStore(buildIdHex, filename));
                     return null;
                 }
@@ -144,12 +144,13 @@ namespace SymbolStores
                 if (!response.IsSuccessStatusCode)
                 {
                     AddAsNonExisting(symbolStoreKey);
-                    await log.WriteLineAndTraceAsync(Strings.FileNotFoundInHttpStore(
-                        filename, (int)response.StatusCode, response.ReasonPhrase));
+                    log.WriteLineAndTrace(
+                        Strings.FileNotFoundInHttpStore(filename,(int)response.StatusCode,
+                                                        response.ReasonPhrase));
                     return null;
                 }
 
-                await log.WriteLineAndTraceAsync(Strings.FileFound(filename));
+                log.WriteLineAndTrace(Strings.FileFound(filename));
 
                 return new HttpFileReference(_fileSystem, _httpClient, fileUrl);
             }

@@ -63,7 +63,7 @@ namespace SymbolStores
 
 #region SymbolStoreBase functions
 
-        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
+        public override Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
                                                                  bool isDebugInfoFile,
                                                                  TextWriter log,
                                                                  bool forceLoad)
@@ -75,9 +75,9 @@ namespace SymbolStores
 
             if (buildId == BuildId.Empty)
             {
-                await log.WriteLineAndTraceAsync(
+                log.WriteLineAndTrace(
                     Strings.FailedToSearchStructuredStore(_path, filename, Strings.EmptyBuildId));
-                return null;
+                return Task.FromResult<IFileReference>(null);
             }
 
             string filepath;
@@ -88,18 +88,18 @@ namespace SymbolStores
             }
             catch (ArgumentException e)
             {
-                await log.WriteLineAndTraceAsync(
+                log.WriteLineAndTrace(
                     Strings.FailedToSearchStructuredStore(_path, filename, e.Message));
-                return null;
+                return Task.FromResult<IFileReference>(null);
             }
             if (!_fileSystem.File.Exists(filepath))
             {
-                await log.WriteLineAndTraceAsync(Strings.FileNotFound(filepath));
-                return null;
+                log.WriteLineAndTrace(Strings.FileNotFound(filepath));
+                return Task.FromResult<IFileReference>(null);
             }
 
-            await log.WriteLineAndTraceAsync(Strings.FileFound(filepath));
-            return new FileReference(_fileSystem, filepath);
+            log.WriteLineAndTrace(Strings.FileFound(filepath));
+            return Task.FromResult<IFileReference>(new FileReference(_fileSystem, filepath));
         }
 
         public override async Task<IFileReference> AddFileAsync(IFileReference source,
@@ -132,7 +132,7 @@ namespace SymbolStores
                 string filepath = Path.Combine(_path, filename, buildId.ToString(), filename);
                 await source.CopyToAsync(filepath);
 
-                await log.WriteLineAndTraceAsync(Strings.CopiedFile(filename, filepath));
+                log.WriteLineAndTrace(Strings.CopiedFile(filename, filepath));
 
                 return new FileReference(_fileSystem, filepath);
             }

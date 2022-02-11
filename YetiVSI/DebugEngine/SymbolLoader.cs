@@ -82,12 +82,12 @@ namespace YetiVSI.DebugEngine
             }
 
             DebugLinkLocation symbolFileLocation =
-                await GetSymbolFileDirAndNameAsync(lldbModule, searchLog);
-            
+                GetSymbolFileDirAndName(lldbModule, searchLog);
+
             // Symbol filename should be set in order to search it locally.
             if (string.IsNullOrWhiteSpace(symbolFileLocation.Filename))
             {
-                await searchLog.WriteLineAndTraceAsync(ErrorStrings.SymbolFileNameUnknown);
+                searchLog.WriteLineAndTrace(ErrorStrings.SymbolFileNameUnknown);
                 return false;
             }
 
@@ -104,7 +104,7 @@ namespace YetiVSI.DebugEngine
 
                 if (uuid == buildIdInfo.Data)
                 {
-                    return await AddSymbolFileAsync(fullPath, lldbModule, searchLog);
+                    return AddSymbolFile(fullPath, lldbModule, searchLog);
                 }
             }
 
@@ -114,10 +114,10 @@ namespace YetiVSI.DebugEngine
                 : null;
             if (filepath == null) { return false; }
 
-            return await AddSymbolFileAsync(filepath, lldbModule, searchLog);
+            return AddSymbolFile(filepath, lldbModule, searchLog);
         }
 
-        async Task<DebugLinkLocation> GetSymbolFileDirAndNameAsync(
+        DebugLinkLocation GetSymbolFileDirAndName(
              SbModule lldbModule, TextWriter log)
         {
             var linkLocation = new DebugLinkLocation();
@@ -158,7 +158,7 @@ namespace YetiVSI.DebugEngine
             {
                 string errorString = ErrorStrings.InvalidBinaryPathOrName(binaryDirectory,
                     binaryFilename, e.Message);
-                await log.WriteLineAndTraceAsync(errorString);
+                log.WriteLineAndTrace(errorString);
                 return linkLocation;
             }
 
@@ -166,13 +166,13 @@ namespace YetiVSI.DebugEngine
 
             if (modulePathSection.HasError)
             {
-                await log.WriteLineAndTraceAsync(modulePathSection.Error);
+                log.WriteLineAndTrace(modulePathSection.Error);
             }
 
             return modulePathSection.Data;
         }
 
-        async Task<bool> AddSymbolFileAsync(string filepath, SbModule module, TextWriter searchLog)
+        bool AddSymbolFile(string filepath, SbModule module, TextWriter searchLog)
         {
             string command = "target symbols add";
 
@@ -194,13 +194,13 @@ namespace YetiVSI.DebugEngine
 
             if (!commandResult.Succeeded())
             {
-                await searchLog.WriteLineAndTraceAsync("LLDB error: " + commandResult.GetError());
+                searchLog.WriteLineAndTrace("LLDB error: " + commandResult.GetError());
                 return false;
             }
 
             string text = $"LLDB output: {commandResult.GetOutput()}{Environment.NewLine}" +
                 $"Successfully loaded symbol file '{filepath}'.";
-            await searchLog.WriteLineAndTraceAsync(text);
+            searchLog.WriteLineAndTrace(text);
 
             return true;
         }

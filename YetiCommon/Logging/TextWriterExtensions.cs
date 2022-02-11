@@ -1,16 +1,14 @@
 ﻿using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace YetiCommon.Logging
 {
     public static class TextWriterExtensions
     {
-        public static async Task WriteLineAndTraceAsync(this TextWriter log, string message)
+        public static void WriteLineAndTrace(this TextWriter log, string message)
         {
-            Task loggingTask = log.WriteLineAsync(message);
+            log.WriteLine(message);
             Trace.WriteLine(message);
-            await loggingTask;
         }
     }
 }

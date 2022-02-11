@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using YetiCommon;
 using YetiCommon.Logging;
 
@@ -83,13 +83,13 @@ namespace SymbolStores
                             when (e is NotSupportedException || e is SymbolStoreException ||
                                   e is ArgumentException)
                         {
-                            await log.WriteLineAndTraceAsync(e.Message);
+                            log.WriteLineAndTrace(e.Message);
                         }
                     }
 
                     if (!fileReference.IsFilesystemLocation ||
-                        await VerifySymbolFileAsync(fileReference.Location, buildId,
-                                                    isDebugInfoFile, log))
+                        VerifySymbolFile(fileReference.Location, buildId,
+                                         isDebugInfoFile, log))
                     {
                         return fileReference;
                     }
@@ -118,12 +118,12 @@ namespace SymbolStores
         }
         #endregion
 
-        async Task<bool> VerifySymbolFileAsync(string filepath, BuildId buildId,
-                                               bool isDebugInfoFile, TextWriter log)
+        bool VerifySymbolFile(string filepath, BuildId buildId, bool isDebugInfoFile,
+                              TextWriter log)
         {
             if (!_moduleParser.IsValidElf(filepath, isDebugInfoFile, out string errorMessage))
             {
-                await log.WriteLineAndTraceAsync(errorMessage);
+                log.WriteLineAndTrace(errorMessage);
                 return false;
             }
 
@@ -135,7 +135,7 @@ namespace SymbolStores
             BuildIdInfo actualBuildId = _moduleParser.ParseBuildIdInfo(filepath, true);
             if (actualBuildId.HasError)
             {
-                await log.WriteLineAndTraceAsync(actualBuildId.Error);
+                log.WriteLineAndTrace(actualBuildId.Error);
                 return false;
             }
 
@@ -146,7 +146,7 @@ namespace SymbolStores
 
             string buildIdMismatch =
                 Strings.BuildIdMismatch(filepath, buildId, actualBuildId.Data);
-            await log.WriteLineAndTraceAsync(buildIdMismatch);
+            log.WriteLineAndTrace(buildIdMismatch);
             return false;
         }
     }
