@@ -34,12 +34,12 @@ namespace YetiVSI.DebugEngine
         event EventHandler<LldbModuleReplacedEventArgs> LldbModuleReplaced;
 
         /// <summary>
-        /// Checks if |lldbModule| is a placeholder module, and if so, attempts to load the matching
-        /// binary and replace |lldbModule| with the newly loaded module.
+        /// Checks if <c>lldbModule</c> is a placeholder module, and if so, attempts to load the
+        /// matching binary and replace <c>lldbModule</c> with the newly loaded module.
         /// </summary>
         /// <returns>
-        /// A new (updated) module and true if the binary was loaded successfully or was already
-        /// loaded, false otherwise.
+        /// A new (updated) module or <c>lldbModule</c> if binary loading failed,
+        /// and <c>true</c> if the binary was loaded successfully, <c>false</c> otherwise.
         /// </returns>
         Task<(SbModule, bool)> LoadBinaryAsync([NotNull] SbModule lldbModule,
                                                [NotNull] TextWriter searchLog);

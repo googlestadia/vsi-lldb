@@ -331,19 +331,43 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public async Task GetSearchLogAsync()
+        public async Task GetSearchLog_WhenBinaryLoadFailsAsync()
         {
             SbModule module = CreateMockModule(isPlaceholder: true, loadSymbolsSucceeds: true);
             module.GetPlatformFileSpec().Returns(_mockPlatformFileSpec);
             _mockBinaryLoader.LoadBinaryAsync(module, Arg.Any<TextWriter>()).Returns(x =>
             {
                 x.Arg<TextWriter>().WriteLine(_loadOutput);
+                // When the LoadBinaryAsync fails it returns the input module.
                 return (module, false);
             });
             await _moduleFileLoader.LoadModuleFilesAsync(new[] { module }, _mockTask,
                 _mockModuleFileLoadRecorder);
 
             StringAssert.Contains(_loadOutput, _mockModuleSearchLogHolder.GetSearchLog(module));
+        }
+
+        [Test]
+        public async Task GetSearchLog_WhenBinaryLoadSucceedsAsync()
+        {
+            SbModule module = CreateMockModule(isPlaceholder: true, loadSymbolsSucceeds: true);
+            module.GetPlatformFileSpec().Returns(_mockPlatformFileSpec);
+
+            SbModule loadedModule = CreateMockModule(false);
+            loadedModule.GetId().Returns(5);
+
+            _mockBinaryLoader.LoadBinaryAsync(module, Arg.Any<TextWriter>()).Returns(x =>
+            {
+                x.Arg<TextWriter>().WriteLine(_loadOutput);
+                // When the LoadBinaryAsync succeeds it returns the new module.
+                return (loadedModule, true);
+            });
+
+            await _moduleFileLoader.LoadModuleFilesAsync(new[] { module }, _mockTask,
+                                                         _mockModuleFileLoadRecorder);
+
+            StringAssert.Contains(_loadOutput,
+                                  _mockModuleSearchLogHolder.GetSearchLog(loadedModule));
         }
 
         [Test]

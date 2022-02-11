@@ -56,7 +56,7 @@ namespace YetiVSI.DebugEngine
         /// <param name="useSymbolStores">
         /// If true, then during loading the module the method will try to lookup module in
         /// symbol stores by the name extracted from module.
-        /// <see cref="SymbolLoader.GetSymbolFileDirAndNameAsync"/>
+        /// <see cref="SymbolLoader.GetSymbolFileDirAndName"/>
         /// </param>
         /// <param name="isStadiaSymbolsServerUsed">
         /// If true, then the method will not return suggestion to enable symbol store server.
@@ -323,15 +323,13 @@ namespace YetiVSI.DebugEngine
 
         /// <summary>
         /// Attempts to replace placeholder modules with matching binaries.
-        /// If this operation fails for one of the so-called "important
-        /// modules" and Stadia SymbolStore is not enabled, we'll show
-        /// a warning message suggesting to enable symbol stores in the
-        /// settings.
+        /// If this operation fails for one of the so-called "important modules"
+        /// and Stadia SymbolStore is not enabled, we'll show a warning message
+        /// suggesting to enable symbol stores in the settings.
         /// </summary>
         /// <remarks>
-        /// Updates <see cref="loadSymbolData"/>'s BinariesLoadedAfterCount
-        /// property and <see cref="result"/>'s ResultCode and
-        /// SuggestToEnableSymbolStore.
+        /// Updates <c>loadSymbolData</c>'s BinariesLoadedAfterCount
+        /// property and <c>result</c>'s ResultCode and SuggestToEnableSymbolStore.
         /// </remarks>
         /// <returns>List of modules with binaries loaded.</returns>
         async Task<List<SbModule>> ProcessModulePlaceholdersAsync(
@@ -358,11 +356,11 @@ namespace YetiVSI.DebugEngine
                     task.Progress.Report(
                         $"Loading binary for {name}" +
                         $"({sbModule.GetId()}/{loadSymbolData.ModulesCount})");
-                    (SbModule newModule, bool ok) =
+                    (SbModule outputModule, bool ok) =
                         await _binaryLoader.LoadBinaryAsync(sbModule, searchLog);
                     if (ok)
                     {
-                        modulesWithBinary.Add(newModule);
+                        modulesWithBinary.Add(outputModule);
                         loadSymbolData.BinariesLoadedAfterCount++;
                     }
                     else
@@ -372,7 +370,7 @@ namespace YetiVSI.DebugEngine
                             ShouldAskToEnableSymbolStores(name, isStadiaSymbolsServerUsed);
                     }
 
-                    _moduleSearchLogHolder.AppendSearchLog(sbModule, searchLog.ToString());
+                    _moduleSearchLogHolder.AppendSearchLog(outputModule, searchLog.ToString());
                 }
             }
 
@@ -380,14 +378,13 @@ namespace YetiVSI.DebugEngine
         }
 
         /// <summary>
-        /// Attempts to load symbols for all modules that don't have them
-        /// loaded yet (it includes searching for a separate symbol file
-        /// locally and in the enabled symbol stores).
+        /// Attempts to load symbols for all modules that don't have them loaded yet (it
+        /// includes searching for a separate symbol file locally and in the enabled symbol
+        /// stores).
         /// </summary>
         /// <remarks>
-        /// Updates <see cref="loadSymbolData"/>'s
-        /// ModulesWithSymbolsLoadedAfterCount property and
-        /// <see cref="result"/>'s ResultCode.
+        /// Updates <c>loadSymbolData</c>'s ModulesWithSymbolsLoadedAfterCount property and
+        /// <c>result</c>'s ResultCode.
         /// </remarks>
         async Task ProcessModulesWithoutSymbolsAsync(
             List<SbModule> modulesWithBinariesLoaded,
