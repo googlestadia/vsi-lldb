@@ -30,6 +30,7 @@ namespace YetiVSI.Test.DebugEngine
     class ModuleFileLoaderTests
     {
         const string _binaryFilename = "test";
+        int _moduleId = 0;
         const string _platformDirectory = "/path/bin";
         const string _loadOutput = "Load output.";
         static readonly string[] _importantModules = new[]
@@ -46,7 +47,7 @@ namespace YetiVSI.Test.DebugEngine
         ISymbolLoader _mockSymbolLoader;
         IBinaryLoader _mockBinaryLoader;
         ModuleFileLoader _moduleFileLoader;
-        IModuleSearchLogHolder _mockModuleSearchLogHolder;
+        IModuleSearchLogHolder _moduleSearchLogHolder;
 
         [SetUp]
         public void SetUp()
@@ -57,9 +58,9 @@ namespace YetiVSI.Test.DebugEngine
             _mockPlatformFileSpec.GetFilename().Returns(_binaryFilename);
             _mockSymbolLoader = Substitute.For<ISymbolLoader>();
             _mockBinaryLoader = Substitute.For<IBinaryLoader>();
-            _mockModuleSearchLogHolder = new ModuleSearchLogHolder();
+            _moduleSearchLogHolder = new ModuleSearchLogHolder();
             _moduleFileLoader = new ModuleFileLoader(_mockSymbolLoader, _mockBinaryLoader,
-                                                    false, _mockModuleSearchLogHolder);
+                                                    false, _moduleSearchLogHolder);
             _mockModuleFileLoadRecorder = Substitute.For<IModuleFileLoadMetricsRecorder>();
         }
 
@@ -164,6 +165,63 @@ namespace YetiVSI.Test.DebugEngine
             await AssertLoadSymbolsReceivedAsync(includedModule);
             await AssertLoadBinaryNotReceivedAsync(excludedModule);
             await AssertLoadSymbolsNotReceivedAsync(excludedModule);
+        }
+
+        [Test]
+        public async Task SearchLogsAreResetBetweenLoadModuleFilesAttemptsAsync()
+        {
+            SbModule includedModule = CreateMockModule(
+                true, loadBinarySucceeds: true,
+                loadSymbolsSucceeds: true, name: "included");
+            SbModule excludedModule = CreateMockModule(
+                true, loadBinarySucceeds: true,
+                loadSymbolsSucceeds: true, name: "excluded");
+            var modules = new List<SbModule> { includedModule, excludedModule };
+
+            bool useIncludeList = false;
+            var excludeList = new List<string> { "excluded" };
+            var settings =
+                new SymbolInclusionSettings(useIncludeList, excludeList, new List<string>());
+
+            // 1. Run LoadSymbols with the settings, excluding the `excludedModule`.
+            await _moduleFileLoader.LoadModuleFilesAsync(
+                modules, settings, false, false, _mockTask, _mockModuleFileLoadRecorder);
+
+            Assert.AreEqual("Symbol loading disabled by Include/Exclude setting.",
+                            _moduleSearchLogHolder.GetSearchLog(excludedModule));
+            Assert.AreEqual("", _moduleSearchLogHolder.GetSearchLog(includedModule));
+
+            // 2. Settings are null, so both modules will be loaded.
+            await _moduleFileLoader.LoadModuleFilesAsync(
+                modules, null, false, false, _mockTask, _mockModuleFileLoadRecorder);
+
+            Assert.AreEqual("",
+                            _moduleSearchLogHolder.GetSearchLog(excludedModule));
+            Assert.AreEqual("", _moduleSearchLogHolder.GetSearchLog(includedModule));
+
+            // 3. Run LoadSymbols with the settings, excluding the `excludedModule`.
+            await _moduleFileLoader.LoadModuleFilesAsync(
+                modules, settings, false, false, _mockTask, _mockModuleFileLoadRecorder);
+
+            Assert.AreEqual("Symbol loading disabled by Include/Exclude setting.",
+                            _moduleSearchLogHolder.GetSearchLog(excludedModule));
+            Assert.AreEqual("", _moduleSearchLogHolder.GetSearchLog(includedModule));
+        }
+
+        [TestCase(false, 1)]
+        [TestCase(true, 0)]
+        public async Task LoadSymbolsIsCalledBasedOnHasSymbolsLoadedAsync(bool hasCompileUnits,
+            int callsToLoadSymbolsAsync)
+        {
+            SbModule module = CreateMockModule(false);
+            module.HasCompileUnits().Returns(hasCompileUnits);
+            var modules = new List<SbModule>() { module };
+            await _moduleFileLoader.LoadModuleFilesAsync(
+                modules, null, false, false, _mockTask, _mockModuleFileLoadRecorder);
+            await _mockSymbolLoader
+                .Received(callsToLoadSymbolsAsync)
+                .LoadSymbolsAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>(), Arg.Any<bool>());
+
         }
 
         [Test]
@@ -288,7 +346,7 @@ namespace YetiVSI.Test.DebugEngine
                     .LoadBinaryAsync(module, Arg.Any<TextWriter>())
                     .Returns((module, false));
                 var dumpModuleFileLoader = new ModuleFileLoader(
-                    _mockSymbolLoader, _mockBinaryLoader, true, _mockModuleSearchLogHolder);
+                    _mockSymbolLoader, _mockBinaryLoader, true, _moduleSearchLogHolder);
                 LoadModuleFilesResult result = await dumpModuleFileLoader.LoadModuleFilesAsync(
                     new[] { module }, null, false, false, _mockTask, _mockModuleFileLoadRecorder);
 
@@ -305,7 +363,7 @@ namespace YetiVSI.Test.DebugEngine
                 .LoadBinaryAsync(module, Arg.Any<TextWriter>())
                 .Returns((module, false));
             var dumpModuleFileLoader = new ModuleFileLoader(_mockSymbolLoader, _mockBinaryLoader,
-                                                            true, _mockModuleSearchLogHolder);
+                                                            true, _moduleSearchLogHolder);
             LoadModuleFilesResult result = await dumpModuleFileLoader.LoadModuleFilesAsync(
                 new[] { module }, null, false, false, _mockTask, _mockModuleFileLoadRecorder);
 
@@ -322,7 +380,7 @@ namespace YetiVSI.Test.DebugEngine
                 .Returns((module, false));
             var dumpModuleFileLoader = new ModuleFileLoader(_mockSymbolLoader, _mockBinaryLoader,
                                                             true,
-                                                            _mockModuleSearchLogHolder);
+                                                            _moduleSearchLogHolder);
             LoadModuleFilesResult result = await dumpModuleFileLoader.LoadModuleFilesAsync(
                 new[] { module }, null, true, true, _mockTask, _mockModuleFileLoadRecorder);
 
@@ -344,7 +402,7 @@ namespace YetiVSI.Test.DebugEngine
             await _moduleFileLoader.LoadModuleFilesAsync(new[] { module }, _mockTask,
                 _mockModuleFileLoadRecorder);
 
-            StringAssert.Contains(_loadOutput, _mockModuleSearchLogHolder.GetSearchLog(module));
+            StringAssert.Contains(_loadOutput, _moduleSearchLogHolder.GetSearchLog(module));
         }
 
         [Test]
@@ -367,7 +425,7 @@ namespace YetiVSI.Test.DebugEngine
                                                          _mockModuleFileLoadRecorder);
 
             StringAssert.Contains(_loadOutput,
-                                  _mockModuleSearchLogHolder.GetSearchLog(loadedModule));
+                                  _moduleSearchLogHolder.GetSearchLog(loadedModule));
         }
 
         [Test]
@@ -376,7 +434,7 @@ namespace YetiVSI.Test.DebugEngine
             var mockModule = Substitute.For<SbModule>();
             mockModule.GetPlatformFileSpec().Returns((SbFileSpec)null);
 
-            Assert.AreEqual("", _mockModuleSearchLogHolder.GetSearchLog(mockModule));
+            Assert.AreEqual("", _moduleSearchLogHolder.GetSearchLog(mockModule));
         }
 
         [Test]
@@ -385,7 +443,7 @@ namespace YetiVSI.Test.DebugEngine
             var mockModule = Substitute.For<SbModule>();
             mockModule.GetPlatformFileSpec().Returns(_mockPlatformFileSpec);
 
-            Assert.AreEqual("", _mockModuleSearchLogHolder.GetSearchLog(mockModule));
+            Assert.AreEqual("", _moduleSearchLogHolder.GetSearchLog(mockModule));
         }
 
         async Task AssertLoadBinaryReceivedAsync(SbModule module)
@@ -420,6 +478,7 @@ namespace YetiVSI.Test.DebugEngine
                                   bool loadSymbolsSucceeds = false, string name = "some_name")
         {
             var module = Substitute.For<SbModule>();
+            module.GetId().Returns(_moduleId++);
             module.GetPlatformFileSpec().GetFilename().Returns(name);
             if (isPlaceholder)
             {

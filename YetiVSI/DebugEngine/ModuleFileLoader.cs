@@ -89,6 +89,8 @@ namespace YetiVSI.DebugEngine
         string GetSearchLog(SbModule lldbModule);
 
         void AppendSearchLog(SbModule lldbModule, string log);
+
+        void ResetSearchLog(SbModule lldbModule);
     }
 
     public class ModuleSearchLogHolder : IModuleSearchLogHolder
@@ -114,13 +116,24 @@ namespace YetiVSI.DebugEngine
 
             long id = lldbModule.GetId();
 
-            if (_logsByModuleId.TryGetValue(id, out string existingLog))
+            if (_logsByModuleId.TryGetValue(id, out string existingLog) 
+                && !string.IsNullOrWhiteSpace(existingLog))
             {
                 _logsByModuleId[id] = $"{existingLog}{Environment.NewLine}{log}";
             }
             else
             {
                 _logsByModuleId[id] = log;
+            }
+        }
+
+        public void ResetSearchLog(SbModule lldbModule)
+        {
+            long id = lldbModule.GetId();
+
+            if (_logsByModuleId.TryGetValue(id, out string _))
+            {
+                _logsByModuleId[id] = "";
             }
         }
     }
@@ -287,7 +300,10 @@ namespace YetiVSI.DebugEngine
             {
                 string name = sbModule.GetPlatformFileSpec()?.GetFilename();
                 string error = GetReasonToSkip(name, settings);
-
+                
+                // Modules loading can be an iterative process, we need to clean up the logs. 
+                _moduleSearchLogHolder.ResetSearchLog(sbModule);
+                
                 if (string.IsNullOrEmpty(error))
                 {
                     yield return sbModule;
@@ -396,7 +412,7 @@ namespace YetiVSI.DebugEngine
         {
             foreach (SbModule sbModule in modulesWithBinariesLoaded)
             {
-                if (sbModule.HasSymbols())
+                if (sbModule.HasSymbolsLoaded())
                 {
                     continue;
                 }
