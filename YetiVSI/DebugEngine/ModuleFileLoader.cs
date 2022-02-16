@@ -116,7 +116,7 @@ namespace YetiVSI.DebugEngine
 
             long id = lldbModule.GetId();
 
-            if (_logsByModuleId.TryGetValue(id, out string existingLog) 
+            if (_logsByModuleId.TryGetValue(id, out string existingLog)
                 && !string.IsNullOrWhiteSpace(existingLog))
             {
                 _logsByModuleId[id] = $"{existingLog}{Environment.NewLine}{log}";
@@ -300,10 +300,10 @@ namespace YetiVSI.DebugEngine
             {
                 string name = sbModule.GetPlatformFileSpec()?.GetFilename();
                 string error = GetReasonToSkip(name, settings);
-                
-                // Modules loading can be an iterative process, we need to clean up the logs. 
+
+                // Modules loading can be an iterative process, we need to clean up the logs.
                 _moduleSearchLogHolder.ResetSearchLog(sbModule);
-                
+
                 if (string.IsNullOrEmpty(error))
                 {
                     yield return sbModule;
@@ -366,28 +366,26 @@ namespace YetiVSI.DebugEngine
 
                 string name = sbModule.GetPlatformFileSpec().GetFilename();
                 TextWriter searchLog = new StringWriter();
-                using (new TestBenchmark($"Loading binary {name}", TestBenchmarkScope.Recorder))
-                {
-                    task.ThrowIfCancellationRequested();
-                    task.Progress.Report(
-                        $"Loading binary for {name}" +
-                        $"({sbModule.GetId()}/{loadSymbolData.ModulesCount})");
-                    (SbModule outputModule, bool ok) =
-                        await _binaryLoader.LoadBinaryAsync(sbModule, searchLog);
-                    if (ok)
-                    {
-                        modulesWithBinary.Add(outputModule);
-                        loadSymbolData.BinariesLoadedAfterCount++;
-                    }
-                    else
-                    {
-                        result.ResultCode = VSConstants.E_FAIL;
-                        result.SuggestToEnableSymbolStore |=
-                            ShouldAskToEnableSymbolStores(name, isStadiaSymbolsServerUsed);
-                    }
 
-                    _moduleSearchLogHolder.AppendSearchLog(outputModule, searchLog.ToString());
+                task.ThrowIfCancellationRequested();
+                task.Progress.Report(
+                    $"Loading binary for {name}" +
+                    $"({sbModule.GetId()}/{loadSymbolData.ModulesCount})");
+                (SbModule outputModule, bool ok) =
+                    await _binaryLoader.LoadBinaryAsync(sbModule, searchLog);
+                if (ok)
+                {
+                    modulesWithBinary.Add(outputModule);
+                    loadSymbolData.BinariesLoadedAfterCount++;
                 }
+                else
+                {
+                    result.ResultCode = VSConstants.E_FAIL;
+                    result.SuggestToEnableSymbolStore |=
+                        ShouldAskToEnableSymbolStores(name, isStadiaSymbolsServerUsed);
+                }
+
+                _moduleSearchLogHolder.AppendSearchLog(outputModule, searchLog.ToString());
             }
 
             return modulesWithBinary;
@@ -419,25 +417,22 @@ namespace YetiVSI.DebugEngine
 
                 string name = sbModule.GetPlatformFileSpec().GetFilename();
                 TextWriter searchLog = new StringWriter();
-                using (new TestBenchmark($"Loading symbols {name}", TestBenchmarkScope.Recorder))
+                task.ThrowIfCancellationRequested();
+                task.Progress.Report(
+                    $"Loading symbols for {name} " +
+                    $"({sbModule.GetId()}/{loadSymbolData.ModulesCount})");
+                bool ok = await _symbolLoader.LoadSymbolsAsync(
+                    sbModule, searchLog, useSymbolStores, forceLoad);
+                if (!ok)
                 {
-                    task.ThrowIfCancellationRequested();
-                    task.Progress.Report(
-                        $"Loading symbols for {name} " +
-                        $"({sbModule.GetId()}/{loadSymbolData.ModulesCount})");
-                    bool ok = await _symbolLoader.LoadSymbolsAsync(
-                        sbModule, searchLog, useSymbolStores, forceLoad);
-                    if (!ok)
-                    {
-                        result.ResultCode = VSConstants.E_FAIL;
-                    }
-                    else
-                    {
-                        loadSymbolData.ModulesWithSymbolsLoadedAfterCount++;
-                    }
-
-                    _moduleSearchLogHolder.AppendSearchLog(sbModule, searchLog.ToString());
+                    result.ResultCode = VSConstants.E_FAIL;
                 }
+                else
+                {
+                    loadSymbolData.ModulesWithSymbolsLoadedAfterCount++;
+                }
+
+                _moduleSearchLogHolder.AppendSearchLog(sbModule, searchLog.ToString());
             }
         }
 
