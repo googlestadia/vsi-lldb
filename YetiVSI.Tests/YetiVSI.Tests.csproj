@@ -20,7 +20,7 @@
   <PropertyGroup>
     <StartAction>Program</StartAction>
     <StartProgram>C:\Windows\System32\cmd.exe</StartProgram>
-    <StartArguments>/C "$(SolutionDir)run_coverage.bat $(SolutionDir) $(OutputBaseDir) $(Configuration)"</StartArguments>
+    <StartArguments>/C "$(SolutionDir)run_coverage.bat $(SolutionDir) ..\..\ $(Configuration) || pause"</StartArguments>
     <StartWorkingDirectory>$(OutputPath)</StartWorkingDirectory>
   </PropertyGroup>
   <Target Name="CopyTestAssets" AfterTargets="Build">
