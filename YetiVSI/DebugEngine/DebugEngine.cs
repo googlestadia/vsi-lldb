@@ -458,8 +458,23 @@ namespace YetiVSI.DebugEngine
                                    enum_ATTACH_REASON reason)
         {
             _taskContext.ThrowIfNotOnMainThread();
+            var result = AttachInternal(programs, numPrograms, callback, reason, out ExitInfo exitInfo);
 
+            if (result != VSConstants.S_OK)
+            {
+                StopTransportAndCleanup(exitInfo);
+            }
+
+            return result;
+        }
+
+        int AttachInternal(IDebugProgram2[] programs, uint numPrograms,
+                           IDebugEventCallback2 callback, enum_ATTACH_REASON reason,
+                           out ExitInfo exitInfo)
+        {
+            _taskContext.ThrowIfNotOnMainThread();
             callback = _debugEventCallbackDecorator(callback);
+            exitInfo = ExitInfo.Normal(ExitReason.Unknown);
 
             if (numPrograms != 1)
             {
@@ -539,6 +554,7 @@ namespace YetiVSI.DebugEngine
                 if (!LaunchLldbDebuggerInBackground())
                 {
                     Trace.WriteLine("Aborting attach because the user canceled it.");
+                    exitInfo = ExitInfo.Normal(ExitReason.AttachCanceled);
                     return VSConstants.E_ABORT;
                 }
             }
@@ -614,7 +630,6 @@ namespace YetiVSI.DebugEngine
             // Before running the operation, we store a reference to it, so that we can cancel it
             // asynchronously if the YetiTransport fails to start.
             int result = VSConstants.S_OK;
-            var exitInfo = ExitInfo.Normal(ExitReason.Unknown);
             var glData = new GameLaunchData
             {
                 LaunchId = _vsiGameLaunch?.LaunchId
@@ -679,6 +694,7 @@ namespace YetiVSI.DebugEngine
             var attachTask = _cancelableTaskFactory.Create(TaskMessages.AttachingToProcess,
                                                            AttachAsync);
             _attachOperation = attachTask;
+
             try
             {
                 if (!attachTask.RunAndRecord(startAction))
@@ -694,6 +710,7 @@ namespace YetiVSI.DebugEngine
                     _attachedTimer = _actionRecorder.CreateStartedTimer();
                     _sessionNotifier.NotifySessionLaunched(
                         new SessionLaunchedEventArgs(_launchOption, _attachedProgram));
+                    exitInfo = ExitInfo.Normal(ExitReason.Unknown);
                     Trace.WriteLine("LLDB successfully attached.");
                 }
             }
@@ -729,13 +746,7 @@ namespace YetiVSI.DebugEngine
                 result = VSConstants.E_ABORT;
             }
 
-            if (result != VSConstants.S_OK)
-            {
-                StopTransportAndCleanup(exitInfo);
-                return result;
-            }
-
-            return VSConstants.S_OK;
+            return result;
         }
 
         public override int CauseBreak()
@@ -977,6 +988,25 @@ namespace YetiVSI.DebugEngine
                                             IDebugEventCallback2 callback,
                                             out IDebugProcess2 process)
         {
+            _taskContext.ThrowIfNotOnMainThread();
+            var result = LaunchSuspendedInternal(port, executableFullPath, args, dir, options,
+                                             callback, out process, out ExitInfo exitInfo);
+
+            if (result != VSConstants.S_OK)
+            {
+                StopTransportAndCleanup(exitInfo);
+            }
+
+            return result;
+        }
+
+        int LaunchSuspendedInternal(IDebugPort2 port, string executableFullPath, string args,
+                                    string dir, string options, IDebugEventCallback2 callback,
+                                    out IDebugProcess2 process,
+                                    out ExitInfo exitInfo)
+        {
+            _taskContext.ThrowIfNotOnMainThread();
+            exitInfo = ExitInfo.Normal(ExitReason.Unknown);
             process = null;
             if (_attachedProgram != null)
             {
@@ -1013,6 +1043,7 @@ namespace YetiVSI.DebugEngine
             if (!LaunchLldbDebuggerInBackground(_coreFilePath))
             {
                 Trace.WriteLine("Aborting launch because the user canceled it.");
+                exitInfo = ExitInfo.Normal(ExitReason.AttachCanceled);
                 return VSConstants.E_FAIL;
             }
 
@@ -1124,13 +1155,8 @@ namespace YetiVSI.DebugEngine
                 {
                     return
                         _stadiaLldbDebuggerFactory
-                            .Create(
-                                _grpcSession
-                                    .GrpcConnection,
-                                _debuggerOptions,
-                                _libPaths,
-                                _executableFullPath,
-                                isCoreDumpAttach);
+                            .Create(_grpcSession.GrpcConnection, _debuggerOptions,
+                                    _libPaths, _executableFullPath, isCoreDumpAttach);
                 });
             });
 
@@ -1252,6 +1278,7 @@ namespace YetiVSI.DebugEngine
         void StopTransportAndCleanup(ExitInfo exitInfo)
         {
             exitInfo.IfError(_exitDialogUtil.ShowExitDialog);
+            _lldbDebuggerCreator?.Join();
             _yetiTransport.Stop(exitInfo.ExitReason);
             _symbolServerHttpClient?.Dispose();
             if (_launchOption == LaunchOption.AttachToCore && File.Exists(_coreFilePath) &&
@@ -1303,6 +1330,7 @@ namespace YetiVSI.DebugEngine
 
             if (_attachedProgram == null)
             {
+                StopTransportAndCleanup(exitInfo);
                 return;
             }
 

@@ -104,6 +104,8 @@ namespace YetiVSI.Test.DebugEngine
                 Assert.That(result, Is.EqualTo(VSConstants.S_OK));
                 Assert.That(calls, Is.EqualTo(1));
             });
+
+            ReleaseTransportSession(debugEngine);
         }
 
         [Test]
@@ -117,7 +119,7 @@ namespace YetiVSI.Test.DebugEngine
             debugEngine.LaunchSuspended("", null, "", null, null, null, null,
                                         enum_LAUNCH_FLAGS.LAUNCH_DEBUG, 0, 0, 0, null,
                                         out IDebugProcess2 _);
-            IDebugPort2 debugPort = CreateDebugPort(gamelet);
+            IDebugPort2 debugPort = CreateDebugPortForAttach(gamelet);
             IDebugProgram2 program = CreateDebugProgram(debugPort);
             IDebugProgram2[] rgpPrograms = { program };
             var rgpProgramNodes = new[] { Substitute.For<IDebugProgramNode2>() };
@@ -128,12 +130,8 @@ namespace YetiVSI.Test.DebugEngine
             Assert.That(result, Is.EqualTo(VSConstants.E_ABORT));
         }
 
-        // AttachToCore
-        [TestCase(enum_ATTACH_REASON.ATTACH_REASON_LAUNCH)]
-        // AttachToCore
-        [TestCase(enum_ATTACH_REASON.ATTACH_REASON_USER)]
-        public async Task
-        RemoteDeployNotCalledDuringAttachToCoreAsync(enum_ATTACH_REASON attachReason)
+        [Test]
+        public async Task RemoteDeployNotCalledDuringAttachToCoreAsync()
         {
             await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
 
@@ -155,18 +153,23 @@ namespace YetiVSI.Test.DebugEngine
             });
             IGgpDebugEngine debugEngine =
                 CreateGgpDebugEngine(debugSessionLauncherFactory, remoteDeploy);
-            IDebugPort2 debugPort = CreateDebugPort(gamelet);
+            IDebugPort2 debugPort = Substitute.For<IDebugPort2>();
             string options = null;
-            debugEngine.LaunchSuspended("", debugPort, _exePath, null, null, null, options,
-                                        enum_LAUNCH_FLAGS.LAUNCH_DEBUG, 0, 0, 0, null,
-                                        out IDebugProcess2 _);
+            var launchResult = debugEngine.LaunchSuspended("", debugPort, _exePath, null, null,
+                                                           null, options,
+                                                           enum_LAUNCH_FLAGS.LAUNCH_DEBUG, 0, 0,
+                                                           0, null, out IDebugProcess2 _);
+            Assert.AreEqual(launchResult, VSConstants.S_OK);
             IDebugProgram2 program = CreateDebugProgram(debugPort);
             IDebugProgram2[] rgpPrograms = { program };
             var rgpProgramNodes = new[] { Substitute.For<IDebugProgramNode2>() };
 
-            debugEngine.Attach(rgpPrograms, rgpProgramNodes, _celtPrograms, null, attachReason);
+            var attachResult = debugEngine.Attach(rgpPrograms, rgpProgramNodes, _celtPrograms,
+                                                  null, enum_ATTACH_REASON.ATTACH_REASON_LAUNCH);
 
+            Assert.AreEqual(attachResult, VSConstants.S_OK);
             Assert.That(calls, Is.EqualTo(0));
+            ReleaseTransportSession(debugEngine);
         }
 
         IGgpDebugEngine CreateGgpDebugEngine(
@@ -214,7 +217,9 @@ namespace YetiVSI.Test.DebugEngine
             return program;
         }
 
-        IDebugPort2 CreateDebugPort(Gamelet gamelet)
+        // This method should be used only in attach tests, which don't call
+        // DebugEngine.LaunchSuspended.
+        IDebugPort2 CreateDebugPortForAttach(Gamelet gamelet)
         {
             var processFactory = Substitute.For<DebugProcess.Factory>();
             var dialogUtil = Substitute.For<IDialogUtil>();

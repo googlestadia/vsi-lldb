@@ -26,6 +26,8 @@ using YetiVSI.Util;
 using YetiVSITestsCommon.Services;
 using YetiVSITestsCommon;
 using System.Threading.Tasks;
+using YetiVSI.DebugEngine;
+using YetiVSI.DebugEngine.Exit;
 
 namespace YetiVSI.Test.DebugEngine
 {
@@ -48,6 +50,15 @@ namespace YetiVSI.Test.DebugEngine
         {
             YetiLog.Uninitialize();
             _mainThreadContext.Dispose();
+            AssertAllSessionsReleased();
+        }
+
+        void AssertAllSessionsReleased()
+        {
+            using (var session = new LldbTransportSession())
+            {
+                Assert.That(session.GetSessionId(), Is.EqualTo(0));
+            }
         }
 
         /// <summary>
@@ -74,6 +85,12 @@ namespace YetiVSI.Test.DebugEngine
 
             var factory = compRoot.CreateDebugEngineFactory();
             factory.Create(null);
+        }
+
+        void ReleaseTransportSession(IGgpDebugEngine debugEngine)
+        {
+            debugEngine.ContinueFromSynchronousEvent(
+                new ProgramDestroyEvent(ExitInfo.Normal(ExitReason.ProcessExited)));
         }
     }
 }

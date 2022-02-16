@@ -21,6 +21,7 @@ using NSubstitute;
 using NUnit.Framework;
 using YetiCommon;
 using YetiVSI.DebugEngine;
+using YetiVSI.DebugEngine.Exit;
 using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.Test.DebugEngine
@@ -57,6 +58,8 @@ namespace YetiVSI.Test.DebugEngine
                                                      options, enum_LAUNCH_FLAGS.LAUNCH_DEBUG, 0, 0,
                                                      0, null, out var _);
             Assert.That(result, Is.EqualTo(VSConstants.S_OK));
+
+            ReleaseTransportSession(debugEngine);
         }
 
         [Test]
@@ -77,6 +80,8 @@ namespace YetiVSI.Test.DebugEngine
                                                      options, enum_LAUNCH_FLAGS.LAUNCH_DEBUG, 0, 0,
                                                      0, null, out var _);
             Assert.That(result, Is.EqualTo(VSConstants.S_OK));
+
+            ReleaseTransportSession(debugEngine);
         }
     }
 
