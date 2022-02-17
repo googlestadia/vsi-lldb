@@ -59,9 +59,10 @@ namespace YetiVSI.Test.DebugEngine
             Assert.That(result, Is.EqualTo(VSConstants.E_NOTIMPL));
         }
 
-        [Test]
+        [TestCase(enum_ATTACH_REASON.ATTACH_REASON_LAUNCH)]
+        [TestCase(enum_ATTACH_REASON.ATTACH_REASON_USER)]
         public async Task
-        AttachNeedsNumProgramsToEqual1Async([Values] enum_ATTACH_REASON attachReason)
+        AttachNeedsNumProgramsToEqual1Async(enum_ATTACH_REASON attachReason)
         {
             await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
 

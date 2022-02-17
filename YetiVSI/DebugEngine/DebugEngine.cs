@@ -318,7 +318,7 @@ namespace YetiVSI.DebugEngine
         readonly ISessionNotifier _sessionNotifier;
 
         // Keep track of the attach operation, so that it can be aborted by transport errors.
-        ICancelableTask _attachOperation;
+        ICancelableTask<ILldbAttachedProgram> _attachOperation;
 
         // Variables set during launch and/or attach.
         string _executableFileName;
@@ -476,42 +476,36 @@ namespace YetiVSI.DebugEngine
             callback = _debugEventCallbackDecorator(callback);
             exitInfo = ExitInfo.Normal(ExitReason.Unknown);
 
-            if (numPrograms != 1)
+            int result = TryInitializeLaunchOption(reason);
+            if (result != VSConstants.S_OK)
             {
-                Trace.WriteLine($"Debug Engine failed to attach. Attempted to attach to " +
-                                $"{numPrograms} programs; we only support attaching to one.");
-                _dialogUtil.ShowError(ErrorStrings.SingleProgramExpected);
-                return VSConstants.E_INVALIDARG;
+                return result;
             }
 
-            if (reason == enum_ATTACH_REASON.ATTACH_REASON_AUTO)
+            result = TryExtractDebugProcess(programs, numPrograms, out IDebugProcess2 process,
+                                            out Guid programId);
+            if (result != VSConstants.S_OK)
             {
-                Trace.WriteLine("Debug Engine failed to attach. Auto attach is not supported.");
-                _dialogUtil.ShowError(ErrorStrings.AutoAttachNotSupported);
-                return VSConstants.E_NOTIMPL;
+                return result;
             }
 
-            // save the program ID provided to us
-            programs[0].GetProgramId(out Guid programId);
-            programs[0].GetProcess(out IDebugProcess2 process);
-
-            if (reason == enum_ATTACH_REASON.ATTACH_REASON_USER)
+            LogOptions();
+            if (_launchOption == LaunchOption.AttachToGame)
             {
-                process.GetPort(out IDebugPort2 port);
-                var debugPort = port as PortSupplier.DebugPort;
-                var gamelet = debugPort?.Gamelet;
-                if (gamelet != null && !string.IsNullOrEmpty(gamelet.IpAddr))
+                result = TryInitializeGameletTarget(process);
+                if (result != VSConstants.S_OK)
                 {
-                    _target = new SshTarget(gamelet);
+                    return result;
                 }
-                else
+
+                // If the debugger launches or attaches to core dump this initialization is called
+                // in LaunchSuspended method.
+                if (!LaunchLldbDebuggerInBackground())
                 {
-                    Trace.WriteLine("Unable to find Stadia instance.");
-                    _dialogUtil.ShowError(ErrorStrings.NoGameletsFound);
+                    Trace.WriteLine("Aborting attach because the user canceled it.");
+                    exitInfo = ExitInfo.Normal(ExitReason.AttachCanceled);
                     return VSConstants.E_ABORT;
                 }
-
-                _debugSessionMetrics.DebugSessionId = debugPort?.DebugSessionId;
             }
 
             if (string.IsNullOrEmpty(_debugSessionMetrics.DebugSessionId))
@@ -519,20 +513,102 @@ namespace YetiVSI.DebugEngine
                 _debugSessionMetrics.UseNewDebugSessionId();
             }
 
-            Trace.WriteLine("Extension Options:");
-            foreach (var option in _extensionOptions.Options)
-            {
-                Trace.WriteLine($"{option.Name.ToLower()}: {option.Value.ToString().ToLower()}");
-            }
-
-            Trace.WriteLine("Debugger Options:");
-            foreach (var option in _debuggerOptions)
-            {
-                Trace.WriteLine(
-                    $"{option.Key.ToString().ToLower()}: {option.Value.ToString().ToLower()}");
-            }
+            IAction lldbDeployAction = _actionRecorder.CreateToolAction(ActionType.LldbServerDeploy);
+            JoinableTask lldbDeployTask = DeployLLDBServerInBackgroundIfNeeded(lldbDeployAction);
 
             uint? attachPid = null;
+            try
+            {
+                if (_launchOption == LaunchOption.LaunchGame)
+                {
+                    CheckIfLocalAndRemoteExecutableBinariesAreSame();
+                }
+                else if (_launchOption == LaunchOption.AttachToGame)
+                {
+                    attachPid = GetRemoteProcessIdAndCheckExecutable(process);
+                }
+            }
+            catch (PreflightBinaryCheckerException e)
+            {
+                _dialogUtil.ShowWarning(e.Message, e);
+            }
+
+            // Attaching the debugger is a synchronous operation that runs on a background thread.
+            // The user is given a chance to cancel the operation if it takes too long.
+            // Before running the operation, we store a reference to it, so that we can cancel it
+            // asynchronously if the YetiTransport fails to start.
+            IAction startAction = StartAttachment(callback, programId, process, lldbDeployAction,
+                                                  lldbDeployTask, attachPid);
+            return WaitForAttach(startAction, out exitInfo);
+        }
+
+        JoinableTask DeployLLDBServerInBackgroundIfNeeded(IAction lldbDeployAction)
+        {
+            JoinableTask lldbDeployTask = null;
+            if (_deployLldbServer && _launchOption != LaunchOption.AttachToCore)
+            {
+                lldbDeployTask = _taskContext.Factory.RunAsync(async () =>
+                {
+                    await TaskScheduler.Default;
+                    await _remoteDeploy.DeployLldbServerAsync(_target, lldbDeployAction);
+                });
+            }
+
+            return lldbDeployTask;
+        }
+
+        int TryInitializeGameletTarget(IDebugProcess2 process)
+        {
+            _taskContext.ThrowIfNotOnMainThread();
+            process.GetPort(out IDebugPort2 port);
+            var debugPort = port as PortSupplier.DebugPort;
+            var gamelet = debugPort?.Gamelet;
+            if (gamelet == null || string.IsNullOrEmpty(gamelet.IpAddr))
+            {
+                Trace.WriteLine("Unable to find Stadia instance.");
+                _dialogUtil.ShowError(ErrorStrings.NoGameletsFound);
+                return VSConstants.E_ABORT;
+            }
+
+            _target = new SshTarget(gamelet);
+            _debugSessionMetrics.DebugSessionId = debugPort?.DebugSessionId;
+            if (string.IsNullOrEmpty(_debugSessionMetrics.DebugSessionId))
+            {
+                _debugSessionMetrics.UseNewDebugSessionId();
+            }
+
+            return VSConstants.S_OK;
+        }
+
+        int TryExtractDebugProcess(IDebugProgram2[] programs, uint numPrograms,
+                                   out IDebugProcess2 process, out Guid programId)
+        {
+            _taskContext.ThrowIfNotOnMainThread();
+            if (numPrograms != 1)
+            {
+                process = null;
+                programId = Guid.Empty;
+                Trace.WriteLine($"Debug Engine failed to attach. Attempted to attach to " +
+                                $"{numPrograms} programs; we only support attaching to one.");
+                _dialogUtil.ShowError(ErrorStrings.SingleProgramExpected);
+                return VSConstants.E_INVALIDARG;
+            }
+
+            // save the program ID provided to us
+            programs[0].GetProgramId(out programId);
+            programs[0].GetProcess(out process);
+
+            return VSConstants.S_OK;
+        }
+
+        int TryInitializeLaunchOption(enum_ATTACH_REASON reason)
+        {
+            if (reason == enum_ATTACH_REASON.ATTACH_REASON_AUTO)
+            {
+                Trace.WriteLine("Debug Engine failed to attach. Auto attach is not supported.");
+                _dialogUtil.ShowError(ErrorStrings.AutoAttachNotSupported);
+                return VSConstants.E_NOTIMPL;
+            }
 
             if (!string.IsNullOrEmpty(_coreFilePath))
             {
@@ -547,97 +623,81 @@ namespace YetiVSI.DebugEngine
                 _launchOption = LaunchOption.AttachToGame;
             }
 
-            // If the debugger launches or attaches to core dump this initialization is called in
-            // LaunchSuspended method.
-            if (_launchOption == LaunchOption.AttachToGame)
+            return VSConstants.S_OK;
+        }
+
+        uint? GetRemoteProcessIdAndCheckExecutable(IDebugProcess2 process)
+        {
+            _taskContext.ThrowIfNotOnMainThread();
+            var preflightCheckAction = _actionRecorder.CreateToolAction(
+                ActionType.DebugPreflightBinaryChecks);
+
+            uint? attachPid = GetProcessId(process);
+            if (attachPid.HasValue)
             {
-                if (!LaunchLldbDebuggerInBackground())
-                {
-                    Trace.WriteLine("Aborting attach because the user canceled it.");
-                    exitInfo = ExitInfo.Normal(ExitReason.AttachCanceled);
-                    return VSConstants.E_ABORT;
-                }
+                _cancelableTaskFactory.Create(TaskMessages.CheckingRemoteBinary,
+                                              async _ =>
+                                                  await _preflightBinaryChecker
+                                                      .CheckRemoteBinaryOnAttachAsync(
+                                                          attachPid.Value, _target,
+                                                          preflightCheckAction))
+                    .RunAndRecord(preflightCheckAction);
+            }
+            else
+            {
+                Trace.WriteLine(
+                    "Failed to get target process ID; skipping remote build id check");
             }
 
-            var lldbDeployAction = _actionRecorder.CreateToolAction(ActionType.LldbServerDeploy);
-            JoinableTask lldbDeployTask = null;
-            if (_deployLldbServer && _launchOption != LaunchOption.AttachToCore)
+            return attachPid;
+        }
+
+        void CheckIfLocalAndRemoteExecutableBinariesAreSame()
+        {
+            var preflightCheckAction = _actionRecorder.CreateToolAction(
+                ActionType.DebugPreflightBinaryChecks);
+
+            string cmd =
+                _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s)) ??
+                _executableFileName;
+
+            // Note that Path.Combine works for both relative and full paths.
+            // It returns cmd if cmd starts with '/' or '\'.
+            string remoteTargetPath = Path.Combine(YetiConstants.RemoteGamePath, cmd);
+
+            // This field should be initialized in LaunchLldbDebuggerInBackground
+            if (_libPaths == null)
             {
-                lldbDeployTask = _taskContext.Factory.RunAsync(async () =>
-                {
-                    await TaskScheduler.Default;
-                    await _remoteDeploy.DeployLldbServerAsync(_target, lldbDeployAction);
-                });
+                throw new ArgumentNullException(nameof(_libPaths));
             }
 
-            try
-            {
-                var preflightCheckAction = _actionRecorder.CreateToolAction(
-                    ActionType.DebugPreflightBinaryChecks);
+            _cancelableTaskFactory.Create(TaskMessages.CheckingBinaries,
+                                          async _ =>
+                                              await _preflightBinaryChecker
+                                                  .CheckLocalAndRemoteBinaryOnLaunchAsync(
+                                                      _libPaths, _executableFileName,
+                                                      _target, remoteTargetPath,
+                                                      preflightCheckAction))
+                .RunAndRecord(preflightCheckAction);
+        }
 
-                if (_launchOption == LaunchOption.LaunchGame)
-                {
-                    string cmd =
-                        _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s)) ??
-                        _executableFileName;
-
-                    // Note that Path.Combine works for both relative and full paths.
-                    // It returns cmd if cmd starts with '/' or '\'.
-                    var remoteTargetPath = Path.Combine(YetiConstants.RemoteGamePath, cmd);
-
-                    // This field should be initialized in LaunchLldbDebuggerInBackground
-                    if (_libPaths == null)
-                    {
-                        throw new ArgumentNullException(nameof(_libPaths));
-                    }
-
-                    _cancelableTaskFactory.Create(TaskMessages.CheckingBinaries,
-                                                  async _ =>
-                                                      await _preflightBinaryChecker
-                                                          .CheckLocalAndRemoteBinaryOnLaunchAsync(
-                                                              _libPaths, _executableFileName,
-                                                              _target, remoteTargetPath,
-                                                              preflightCheckAction))
-                        .RunAndRecord(preflightCheckAction);
-                }
-                else if (_launchOption == LaunchOption.AttachToGame)
-                {
-                    attachPid = GetProcessId(process);
-                    if (attachPid.HasValue)
-                    {
-                        _cancelableTaskFactory.Create(TaskMessages.CheckingRemoteBinary,
-                                                      async _ =>
-                                                          await _preflightBinaryChecker
-                                                              .CheckRemoteBinaryOnAttachAsync(
-                                                                  attachPid.Value, _target,
-                                                                  preflightCheckAction))
-                            .RunAndRecord(preflightCheckAction);
-                    }
-                    else
-                    {
-                        Trace.WriteLine(
-                            "Failed to get target process ID; skipping remote build id check");
-                    }
-                }
-            }
-            catch (PreflightBinaryCheckerException e)
-            {
-                _dialogUtil.ShowWarning(e.Message, e);
-            }
-
-            // Attaching the debugger is a synchronous operation that runs on a background thread.
-            // The user is given a chance to cancel the operation if it takes too long.
-            // Before running the operation, we store a reference to it, so that we can cancel it
-            // asynchronously if the YetiTransport fails to start.
-            int result = VSConstants.S_OK;
+        IAction CreateDebugStartAction()
+        {
             var glData = new GameLaunchData
             {
                 LaunchId = _vsiGameLaunch?.LaunchId
             };
 
-            var startAction = _actionRecorder.CreateToolAction(ActionType.DebugStart);
+            IAction startAction = _actionRecorder.CreateToolAction(ActionType.DebugStart);
             startAction.UpdateEvent(new DeveloperLogEvent { GameLaunchData = glData });
+            return startAction;
+        }
 
+        IAction StartAttachment(IDebugEventCallback2 callback, Guid programId,
+                                IDebugProcess2 process, IAction lldbDeployAction,
+                                JoinableTask lldbDeployTask, uint? attachPid)
+        {
+            IAction startAction = CreateDebugStartAction();
             async Task<ILldbAttachedProgram> AttachAsync(ICancelable task)
             {
                 if (lldbDeployTask != null)
@@ -677,7 +737,7 @@ namespace YetiVSI.DebugEngine
                     lldbDebugger = await _lldbDebuggerCreator;
                 }
 
-                var launcher = _debugSessionLauncherFactory.Create(
+                IDebugSessionLauncher launcher = _debugSessionLauncherFactory.Create(
                     Self, _coreFilePath, _executableFileName, _vsiGameLaunch);
                 program = await launcher.LaunchAsync(task, process, programId, attachPid,
                                                      _grpcSession.GrpcConnection,
@@ -691,27 +751,32 @@ namespace YetiVSI.DebugEngine
                 return program;
             }
 
-            var attachTask = _cancelableTaskFactory.Create(TaskMessages.AttachingToProcess,
-                                                           AttachAsync);
-            _attachOperation = attachTask;
+            _attachOperation = _cancelableTaskFactory.Create(TaskMessages.AttachingToProcess,
+                                                             AttachAsync);
+            return startAction;
+        }
+
+        int WaitForAttach(IAction startAction, out ExitInfo exitInfo)
+        {
+            int result = VSConstants.S_OK;
 
             try
             {
-                if (!attachTask.RunAndRecord(startAction))
+                if (_attachOperation.RunAndRecord(startAction))
                 {
-                    Trace.WriteLine("Aborting attach because the user canceled it.");
-                    exitInfo = ExitInfo.Normal(ExitReason.AttachCanceled);
-                    result = VSConstants.E_ABORT;
-                }
-                else
-                {
-                    _attachedProgram = attachTask.Result;
+                    _attachedProgram = _attachOperation.Result;
                     _attachedProgram.Start(Self);
                     _attachedTimer = _actionRecorder.CreateStartedTimer();
                     _sessionNotifier.NotifySessionLaunched(
                         new SessionLaunchedEventArgs(_launchOption, _attachedProgram));
                     exitInfo = ExitInfo.Normal(ExitReason.Unknown);
                     Trace.WriteLine("LLDB successfully attached.");
+                }
+                else
+                {
+                    Trace.WriteLine("Aborting attach because the user canceled it.");
+                    exitInfo = ExitInfo.Normal(ExitReason.AttachCanceled);
+                    result = VSConstants.E_ABORT;
                 }
             }
             catch (AttachException e)
@@ -747,6 +812,22 @@ namespace YetiVSI.DebugEngine
             }
 
             return result;
+        }
+
+        void LogOptions()
+        {
+            Trace.WriteLine("Extension Options:");
+            foreach (GenericOption option in _extensionOptions.Options)
+            {
+                Trace.WriteLine($"{option.Name.ToLower()}: {option.Value.ToString().ToLower()}");
+            }
+
+            Trace.WriteLine("Debugger Options:");
+            foreach (KeyValuePair<DebuggerOption, DebuggerOptionState> option in _debuggerOptions)
+            {
+                Trace.WriteLine(
+                    $"{option.Key.ToString().ToLower()}: {option.Value.ToString().ToLower()}");
+            }
         }
 
         public override int CauseBreak()
@@ -790,9 +871,8 @@ namespace YetiVSI.DebugEngine
                     "Recording attach-to-continue time");
                 return VSConstants.S_OK;
             }
-            else if (evnt is ProgramDestroyEvent)
+            else if (evnt is ProgramDestroyEvent programDestroyEvent)
             {
-                var programDestroyEvent = (ProgramDestroyEvent) evnt;
                 EndDebugSession(programDestroyEvent.ExitInfo);
             }
 
