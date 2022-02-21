@@ -81,6 +81,9 @@ namespace YetiVSI.Test.MediumTestsSupport
         public Task<List<Gamelet>> ListGameletsAsync(bool onlyOwned = false) =>
             Task.FromResult(_instances);
 
+        public Task<List<Gamelet>> SearchMyReservedGameletsAsync() =>
+            Task.FromResult(_instances);
+
         public Task EnableSshAsync(string gameletId, string publicKey) => Task.CompletedTask;
 
         public Task StopGameAsync(string gameletId) => throw new NotImplementedException();
