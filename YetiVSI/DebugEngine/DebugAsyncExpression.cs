@@ -60,7 +60,7 @@ namespace YetiVSI.DebugEngine
                                                    IGgpDebugProgram debugProgram,
                                                    IDebugThread2 thread)
             {
-                IAsyncExpressionEvaluator evaluator = _asyncEvaluatorFactory.Create(frame, text);
+                var evaluator = _asyncEvaluatorFactory.Create(debugProgram.Target, frame, text);
                 return new DebugAsyncExpression(debugEngineHandler, evaluator, _taskExecutor,
                                                 debugProgram, thread);
             }

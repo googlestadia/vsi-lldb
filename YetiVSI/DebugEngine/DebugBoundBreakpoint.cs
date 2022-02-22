@@ -56,7 +56,7 @@ namespace YetiVSI.DebugEngine
 
             public virtual IBoundBreakpoint Create(
                 IDebugPendingBreakpoint2 pendingBreakpoint, SbBreakpointLocation breakpointLocation,
-                IDebugProgram2 program,
+                IGgpDebugProgram program,
                 Guid languageGuid) => new DebugBoundBreakpoint(_documentContextFactory,
                                                                _codeContextFactory,
                                                                _breakpointResolutionFactory,
@@ -90,7 +90,7 @@ namespace YetiVSI.DebugEngine
                              DebugCodeContext.Factory codeContextFactory,
                              DebugBreakpointResolution.Factory breakpointResolutionFactory,
                              IDebugPendingBreakpoint2 pendingBreakpoint,
-                             SbBreakpointLocation breakpointLocation, IDebugProgram2 program,
+                             SbBreakpointLocation breakpointLocation, IGgpDebugProgram program,
                              Guid languageGuid)
         {
             _pendingBreakpoint = pendingBreakpoint;
@@ -106,16 +106,20 @@ namespace YetiVSI.DebugEngine
             {
                 LineEntryInfo lineEntry = address.GetLineEntry();
                 IDebugDocumentContext2 documentContext = null;
-                string name = "";
 
                 // |lineEntry| is null if the breakpoint is set on an external function.
                 if (lineEntry != null)
                 {
                     documentContext = documentContextFactory.Create(lineEntry);
-                    documentContext.GetName(enum_GETNAME_TYPE.GN_NAME, out name);
                 }
+
                 IDebugCodeContext2 codeContext = codeContextFactory.Create(
-                    breakpointLocation.GetLoadAddress(), name, documentContext, languageGuid);
+                    target: program.Target,
+                    address: breakpointLocation.GetLoadAddress(),
+                    functionName: null,
+                    documentContext,
+                    languageGuid);
+
                 _breakpointResolution = breakpointResolutionFactory.Create(codeContext, program);
             }
             else

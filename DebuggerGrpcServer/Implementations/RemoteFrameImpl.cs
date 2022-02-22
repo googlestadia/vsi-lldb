@@ -89,6 +89,8 @@ namespace DebuggerGrpcServer
 
         public ulong GetPC() => _sbFrame.GetPC();
 
+        public bool SetPC(ulong addr) => _sbFrame.SetPC(addr);
+
         public List<RemoteValue> GetRegisters() =>
             _sbFrame.GetRegisters().ConvertAll(v => _valueFactory.Create(v));
 

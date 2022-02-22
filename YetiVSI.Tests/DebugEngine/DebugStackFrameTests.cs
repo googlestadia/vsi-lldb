@@ -34,6 +34,7 @@ namespace YetiVSI.Test.DebugEngine
         const ulong _testPc = 0x123456789abcdef0;
         const string _name = "DebugStackFrameTests";
 
+        RemoteTarget _mockTarget;
         IDebugStackFrame _stackFrame;
         RemoteFrame _mockDebuggerStackFrame;
         LineEntryInfo _lineEntry;
@@ -67,6 +68,8 @@ namespace YetiVSI.Test.DebugEngine
 
             _mockDebugEngineHandler = Substitute.For<IDebugEngineHandler>();
             _mockProgram = Substitute.For<IGgpDebugProgram>();
+            _mockTarget = Substitute.For<RemoteTarget>();
+            _mockProgram.Target.Returns(_mockTarget);
 
             _taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
 
@@ -96,8 +99,8 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetCodeContext()
         {
-            var mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            _mockCodeContextFactory.Create(_testPc, _name, _mockDocumentContext, Guid.Empty)
+            var mockCodeContext = Substitute.For<IGgpDebugCodeContext>();
+            _mockCodeContextFactory.Create(_mockTarget, _testPc, _name, _mockDocumentContext)
                 .Returns(mockCodeContext);
 
             Assert.AreEqual(VSConstants.S_OK,
@@ -108,8 +111,8 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetCodeContextNoDocumentContext()
         {
-            var mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            _mockCodeContextFactory.Create(_testPc, _name, null, Guid.Empty)
+            var mockCodeContext = Substitute.For<IGgpDebugCodeContext>();
+            _mockCodeContextFactory.Create(_mockTarget, _testPc, _name, null)
                 .Returns(mockCodeContext);
             LineEntryInfo lineEntryNull = null;
             _mockDebuggerStackFrame.GetLineEntry().Returns(lineEntryNull);

@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DebuggerApi;
 using Microsoft.VisualStudio.Debugger.Interop;
 using YetiVSI.DebugEngine.Variables;
 
@@ -23,7 +24,7 @@ namespace YetiVSI.DebugEngine
 {
     public interface IChildrenProviderFactory
     {
-        IChildrenProvider Create(IChildAdapter childAdapter,
+        IChildrenProvider Create(RemoteTarget target, IChildAdapter childAdapter,
                                  enum_DEBUGPROP_INFO_FLAGS debugInfoFlags, uint radix);
     }
 
@@ -61,7 +62,8 @@ namespace YetiVSI.DebugEngine
                 _propertyFactory = propertyFactory;
             }
 
-            public virtual IChildrenProvider Create(IChildAdapter childAdapter,
+            public virtual IChildrenProvider Create(RemoteTarget target,
+                                                    IChildAdapter childAdapter,
                                                     enum_DEBUGPROP_INFO_FLAGS debugInfoFlags,
                                                     uint radix)
             {
@@ -71,11 +73,12 @@ namespace YetiVSI.DebugEngine
                         $"{nameof(_propertyFactory)} has to be initialized.");
                 }
 
-                return new ChildrenProvider(_propertyFactory, childAdapter, debugInfoFlags,
-                                            radix);
+                return new ChildrenProvider(
+                    target, _propertyFactory, childAdapter, debugInfoFlags, radix);
             }
         }
 
+        readonly RemoteTarget _target;
         readonly IGgpDebugPropertyFactory _propertyFactory;
 
         readonly IChildAdapter _childAdapter;
@@ -83,9 +86,13 @@ namespace YetiVSI.DebugEngine
 
         readonly uint _radix;
 
-        ChildrenProvider(IGgpDebugPropertyFactory propertyFactory, IChildAdapter childAdapter,
-                         enum_DEBUGPROP_INFO_FLAGS debugInfoFlags, uint radix)
+        ChildrenProvider(RemoteTarget target,
+                         IGgpDebugPropertyFactory propertyFactory,
+                         IChildAdapter childAdapter,
+                         enum_DEBUGPROP_INFO_FLAGS debugInfoFlags,
+                         uint radix)
         {
+            _target = target;
             _propertyFactory = propertyFactory;
             _childAdapter = childAdapter;
             _debugInfoFlags = debugInfoFlags;
@@ -99,8 +106,9 @@ namespace YetiVSI.DebugEngine
         {
             IList<IVariableInformation> children =
                 await _childAdapter.GetChildrenAsync(fromIndex, requestedCount);
-            List<IGgpDebugProperty> debugProperties = children
-                .Select(_propertyFactory.Create).ToList();
+
+            List<IGgpDebugProperty> debugProperties = children.Select(
+                varInfo => _propertyFactory.Create(_target, varInfo)).ToList();
 
             for (int i = 0; i < debugProperties.Count; i++)
             {

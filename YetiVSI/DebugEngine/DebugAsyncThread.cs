@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Diagnostics;
 using DebuggerApi;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
-using System;
-using System.Diagnostics;
-using System.IO;
 using YetiCommon.CastleAspects;
 using YetiVSI.DebugEngine.AsyncOperations;
 using YetiVSI.DebugEngine.Interfaces;
@@ -100,52 +99,31 @@ namespace YetiVSI.DebugEngine
 
         #region IDebugThread2 functions
 
-        public int CanSetNextStatement(IDebugStackFrame2 stackFrameOrigin,
-                                       IDebugCodeContext2 codeContextDestination)
+        public int CanSetNextStatement(IDebugStackFrame2 stackFrame,
+                                       IDebugCodeContext2 codeContext)
         {
-            stackFrameOrigin.GetThread(out IDebugThread2 threadOrigin);
-            if (threadOrigin == null)
+            var frame = (IDebugStackFrame)stackFrame;
+            var context = (IGgpDebugCodeContext)codeContext;
+
+            // Sanity check that the provided frame belongs to the current thread.
+            if (frame.Thread.GetThreadId() != _id)
             {
                 return VSConstants.E_FAIL;
             }
 
-            threadOrigin.GetThreadId(out uint threadIdOrigin);
-            if (threadIdOrigin != _id)
+            // Return OK if we're already at the destination address.
+            if (context.Address == frame.Frame.GetPC())
+            {
+                return VSConstants.S_OK;
+            }
+
+            // Return FALSE if we're trying to jump to a different function.
+            // Visual Studio will show a warning and ask for a confirmation.
+            frame.GetNameWithSignature(out string fromFunc);
+            if (fromFunc != context.FunctionName)
             {
                 return VSConstants.S_FALSE;
             }
-
-            var contextInfosDestination = new CONTEXT_INFO[1];
-            int result = codeContextDestination.GetInfo(
-                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS | enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION,
-                contextInfosDestination);
-            if (result != VSConstants.S_OK)
-            {
-                return result;
-            }
-
-            string functionNameOrigin;
-            if (!DebugEngineUtil.GetAddressFromString(contextInfosDestination[0].bstrAddress,
-                                                      out ulong addressPc))
-            {
-                return VSConstants.E_FAIL;
-            }
-
-            if (stackFrameOrigin is IDebugStackFrame stackFrameOriginCast)
-            {
-                stackFrameOriginCast.GetNameWithSignature(out functionNameOrigin);
-            }
-            else
-            {
-                stackFrameOrigin.GetName(out functionNameOrigin);
-            }
-
-            if (addressPc != _remoteThread.GetFrameAtIndex(0).GetPC() &&
-                contextInfosDestination[0].bstrFunction != functionNameOrigin)
-            {
-                return VSConstants.S_FALSE;
-            }
-
             return VSConstants.S_OK;
         }
 
@@ -232,71 +210,14 @@ namespace YetiVSI.DebugEngine
 
         public int SetNextStatement(IDebugStackFrame2 stackFrame, IDebugCodeContext2 codeContext)
         {
-            int result = CanSetNextStatement(stackFrame, codeContext);
-            if (result != VSConstants.S_OK)
-            {
-                return VSConstants.E_FAIL;
-            }
+            var frame = (IDebugStackFrame)stackFrame;
+            var context = (IGgpDebugCodeContext)codeContext;
 
-            uint line;
-            string filePath;
-            codeContext.GetDocumentContext(out IDebugDocumentContext2 documentContext);
-            if (documentContext != null)
-            {
-                documentContext.GetName(enum_GETNAME_TYPE.GN_FILENAME, out filePath);
-                var beginPosition = new TEXT_POSITION[1];
-                var endPosition = new TEXT_POSITION[1];
-                documentContext.GetStatementRange(beginPosition, endPosition);
-                line = beginPosition[0].dwLine + 1;
-                Trace.WriteLine($"Settings next statement to {filePath} line {line}.");
-            }
-            else
-            {
-                var process = _remoteThread.GetProcess();
-                if (process == null)
-                {
-                    Trace.WriteLine(
-                        "Error: Failed to obtain process. Unable to set next statement");
-                    return VSConstants.E_FAIL;
-                }
+            Trace.WriteLine(
+                $"Setting next statement to {context.Address} (in {context.FunctionName}).");
 
-                var target = process.GetTarget();
-                if (target == null)
-                {
-                    Trace.WriteLine(
-                        "Error: Failed to obtain target. Unable to set next statement");
-                    return VSConstants.E_FAIL;
-                }
-
-                var address = target.ResolveLoadAddress(codeContext.GetAddress());
-                if (address == null)
-                {
-                    Trace.WriteLine(
-                        "Error: Failed to obtain address. Unable to set next statement");
-                    return VSConstants.E_FAIL;
-                }
-
-                var lineEntry = address.GetLineEntry();
-                if (lineEntry == null)
-                {
-                    Trace.WriteLine(
-                        "Error: Failed to obtain line entry. Unable to set next statement");
-                    return VSConstants.E_FAIL;
-                }
-
-                filePath = Path.Combine(lineEntry.Directory, lineEntry.FileName);
-                line = lineEntry.Line;
-                Trace.WriteLine($"Settings next statement to {address} at {filePath} line {line}");
-            }
-
-            SbError error = _remoteThread.JumpToLine(filePath, line);
-            if (error.Fail())
-            {
-                Trace.WriteLine(error.GetCString());
-                return VSConstants.E_FAIL;
-            }
-
-            return VSConstants.S_OK;
+            bool result = frame.Frame.SetPC(context.Address);
+            return result ? VSConstants.S_OK : VSConstants.E_FAIL;
         }
 
         public int Suspend(out uint suspendCount)

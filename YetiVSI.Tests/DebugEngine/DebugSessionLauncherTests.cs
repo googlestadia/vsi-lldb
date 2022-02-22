@@ -474,9 +474,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var taskExecutor = new TaskExecutor(taskContext.Factory);
 
-            var debugCodeContextFactory =
-                new DebugCodeContext.Factory(new DebugMemoryContext.Factory());
-
+            var debugCodeContextFactory = new DebugCodeContext.Factory();
             var debugDocumentContextFactory = new DebugDocumentContext.Factory();
             var threadsEnumFactory = new ThreadEnumFactory();
             var moduleEnumFactory = new ModuleEnumFactory();

@@ -36,6 +36,7 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class DebugPropertyTests
     {
+        RemoteTarget _mockTarget;
         LogSpy _logSpy;
         IVariableInformation _mockVarInfo;
         DebugCodeContext.Factory _mockCodeContextFactory;
@@ -44,6 +45,7 @@ namespace YetiVSI.Test.DebugEngine
         [SetUp]
         public void SetUp()
         {
+            _mockTarget = Substitute.For<RemoteTarget>();
             _mockVarInfo = Substitute.For<IVariableInformation>();
             _mockCodeContextFactory = Substitute.For<DebugCodeContext.Factory>();
 
@@ -72,7 +74,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             const string newValue = "newValue";
             _mockVarInfo.Assign(newValue, out string _).Returns(true);
-            var debugProperty = _propertyFactory.Create(_mockVarInfo);
+            var debugProperty = _propertyFactory.Create(_mockTarget, _mockVarInfo);
 
             var result = debugProperty.SetValueAsString(newValue, 0, 0);
 
@@ -84,7 +86,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             const string newValue = "newValue";
             _mockVarInfo.Assign(newValue, out string _).Returns(false);
-            var debugProperty = _propertyFactory.Create(_mockVarInfo);
+            var debugProperty = _propertyFactory.Create(_mockTarget, _mockVarInfo);
 
             int result = debugProperty.SetValueAsString(newValue, 0, 0);
 
@@ -103,7 +105,7 @@ namespace YetiVSI.Test.DebugEngine
                 return false;
             });
 
-            var debugProperty = _propertyFactory.Create(_mockVarInfo);
+            var debugProperty = _propertyFactory.Create(_mockTarget, _mockVarInfo);
 
             int result =
                 debugProperty.SetValueAsStringWithError(newValue, 0, 0, out string actualError);
@@ -117,17 +119,15 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void GetMemoryContext()
         {
-            const string varName = "test";
             const ulong expectedAddress = 0xdeadbeef;
+            _mockVarInfo.GetMemoryContextAddress().Returns(expectedAddress);
 
-            _mockVarInfo.DisplayName.Returns(varName);
-            _mockVarInfo.GetMemoryContextAddress().Returns<ulong?>(expectedAddress);
-
-            var mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            _mockCodeContextFactory.Create(expectedAddress, varName, null, Guid.Empty)
+            var mockCodeContext = Substitute.For<IGgpDebugCodeContext>();
+            _mockCodeContextFactory
+                .Create(_mockTarget, expectedAddress, null, null)
                 .Returns(mockCodeContext);
 
-            var debugProperty = _propertyFactory.Create(_mockVarInfo);
+            var debugProperty = _propertyFactory.Create(_mockTarget, _mockVarInfo);
 
             Assert.AreEqual(VSConstants.S_OK,
                             debugProperty.GetMemoryContext(out IDebugMemoryContext2 memoryContext));
@@ -143,7 +143,7 @@ namespace YetiVSI.Test.DebugEngine
             _mockVarInfo.DisplayName.Returns(varName);
             _mockVarInfo.ValueAsync().Returns(varValue);
 
-            var debugProperty = _propertyFactory.Create(_mockVarInfo);
+            var debugProperty = _propertyFactory.Create(_mockTarget, _mockVarInfo);
 
             Assert.AreEqual(AD7Constants.S_GETMEMORYCONTEXT_NO_MEMORY_CONTEXT,
                             debugProperty.GetMemoryContext(out IDebugMemoryContext2 _));
@@ -162,7 +162,7 @@ namespace YetiVSI.Test.DebugEngine
             _mockVarInfo.MightHaveChildren().Returns(true);
             _mockVarInfo.GetChildAdapter().Returns(new ListChildAdapter.Factory().Create(children));
             _mockVarInfo.GetCachedView().Returns(_mockVarInfo);
-            var property = _propertyFactory.Create(_mockVarInfo);
+            var property = _propertyFactory.Create(_mockTarget, _mockVarInfo);
 
             var guid = new Guid();
             var result = property.EnumChildren(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 10,
@@ -180,7 +180,7 @@ namespace YetiVSI.Test.DebugEngine
         public void TestEnumChildrenHexadecimalDisplay()
         {
             _mockVarInfo.MightHaveChildren().Returns(false);
-            var property = _propertyFactory.Create(_mockVarInfo);
+            var property = _propertyFactory.Create(_mockTarget, _mockVarInfo);
 
             var guid = new Guid();
 
@@ -206,6 +206,7 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class DebugPropertyGetPropertyInfoTests
     {
+        RemoteTarget _mockTarget;
         IVariableInformation _mockVarInfo;
         LogSpy _logSpy;
         IGgpDebugPropertyFactory _propertyFactory;
@@ -216,6 +217,7 @@ namespace YetiVSI.Test.DebugEngine
         [SetUp]
         public void SetUp()
         {
+            _mockTarget = Substitute.For<RemoteTarget>();
             _mockVarInfo = Substitute.For<IVariableInformation>();
             _mockVarInfo.GetCachedView().Returns(_mockVarInfo);
 
@@ -229,7 +231,7 @@ namespace YetiVSI.Test.DebugEngine
 
             childrenProviderFactory.Initialize(_propertyFactory);
 
-            _debugProperty = _propertyFactory.Create(_mockVarInfo);
+            _debugProperty = _propertyFactory.Create(_mockTarget, _mockVarInfo);
 
             _logSpy = new LogSpy();
             _logSpy.Attach();
@@ -275,7 +277,7 @@ namespace YetiVSI.Test.DebugEngine
         public void GetPropertyInfoAll()
         {
             _mockVarInfo = Substitute.For<IVariableInformation>();
-            _debugProperty = _propertyFactory.Create(_mockVarInfo);
+            _debugProperty = _propertyFactory.Create(_mockTarget, _mockVarInfo);
 
             int result = GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ALL,
                                          out DEBUG_PROPERTY_INFO _);
@@ -884,7 +886,7 @@ namespace YetiVSI.Test.DebugEngine
                 factoryDecorator.Decorate(_propertyFactory);
 
             IGgpDebugProperty decoratedDebugProperty =
-                decoratedPropertyFactory.Create(_mockVarInfo);
+                decoratedPropertyFactory.Create(_mockTarget, _mockVarInfo);
 
             decoratedDebugProperty.GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_PROP,
                                                    out DEBUG_PROPERTY_INFO propertyInfo);
@@ -961,7 +963,7 @@ namespace YetiVSI.Test.DebugEngine
                 null, "", RemoteValueFormat.Default, ValueFormat.Default, remoteValue, "test",
                 CustomVisualizer.None, childAdapterFactory);
 
-            var debugProperty = _propertyFactory.Create(varInfo);
+            var debugProperty = _propertyFactory.Create(_mockTarget, varInfo);
             var propertyInfos = new DEBUG_PROPERTY_INFO[1];
 
             // Radix 16 -> Int should be formatted as hex.
@@ -987,7 +989,7 @@ namespace YetiVSI.Test.DebugEngine
         public void GetChildPropertyProviderTest()
         {
             var varInfo = Substitute.For<IVariableInformation>();
-            var property = _propertyFactory.Create(varInfo);
+            var property = _propertyFactory.Create(_mockTarget, varInfo);
             int status =
                 property.GetChildPropertyProvider(
                     0, 0, 0, out IAsyncDebugPropertyInfoProvider propertyInfoProvider);

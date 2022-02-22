@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DebuggerApi;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Debugger.Interop;
 using YetiCommon;
 using YetiVSI.DebugEngine.Interfaces;
 using YetiVSI.DebugEngine.Variables;
@@ -28,6 +29,7 @@ namespace YetiVSI.DebugEngine.AsyncOperations
 {
     public class AsyncGetRootPropertiesOperation : IAsyncDebugEngineOperation
     {
+        readonly RemoteTarget _target;
         readonly FrameVariablesProvider _frameVariablesProvider;
         readonly ITaskExecutor _taskExecutor;
         readonly IAsyncDebugGetPropertiesCompletionHandler _completionHandler;
@@ -38,7 +40,8 @@ namespace YetiVSI.DebugEngine.AsyncOperations
 
         CancellationTokenSource _cancelSource;
 
-        public AsyncGetRootPropertiesOperation(FrameVariablesProvider frameVariablesProvider,
+        public AsyncGetRootPropertiesOperation(RemoteTarget target,
+                                               FrameVariablesProvider frameVariablesProvider,
                                                ITaskExecutor taskExecutor,
                                                IAsyncDebugGetPropertiesCompletionHandler
                                                    completionHandler,
@@ -46,6 +49,7 @@ namespace YetiVSI.DebugEngine.AsyncOperations
                                                enum_DEBUGPROP_INFO_FLAGS fields, uint radix,
                                                Guid guidFilter)
         {
+            _target = target;
             _frameVariablesProvider = frameVariablesProvider;
             _taskExecutor = taskExecutor;
             _completionHandler = completionHandler;
@@ -110,8 +114,9 @@ namespace YetiVSI.DebugEngine.AsyncOperations
                 return null;
             }
 
+            var childAdapter = new ListChildAdapter.Factory().Create(varInfos.ToList());
             var childrenProvider = _childrenProviderFactory.Create(
-                new ListChildAdapter.Factory().Create(varInfos.ToList()), _fields, _radix);
+                _target, childAdapter, _fields, _radix);
 
             var propertyInfos = new DEBUG_PROPERTY_INFO[varInfos.Count];
             int returned = await childrenProvider.GetChildrenAsync(

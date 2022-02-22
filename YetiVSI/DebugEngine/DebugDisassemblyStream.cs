@@ -65,7 +65,6 @@ namespace YetiVSI.DebugEngine
         }
 
         const int _kMaxDisassemblySourceBlockLines = 10;
-        readonly string _codeContextName = string.Empty;
         readonly DebugCodeContext.Factory _codeContextFactory;
         readonly DebugDocumentContext.Factory _documentContextFactory;
         readonly enum_DISASSEMBLY_STREAM_SCOPE _scope;
@@ -87,7 +86,7 @@ namespace YetiVSI.DebugEngine
             _lineEntryCache = new Dictionary<ulong, LineEntryInfo>();
 
             // Extract the address from {codeContext}.
-            _address = codeContext.GetAddress();
+            _address = ((IGgpDebugCodeContext)codeContext).Address;
         }
 
         public int GetCodeContext(ulong codeLocationId, out IDebugCodeContext2 codeContext)
@@ -110,19 +109,14 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
-            string AddressToFuncName() =>
-                _target.ResolveLoadAddress(codeLocationId)?.GetFunction()?.GetName() ??
-                _codeContextName;
-
-            codeContext = _codeContextFactory.Create(codeLocationId,
-                                                     new Lazy<string>(AddressToFuncName),
-                                                     documentContext, Guid.Empty);
+            codeContext = _codeContextFactory.Create(
+                _target, codeLocationId, null, documentContext);
             return VSConstants.S_OK;
         }
 
         public int GetCodeLocationId(IDebugCodeContext2 codeContext, out ulong codeLocationId)
         {
-            codeLocationId = codeContext.GetAddress();
+            codeLocationId = ((IGgpDebugCodeContext)codeContext).Address;
             return VSConstants.S_OK;
         }
 
@@ -407,7 +401,7 @@ namespace YetiVSI.DebugEngine
         {
             if (seekStart == enum_SEEK_START.SEEK_START_CODECONTEXT)
             {
-                _address = codeContext.GetAddress();
+                _address = ((IGgpDebugCodeContext)codeContext).Address;
             }
             else if (seekStart == enum_SEEK_START.SEEK_START_CODELOCID)
             {

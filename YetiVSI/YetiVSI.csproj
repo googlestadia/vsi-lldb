@@ -274,7 +274,6 @@
     <Compile Include="DebugEngine\DebugEngine.cs" />
     <Compile Include="DebugEngine\DebugEvents.cs" />
     <Compile Include="DebugEngine\DebugEnums.cs" />
-    <Compile Include="DebugEngine\DebugMemoryContext.cs" />
     <Compile Include="DebugEngine\DebugModule.cs" />
     <Compile Include="DebugEngine\DebugWatchpoint.cs" />
     <Compile Include="DebugEngine\DebugDisassemblyStream.cs" />

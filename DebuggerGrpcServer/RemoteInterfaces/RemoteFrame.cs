@@ -97,6 +97,11 @@ namespace DebuggerGrpcServer
         ulong GetPC();
 
         /// <summary>
+        /// Sets the program counter value.
+        /// </summary>
+        bool SetPC(ulong addr);
+
+        /// <summary>
         /// Evaluates the supplied expression and returns the result.
         /// </summary>
         RemoteValue EvaluateExpression(string text);

@@ -98,6 +98,11 @@ namespace DebuggerApi
         ulong GetPC();
 
         /// <summary>
+        /// Sets the program counter value.
+        /// </summary>
+        bool SetPC(ulong addr);
+
+        /// <summary>
         /// Evaluates the supplied expression asynchronously and returns the result.
         /// </summary>
         Task<RemoteValue> EvaluateExpressionAsync(string text);

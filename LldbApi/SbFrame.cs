@@ -65,6 +65,9 @@ namespace LldbApi
         // Returns the address in the program counter.
         ulong GetPC();
 
+        // Sets the program counter value.
+        bool SetPC(ulong addr);
+
         // Evaluates the supplied expression and returns the result.
         SbValue EvaluateExpression(string text, SbExpressionOptions options);
     }

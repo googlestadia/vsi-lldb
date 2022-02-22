@@ -132,7 +132,7 @@ namespace YetiVSI.Test.DebugEngine
         IBreakpointManager mockBreakpointManager;
         IDebugBreakpointRequest2 mockBreakpointRequest;
         RemoteTarget mockTarget;
-        IDebugProgram2 mockProgram;
+        IGgpDebugProgram mockProgram;
         Marshal mockMarshal;
         RemoteBreakpoint mockLldbBreakpoint;
         BP_REQUEST_INFO requestInfo;
@@ -144,7 +144,7 @@ namespace YetiVSI.Test.DebugEngine
             mockBreakpointManager = Substitute.For<IBreakpointManager>();
             mockBreakpointRequest = Substitute.For<IDebugBreakpointRequest2>();
             mockTarget = Substitute.For<RemoteTarget>();
-            mockProgram = Substitute.For<IDebugProgram2>();
+            mockProgram = Substitute.For<IGgpDebugProgram>();
             mockMarshal = Substitute.For<Marshal>();
             mockLldbBreakpoint = Substitute.For<RemoteBreakpoint>();
             requestInfo = new BP_REQUEST_INFO();
@@ -944,19 +944,8 @@ namespace YetiVSI.Test.DebugEngine
         void MockCodeContext(ulong address)
         {
             // Create mock code context with the specified address.
-            var mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            System.Action < CONTEXT_INFO[] > setContextInfo = infos =>
-            {
-                infos[0].bstrAddress = "0x" + address.ToString("x16");
-                infos[0].dwFields = enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-            };
-            ((IDebugMemoryContext2)mockCodeContext)
-                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(), Arg.Do(setContextInfo))
-                .Returns(VSConstants.S_OK);
-            mockCodeContext
-                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(), Arg.Do(setContextInfo))
-                .Returns(VSConstants.S_OK);
-
+            var mockCodeContext = Substitute.For<IGgpDebugCodeContext>();
+            mockCodeContext.Address.Returns(address);
             mockMarshal.GetCodeContextFromIntPtr(Arg.Any<IntPtr>()).Returns(
                 mockCodeContext);
         }

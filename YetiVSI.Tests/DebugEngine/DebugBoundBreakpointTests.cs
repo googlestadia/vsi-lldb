@@ -98,7 +98,6 @@ namespace YetiVSI.Test.DebugEngine
         const uint HIT_COUNT = 3;
         const int ID = 1;
         const uint ADDRESS = 0xdeadbeef;
-        const string NAME = "DebugBoundBreakpointTests";
         SbAddress mockAddress;
         DebugBoundBreakpoint.Factory boundBreakpointFactory;
         IBoundBreakpoint boundBreakpoint;
@@ -106,18 +105,18 @@ namespace YetiVSI.Test.DebugEngine
         IDebugPendingBreakpoint2 mockPendingBreakpoint;
         SbBreakpointLocation mockBreakpointLocation;
         IDebugBreakpointResolution2 mockBreakpointResolution;
-        IDebugProgram2 mockprogram;
+        IGgpDebugProgram mockProgram;
+        RemoteTarget mockTarget;
         LineEntryInfo lineEntry;
         DebugDocumentContext.Factory mockDocumentContextFactory;
         IDebugDocumentContext2 mockDocumentContext;
-        IDebugCodeContext2 mockCodeContext;
+        IGgpDebugCodeContext mockCodeContext;
         DebugCodeContext.Factory mockCodeContextFactory;
         DebugBreakpointResolution.Factory mockBreakpointResolutionFactory;
 
         [SetUp]
         public void SetUp()
         {
-            string name = "";
             mockBreakpoint = Substitute.For<RemoteBreakpoint>();
             lineEntry = new LineEntryInfo();
             mockPendingBreakpoint = Substitute.For<IDebugPendingBreakpoint2>();
@@ -129,29 +128,26 @@ namespace YetiVSI.Test.DebugEngine
             mockBreakpointLocation.GetBreakpoint().Returns(mockBreakpoint);
             mockBreakpointLocation.GetId().Returns(ID);
             mockBreakpointLocation.GetAddress().Returns(mockAddress);
-            mockprogram = Substitute.For<IDebugProgram2>();
+            mockTarget = Substitute.For<RemoteTarget>();
+            mockProgram = Substitute.For<IGgpDebugProgram>();
+            mockProgram.Target.Returns(mockTarget);
             mockDocumentContext = Substitute.For<IDebugDocumentContext2>();
-            mockDocumentContext.GetName(enum_GETNAME_TYPE.GN_NAME, out name).Returns(
-                x =>
-                {
-                    x[1] = NAME;
-                    return VSConstants.S_OK;
-                });
             mockBreakpointResolution = Substitute.For<IDebugBreakpointResolution2>();
             mockDocumentContextFactory = Substitute.For<DebugDocumentContext.Factory>();
             mockDocumentContextFactory.Create(lineEntry).Returns(mockDocumentContext);
-            mockCodeContext = Substitute.For<IDebugCodeContext2>();
+            mockCodeContext = Substitute.For<IGgpDebugCodeContext>();
             mockCodeContextFactory = Substitute.For<DebugCodeContext.Factory>();
-            mockCodeContextFactory.Create(ADDRESS, NAME,
-                mockDocumentContext, Guid.Empty).Returns(mockCodeContext);
+            mockCodeContextFactory
+                .Create(mockTarget, ADDRESS, null, mockDocumentContext, Guid.Empty)
+                .Returns(mockCodeContext);
             mockBreakpointResolutionFactory =
                 Substitute.For<DebugBreakpointResolution.Factory>();
-            mockBreakpointResolutionFactory.Create(mockCodeContext, mockprogram).Returns(
+            mockBreakpointResolutionFactory.Create(mockCodeContext, mockProgram).Returns(
                 mockBreakpointResolution);
             boundBreakpointFactory = new DebugBoundBreakpoint.Factory(mockDocumentContextFactory,
                 mockCodeContextFactory, mockBreakpointResolutionFactory);
             boundBreakpoint = boundBreakpointFactory.Create(
-                mockPendingBreakpoint, mockBreakpointLocation, mockprogram, Guid.Empty);
+                mockPendingBreakpoint, mockBreakpointLocation, mockProgram, Guid.Empty);
         }
 
         [Test]
@@ -235,7 +231,7 @@ namespace YetiVSI.Test.DebugEngine
             const SbAddress NULL_ADDRESS = null;
             breakpointLocationNullAddress.GetAddress().Returns(NULL_ADDRESS);
             IDebugBoundBreakpoint2 boundBreakpointNullAddress = boundBreakpointFactory.Create(
-                mockPendingBreakpoint, breakpointLocationNullAddress, mockprogram, Guid.Empty);
+                mockPendingBreakpoint, breakpointLocationNullAddress, mockProgram, Guid.Empty);
             IDebugBreakpointResolution2 breakpointResolutionNullAddress;
             Assert.AreEqual(VSConstants.E_FAIL,
                 boundBreakpointNullAddress.GetBreakpointResolution(
@@ -248,11 +244,14 @@ namespace YetiVSI.Test.DebugEngine
         {
             mockAddress.GetLineEntry().Returns((LineEntryInfo)null);
             mockBreakpointLocation.GetAddress().Returns(mockAddress);
-            mockBreakpointResolutionFactory.Create(mockCodeContext, mockprogram).Returns(
-                mockBreakpointResolution);
-            mockCodeContextFactory.Create(ADDRESS, "", null, Guid.Empty).Returns(mockCodeContext);
+            mockBreakpointResolutionFactory
+                .Create(mockCodeContext, mockProgram)
+                .Returns(mockBreakpointResolution);
+            mockCodeContextFactory
+                .Create(mockTarget, ADDRESS, null, null, Guid.Empty)
+                .Returns(mockCodeContext);
             var boundBreakpointNullLineEntry = boundBreakpointFactory.Create(
-                mockPendingBreakpoint, mockBreakpointLocation, mockprogram, Guid.Empty);
+                mockPendingBreakpoint, mockBreakpointLocation, mockProgram, Guid.Empty);
             IDebugBreakpointResolution2 output;
             Assert.AreEqual(VSConstants.S_OK,
                 boundBreakpointNullLineEntry.GetBreakpointResolution(out output));

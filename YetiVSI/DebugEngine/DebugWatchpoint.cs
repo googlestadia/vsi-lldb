@@ -75,7 +75,7 @@ namespace YetiVSI.DebugEngine
 
             public virtual IWatchpoint Create(IBreakpointManager breakpointManager,
                                               IDebugBreakpointRequest2 request, RemoteTarget target,
-                                              IDebugProgram2 program)
+                                              IGgpDebugProgram program)
             {
                 _taskContext.ThrowIfNotOnMainThread();
                 return Create(breakpointManager, request, target, program, new Marshal());
@@ -83,7 +83,7 @@ namespace YetiVSI.DebugEngine
 
             public virtual IWatchpoint Create(IBreakpointManager breakpointManager,
                                               IDebugBreakpointRequest2 request, RemoteTarget target,
-                                              IDebugProgram2 program, Marshal marshal)
+                                              IGgpDebugProgram program, Marshal marshal)
             {
                 _taskContext.ThrowIfNotOnMainThread();
                 return new DebugWatchpoint(_taskContext, _resolutionFactory,
@@ -100,7 +100,7 @@ namespace YetiVSI.DebugEngine
         readonly RemoteTarget _target;
         SbWatchpoint _lldbWatchpoint;
         readonly IBreakpointManager _breakpointManager;
-        readonly IDebugProgram2 _program;
+        readonly IGgpDebugProgram _program;
         IDebugBreakpointResolution2 _resolution;
         readonly DebugWatchpointResolution.Factory _resolutionFactory;
         readonly BreakpointErrorEnumFactory _breakpointErrorEnumFactory;
@@ -125,7 +125,7 @@ namespace YetiVSI.DebugEngine
                         BreakpointErrorEnumFactory breakpointErrorEnumFactory,
                         BoundBreakpointEnumFactory boundBreakpointEnumFactory,
                         IBreakpointManager breakpointManager, IDebugBreakpointRequest2 request,
-                        RemoteTarget target, IDebugProgram2 program, Marshal marshal)
+                        RemoteTarget target, IGgpDebugProgram program, Marshal marshal)
         {
             taskContext.ThrowIfNotOnMainThread();
 

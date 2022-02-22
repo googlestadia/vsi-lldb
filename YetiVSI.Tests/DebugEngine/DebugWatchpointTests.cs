@@ -38,7 +38,7 @@ namespace YetiVSI.Test
         IWatchpoint watchpoint;
         IBreakpointManager mockBreakpointManager;
         IDebugBreakpointRequest2 mockBreakpointRequest;
-        IDebugProgram2 mockProgram;
+        IGgpDebugProgram mockProgram;
         IDebugBreakpointResolution2 mockResolution;
         DebugWatchpointResolution.Factory mockResolutionFactory;
         SbError mockError;
@@ -53,7 +53,7 @@ namespace YetiVSI.Test
             var taskContext = new JoinableTaskContext();
             mockBreakpointManager = Substitute.For<IBreakpointManager>();
             mockBreakpointRequest = Substitute.For<IDebugBreakpointRequest2>();
-            mockProgram = Substitute.For<IDebugProgram2>();
+            mockProgram = Substitute.For<IGgpDebugProgram>();
             mockResolution = Substitute.For<IDebugBreakpointResolution2>();
             mockResolutionFactory = Substitute.For<DebugWatchpointResolution.Factory>();
             mockResolutionFactory.Create(TEST_ADDRESS_STR, mockProgram).Returns(mockResolution);

@@ -236,27 +236,15 @@ namespace YetiVSI.Test.DebugEngine
         {
             const uint COUNT_TO_READ = 4;
             const ulong READ_ADDRESS = 0xdeadbeef;
-            const string ADDRESS_STR = "0xdeadbeef";
             byte[] expectedMemory = { 1, 2, 3, 4 };
-            SbError error;
             var mockError = Substitute.For<SbError>();
             mockError.Fail().Returns(false);
-            var mockMemoryContext = Substitute.For<IDebugMemoryContext2>();
-            mockMemoryContext.GetInfo(
-                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, Arg.Any<CONTEXT_INFO[]>())
-                .Returns(x =>
-                {
-                    var contextInfos = x[1] as CONTEXT_INFO[];
-                    contextInfos[0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-                    contextInfos[0].bstrAddress = ADDRESS_STR;
-                    return VSConstants.S_OK;
-                });
+            var mockMemoryContext = Substitute.For<IGgpDebugCodeContext>();
+            mockMemoryContext.Address.Returns(READ_ADDRESS);
             byte[] byteArray = new byte[4];
-            uint countRead;
-            uint countUnreadable = 0;
             var anyByteArray = Arg.Any<byte[]>();
             mockSbProcess.ReadMemory(
-                READ_ADDRESS, anyByteArray, COUNT_TO_READ, out error).Returns(
+                READ_ADDRESS, anyByteArray, COUNT_TO_READ, out SbError error).Returns(
                 x =>
                 {
                     var destination = x[1] as byte[];
@@ -267,33 +255,10 @@ namespace YetiVSI.Test.DebugEngine
                     x[3] = mockError;
                     return 4u;
                 });
-            Assert.AreEqual(VSConstants.S_OK, program.ReadAt(mockMemoryContext, COUNT_TO_READ,
-                byteArray, out countRead, ref countUnreadable));
-            Assert.AreEqual(expectedMemory, byteArray);
-        }
-
-        [Test]
-        public void ReadAtInvalidAddress()
-        {
-            const uint COUNT_TO_READ = 4;
-            const string INVALID_ADDRESS = "ZZZ";
-            var mockError = Substitute.For<SbError>();
-            var mockMemoryContext = Substitute.For<IDebugMemoryContext2>();
-            mockMemoryContext.GetInfo(
-                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, Arg.Any<CONTEXT_INFO[]>())
-                .Returns(x =>
-                {
-                    var contextInfos = x[1] as CONTEXT_INFO[];
-                    contextInfos[0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-                    contextInfos[0].bstrAddress = INVALID_ADDRESS;
-                    return VSConstants.S_OK;
-                });
-            byte[] byteArray = new byte[4];
-            uint countRead;
             uint countUnreadable = 0;
-            var anyByteArray = Arg.Any<byte[]>();
-            Assert.AreEqual(VSConstants.E_FAIL, program.ReadAt(mockMemoryContext, COUNT_TO_READ,
-                byteArray, out countRead, ref countUnreadable));
+            Assert.AreEqual(VSConstants.S_OK, program.ReadAt(mockMemoryContext, COUNT_TO_READ,
+                byteArray, out uint countRead, ref countUnreadable));
+            Assert.AreEqual(expectedMemory, byteArray);
         }
 
         [Test]
@@ -301,25 +266,14 @@ namespace YetiVSI.Test.DebugEngine
         {
             const uint COUNT_TO_READ = 4;
             const ulong READ_ADDRESS = 0xdeadbeef;
-            const string ADDRESS_STR = "0xdeadbeef";
-            SbError error;
             var mockError = Substitute.For<SbError>();
             mockError.Fail().Returns(true);
-            var mockMemoryContext = Substitute.For<IDebugMemoryContext2>();
-            mockMemoryContext.GetInfo(
-                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, Arg.Any<CONTEXT_INFO[]>())
-                .Returns(x =>
-                {
-                    var contextInfos = x[1] as CONTEXT_INFO[];
-                    contextInfos[0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-                    contextInfos[0].bstrAddress = ADDRESS_STR;
-                    return VSConstants.S_OK;
-                });
+            var mockMemoryContext = Substitute.For<IGgpDebugCodeContext>();
+            mockMemoryContext.Address.Returns(0xdeadbeef);
             byte[] byteArray = new byte[4];
-            uint countRead;
             uint countUnreadable = 0;
             var anyByteArray = Arg.Any<byte[]>();
-            mockSbProcess.ReadMemory(READ_ADDRESS, anyByteArray, COUNT_TO_READ, out error)
+            mockSbProcess.ReadMemory(READ_ADDRESS, anyByteArray, COUNT_TO_READ, out SbError error)
                 .Returns(x => {
                     x[3] = mockError;
                     return 123u;
@@ -328,7 +282,7 @@ namespace YetiVSI.Test.DebugEngine
             // should return S_OK and set countUnreadable appropriately (and set countRead == 0).
             Assert.AreEqual(VSConstants.E_FAIL,
                             program.ReadAt(mockMemoryContext, COUNT_TO_READ, byteArray,
-                                           out countRead, ref countUnreadable));
+                                           out uint countRead, ref countUnreadable));
         }
 
         [Test]
@@ -336,58 +290,38 @@ namespace YetiVSI.Test.DebugEngine
         {
             const uint COUNT_TO_READ = 4;
             const ulong READ_ADDRESS = 0xdeadbeef;
-            const string ADDRESS_STR = "0xdeadbeef";
-            SbError error;
             var mockError = Substitute.For<SbError>();
             mockError.Fail().Returns(false);
-            var mockMemoryContext = Substitute.For<IDebugMemoryContext2>();
-            mockMemoryContext
-                .GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, Arg.Any<CONTEXT_INFO[]>())
-                .Returns(x => {
-                    var contextInfos = x[1] as CONTEXT_INFO[];
-                    contextInfos[0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-                    contextInfos[0].bstrAddress = ADDRESS_STR;
-                    return VSConstants.S_OK;
-                });
+            var mockMemoryContext = Substitute.For<IGgpDebugCodeContext>();
+            mockMemoryContext.Address.Returns(0xdeadbeef);
             byte[] byteArray = new byte[4];
-            uint countRead;
-            uint countUnreadable = 0;
             var anyByteArray = Arg.Any<byte[]>();
             mockSbProcess.ReadMemory(
-                READ_ADDRESS, anyByteArray, COUNT_TO_READ, out error).Returns(
+                READ_ADDRESS, anyByteArray, COUNT_TO_READ, out SbError error).Returns(
                 x =>
                 {
                     x[3] = mockError;
                     return 0u;
                 });
+            uint countUnreadable = 0;
             // TODO This is not the best approach - even if Lldb's ReadMemory fails, we
             // should return S_OK and set countUnreadable appropriately (and set countRead == 0).
             Assert.AreEqual(VSConstants.E_FAIL, program.ReadAt(mockMemoryContext, COUNT_TO_READ,
-                byteArray, out countRead, ref countUnreadable));
+                byteArray, out uint countRead, ref countUnreadable));
         }
 
         [Test]
         public void WriteAt()
         {
             const ulong ADDRESS = 0xdeadbeef;
-            const string ADDRESS_STR = "0xdeadbeef";
             const uint SIZE = 4;
             var mockError = Substitute.For<SbError>();
             mockError.Fail().Returns(false);
-            var mockMemoryContext = Substitute.For<IDebugMemoryContext2>();
-            mockMemoryContext.GetInfo(
-                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, Arg.Any<CONTEXT_INFO[]>())
-                .Returns(x =>
-                {
-                    var contextInfos = x[1] as CONTEXT_INFO[];
-                    contextInfos[0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-                    contextInfos[0].bstrAddress = ADDRESS_STR;
-                    return VSConstants.S_OK;
-                });
+            var mockMemoryContext = Substitute.For<IGgpDebugCodeContext>();
+            mockMemoryContext.Address.Returns(0xdeadbeef);
             byte[] buffer = { 1, 2, 3, 4 };
-            SbError error;
             mockSbProcess.WriteMemory(
-                ADDRESS, buffer, SIZE, out error).Returns(
+                ADDRESS, buffer, SIZE, out SbError error).Returns(
                 x =>
                 {
                     x[3] = mockError;
@@ -397,48 +331,17 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void WriteAtInvalidAddress()
-        {
-            const uint SIZE = 4;
-            const string INVALID_ADDRESS_STRING = "zzz";
-            byte[] buffer = { 1, 2, 3, 4 };
-            var mockError = Substitute.For<SbError>();
-            mockError.Fail().Returns(true);
-            var mockMemoryContext = Substitute.For<IDebugMemoryContext2>();
-            mockMemoryContext.GetInfo(
-                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, Arg.Any<CONTEXT_INFO[]>())
-                .Returns(x =>
-                {
-                    var contextInfos = x[1] as CONTEXT_INFO[];
-                    contextInfos[0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-                    contextInfos[0].bstrAddress = INVALID_ADDRESS_STRING;
-                    return VSConstants.S_OK;
-                });
-            Assert.AreEqual(VSConstants.E_FAIL, program.WriteAt(mockMemoryContext, SIZE, buffer));
-        }
-
-        [Test]
         public void WriteAtFail()
         {
             const ulong ADDRESS = 0xdeadbeef;
-            const string ADDRESS_STR = "0xdeadbeef";
             const uint SIZE = 4;
             var mockError = Substitute.For<SbError>();
             mockError.Fail().Returns(true);
-            var mockMemoryContext = Substitute.For<IDebugMemoryContext2>();
-            mockMemoryContext.GetInfo(
-                enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, Arg.Any<CONTEXT_INFO[]>())
-                .Returns(x =>
-                {
-                    var contextInfos = x[1] as CONTEXT_INFO[];
-                    contextInfos[0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-                    contextInfos[0].bstrAddress = ADDRESS_STR;
-                    return VSConstants.S_OK;
-                });
+            var mockMemoryContext = Substitute.For<IGgpDebugCodeContext>();
+            mockMemoryContext.Address.Returns(0xdeadbeef);
             byte[] buffer = { 1, 2, 3, 4 };
-            SbError error;
             mockSbProcess.WriteMemory(
-                ADDRESS, buffer, SIZE, out error).Returns(
+                ADDRESS, buffer, SIZE, out SbError error).Returns(
                 x =>
                 {
                     x[3] = mockError;
@@ -488,16 +391,15 @@ namespace YetiVSI.Test.DebugEngine
             {
                 var mockAddress = Substitute.For<SbAddress>();
                 mockAddress.GetLoadAddress(mockRemoteTarget).Returns(ADDRESS + i);
-                var mockFunction = Substitute.For<SbFunction>();
-                mockFunction.GetName().Returns(NAME + i);
-                mockAddress.GetFunction().Returns(mockFunction);
+                mockAddress.GetFunction().GetName().Returns(NAME + i);
                 var lineEntry = new LineEntryInfo();
                 mockAddress.GetLineEntry().Returns(lineEntry);
+                mockRemoteTarget.ResolveLoadAddress(ADDRESS + i).Returns(mockAddress);
                 var mockDocumentContext = Substitute.For<IDebugDocumentContext2>();
                 mockDocumentContextFactory.Create(lineEntry).Returns(mockDocumentContext);
-                var mockCodeContext = Substitute.For<IDebugCodeContext2>();
+                var mockCodeContext = Substitute.For<IGgpDebugCodeContext>();
                 mockCodeContextFactory
-                    .Create(ADDRESS + i, NAME + i, mockDocumentContext, Guid.Empty)
+                    .Create(mockRemoteTarget, ADDRESS + i, null, mockDocumentContext)
                     .Returns(mockCodeContext);
                 var mockBreakpointLocation = Substitute.For<SbBreakpointLocation>();
                 mockBreakpointLocation.GetAddress().Returns(mockAddress);

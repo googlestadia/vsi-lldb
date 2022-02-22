@@ -51,7 +51,7 @@ namespace YetiVSI.DebugEngine
 
     public interface IGgpDebugPropertyFactory
     {
-        IGgpDebugProperty Create(IVariableInformation varInfo);
+        IGgpDebugProperty Create(RemoteTarget target, IVariableInformation varInfo);
     }
 
     /// <summary>
@@ -87,11 +87,16 @@ namespace YetiVSI.DebugEngine
                 _taskExecutor = taskExecutor;
             }
 
-            public virtual IGgpDebugProperty Create(IVariableInformation varInfo) =>
-                new DebugAsyncProperty(_taskExecutor, _childrenProviderFactory, _varInfoEnumFactory,
-                                       varInfo, _codeContextFactory, _vsExpressionCreator);
+            public virtual IGgpDebugProperty Create(
+                RemoteTarget target, IVariableInformation varInfo)
+            {
+                return new DebugAsyncProperty(
+                    target, _taskExecutor, _childrenProviderFactory, _varInfoEnumFactory,
+                    varInfo, _codeContextFactory, _vsExpressionCreator);
+            }
         }
 
+        readonly RemoteTarget _target;
         readonly IChildrenProviderFactory _childrenProviderFactory;
         readonly IVariableInformation _varInfo;
         readonly ITaskExecutor _taskExecutor;
@@ -100,13 +105,15 @@ namespace YetiVSI.DebugEngine
         readonly DebugCodeContext.Factory _codeContextFactory;
         readonly VsExpressionCreator _vsExpressionCreator;
 
-        DebugAsyncProperty(ITaskExecutor taskExecutor,
-                                     IChildrenProviderFactory childrenProviderFactory,
-                                     IVariableInformationEnumFactory varInfoEnumFactory,
-                                     IVariableInformation varInfo,
-                                     DebugCodeContext.Factory codeContextFactory,
-                                     VsExpressionCreator vsExpressionCreator)
+        DebugAsyncProperty(RemoteTarget target,
+                           ITaskExecutor taskExecutor,
+                           IChildrenProviderFactory childrenProviderFactory,
+                           IVariableInformationEnumFactory varInfoEnumFactory,
+                           IVariableInformation varInfo,
+                           DebugCodeContext.Factory codeContextFactory,
+                           VsExpressionCreator vsExpressionCreator)
         {
+            _target = target;
             _taskExecutor = taskExecutor;
             _childrenProviderFactory = childrenProviderFactory;
             _varInfoEnumFactory = varInfoEnumFactory;
@@ -135,8 +142,8 @@ namespace YetiVSI.DebugEngine
             {
                 _varInfo.FallbackValueFormat = GetFallbackValueFormat(radix);
                 IVariableInformation cachedVarInfo = _varInfo.GetCachedView();
-                IChildrenProvider childrenProvider =
-                    _childrenProviderFactory.Create(cachedVarInfo.GetChildAdapter(), fields, radix);
+                IChildrenProvider childrenProvider = _childrenProviderFactory.Create(
+                    _target, cachedVarInfo.GetChildAdapter(), fields, radix);
 
                 return _varInfoEnumFactory.Create(childrenProvider);
             });
@@ -146,19 +153,32 @@ namespace YetiVSI.DebugEngine
 
         public int GetMemoryContext(out IDebugMemoryContext2 memoryContext)
         {
-            ulong? maybeAddress = _varInfo.GetMemoryContextAddress();
-            if (maybeAddress is ulong address)
+            // This method is called in two cases:
+            //
+            //  1. When entering the expression into the Memory View or Disassembly windows
+            //  2. When right-click on an object member in Locals/Watch window
+            //
+            // In the first case we want to get an address in memory, which will be used by the
+            // Memory View or Disassembly windows. In this case, the object value IS the address.
+            //
+            // In the second case, we want to get an address of the object member itself, so that
+            // we can navigate to its location in memory. However, this doesn't seem to work in
+            // the native Visual Studio either. Clicking "Go To Disassembly" navigates to the
+            // scalar value of the member (e.g. 0x0005, if the value of the member is 5).
+            //
+            ulong? address = _varInfo.GetMemoryContextAddress();
+            if (!address.HasValue)
             {
-                memoryContext =
-                    _taskExecutor.Run(
-                        () => _codeContextFactory
-                            .Create(address, _varInfo.DisplayName, null, Guid.Empty));
-
-                return VSConstants.S_OK;
+                memoryContext = null;
+                return AD7Constants.S_GETMEMORYCONTEXT_NO_MEMORY_CONTEXT;
             }
 
-            memoryContext = null;
-            return AD7Constants.S_GETMEMORYCONTEXT_NO_MEMORY_CONTEXT;
+            // The name of the variable backing this property might be incorrect or inconsistent
+            // with other names that were resolved from addresses. Therefore pass `null` as
+            // functionName and let the context resolve the name from the address when needed.
+            memoryContext = _codeContextFactory.Create(_target, address.Value, null, null);
+
+            return VSConstants.S_OK;
         }
 
         public int GetPropertyInfo(enum_DEBUGPROP_INFO_FLAGS fields, uint radix, uint timeout,
@@ -379,10 +399,9 @@ namespace YetiVSI.DebugEngine
         {
             ppPropertiesProvider = _taskExecutor.Run(() =>
             {
-                IVariableInformation cachedVarInfo = _varInfo.GetCachedView();
-                IChildrenProvider childrenProvider =
-                    _childrenProviderFactory.Create(cachedVarInfo.GetChildAdapter(),
-                                                    (enum_DEBUGPROP_INFO_FLAGS) dwFields, dwRadix);
+                IChildrenProvider childrenProvider = _childrenProviderFactory.Create(
+                    _target, _varInfo.GetCachedView().GetChildAdapter(),
+                    (enum_DEBUGPROP_INFO_FLAGS) dwFields, dwRadix);
 
                 return new AsyncDebugPropertyInfoProvider(childrenProvider, _taskExecutor);
             });

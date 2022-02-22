@@ -67,7 +67,8 @@ namespace YetiVSI.DebugEngine
             {
             }
 
-            public Factory(IGgpDebugPropertyFactory propertyFactory, VarInfoBuilder varInfoBuilder,
+            public Factory(IGgpDebugPropertyFactory propertyFactory,
+                           VarInfoBuilder varInfoBuilder,
                            VsExpressionCreator vsExpressionCreator,
                            ErrorDebugProperty.Factory errorDebugPropertyFactory,
                            IDebugEngineCommands debugEngineCommands,
@@ -85,14 +86,15 @@ namespace YetiVSI.DebugEngine
                 _timeSource = timeSource;
             }
 
-            public virtual IAsyncExpressionEvaluator Create(RemoteFrame frame, string text)
+            public virtual IAsyncExpressionEvaluator Create(
+                RemoteTarget target, RemoteFrame frame, string text)
             {
                 // Get preferred expression evaluation option. This is performed here to
                 // pick up configuration changes in runtime (e.g. the user can enable and
                 // disable lldb-eval during a single debug session).
                 var expressionEvaluationStrategy = _extensionOptions.ExpressionEvaluationStrategy;
 
-                return new AsyncExpressionEvaluator(frame, text, _vsExpressionCreator,
+                return new AsyncExpressionEvaluator(target, frame, text, _vsExpressionCreator,
                                                     _varInfoBuilder, _propertyFactory,
                                                     _errorDebugPropertyFactory,
                                                     _debugEngineCommands,
@@ -109,13 +111,14 @@ namespace YetiVSI.DebugEngine
         readonly IGgpDebugPropertyFactory _propertyFactory;
         readonly ErrorDebugProperty.Factory _errorDebugPropertyFactory;
         readonly IDebugEngineCommands _debugEngineCommands;
+        readonly RemoteTarget _target;
         readonly RemoteFrame _frame;
         readonly string _text;
         readonly ExpressionEvaluationStrategy _expressionEvaluationStrategy;
         readonly ExpressionEvaluationRecorder _expressionEvaluationRecorder;
         readonly ITimeSource _timeSource;
 
-        AsyncExpressionEvaluator(RemoteFrame frame, string text,
+        AsyncExpressionEvaluator(RemoteTarget target, RemoteFrame frame, string text,
                                  VsExpressionCreator vsExpressionCreator,
                                  VarInfoBuilder varInfoBuilder,
                                  IGgpDebugPropertyFactory propertyFactory,
@@ -125,6 +128,7 @@ namespace YetiVSI.DebugEngine
                                  ExpressionEvaluationRecorder expressionEvaluationRecorder,
                                  ITimeSource timeSource)
         {
+            _target = target;
             _frame = frame;
             _text = text;
             _vsExpressionCreator = vsExpressionCreator;
@@ -139,28 +143,25 @@ namespace YetiVSI.DebugEngine
 
         public async Task<EvaluationResult> EvaluateExpressionAsync()
         {
-            VsExpression vsExpression =
-                await _vsExpressionCreator.CreateAsync(_text, EvaluateSizeSpecifierExpressionAsync);
-            IDebugProperty2 result;
+            VsExpression vsExpression = await _vsExpressionCreator.CreateAsync(
+                _text, EvaluateSizeSpecifierExpressionAsync);
 
             if (vsExpression.Value.StartsWith("."))
             {
-                EvaluateCommand(vsExpression.Value, out result);
-                return EvaluationResult.FromResult(result);
+                EvaluateCommand(vsExpression.Value, out IDebugProperty2 res);
+                return EvaluationResult.FromResult(res);
             }
 
             RemoteValue remoteValue = await CreateValueFromExpressionAsync(vsExpression.Value);
-
             if (remoteValue == null)
             {
                 return EvaluationResult.Fail();
             }
 
             string displayName = vsExpression.ToString();
-            IVariableInformation varInfo =
-                _varInfoBuilder.Create(remoteValue, displayName, vsExpression.FormatSpecifier);
-            result = _propertyFactory.Create(varInfo);
-
+            IVariableInformation varInfo = _varInfoBuilder.Create(
+                remoteValue, displayName, vsExpression.FormatSpecifier);
+            IDebugProperty2 result = _propertyFactory.Create(_target, varInfo);
             return EvaluationResult.FromResult(result);
         }
 

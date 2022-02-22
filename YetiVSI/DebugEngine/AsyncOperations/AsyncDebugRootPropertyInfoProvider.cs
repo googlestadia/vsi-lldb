@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Debugger.Interop;
 using System;
+using DebuggerApi;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Debugger.Interop;
 using YetiVSI.DebugEngine.Interfaces;
 
 namespace YetiVSI.DebugEngine.AsyncOperations
 {
     public class AsyncDebugRootPropertyInfoProvider : IAsyncDebugPropertyInfoProvider
     {
+        readonly RemoteTarget _target;
         readonly FrameVariablesProvider _frameVariablesProvider;
         readonly ITaskExecutor _taskExecutor;
         readonly IChildrenProviderFactory _childrenProviderFactory;
@@ -28,12 +30,14 @@ namespace YetiVSI.DebugEngine.AsyncOperations
         readonly uint _radix;
         readonly Guid _guidFilter;
 
-        public AsyncDebugRootPropertyInfoProvider(FrameVariablesProvider frameVariablesProvider,
+        public AsyncDebugRootPropertyInfoProvider(RemoteTarget target,
+                                                  FrameVariablesProvider frameVariablesProvider,
                                                   ITaskExecutor taskExecutor,
                                                   IChildrenProviderFactory childrenProviderFactory,
                                                   enum_DEBUGPROP_INFO_FLAGS fields, uint radix,
                                                   Guid guidFilter)
         {
+            _target = target;
             _frameVariablesProvider = frameVariablesProvider;
             _taskExecutor = taskExecutor;
             _childrenProviderFactory = childrenProviderFactory;
@@ -46,7 +50,8 @@ namespace YetiVSI.DebugEngine.AsyncOperations
                                       IAsyncDebugGetPropertiesCompletionHandler pCompletionHandler,
                                       out IAsyncDebugEngineOperation ppDebugOperation)
         {
-            ppDebugOperation = new AsyncGetRootPropertiesOperation(_frameVariablesProvider,
+            ppDebugOperation = new AsyncGetRootPropertiesOperation(_target,
+                                                                   _frameVariablesProvider,
                                                                    _taskExecutor,
                                                                    pCompletionHandler,
                                                                    _childrenProviderFactory,

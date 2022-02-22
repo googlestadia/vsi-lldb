@@ -140,6 +140,8 @@ SbThread ^ LLDBStackFrame::GetThread() {
 
 uint64_t LLDBStackFrame::GetPC() { return frame_->GetPC(); }
 
+bool LLDBStackFrame::SetPC(uint64_t addr) { return frame_->SetPC(addr); }
+
 SbValue ^ LLDBStackFrame::EvaluateExpression(System::String ^ text,
                                              SbExpressionOptions ^ options) {
   auto lldbExpressionOptions = safe_cast<LLDBExpressionOptions ^>(options);

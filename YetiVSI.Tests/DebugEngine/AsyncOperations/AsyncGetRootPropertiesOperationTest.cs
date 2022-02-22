@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DebuggerApi;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using NSubstitute;
@@ -32,6 +33,7 @@ namespace YetiVSI.Test.DebugEngine.AsyncOperations
     [TestFixture]
     class AsyncGetRootPropertiesOperationTest
     {
+        RemoteTarget _target;
         AsyncGetRootPropertiesOperation _getPropertiesOp;
         FrameVariablesProvider _frameVariablesProvider;
         ITaskExecutor _taskExecutor;
@@ -42,18 +44,20 @@ namespace YetiVSI.Test.DebugEngine.AsyncOperations
         [SetUp]
         public void SetUp()
         {
+            _target = Substitute.For<RemoteTarget>();
             _completionHandler = Substitute.For<IAsyncDebugGetPropertiesCompletionHandler>();
             _childrenProvider = Substitute.For<IChildrenProvider>();
             _childrenProviderFactory = Substitute.For<IChildrenProviderFactory>();
 
-            _childrenProviderFactory.Create(Arg.Any<IChildAdapter>(),
+            _childrenProviderFactory.Create(Arg.Any<RemoteTarget>(), Arg.Any<IChildAdapter>(),
                                             Arg.Any<enum_DEBUGPROP_INFO_FLAGS>(), Arg.Any<uint>())
                 .Returns(_childrenProvider);
 
             _taskExecutor = Substitute.ForPartsOf<FakeTaskExecutor>();
             _frameVariablesProvider = Substitute.For<FrameVariablesProvider>(null, null, null);
 
-            _getPropertiesOp = new AsyncGetRootPropertiesOperation(_frameVariablesProvider,
+            _getPropertiesOp = new AsyncGetRootPropertiesOperation(_target,
+                                                                   _frameVariablesProvider,
                                                                    _taskExecutor,
                                                                    _completionHandler,
                                                                    _childrenProviderFactory,

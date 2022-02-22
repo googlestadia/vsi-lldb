@@ -27,6 +27,7 @@ using YetiVSI.DebugEngine.Variables;
 
 namespace YetiVSI.DebugEngine
 {
+    // TODO: rename to IGgpDebugStackFrame
     public interface IDebugStackFrame : IDebugStackFrame2, IDebugExpressionContext2,
         IDebugStackFrame157, IDecoratorSelf<IDebugStackFrame>
     {
@@ -36,6 +37,10 @@ namespace YetiVSI.DebugEngine
 
         [InteropBoundary]
         int GetNameWithSignature(out string name);
+
+        RemoteThread Thread { get; }
+
+        RemoteFrame Frame { get; }
     }
 
     public interface IDebugStackFrameFactory
@@ -98,7 +103,7 @@ namespace YetiVSI.DebugEngine
         readonly IChildrenProviderFactory _childrenProviderFactory;
         readonly DebugCodeContext.Factory _debugCodeContextFactory;
         readonly IDebugExpressionFactory _expressionFactory;
-        AD7FrameInfoCreator _ad7FrameInfoCreator;
+        readonly AD7FrameInfoCreator _ad7FrameInfoCreator;
         readonly IVariableInformationFactory _varInfoFactory;
         readonly IVariableInformationEnumFactory _varInfoEnumFactory;
         readonly IRegisterSetsBuilder _registerSetsBuilder;
@@ -106,7 +111,7 @@ namespace YetiVSI.DebugEngine
         readonly IDebugEngineHandler _debugEngineHandler;
 
         readonly RemoteFrame _lldbFrame;
-        readonly IDebugThread2 _thread;
+        readonly IDebugThread _thread;
         readonly IGgpDebugProgram _debugProgram;
 
         readonly ITaskExecutor _taskExecutor;
@@ -114,6 +119,10 @@ namespace YetiVSI.DebugEngine
         // Cached entities
         readonly Lazy<IDebugDocumentContext2> _documentContext;
         readonly Lazy<IDebugCodeContext2> _codeContext;
+
+        public RemoteThread Thread => _thread.GetRemoteThread();
+
+        public RemoteFrame Frame => _lldbFrame;
 
         DebugAsyncStackFrame(DebugDocumentContext.Factory debugDocumentContextFactory,
                              IChildrenProviderFactory childrenProviderFactory,
@@ -124,7 +133,7 @@ namespace YetiVSI.DebugEngine
                              AD7FrameInfoCreator ad7FrameInfoCreator,
                              IRegisterSetsBuilder registerSetsBuilder,
                              IDebugEngineHandler debugEngineHandler, RemoteFrame frame,
-                             IDebugThread2 thread, IGgpDebugProgram debugProgram,
+                             IDebugThread thread, IGgpDebugProgram debugProgram,
                              ITaskExecutor taskExecutor)
         {
             _debugDocumentContextFactory = debugDocumentContextFactory;
@@ -161,8 +170,10 @@ namespace YetiVSI.DebugEngine
             }
 
             count = (uint) varInfos.Count;
+
             var childrenAdapter = new ListChildAdapter.Factory().Create(varInfos.ToList());
-            var childrenProvider = _childrenProviderFactory.Create(childrenAdapter, fields, radix);
+            var childrenProvider = _childrenProviderFactory.Create(
+                _debugProgram.Target, childrenAdapter, fields, radix);
 
             propertyEnum = _varInfoEnumFactory.Create(childrenProvider);
             return VSConstants.S_OK;
@@ -286,12 +297,14 @@ namespace YetiVSI.DebugEngine
                                        uint dwTimeout,
                                        out IAsyncDebugPropertyInfoProvider ppPropertiesProvider)
         {
+            var frameVarProvider = new FrameVariablesProvider(
+                _registerSetsBuilder, _lldbFrame, _varInfoFactory);
+
             // Converts |guidFilter| to a non ref type arg so that Castle DynamicProxy doesn't fail
             // to assign values back to it. Same as for DebugStackFrame.EnumProperties.
             ppPropertiesProvider = new AsyncDebugRootPropertyInfoProvider(
-                new FrameVariablesProvider(_registerSetsBuilder, _lldbFrame, _varInfoFactory),
-                _taskExecutor, _childrenProviderFactory, (enum_DEBUGPROP_INFO_FLAGS) dwFields,
-                nRadix, guidFilter);
+                _debugProgram.Target, frameVarProvider, _taskExecutor, _childrenProviderFactory,
+                (enum_DEBUGPROP_INFO_FLAGS) dwFields, nRadix, guidFilter);
 
             return VSConstants.S_OK;
         }
@@ -307,9 +320,10 @@ namespace YetiVSI.DebugEngine
         IDebugCodeContext2 CreateCodeContext()
         {
             // Supply the program counter as the code context address.
-            return _debugCodeContextFactory.Create(_lldbFrame.GetPC(),
+            return _debugCodeContextFactory.Create(_debugProgram.Target,
+                                                   _lldbFrame.GetPC(),
                                                    _lldbFrame.GetFunctionNameWithSignature(),
-                                                   _documentContext.Value, Guid.Empty);
+                                                   _documentContext.Value);
         }
     }
 }

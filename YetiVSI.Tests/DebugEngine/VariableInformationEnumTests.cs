@@ -20,12 +20,14 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.Threading;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Variables;
+using DebuggerApi;
 
 namespace YetiVSI.Test.DebugEngine
 {
     [TestFixture]
     class VariableInformationEnumTests
     {
+        RemoteTarget _target;
         ChildrenProvider.Factory _childrenProviderFactory;
         VariableInformationEnum.Factory _enumFactory;
         IEnumDebugPropertyInfo2 _varInfoEnum;
@@ -34,6 +36,7 @@ namespace YetiVSI.Test.DebugEngine
         [SetUp]
         public void SetUp()
         {
+            _target = Substitute.For<RemoteTarget>();
             _children = new List<IVariableInformation>();
 
             var child1 = Substitute.For<IVariableInformation>();
@@ -62,7 +65,7 @@ namespace YetiVSI.Test.DebugEngine
             _childrenProviderFactory.Initialize(propertyFactory);
 
             var childrenProvider = _childrenProviderFactory.Create(
-                new ListChildAdapter.Factory().Create(_children),
+                _target, new ListChildAdapter.Factory().Create(_children),
                 enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME, 0);
 
             _varInfoEnum = _enumFactory.Create(childrenProvider);

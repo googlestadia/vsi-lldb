@@ -38,6 +38,8 @@ service RemoteFrameRpcService {
   }
   rpc GetThread(GetThreadRequest) returns (GetThreadResponse) {
   }
+  rpc SetPC(SetPCRequest) returns (SetPCResponse) {
+  }
   rpc EvaluateExpression(EvaluateExpressionRequest)
       returns (EvaluateExpressionResponse) {
   }
@@ -135,6 +137,16 @@ message GetThreadRequest {
 
 message GetThreadResponse {
   Common.GrpcSbThread thread = 1;
+}
+
+message SetPCRequest {
+  Common.GrpcSbFrame frame = 1;
+  uint64 addr = 2;
+}
+
+message SetPCResponse {
+  Common.GrpcSbThread thread = 1;
+  bool result = 2;
 }
 
 message EvaluateExpressionRequest {

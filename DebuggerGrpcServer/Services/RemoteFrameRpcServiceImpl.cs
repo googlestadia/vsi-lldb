@@ -178,6 +178,17 @@ namespace DebuggerGrpcServer
             return Task.FromResult(response);
         }
 
+        public override Task<SetPCResponse> SetPC(SetPCRequest request, ServerCallContext context)
+        {
+            RemoteFrame frame = frameStore.GetObject(request.Frame.Id);
+
+            var response = new SetPCResponse
+            {
+                Result = frame.SetPC(request.Addr)
+            };
+            return Task.FromResult(response);
+        }
+
         public override Task<EvaluateExpressionResponse> EvaluateExpression(
             EvaluateExpressionRequest request, ServerCallContext context)
         {

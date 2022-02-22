@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio.Debugger.Interop;
+using DebuggerApi;
+using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
@@ -29,6 +30,7 @@ namespace YetiVSI.Test.DebugEngine
     {
         const enum_DEBUGPROP_INFO_FLAGS _nameFlag = enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME;
 
+        RemoteTarget _target;
         ChildrenProvider.Factory _childrenProviderFactory;
         IChildrenProvider _childrenProvider;
         List<IVariableInformation> _children;
@@ -39,6 +41,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             FillThreeChildren();
 
+            _target = Substitute.For<RemoteTarget>();
             _childrenProviderFactory = new ChildrenProvider.Factory();
 
             var taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
@@ -49,18 +52,17 @@ namespace YetiVSI.Test.DebugEngine
 
             _childrenProviderFactory.Initialize(propertyFactory);
 
-            _childrenProvider =
-                _childrenProviderFactory.Create(new ListChildAdapter.Factory().Create(_children),
-                                                _nameFlag, 0);
+            _childrenProvider = _childrenProviderFactory.Create(
+                _target, new ListChildAdapter.Factory().Create(_children), _nameFlag, 0);
         }
 
         [Test]
         public void FactoryThrowsIfCreatePropertyDelegateIsNull()
         {
             _childrenProviderFactory.Initialize(null);
-            Assert.Throws<NullReferenceException>(() => _childrenProviderFactory.Create(
-                                                      new ListChildAdapter.Factory().Create(
-                                                          _children), _nameFlag, 0));
+            Assert.Throws<NullReferenceException>(
+                () => _childrenProviderFactory.Create(
+                    _target, new ListChildAdapter.Factory().Create(_children), _nameFlag, 0));
         }
 
         [Test]

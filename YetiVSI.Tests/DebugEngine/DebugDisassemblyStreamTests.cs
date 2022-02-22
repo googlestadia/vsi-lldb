@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+using System.Collections.Generic;
+using System.IO;
 using DebuggerApi;
 using DebuggerCommonApi;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using NSubstitute;
 using NUnit.Framework;
-using System.Collections.Generic;
-using System.IO;
 using YetiVSI.DebugEngine;
 
 namespace YetiVSI.Test.DebugEngine
@@ -38,7 +37,7 @@ namespace YetiVSI.Test.DebugEngine
 
         DebugCodeContext.Factory _codeContextFactory;
         DebugDocumentContext.Factory _documentContextFactory;
-        IDebugCodeContext2 _mockCodeContext;
+        IGgpDebugCodeContext _mockCodeContext;
         RemoteTarget _mockTarget;
 
         IDebugDisassemblyStream2 _disassemblyStream;
@@ -51,23 +50,12 @@ namespace YetiVSI.Test.DebugEngine
             _documentContextFactory = Substitute.For<DebugDocumentContext.Factory>();
 
             _mockTarget = Substitute.For<RemoteTarget>();
-            _mockCodeContext = Substitute.For<IDebugCodeContext2>();
-            // Mock the address getters. Unfortunately this has to be done on both
-            // the IDebugCodeContext2 and IDebugMemoryContext2 interfaces.
-            Action<CONTEXT_INFO[]> setContextInfo = infos =>
-            {
-                infos[0].bstrAddress = GetHexString(_testAddress);
-                infos[0].dwFields = enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-            };
-            ((IDebugMemoryContext2)_mockCodeContext)
-                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(), Arg.Do(setContextInfo))
-                .Returns(VSConstants.S_OK);
-            _mockCodeContext.GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(), Arg.Do(setContextInfo))
-                .Returns(VSConstants.S_OK);
+            _mockCodeContext = Substitute.For<IGgpDebugCodeContext>();
+            _mockCodeContext.Address.Returns(_testAddress);
 
-            _disassemblyStream = (DebugDisassemblyStream)new DebugDisassemblyStream
-                                     .Factory(_codeContextFactory, _documentContextFactory)
-                                     .Create(_testScope, _mockCodeContext, _mockTarget);
+            _disassemblyStream = new DebugDisassemblyStream.Factory(
+                _codeContextFactory, _documentContextFactory).Create(
+                _testScope, _mockCodeContext, _mockTarget);
         }
 
         [Test]
@@ -77,50 +65,50 @@ namespace YetiVSI.Test.DebugEngine
 
             SbAddress address = Substitute.For<SbAddress>();
             var documentContext = Substitute.For<IDebugDocumentContext2>();
-            var newCodeContext = Substitute.For<IDebugCodeContext2>();
+            var newCodeContext = Substitute.For<IGgpDebugCodeContext>();
 
             _mockTarget.ResolveLoadAddress(newAddress).Returns(address);
             _documentContextFactory.Create(address.GetLineEntry()).Returns(documentContext);
             _codeContextFactory
-                .Create(newAddress, Arg.Any<Lazy<string>>(), documentContext, Guid.Empty)
+                .Create(_mockTarget, newAddress, null, documentContext)
                 .Returns(newCodeContext);
 
-            Assert.AreEqual(VSConstants.S_OK, _disassemblyStream.GetCodeContext(
-                                                  newAddress, out IDebugCodeContext2 codeContext));
+            Assert.AreEqual(
+                VSConstants.S_OK,
+                _disassemblyStream.GetCodeContext(newAddress, out IDebugCodeContext2 codeContext));
             Assert.AreEqual(newCodeContext, codeContext);
         }
 
         [Test]
         public void GetCodeContextFunctionNameResolution()
         {
-            _disassemblyStream =
-                (DebugDisassemblyStream) new DebugDisassemblyStream.Factory(
-                    new DebugCodeContext.Factory(new DebugMemoryContext.Factory()),
-                    _documentContextFactory).Create(_testScope, _mockCodeContext, _mockTarget);
+            _disassemblyStream = new DebugDisassemblyStream.Factory(
+                new DebugCodeContext.Factory(), _documentContextFactory).Create(
+                _testScope, _mockCodeContext, _mockTarget);
 
             const ulong newAddress = 0x123456789a;
 
             var address = Substitute.For<SbAddress>();
-
+            address.GetFunction().GetName().Returns("funcName()");
             _mockTarget.ResolveLoadAddress(newAddress).Returns(address);
-            address.GetFunction().GetName().Returns("funcName");
 
             Assert.That(
                 _disassemblyStream.GetCodeContext(newAddress, out IDebugCodeContext2 codeContext),
                 Is.EqualTo(VSConstants.S_OK));
 
             Assert.That(codeContext.GetName(out string name), Is.EqualTo(VSConstants.S_OK));
-            Assert.That(name, Is.EqualTo("funcName"));
+            Assert.That(name, Is.EqualTo("funcName()"));
         }
 
         [Test]
         public void GetCodeContextNullAddressResolution()
         {
             SbAddress address = null;
-            var newCodeContext = Substitute.For<IDebugCodeContext2>();
+            var newCodeContext = Substitute.For<IGgpDebugCodeContext>();
 
             _mockTarget.ResolveLoadAddress(_testAddress).Returns(address);
-            _codeContextFactory.Create(_testAddress, Arg.Any<Lazy<string>>(), null, Guid.Empty)
+            _codeContextFactory
+                .Create(_mockTarget, _testAddress, null, null)
                 .Returns(newCodeContext);
 
             int getCodeContextResult =
@@ -134,14 +122,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             const ulong newAddress = 0x123456789a;
 
-            var newCodeContext = Substitute.For<IDebugCodeContext2>();
-            // Mock the address getter.
-            ((IDebugMemoryContext2)newCodeContext)
-                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(), Arg.Do<CONTEXT_INFO[]>(x => {
-                    x[0].bstrAddress = GetHexString(newAddress);
-                    x[0].dwFields = enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-                }))
-                .Returns(VSConstants.S_OK);
+            var newCodeContext = Substitute.For<IGgpDebugCodeContext>();
+            newCodeContext.Address.Returns(newAddress);
 
             Assert.AreEqual(VSConstants.S_OK, _disassemblyStream.GetCodeLocationId(
                                                   newCodeContext, out ulong codeLocationId));
@@ -417,14 +399,8 @@ namespace YetiVSI.Test.DebugEngine
         public void SeekContext()
         {
             const ulong newAddress = 0x0001;
-            var newCodeContext = Substitute.For<IDebugCodeContext2>();
-            // Mock the address getter.
-            ((IDebugMemoryContext2)newCodeContext)
-                .GetInfo(Arg.Any<enum_CONTEXT_INFO_FIELDS>(), Arg.Do<CONTEXT_INFO[]>(x => {
-                    x[0].bstrAddress = GetHexString(newAddress);
-                    x[0].dwFields = enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-                }))
-                .Returns(VSConstants.S_OK);
+            var newCodeContext = Substitute.For<IGgpDebugCodeContext>();
+            newCodeContext.Address.Returns(newAddress);
 
             Assert.AreEqual(VSConstants.S_OK,
                             _disassemblyStream.Seek(enum_SEEK_START.SEEK_START_CODECONTEXT,

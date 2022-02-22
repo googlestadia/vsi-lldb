@@ -14,7 +14,6 @@
 
 ﻿using DebuggerApi;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace YetiVSI.DebugEngine.Variables
 {

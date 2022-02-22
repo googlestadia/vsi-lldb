@@ -85,7 +85,7 @@ namespace YetiVSI.DebugEngine
             }
 
             public virtual IPendingBreakpoint Create(IBreakpointManager breakpointManager,
-                                                     IDebugProgram2 program,
+                                                     IGgpDebugProgram program,
                                                      IDebugBreakpointRequest2 request,
                                                      RemoteTarget target)
             {
@@ -94,7 +94,7 @@ namespace YetiVSI.DebugEngine
             }
 
             public virtual IPendingBreakpoint Create(IBreakpointManager breakpointManager,
-                                                     IDebugProgram2 program,
+                                                     IGgpDebugProgram program,
                                                      IDebugBreakpointRequest2 request,
                                                      RemoteTarget target, Marshal marshal)
             {
@@ -160,7 +160,7 @@ namespace YetiVSI.DebugEngine
         readonly RemoteTarget _target;
         RemoteBreakpoint _lldbBreakpoint;
         readonly IBreakpointManager _breakpointManager;
-        readonly IDebugProgram2 _program;
+        readonly IGgpDebugProgram _program;
 
         readonly Dictionary<int, IBoundBreakpoint> _boundBreakpoints;
         readonly BreakpointCondition _breakpointCondition;
@@ -172,7 +172,7 @@ namespace YetiVSI.DebugEngine
                                DebugBoundBreakpoint.Factory debugBoundBreakpointFactory,
                                BreakpointErrorEnumFactory breakpointErrorEnumFactory,
                                BoundBreakpointEnumFactory breakpointBoundEnumFactory,
-                               IBreakpointManager breakpointManager, IDebugProgram2 program,
+                               IBreakpointManager breakpointManager, IGgpDebugProgram program,
                                IDebugBreakpointRequest2 request, RemoteTarget target,
                                Marshal marshal)
         {
@@ -351,7 +351,7 @@ namespace YetiVSI.DebugEngine
                     SetError(enum_BP_ERROR_TYPE.BPET_GENERAL_WARNING, _noCodeContext);
                     return VSConstants.S_FALSE;
                 }
-                ulong address = codeContext.GetAddress();
+                ulong address = ((IGgpDebugCodeContext)codeContext).Address;
                 _lldbBreakpoint = _target.BreakpointCreateByAddress(address);
                 break;
             case enum_BP_LOCATION_TYPE.BPLT_CODE_ADDRESS:

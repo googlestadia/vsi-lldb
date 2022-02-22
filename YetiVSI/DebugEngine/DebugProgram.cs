@@ -46,6 +46,11 @@ namespace YetiVSI.DebugEngine
         /// Returns true if Visual Studio has called Detach().
         /// </summary>
         bool DetachRequested { get; }
+
+        /// <summary>
+        /// Returns remote target for the current program.
+        /// </summary>
+        RemoteTarget Target { get; }
     }
 
     public interface IDebugProgramFactory
@@ -123,6 +128,8 @@ namespace YetiVSI.DebugEngine
         readonly ThreadEnumFactory _threadEnumFactory;
         readonly ModuleEnumFactory _moduleEnumFactory;
         readonly CodeContextEnumFactory _codeContextEnumFactory;
+
+        public RemoteTarget Target => _lldbTarget;
 
         DebugProgram(
             JoinableTaskContext taskContext,
@@ -270,11 +277,12 @@ namespace YetiVSI.DebugEngine
                     var address = location.GetAddress();
                     if (address != null)
                     {
+                        var lineEntry = address.GetLineEntry();
                         var codeContext = _codeContextFactory.Create(
-                            address.GetLoadAddress(_lldbTarget),
-                            address.GetFunction().GetName(),
-                            _documentContextFactory.Create(address.GetLineEntry()),
-                            Guid.Empty);
+                            target: _lldbTarget,
+                            address: address.GetLoadAddress(_lldbTarget),
+                            functionName: null,
+                            documentContext: _documentContextFactory.Create(lineEntry));
                         codeContexts.Add(codeContext);
                     }
                     else
@@ -287,7 +295,6 @@ namespace YetiVSI.DebugEngine
             finally
             {
                 _lldbTarget.BreakpointDelete(tempBreakpoint.GetId());
-                tempBreakpoint = null;
             }
 
             contextsEnum = _codeContextEnumFactory.Create(codeContexts);
@@ -562,55 +569,45 @@ namespace YetiVSI.DebugEngine
             // Note: We need to make sure we never return S_OK while setting countRead and
             // countUnreadable to zero. That can send the memory view into an infinite loop
             // and freeze Visual Studio ((internal)).
-            CONTEXT_INFO[] contextInfo = new CONTEXT_INFO[1];
-            startMemoryContext.GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, contextInfo);
-            string addressStr = contextInfo[0].bstrAddress;
 
-            if (DebugEngineUtil.GetAddressFromString(addressStr, out ulong address))
+            var context = (IGgpDebugCodeContext)startMemoryContext;
+
+            ulong bytesRead = _lldbProcess.ReadMemory(
+                context.Address, memory, countToRead, out SbError error);
+
+            if (error.Fail())
             {
-                try
-                {
-                    countRead = Convert.ToUInt32(_lldbProcess.ReadMemory(address, memory,
-                        countToRead, out SbError error));
-                    if (error.Fail() || countRead == 0)
-                    {
-                        countRead = 0;
-                        return VSConstants.E_FAIL;
-                    }
-                    return VSConstants.S_OK;
-                }
-                catch (OverflowException e)
-                {
-                    Trace.WriteLine($"Warning: Failed to read memory: {e.Demystify()}");
-                    countRead = 0;
-                    return VSConstants.E_FAIL;
-                }
+                Trace.WriteLine($"Warning: ReadMemory failed: {error.GetCString()}");
+                countRead = 0;
+                return VSConstants.E_FAIL;
             }
-            countRead = 0;
-            return VSConstants.E_FAIL;
-       }
+            if (bytesRead == 0 || bytesRead > uint.MaxValue)
+            {
+                Trace.WriteLine($"Warning: ReadMemory failed: read {bytesRead} bytes");
+                countRead = 0;
+                return VSConstants.E_FAIL;
+            }
+
+            countRead = (uint)bytesRead;
+            return VSConstants.S_OK;
+        }
 
         public int WriteAt(IDebugMemoryContext2 startMemoryContext, uint count, byte[] buffer)
         {
-            CONTEXT_INFO[] contextInfos = new CONTEXT_INFO[1];
-            startMemoryContext.GetInfo(enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS, contextInfos);
-            string addressStr = contextInfos[0].bstrAddress;
+            var context = (IGgpDebugCodeContext)startMemoryContext;
 
-            if (!DebugEngineUtil.GetAddressFromString(addressStr, out ulong address))
-            {
-                Trace.WriteLine($"Failed to convert {addressStr} to address");
-                return VSConstants.E_FAIL;
-            }
-            var bytesWrote = _lldbProcess.WriteMemory(address, buffer, count, out SbError error);
+            ulong bytesWritten = _lldbProcess.WriteMemory(
+                context.Address, buffer, count, out SbError error);
+
             if (error.Fail())
             {
                 Trace.WriteLine($"Error: {error.GetCString()}");
                 return VSConstants.E_FAIL;
             }
-            if (bytesWrote != count)
+            if (bytesWritten != count)
             {
                 Trace.WriteLine(
-                    $"Warning: only written {bytesWrote} out of {count} bytes to memory.");
+                    $"Warning: WriteMemory failed: wrote {bytesWritten} out of {count} bytes.");
                 return VSConstants.S_FALSE;
             }
             return VSConstants.S_OK;

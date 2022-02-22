@@ -226,6 +226,20 @@ namespace DebuggerGrpcClient
             return grpcSbFrame.ProgramCounter;
         }
 
+        public bool SetPC(ulong addr)
+        {
+            SetPCResponse response = null;
+            if (connection.InvokeRpc(() =>
+                {
+                    response = client.SetPC(
+                        new SetPCRequest() { Frame = grpcSbFrame, Addr = addr });
+                }))
+            {
+                return response.Result;
+            }
+            return false;
+        }
+
         public List<RemoteValue> GetRegisters()
         {
             GetRegistersResponse response = null;

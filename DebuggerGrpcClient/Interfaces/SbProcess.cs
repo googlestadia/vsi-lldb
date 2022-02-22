@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-
 namespace DebuggerApi
 {
     // Interface mirrors the SBProcess API as closely as possible.

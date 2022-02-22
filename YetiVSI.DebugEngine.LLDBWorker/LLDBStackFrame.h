@@ -52,6 +52,7 @@ ref class LLDBStackFrame sealed : SbFrame {
   virtual SbLineEntry ^ GetLineEntry();
   virtual SbThread ^ GetThread();
   virtual uint64_t GetPC();
+  virtual bool SetPC(uint64_t addr);
 
   virtual SbValue ^ EvaluateExpression(System::String ^ text, SbExpressionOptions ^ options);
 
