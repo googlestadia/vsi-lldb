@@ -14,6 +14,7 @@
 
 using GgpGrpc.Cloud;
 using Microsoft.VisualStudio.Threading;
+using YetiCommon;
 using YetiVSI.Metrics;
 
 namespace YetiVSI.GameLaunch

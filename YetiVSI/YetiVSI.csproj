@@ -260,7 +260,6 @@
     <Compile Include="ServiceManager.cs" />
     <Compile Include="SshManager.cs" />
     <Compile Include="ProjectSystemLoader.cs" />
-    <Compile Include="RemoteCommand.cs" />
     <Compile Include="RemoteFile.cs" />
     <Compile Include="Util\IDictionaryExtensions.cs" />
     <Compile Include="Util\FeatureFlagConverter.cs" />

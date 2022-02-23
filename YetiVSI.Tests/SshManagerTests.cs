@@ -21,6 +21,7 @@ using GgpGrpc.Cloud;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
 using YetiVSI.Shared.Metrics;
+using YetiCommon;
 
 namespace YetiVSI.Test
 {

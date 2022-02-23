@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.SSH;
 
-namespace YetiVSI
+namespace YetiCommon
 {
     // Executes shell commands on a remote gamelet.
     public interface IRemoteCommand
