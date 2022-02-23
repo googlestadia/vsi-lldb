@@ -32,49 +32,28 @@ namespace YetiVSI
         Task EnableSshAsync(Gamelet gamelet, Metrics.IAction action);
     }
 
-    public class SshManager : ISshManager
+    public class SshManager : SshManagerBase, ISshManager
     {
         readonly IGameletClientFactory gameletClientFactory;
         readonly ICloudRunner cloudRunner;
-        readonly ISshKeyLoader sshKeyLoader;
-        readonly ISshKnownHostsWriter sshKnownHostsWriter;
-        readonly IRemoteCommand remoteCommand;
 
         public SshManager(IGameletClientFactory gameletClientFactory, ICloudRunner cloudRunner,
-            ISshKeyLoader sshKeyLoader, ISshKnownHostsWriter sshKnownHostsWriter,
-            IRemoteCommand remoteCommand)
+                          ISshKeyLoader sshKeyLoader, ISshKnownHostsWriter sshKnownHostsWriter,
+                          IRemoteCommand remoteCommand)
+            : base(sshKeyLoader, sshKnownHostsWriter, remoteCommand)
         {
             this.gameletClientFactory = gameletClientFactory;
             this.cloudRunner = cloudRunner;
-            this.sshKeyLoader = sshKeyLoader;
-            this.sshKnownHostsWriter = sshKnownHostsWriter;
-            this.remoteCommand = remoteCommand;
         }
 
         public async Task EnableSshAsync(Gamelet gamelet, Metrics.IAction action)
         {
-            var sshKey = await sshKeyLoader.LoadOrCreateAsync();
-            sshKnownHostsWriter.CreateOrUpdate(gamelet);
             action.UpdateEvent(new DeveloperLogEvent
             {
                 GameletData = GameletData.FromGamelet(gamelet)
             });
-
-            // Try to optimistically connect, but only if we already have a key file.
-            try
-            {
-                await remoteCommand.RunWithSuccessAsync(new SshTarget(gamelet), "/bin/true");
-                return;
-            }
-            catch (ProcessException e)
-            {
-                Trace.WriteLine(
-                    $"SSH check failed; fallback to calling EnableSSH; error: {e.Demystify()}");
-            }
-
-            // Generate a new key, if necessary, and upload it to the gamelet.
             var gameletClient = gameletClientFactory.Create(cloudRunner.Intercept(action));
-            await gameletClient.EnableSshAsync(gamelet.Id, sshKey.PublicKey);
+            await EnableSshForGameletAsync(gamelet, gameletClient);
         }
     }
 }
