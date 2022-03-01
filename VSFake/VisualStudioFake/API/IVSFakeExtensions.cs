@@ -229,7 +229,7 @@ namespace Google.VisualStudioFake.API
         /// <remarks>
         /// Convenience function that calls IWatchWindow.DeleteAllWatchEntries().
         /// </remarks>
-        public static IList<IVariableEntry> DeleteAllWatchEntries(this IVSFake vsFake) =>
+        public static void DeleteAllWatchEntries(this IVSFake vsFake) =>
             vsFake.DebugSession.WatchWindow.DeleteAllWatchEntries();
 
         #endregion

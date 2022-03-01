@@ -31,6 +31,6 @@ namespace Google.VisualStudioFake.API.UI
         /// <summary>
         /// Deletes all the expressions currently managed by this view.
         /// </summary>
-        IList<IVariableEntry> DeleteAllWatchEntries();
+        void DeleteAllWatchEntries();
     }
 }

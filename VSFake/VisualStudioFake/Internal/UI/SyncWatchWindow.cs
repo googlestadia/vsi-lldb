@@ -17,7 +17,6 @@ using Google.VisualStudioFake.API.UI;
 using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 using System.Collections.Generic;
-using YetiCommon.Util;
 
 namespace Google.VisualStudioFake.Internal.UI
 {
@@ -68,13 +67,14 @@ namespace Google.VisualStudioFake.Internal.UI
 
         public IList<IVariableEntry> GetWatchEntries() => new List<IVariableEntry>(_watchEntries);
 
-        public IList<IVariableEntry> DeleteAllWatchEntries()
+        public void DeleteAllWatchEntries()
         {
-            var deletedEntries = new List<IVariableEntry>(_watchEntries);
-            _watchEntries.ForEach(e => e.OnDelete());
+            foreach (var entry in _watchEntries)
+            {
+                entry.OnDelete();
+            }
             _watchEntries.Clear();
             _varEntryToExpression.Clear();
-            return deletedEntries;
         }
 
         #endregion
@@ -96,13 +96,19 @@ namespace Google.VisualStudioFake.Internal.UI
         {
             if (_debugSessionContext.SelectedStackFrame == null)
             {
-                _watchEntries.ForEach(e => e.OnReset());
+                foreach (var entry in _watchEntries)
+                {
+                    entry.OnReset();
+                }
                 return;
             }
 
             // TODO: Watch window should update its entries the same way as
             // vanilla VS.
-            _watchEntries.ForEach(e => e.Refresh());
+            foreach (var entry in _watchEntries)
+            {
+                entry.Refresh();
+            }
         }
 
         IDebugProperty2 EvaluateExpression(IDebugExpression2 debugExpression)
