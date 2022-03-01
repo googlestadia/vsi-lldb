@@ -16,7 +16,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using YetiCommon.Util;
 using YetiVSI.DebugEngine.Variables;
 
 namespace YetiVSI.DebugEngine.NatvisEngine
@@ -97,21 +96,16 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return result.GetRange(from, count);
             }
 
-            var indexDic = new NatvisScope(_natvisScope);
+            var scope = new NatvisScope(_natvisScope);
             for (int index = from; index < from + count; index++)
             {
                 IVariableInformation varInfo = await _store.GetOrEvaluateAsync(index, async i => {
-                    indexDic.AddScopedName("$i", $"{i}U");
+                    scope.AddScopedName("$i", $"{i}U");
                     string displayName = $"[{i}]";
 
                     // From the list of all <ValueNode> children, filter all with non-empty body
                     // and return the first which Condition evaluates to true.
-                    IndexNodeType valueNode =
-                        await _indexListItems
-                            .ValueNode?.Where(v => !string.IsNullOrWhiteSpace(v.Value))
-                            .FirstOrDefaultAsync(v => _evaluator.EvaluateConditionAsync(
-                                                     v.Condition, _variable, indexDic));
-
+                    IndexNodeType valueNode = await FindFirstValidIndexNodeAsync(scope);
                     if (valueNode == null)
                     {
                         // For the current index $i, there is no <ValueNode> which passes the
@@ -121,7 +115,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     }
 
                     return await _evaluator.GetExpressionValueOrErrorAsync(
-                        valueNode.Value, _variable, indexDic, displayName, "IndexListItems");
+                        valueNode.Value, _variable, scope, displayName, "IndexListItems");
                 });
 
                 result.Add(varInfo);
@@ -168,6 +162,34 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             EntityInfo initInfo = await InitLeafAsync();
             _store.ChildrenCount = initInfo.ChildrenCount;
             _store.ValidationError = initInfo.Error;
+        }
+
+        async Task<IndexNodeType> FindFirstValidIndexNodeAsync(NatvisScope scope)
+        {
+            if (_indexListItems.ValueNode == null)
+            {
+                throw new InvalidOperationException(
+                    "<IndexListItems> must have at least one <ValueNode> entry");
+            }
+
+            foreach (var vn in _indexListItems.ValueNode)
+            {
+                if (string.IsNullOrWhiteSpace(vn.Value))
+                {
+                    _logger.Warning("Found empty <ValueNode> entry");
+                    continue;
+                }
+
+                // Pick the first entry whose condition evaluates to "true".
+                bool condition = await _evaluator.EvaluateConditionAsync(
+                    vn.Condition, _variable, scope);
+                if (condition)
+                {
+                    return vn;
+                }
+            }
+            _logger.Warning("No valid <ValueNode> found");
+            return null;
         }
     }
 }

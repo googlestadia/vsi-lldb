@@ -14,9 +14,7 @@
 
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using YetiCommon.Util;
 using YetiVSI.DebugEngine.Variables;
 
 namespace YetiVSI.DebugEngine.NatvisEngine
@@ -114,14 +112,28 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         protected override async Task ValidateAsync()
         {
-            Task<ValuePointerType> valuePointerTask =
-                _arrayListItems.ValuePointer?.Where(v => !string.IsNullOrWhiteSpace(v.Value))
-                    .FirstOrDefaultAsync(async v => await _evaluator.EvaluateConditionAsync(
-                                             v.Condition, _variable, _natvisScope));
-
-            if (valuePointerTask != null)
+            if (_arrayListItems.ValuePointer == null)
             {
-                _valuePointer = await valuePointerTask;
+                throw new InvalidOperationException(
+                    "<ArrayItems> must have at least one <ValuePointer> entry");
+            }
+
+            foreach (var vp in _arrayListItems.ValuePointer)
+            {
+                if (string.IsNullOrWhiteSpace(vp.Value))
+                {
+                    _logger.Warning("Found empty <ValuePointer> entry");
+                    continue;
+                }
+
+                // Pick the first entry whose condition evaluates to "true".
+                bool cond = await _evaluator.EvaluateConditionAsync(
+                    vp.Condition, _variable, _natvisScope);
+                if (cond)
+                {
+                    _valuePointer = vp;
+                    break;
+                }
             }
 
             if (_valuePointer == null)
