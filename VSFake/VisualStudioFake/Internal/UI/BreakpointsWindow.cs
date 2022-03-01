@@ -23,7 +23,6 @@ using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using YetiCommon.Util;
 
 namespace Google.VisualStudioFake.Internal.UI
 {
@@ -92,11 +91,12 @@ namespace Google.VisualStudioFake.Internal.UI
             QueueDelete(_breakpoints.FirstOrDefault(b => b == breakpoint));
         }
 
-        public IList<IBreakpoint> DeleteAll()
+        public void DeleteAll()
         {
-            var deletedBreakpoints = new List<IBreakpoint>(_breakpoints);
-            _breakpoints.ForEach(QueueDelete);
-            return deletedBreakpoints;
+            foreach (var bp in _breakpoints)
+            {
+                QueueDelete(bp);
+            }
         }
 
         public IBreakpoint FiredBreakpoint

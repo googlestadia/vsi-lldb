@@ -56,7 +56,7 @@ namespace Google.VisualStudioFake.API.UI
         /// Deletes all the breakpoints currently managed by this view.
         /// </summary>
         [SyncPoint(ExecutionSyncPoint.IDLE, Timeout = VSFakeTimeout.Medium)]
-        IList<IBreakpoint> DeleteAll();
+        void DeleteAll();
 
         /// <summary>
         /// Gets the breakpoint that fired at the current code location.
