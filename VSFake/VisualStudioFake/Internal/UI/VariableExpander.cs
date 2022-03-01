@@ -17,7 +17,6 @@ using Google.VisualStudioFake.API.UI;
 using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 using System.Collections.Generic;
-using YetiCommon.Util;
 
 namespace Google.VisualStudioFake.Internal.UI
 {
@@ -151,20 +150,29 @@ namespace Google.VisualStudioFake.Internal.UI
             }
             else
             {
-                _childToIndex.Keys.ForEach(child => child.Refresh());
+                foreach (var child in _childToIndex.Keys)
+                {
+                    child.Refresh();
+                }
             }
         }
 
         public void DeleteChildren()
         {
-            _childToIndex.Keys.ForEach(child => child.OnDelete());
+            foreach (var child in _childToIndex.Keys)
+            {
+                child.OnDelete();
+            }
             _childToIndex.Clear();
             _indexToChild.Clear();
         }
 
         public void ResetChildren()
         {
-            _childToIndex.Keys.ForEach(child => child.OnReset());
+            foreach (var child in _childToIndex.Keys)
+            {
+                child.OnReset();
+            }
         }
 
         public IList<IVariableEntry> GetOrCreateChildren(int offset, int count)
@@ -204,7 +212,11 @@ namespace Google.VisualStudioFake.Internal.UI
                 uint numFetched;
                 HResultChecker.Check(
                     _childEnum.Next((uint)toFetch, propertyInfos, out numFetched));
-                propertyInfos.ForEach(info => _currentBatch.Enqueue(info));
+
+                foreach (var info in propertyInfos)
+                {
+                    _currentBatch.Enqueue(info);
+                }
             }
 
             _currentBatchIndex++;

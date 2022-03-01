@@ -17,7 +17,6 @@ using DebuggerGrpcClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using YetiCommon.Util;
 
 namespace YetiVSI.Test.TestSupport.Lldb
 {
@@ -72,12 +71,18 @@ namespace YetiVSI.Test.TestSupport.Lldb
 
         public void AddConnectRemoteStatuses(params bool[] statuses)
         {
-            statuses.ForEach(status => _connectRemoteStatuses.Enqueue(status));
+            foreach (var status in statuses)
+            {
+                _connectRemoteStatuses.Enqueue(status);
+            }
         }
 
         public void AddRunStatuses(params bool[] statuses)
         {
-            statuses.ForEach(status => _runStatuses.Enqueue(status));
+            foreach (var status in statuses)
+            {
+                _runStatuses.Enqueue(status);
+            }
         }
 
         /// <summary>

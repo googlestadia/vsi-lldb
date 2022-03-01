@@ -46,16 +46,5 @@ namespace YetiCommon.Util
 
             return default(T);
         }
-
-        /// <summary>
-        /// Applies an action to all items in an enumerable.
-        /// </summary>
-        public static void ForEach<T>(this IEnumerable<T> items, Action<T> action)
-        {
-            foreach (var item in items)
-            {
-                action(item);
-            }
-        }
     }
 }
