@@ -32,7 +32,7 @@ namespace Google.VisualStudioFake.Internal
                 throw new InvalidOperationException("No project has been loaded yet.");
             }
 
-            return EnumerableHelpers.EnumerableOf(project);
+            yield return project;
         }
     }
 }
