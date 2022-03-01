@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using YetiCommon.Util;
 
 namespace YetiCommon.CastleAspects
 {
@@ -31,39 +30,29 @@ namespace YetiCommon.CastleAspects
     /// </summary>
     public class CallSequenceLoggingAspect : IInterceptor
     {
-        // 100 characters total less.
-        const int MAX_COMMENT_LINE_LENGTH = 100;
-
-        const string COMMENT_PREFIX = "# ";
-
         readonly ObjectIDGenerator idGenerator;
         readonly NLog.ILogger logger;
-
         readonly Stack<object> proxies;
-        readonly IDictionary<long, string> proxyIdToDesc;
 
         public CallSequenceLoggingAspect(ObjectIDGenerator idGenerator, NLog.ILogger logger)
         {
             this.logger = logger;
             this.idGenerator = idGenerator;
-
             proxies = new Stack<object>();
-            proxyIdToDesc = new Dictionary<long, string>();
 
             // Force VS be the left most column in the rendered diagram.
-            LogComment("Participant Section");
+            logger.Trace("# Participant Section");
             logger.Trace("participant VS");
 
             // Output an empty line.
             logger.Trace("");
-            LogComment("Call Section");
+            logger.Trace("# Call Section");
         }
 
         public void Intercept(IInvocation invocation)
         {
             object proxy = invocation.Proxy;
-            string callerMetaData = null;
-            string callerDesc = GetCallerDescription(out callerMetaData);
+            string callerDesc = GetCallerDescription(out string callerMetaData);
             string proxyDesc = GetProxyDescription(proxy);
 
             string metaData = string.IsNullOrEmpty(callerMetaData) ? "" : $" [{callerMetaData}]";
@@ -124,9 +113,8 @@ namespace YetiCommon.CastleAspects
                 return $"{targetField.GetValue(proxy)} (id={GetId(proxy)})";
             }
 
-            IEnumerable arr = proxy as IEnumerable;
             // We ignore the case when proxy is a string so we don't end up logging multiple chars.
-            if (arr != null && !(arr is string))
+            if (proxy is IEnumerable arr && !(arr is string))
             {
                 string arrDesc = string.Join(", ", arr.Cast<object>()
                     .Select(a => GetProxyDescription(a))
@@ -152,7 +140,7 @@ namespace YetiCommon.CastleAspects
             string desc = GetProxyDescription(arg);
             if (IsSimpleType(arg))
             {
-                desc += $" {{value={arg.ToString()}}}";
+                desc += $" {{value={arg}}}";
             }
             return desc;
         }
@@ -175,31 +163,7 @@ namespace YetiCommon.CastleAspects
 
         long GetId(object obj)
         {
-            bool ignore;
-            return obj == null ? 0 : idGenerator.GetId(obj, out ignore);
-        }
-
-        /// <summary>
-        /// Logs a comment and splits it across multiple lines if necessary.
-        /// </summary>
-        void LogComment(string comment)
-        {
-            SplitComment(comment).ForEach(line => logger.Trace($"{COMMENT_PREFIX}{line}"));
-        }
-
-        /// <summary>
-        /// Splits a comment string in to multiple lines based on a max length.
-        /// </summary>
-        /// <param name="comment">the comment to split</param>
-        static IEnumerable<string> SplitComment(string comment)
-        {
-            int maxCommentLength = MAX_COMMENT_LINE_LENGTH - COMMENT_PREFIX.Length;
-
-            for (int i = 0; i < comment.Length; i += maxCommentLength)
-            {
-                var length = Math.Min(maxCommentLength, comment.Length - i);
-                yield return comment.Substring(i, length);
-            }
+            return obj == null ? 0 : idGenerator.GetId(obj, out _);
         }
     }
 }
