@@ -159,5 +159,14 @@ namespace YetiCommon
         {
             return Path.Combine(GetLocalAppDataPath(), "SymbolStore");
         }
+
+        /// <summary>
+        /// Returns the path of the SDK services configuration, e.g.
+        /// %APPDATA%\GGP\services.
+        /// </summary>
+        public static string GetServicesConfigPath()
+        {
+            return Path.Combine(GetUserConfigPath(), "services");
+        }
     }
 }
