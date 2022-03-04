@@ -39,7 +39,7 @@ using Microsoft;
 namespace YetiVSI
 {
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-    [InstalledProductRegistration("#110", "#112", "1.75.0", IconResourceID = 400)]
+    [InstalledProductRegistration("#110", "#112", "1.76.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(_packageGuidString)]
     [ProvideOptionPage(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 0, true)]
