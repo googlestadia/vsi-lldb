@@ -124,15 +124,5 @@ uint32_t LLDBThread::GetStopReasonDataCount() {
   return (uint32_t)thread_->GetStopReasonDataCount();
 }
 
-SbError ^ LLDBThread::JumpToLine(System::String ^ filePath, uint32_t line) {
-  lldb::SBFileSpec fileSpec((msclr::interop::marshal_as<std::string>(
-    filePath)).c_str(), true);
-  auto error = thread_->JumpToLine(fileSpec, line);
-  if (!error.IsValid()) {
-    return nullptr;
-  }
-  return gcnew LLDBError(error);
-}
-
 }  // namespace DebugEngine
 }  // namespace YetiVSI

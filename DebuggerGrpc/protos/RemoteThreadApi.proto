@@ -49,8 +49,6 @@ service RemoteThreadRpcService {
   }
   rpc GetProcess(GetProcessRequest) returns (GetProcessResponse) {
   }
-  rpc JumpToLine(JumpToLineRequest) returns (JumpToLineResponse) {
-  }
   rpc GetFramesWithInfo(GetFramesWithInfoRequest)
       returns (GetFramesWithInfoResponse) {
   }
@@ -172,16 +170,6 @@ message GetProcessRequest {
 
 message GetProcessResponse {
   Common.GrpcSbProcess process = 1;
-}
-
-message JumpToLineRequest {
-  Common.GrpcSbThread thread = 1;
-  string filePath = 2;
-  uint32 line = 3;
-}
-
-message JumpToLineResponse {
-  Common.GrpcSbError error = 1;
 }
 
 message GetFramesWithInfoRequest {

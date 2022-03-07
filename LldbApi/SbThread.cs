@@ -92,8 +92,5 @@ namespace LldbApi
 
         // Gets the number of words associated with the stop reason.
         uint GetStopReasonDataCount();
-
-        // Jump to |line| in file at |filePath|
-        SbError JumpToLine(string filePath, uint line);
     }
 }

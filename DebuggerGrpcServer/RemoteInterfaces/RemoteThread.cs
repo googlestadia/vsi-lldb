@@ -123,11 +123,6 @@ namespace DebuggerGrpcServer
         uint GetStopReasonDataCount();
 
         /// <summary>
-        /// Jump to |line| in file at |filePath|
-        /// </summary>
-        SbError JumpToLine(string filePath, uint line);
-
-        /// <summary>
         /// Returns the underlying SbThread.
         /// </summary>
         SbThread GetSbThread();

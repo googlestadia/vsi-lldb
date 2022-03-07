@@ -46,7 +46,6 @@ ref class LLDBThread sealed : SbThread {
   virtual StopReason GetStopReason();
   virtual uint64_t GetStopReasonDataAtIndex(uint32_t index);
   virtual uint32_t GetStopReasonDataCount();
-  virtual SbError ^ JumpToLine(System::String ^ filePath, uint32_t line);
 
  private:
   ManagedUniquePtr<lldb::SBThread> ^ thread_;

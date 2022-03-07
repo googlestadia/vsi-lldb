@@ -318,31 +318,6 @@ namespace DebuggerGrpcClient
             return null;
         }
 
-        public SbError JumpToLine(string filePath, uint line)
-        {
-            JumpToLineResponse response = null;
-            if (connection.InvokeRpc(() =>
-                {
-                    response = client.JumpToLine(new JumpToLineRequest
-                    {
-                        Thread = grpcSbThread,
-                        FilePath = filePath,
-                        Line = line,
-                    });
-                }))
-            {
-                if (response.Error != null)
-                {
-                    return errorFactory.Create(response.Error);
-                }
-            }
-            return errorFactory.Create(new GrpcSbError
-            {
-                Success = false,
-                Error = "Rpc error while calling JumpToLine()."
-            });
-        }
-
         public List<FrameInfoPair> GetFramesWithInfo(
             FrameInfoFlags fields, uint startIndex, uint maxCount)
         {

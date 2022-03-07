@@ -161,20 +161,6 @@ namespace DebuggerGrpcServer
             return Task.FromResult(response);
         }
 
-        public override Task<JumpToLineResponse> JumpToLine(JumpToLineRequest request, ServerCallContext context)
-        {
-            var thread = threadStore.GetObject(request.Thread.Id);
-            var error = thread.JumpToLine(request.FilePath, request.Line);
-            return Task.FromResult(new JumpToLineResponse
-            {
-                Error = new GrpcSbError
-                {
-                    Success = error.Success(),
-                    Error = error.GetCString()
-                }
-            });
-        }
-
         public override Task<GetFramesWithInfoResponse> GetFramesWithInfo(
             GetFramesWithInfoRequest request, ServerCallContext context)
         {

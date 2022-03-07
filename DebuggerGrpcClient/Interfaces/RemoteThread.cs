@@ -123,11 +123,6 @@ namespace DebuggerApi
         uint GetStopReasonDataCount();
 
         /// <summary>
-        /// Jump to |line| in file at |filePath|
-        /// </summary>
-        SbError JumpToLine(string filePath, uint line);
-
-        /// <summary>
         /// Retrieves requested information synchronously about the frames of this thread.
         /// </summary>
         List<FrameInfoPair> GetFramesWithInfo(

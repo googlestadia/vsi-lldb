@@ -72,9 +72,6 @@ namespace DebuggerGrpcServer
 
         public uint GetStopReasonDataCount() => sbThread.GetStopReasonDataCount();
 
-        public SbError JumpToLine(string filePath, uint line) =>
-            sbThread.JumpToLine(filePath, line);
-
         public SbThread GetSbThread() => sbThread;
 
         public List<FrameInfoPair> GetFramesWithInfo(
@@ -83,7 +80,7 @@ namespace DebuggerGrpcServer
             var framesWithInfo = new List<FrameInfoPair>();
 
             /// This is a workaround to avoid calling <see cref="sbThread.GetNumFrames"/>.
-            /// It is a very expensive call for cases when stack is significantly larger 
+            /// It is a very expensive call for cases when stack is significantly larger
             /// than <see cref="startIndex+maxCount"/>, because it traverses the whole stack.
             for (uint i = startIndex; i < startIndex + maxCount; ++i)
             {
