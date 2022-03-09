@@ -111,7 +111,9 @@ namespace YetiVSI.Test.DebugEngine
             List<Interceptor> grpcInterceptors =
                 CreateGrpcInterceptors(vsiService.DebuggerOptions);
             var vsOutputWindow =
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 serviceManager.GetGlobalService(typeof(SVsOutputWindow)) as IVsOutputWindow;
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var callInvokerFactory = new PipeCallInvokerFactory();
             var yetiTransport = new YetiDebugTransport(
                 joinableTaskContext, callInvokerFactory,
@@ -186,14 +188,18 @@ namespace YetiVSI.Test.DebugEngine
             if (_cancelableTaskFactory == null)
             {
                 _cancelableTaskFactory =
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                     FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             }
 
             return _cancelableTaskFactory;
         }
 
         public override JoinableTaskContext GetJoinableTaskContext() => _taskContext
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             ?? (_taskContext = new JoinableTaskContext());
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
         public override DialogExecutionContext GetDialogExecutionContext() => null;
 

@@ -49,26 +49,32 @@ namespace YetiVSI.Test.LLDBShell
             logSpy = new LogSpy();
             logSpy.Attach();
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             shellMock = Substitute.For<ILLDBShell>();
 
             commandWindowText = "";
 
             commandWindowMock = Substitute.For<IVsCommandWindow>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             commandWindowMock.Print(Arg.Do<string>(x => commandWindowText += x));
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
             serviceProviderMock = Substitute.For<IServiceProvider>();
 
             yetiOptions = Substitute.For<OptionPageGrid>();
             var yetiService = new YetiVSIService(yetiOptions);
 
+#pragma warning disable VSSDK006 // Check services exist
             serviceProviderMock.GetService(typeof(YetiVSIService)).Returns(yetiService);
             serviceProviderMock.GetService(typeof(SLLDBShell)).Returns(shellMock);
             serviceProviderMock.GetService(typeof(SVsCommandWindow)).Returns(commandWindowMock);
 
             menuCommandService = new OleMenuCommandService(serviceProviderMock);
             serviceProviderMock.GetService(typeof(IMenuCommandService)).Returns(menuCommandService);
+#pragma warning restore VSSDK006 // Check services exist
 
             LLDBShellCommandTarget.Register(taskContext, serviceProviderMock);
         }
@@ -110,7 +116,9 @@ namespace YetiVSI.Test.LLDBShell
         [Test]
         public void ExecWhenLLDBShellDoesntExist()
         {
+#pragma warning disable VSSDK006 // Check services exist
             serviceProviderMock.GetService(typeof(SLLDBShell)).Returns(null);
+#pragma warning restore VSSDK006 // Check services exist
 
             Invoke("help");
 

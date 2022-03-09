@@ -44,7 +44,9 @@ namespace YetiVSI.Test.DebugEngine
             _target = Substitute.For<RemoteTarget>();
             _childrenProviderFactory = new ChildrenProvider.Factory();
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             var enumFactory = new VariableInformationEnum.Factory(taskExecutor);
             var propertyFactory = new DebugAsyncProperty.Factory(
                 enumFactory, _childrenProviderFactory, Substitute.For<DebugCodeContext.Factory>(),

@@ -35,7 +35,9 @@ namespace YetiVSI.Test.DebugEngine.Variables
         [SetUp]
         public void SetUp()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             _childValues = new int[] { 20, 21, 22, 23, 24 };
             _remoteValue = RemoteValueFakeUtil.CreateSimpleIntArray("myArray", _childValues);

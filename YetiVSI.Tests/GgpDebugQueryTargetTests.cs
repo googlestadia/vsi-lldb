@@ -117,7 +117,9 @@ namespace YetiVSI.Test
             var credentialManager = Substitute.For<YetiCommon.ICredentialManager>();
             credentialManager.LoadAccount().Returns(_testAccount);
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             var cancelableTaskFactory = FakeCancelableTask.CreateFactory(taskContext, false);
 
             _applicationClient = Substitute.For<IApplicationClient>();

@@ -49,7 +49,9 @@ namespace YetiVSI.Test.DebugEngine
             _mockVarInfo = Substitute.For<IVariableInformation>();
             _mockCodeContextFactory = Substitute.For<DebugCodeContext.Factory>();
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             var enumFactory = new VariableInformationEnum.Factory(taskExecutor);
 
             var childrenProviderFactory = new ChildrenProvider.Factory();
@@ -221,7 +223,9 @@ namespace YetiVSI.Test.DebugEngine
             _mockVarInfo = Substitute.For<IVariableInformation>();
             _mockVarInfo.GetCachedView().Returns(_mockVarInfo);
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             var enumFactory = new VariableInformationEnum.Factory(taskExecutor);
 
             var childrenProviderFactory = new ChildrenProvider.Factory();

@@ -54,7 +54,9 @@ namespace YetiVSI.Test.DebugEngine
             child3.GetCachedView().Returns(child3);
             _children.Add(child3);
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             _enumFactory = new VariableInformationEnum.Factory(taskExecutor);
 
             _childrenProviderFactory = new ChildrenProvider.Factory();

@@ -100,7 +100,9 @@ namespace YetiVSI.Test
         [SetUp]
         public void SetUp()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             closeDialogSource = new TaskCompletionSource<bool>();
 

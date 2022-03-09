@@ -225,7 +225,9 @@ namespace YetiVSI.Test.DebugEngine
             source.Cancel();
             taskCancelled.Set();
 
+#pragma warning disable VSTHRD003 // Avoid awaiting foreign Tasks
             Assert.ThrowsAsync<TaskCanceledException>(async () => await asyncOperation);
+#pragma warning restore VSTHRD003 // Avoid awaiting foreign Tasks
         }
 
         [Test]
@@ -250,7 +252,9 @@ namespace YetiVSI.Test.DebugEngine
             _taskExecutor.CancelAsyncOperationIfRequested();
             taskCancelled.Set();
 
+#pragma warning disable VSTHRD003 // Avoid awaiting foreign Tasks
             Assert.ThrowsAsync<TaskCanceledException>(async () => await asyncOperation);
+#pragma warning restore VSTHRD003 // Avoid awaiting foreign Tasks
         }
 
         [Test]

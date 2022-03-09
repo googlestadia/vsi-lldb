@@ -146,7 +146,9 @@ namespace YetiVSI.Test.GameLaunch
             var cancelable = Substitute.For<ICancelableTask>();
             action.Record(Arg.Any<Func<bool>>()).Returns(callInfo =>
             {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                 new JoinableTaskFactory(new JoinableTaskContext()).Run(
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
                     () => currentTask(new NothingToCancel()));
                 return true;
             });

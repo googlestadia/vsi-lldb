@@ -31,7 +31,9 @@ namespace YetiVSI.Test.DebugEngine
         {
             var settingsManager = Substitute.For<IVsDebuggerSymbolSettingsManager120A>();
             var debuggerService = Substitute.For<IVsDebugger2>();
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             var settings = Substitute.For<IVsDebuggerSymbolSettings120A>();
             settingsManager.GetCurrentSymbolSettings().Returns(settings);

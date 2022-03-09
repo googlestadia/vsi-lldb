@@ -58,7 +58,9 @@ namespace YetiVSI.Test.LLDBShell
             logSpy = new LogSpy();
             logSpy.Attach();
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             returnObjectMock = Substitute.For<SbCommandReturnObject>();
             returnObjectMock.GetDescription().Returns(COMMAND_DESCRIPTION);
@@ -73,7 +75,9 @@ namespace YetiVSI.Test.LLDBShell
             commandWindowText = "";
 
             commandWindowMock = Substitute.For<IVsCommandWindow>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             commandWindowMock.Print(Arg.Do<string>(x => commandWindowText += x));
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
             commandWindowWriter = new CommandWindowWriter(taskContext, commandWindowMock);
 

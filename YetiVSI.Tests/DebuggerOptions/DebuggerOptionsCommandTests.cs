@@ -50,19 +50,25 @@ namespace YetiVSI.Test.DebuggerOptions
             logSpy = new LogSpy();
             logSpy.Attach();
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             commandWindowText = "";
 
             commandWindowMock = Substitute.For<IVsCommandWindow>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             commandWindowMock.Print(Arg.Do<string>(x => commandWindowText += x));
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
             serviceProviderMock = Substitute.For<IServiceProvider>();
 
             yetiService = new YetiVSIService(null);
 
+#pragma warning disable VSSDK006 // Check services exist
             serviceProviderMock.GetService(typeof(YetiVSIService)).Returns(yetiService);
             serviceProviderMock.GetService(typeof(SVsCommandWindow)).Returns(commandWindowMock);
+#pragma warning restore VSSDK006 // Check services exist
 
             debugEngineCommandsMock = Substitute.For<IDebugEngineCommands>();
 
@@ -74,12 +80,14 @@ namespace YetiVSI.Test.DebuggerOptions
             debugEngineManager = new DebugEngineManager();
             debugEngineManager.AddDebugEngine(debugEngineMock);
 
+#pragma warning disable VSSDK006 // Check services exist
             serviceProviderMock.GetService(typeof(SDebugEngineManager))
                 .Returns(debugEngineManager);
 
             menuCommandService = new OleMenuCommandService(serviceProviderMock);
             serviceProviderMock.GetService(typeof(IMenuCommandService))
                 .Returns(menuCommandService);
+#pragma warning restore VSSDK006 // Check services exist
 
             DebuggerOptionsCommand.Register(taskContext, serviceProviderMock);
         }

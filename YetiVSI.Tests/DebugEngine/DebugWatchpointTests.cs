@@ -50,7 +50,9 @@ namespace YetiVSI.Test
         [SetUp]
         public void SetUp()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             mockBreakpointManager = Substitute.For<IBreakpointManager>();
             mockBreakpointRequest = Substitute.For<IDebugBreakpointRequest2>();
             mockProgram = Substitute.For<IGgpDebugProgram>();

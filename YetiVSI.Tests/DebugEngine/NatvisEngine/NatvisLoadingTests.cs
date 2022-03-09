@@ -61,7 +61,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             _traceLogSpy.Attach();
 
             var compRoot = new MediumTestDebugEngineFactoryCompRoot(
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                 null, new JoinableTaskContext(), new GameletClientStub.Factory(),
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
                 Substitute.For<IWindowsRegistry>());
 
             _natvisScanner = compRoot.GetNatvisVisualizerScanner();

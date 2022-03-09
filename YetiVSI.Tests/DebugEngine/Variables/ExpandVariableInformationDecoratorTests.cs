@@ -32,7 +32,9 @@ namespace YetiVSI.Test.DebugEngine.Variables
         [SetUp]
         public void SetUp()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             _logSpy = new LogSpy();
             _logSpy.Attach();
         }

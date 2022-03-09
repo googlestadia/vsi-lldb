@@ -55,7 +55,9 @@ namespace YetiVSI.Test.PortSupplier
             _options = Substitute.For<IExtensionOptions>();
 
             var cancelableTaskRunnerFactory =
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             _metrics = Substitute.For<IMetrics>();
             _metrics.NewDebugSessionId().Returns(_testDebugSessionId);
 

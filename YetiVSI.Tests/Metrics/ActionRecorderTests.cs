@@ -225,7 +225,9 @@ namespace YetiVSI.Test.Metrics
             var expectedStatus = !canceled
                 ? DeveloperEventStatus.Types.Code.Success
                 : DeveloperEventStatus.Types.Code.Cancelled;
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var task = FakeCancelableTask.CreateFactory(new JoinableTaskContext(), canceled)
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
                 .Create("test", _ => { });
 
             Assert.AreEqual(!canceled, task.RunAndRecord(actionRecorder, MetricActionType));
@@ -238,7 +240,9 @@ namespace YetiVSI.Test.Metrics
         [Test]
         public void RecordCancelable_Error()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var task = FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false)
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
                 .Create("test", _ => { throw new TestException("Test"); });
             Assert.Throws<TestException>(() => task.RunAndRecord(actionRecorder, MetricActionType));
 
@@ -252,7 +256,9 @@ namespace YetiVSI.Test.Metrics
         {
             var metricActionInnerType = ActionType.GameletSelect;
             var innerEventType = DeveloperEventType.Types.Type.VsiGameletsSelect;
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var task = FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false)
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
                 .Create("test", _ =>
                 {
                     actionRecorder.RecordToolAction(metricActionInnerType,
@@ -316,7 +322,9 @@ namespace YetiVSI.Test.Metrics
         [Test]
         public void RecordThroughExtension()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var task = FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false)
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
                 .Create("test", _ => { });
             task.RunAndRecord(actionRecorder, MetricActionType);
 
@@ -437,7 +445,9 @@ namespace YetiVSI.Test.Metrics
             Task task = Task.Run(delegate { throw new Exception(); });
 
             Assert.ThrowsAsync<Exception>(
+#pragma warning disable VSTHRD003 // Avoid awaiting foreign Tasks
                 () => rpcAction.RecordAsync(task));
+#pragma warning restore VSTHRD003 // Avoid awaiting foreign Tasks
 
             logEvent.StatusCode = DeveloperEventStatus.Types.Code.InternalError;
             metrics.Received(1).RecordEvent(EventType, logEvent);

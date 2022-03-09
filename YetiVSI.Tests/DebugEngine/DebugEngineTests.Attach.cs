@@ -230,7 +230,9 @@ namespace YetiVSI.Test.DebugEngine
             string reserverAccount = "reserver@test.com";
             processListRequestFactory.Create().Returns(processListRequest);
             CancelableTask.Factory cancelableTaskFactory =
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             var portFactory = new DebugPort.Factory(processFactory, processListRequestFactory,
                                                     cancelableTaskFactory, dialogUtil, sshManager,
                                                     _metrics, reserverAccount);

@@ -37,7 +37,9 @@ namespace YetiVSI.Test.TestSupport.Lldb
 
             var callInvokerFactory = new PipeCallInvokerFactory();
             var grpcConnection =
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                 new GrpcConnection(new JoinableTaskContext().Factory, callInvokerFactory.Create());
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             platform = factory.Create("linux-remote", grpcConnection);
             connectOptions = new GrpcPlatformConnectOptionsFactory()
                 .Create("http://any/url");

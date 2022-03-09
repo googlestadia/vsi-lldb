@@ -76,7 +76,9 @@ namespace YetiVSI.Test.DebugEngine
         [SetUp]
         public void SetUp()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             PipeCallInvokerFactory callInvokerFactory = new PipeCallInvokerFactory();
             PipeCallInvoker callInvoker = callInvokerFactory.Create();
             _grpcConnection = new GrpcConnection(taskContext.Factory, callInvoker);
@@ -455,7 +457,9 @@ namespace YetiVSI.Test.DebugEngine
             _debuggerFactory =
                 new GrpcDebuggerFactoryFake(new TimeSpan(0), stadiaPlatformAvailable);
             _platformFactory = new GrpcPlatformFactoryFake(connectRecorder);
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             _listenerFactory = new GrpcListenerFactoryFake();
 
             // If stadiaPlatformAvailable is True the DebugSessionLauncher will connect
@@ -497,7 +501,9 @@ namespace YetiVSI.Test.DebugEngine
                                          threadsEnumFactory, moduleEnumFactory,
                                          codeContextEnumFactory),
                 new DebugModule.Factory(
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                     FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false),
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
                     _actionRecorder, moduleFileLoadRecorderFactory,
                     symbolSettingsProvider), new DebugAsyncThread.Factory(taskExecutor,
                                                                           frameEnumFactory),

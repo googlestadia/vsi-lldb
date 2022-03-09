@@ -25,7 +25,9 @@ namespace YetiVSI.Test
     class EnvDTEUtilTests
     {
         readonly DTE2 dte2 = Substitute.For<DTE2>();
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
         readonly JoinableTaskContext taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
         [Test]
         public void GetSolutionProjectsNull()
@@ -33,7 +35,9 @@ namespace YetiVSI.Test
             var solution = Substitute.For<Solution>();
             dte2.Solution.Returns(solution);
             var projects = new List<Project>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             solution.Projects.GetEnumerator().Returns(projects.GetEnumerator());
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var envDteUtil = new EnvDteUtil(taskContext, dte2);
             var results = envDteUtil.GetSolutionProjects();
             Assert.AreEqual(0, results.Count);
@@ -46,7 +50,9 @@ namespace YetiVSI.Test
             Project nullProject = null;
             dte2.Solution.Returns(solution);
             var projects = new List<Project> { nullProject };
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             solution.Projects.GetEnumerator().Returns(projects.GetEnumerator());
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var envDteUtil = new EnvDteUtil(taskContext, dte2);
             var results = envDteUtil.GetSolutionProjects();
             Assert.AreEqual(0, results.Count);
@@ -59,7 +65,9 @@ namespace YetiVSI.Test
             dte2.Solution.Returns(solution);
             Project project = Substitute.For<Project>();
             var solutionProjects = new List<Project> { project };
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             solution.Projects.GetEnumerator().Returns(solutionProjects.GetEnumerator());
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var envDteUtil = new EnvDteUtil(taskContext, dte2);
             var results = envDteUtil.GetSolutionProjects();
             Assert.AreEqual(1, results.Count);
@@ -71,6 +79,7 @@ namespace YetiVSI.Test
         {
             var solution = Substitute.For<Solution>();
             Project project = Substitute.For<Project>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             project.Kind.Returns(ProjectKinds.vsProjectKindSolutionFolder);
             dte2.Solution.Returns(solution);
             var solutionProjects = new List<Project> { project };
@@ -80,6 +89,7 @@ namespace YetiVSI.Test
             project.ProjectItems.GetEnumerator().Returns(folderProjects.GetEnumerator());
             var subProject = Substitute.For<Project>();
             projectItem.SubProject.Returns(subProject);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var envDteUtil = new EnvDteUtil(taskContext, dte2);
             var results = envDteUtil.GetSolutionProjects();
             Assert.AreEqual(1, results.Count);

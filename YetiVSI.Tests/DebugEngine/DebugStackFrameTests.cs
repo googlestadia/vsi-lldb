@@ -71,7 +71,9 @@ namespace YetiVSI.Test.DebugEngine
             _mockTarget = Substitute.For<RemoteTarget>();
             _mockProgram.Target.Returns(_mockTarget);
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             _taskExecutor = new TaskExecutor(new JoinableTaskContext().Factory);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             var childAdapterFactory = new RemoteValueChildAdapter.Factory();
             var varInfoFactory = new LLDBVariableInformationFactory(childAdapterFactory);

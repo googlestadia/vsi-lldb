@@ -114,7 +114,9 @@ namespace YetiVSI.Test.GameLaunch
                                               new CloudConnection(), new GgpSDKUtil());
 
             CancelableTask.Factory cancelableTaskFactory =
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             _gameletClient = Substitute.For<IGameletClient>();
             var gameletClientFactory = Substitute.For<GameletClient.Factory>();
@@ -137,7 +139,9 @@ namespace YetiVSI.Test.GameLaunch
                                                    gameletSelectionWindowFactory,
                                                    cancelableTaskFactory, gameletClientFactory,
                                                    _sshManager, _remoteCommand, _gameLaunchBeHelper,
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                                                    new JoinableTaskContext(), _actionRecorder);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
         }
 
         [Test]

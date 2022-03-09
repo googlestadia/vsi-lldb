@@ -74,8 +74,10 @@ namespace YetiVSITestsCommon
             _dispatcher = dispatcherSource.Task.Result;
 #pragma warning restore VSTHRD002
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             JoinableTaskContext = new JoinableTaskContext(_mainThread,
                 new DispatcherSynchronizationContext(_dispatcher));
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             // TODO: Use https://aka.ms/vssdktestfx or https://github.com/josetr/VsixTesting
             // for tests.

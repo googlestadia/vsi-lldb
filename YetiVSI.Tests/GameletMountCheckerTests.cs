@@ -34,7 +34,9 @@ namespace YetiVSI.Test
         IRemoteCommand _remoteCommand;
 
         CancelableTask.Factory _cancelableTaskFactory =
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
         ActionRecorder _actionRecorder;
 

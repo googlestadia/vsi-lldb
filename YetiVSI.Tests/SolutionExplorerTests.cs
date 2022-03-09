@@ -36,14 +36,18 @@ namespace YetiVSI.Test
         public void SetUp()
         {
             solutionExplorerFactory = new SolutionExplorer.Factory(vcProjectInfoFactory);
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
         }
 
         [Test]
         public void EnumerateProjects()
         {
             var envDteProject = Substitute.For<Project>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             envDteProject.Kind.Returns("test project kind");
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var envDteProjects = new List<Project> { envDteProject };
             envDteUtil.GetSolutionProjects().Returns(envDteProjects);
             var solutionExplorer = solutionExplorerFactory.Create(taskContext, envDteUtil);
@@ -51,7 +55,9 @@ namespace YetiVSI.Test
             var vcProject = Substitute.For<VCProject>();
 
             // Project.Object is dynamic. We need to cast it to object so NSubstitute can mock it.
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             ((object)envDteProject.Object).Returns(vcProject);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             vcProjectInfoFactory.Create(vcProject).Returns(project);
 
             var projects = solutionExplorer.EnumerateProjects();
@@ -74,7 +80,9 @@ namespace YetiVSI.Test
         public void EnumerateProjectsNullCast()
         {
             var envDteProject = Substitute.For<Project>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             envDteProject.Kind.Returns("test project kind");
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var envDteProjects = new List<Project> { envDteProject };
             envDteUtil.GetSolutionProjects().Returns(envDteProjects);
             var solutionExplorer = solutionExplorerFactory.Create(taskContext, envDteUtil);
@@ -87,14 +95,18 @@ namespace YetiVSI.Test
         public void EnumerateProjectsFactoryCreateNull()
         {
             var envDteProject = Substitute.For<Project>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             envDteProject.Kind.Returns("test project kind");
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var envDteProjects = new List<Project> { envDteProject };
             envDteUtil.GetSolutionProjects().Returns(envDteProjects);
             var solutionExplorer = solutionExplorerFactory.Create(taskContext, envDteUtil);
             var vcProject = Substitute.For<VCProject>();
 
             // Project.Object is dynamic. We need to cast it to object so NSubstitute can mock it.
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             ((object)envDteProject.Object).Returns(vcProject);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             vcProjectInfoFactory.Create(vcProject).Returns((ISolutionExplorerProject)null);
 
             var projects = solutionExplorer.EnumerateProjects();

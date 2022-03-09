@@ -45,7 +45,9 @@ namespace YetiVSI.Test.DebugEngine
         [SetUp]
         public void SetUp()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             logSpy = new LogSpy();
             logSpy.Attach();

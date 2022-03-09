@@ -30,7 +30,9 @@ namespace Google.Tests.VisualStudioFake
         {
             var config = new VSFakeCompRoot.Config {  SamplesRoot = @""  };
             var dgtFactoty = Substitute.For<IDebugQueryTargetFactory>();
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             var logger = Substitute.For<NLog.Logger>();
             compRoot = new VSFakeCompRoot(config, dgtFactoty, taskContext, logger);
         }

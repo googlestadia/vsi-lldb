@@ -42,7 +42,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [SetUp]
         public void SetUp()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             _compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             ((OptionPageGrid)_compRoot.GetVsiService().Options).ExpressionEvaluationEngine =
                 ExpressionEvaluationEngineFlag.LLDB;
 
@@ -209,7 +211,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             _optionPageGrid = OptionPageGrid.CreateForTesting();
             _optionPageGrid.NatvisLoggingLevel = NatvisLoggingLevelFeatureFlag.VERBOSE;
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             var serviceManager = new FakeServiceManager(taskContext);
             serviceManager.AddService(typeof(YetiVSIService), new YetiVSIService(_optionPageGrid));
             _compRoot = new MediumTestDebugEngineFactoryCompRoot(

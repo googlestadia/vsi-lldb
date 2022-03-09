@@ -54,7 +54,9 @@ namespace YetiVSI.Test.DebugEngine
         [SetUp]
         public void SetUp()
         {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             remoteThread = Substitute.For<RemoteThread>();
             mockThread = Substitute.For<IDebugThread>();
             mockThread.GetRemoteThread().Returns(remoteThread);

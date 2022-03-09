@@ -61,7 +61,9 @@ namespace YetiVSI.Test.PortSupplier
             processListRequestFactory.Create().Returns(_processListRequest);
 
             var cancelableTaskFactory =
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             _metrics = Substitute.For<IMetrics>();
 

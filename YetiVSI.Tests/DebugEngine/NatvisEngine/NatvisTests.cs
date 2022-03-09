@@ -109,7 +109,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             testDoubleHelper = new TestDoubleProxyHelper(new ProxyGenerator());
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             compRoot = new MediumTestDebugEngineFactoryCompRoot(new JoinableTaskContext());
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             _natvisExpander = compRoot.GetNatvis();
             compRoot.GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] =

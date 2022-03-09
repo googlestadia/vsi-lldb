@@ -318,7 +318,9 @@ namespace YetiVSI.Test.GameLaunch
             {
                 try
                 {
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                     new JoinableTaskFactory(new JoinableTaskContext()).Run(
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
                         () => currentTask(_cancelable));
                     return true;
                 }
