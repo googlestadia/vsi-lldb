@@ -379,7 +379,7 @@ namespace YetiVSI
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(YetiConstants.RootDir,
+                FileName = Path.Combine(YetiConstants.DebuggerGrpcServerDir,
                                         YetiConstants.DebuggerGrpcServerExecutable),
             };
 
@@ -437,6 +437,7 @@ namespace YetiVSI
             startInfo.Environment["PATH"] = string.Join(";", new string[]
             {
                 rootDir,
+                YetiConstants.DebuggerGrpcServerDir,
                 pythonRoot,
                 libLldbDir
             });

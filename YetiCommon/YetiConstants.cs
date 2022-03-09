@@ -69,6 +69,8 @@ namespace YetiCommon
         public static readonly string PackageMountingPoint = "/mnt/package";
         public static readonly string GameAssetsMountingPoint = "/srv/game/assets";
         public static readonly string LldbDir = Path.Combine(RootDir, "LLDB");
+        public static readonly string DebuggerGrpcServerDir =
+            Path.Combine(RootDir, "DebuggerGrpcServer");
 
 #if INTERNAL_BUILD
         public static readonly string LldbServerLinuxPath = RemoteToolsBinDir;

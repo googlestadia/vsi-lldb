@@ -552,6 +552,7 @@
     <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpcServer\DebuggerGrpcServer.csproj">
       <Project>{115f721a-d99e-457b-932c-869a646b083d}</Project>
       <Name>DebuggerGrpcServer</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="$(ThirdPartyRootDir)LldbApi\LldbApi.csproj">
       <Project>{26aaf846-325f-4af8-8f06-da5fb523d9d8}</Project>
@@ -698,7 +699,8 @@
     </GetVsixSourceItemsDependsOn>
     <GetVsixSourceItemsDependsOn>
       $(GetVsixSourceItemsDependsOn);
-      AddNewtonsoftJsonVSIXContentFiles
+      AddNewtonsoftJsonVSIXContentFiles;
+      AddDebuggerGrpcServerContentFiles
     </GetVsixSourceItemsDependsOn>
   </PropertyGroup>
   <!-- Security check that DeployPythonAndToolchainDependencies is never set to False in Jenkins builds -->
@@ -743,6 +745,29 @@
       <msdia140_dll Include="$(SolutionDir)lib\DIA SDK\msdia140.dll" />
       <VSIXSourceItem Include="@(msdia140_dll)" Condition="$(IsInternalBuild)">
         <VSIXSubPath>LLDB\bin</VSIXSubPath>
+      </VSIXSourceItem>
+    </ItemGroup>
+  </Target>
+  <Target Name="AddDebuggerGrpcServerContentFiles">
+    <ItemGroup>
+      <VSIXSourceItem Include="$(ThirdPartyRootDir)DebuggerGrpcServer\bin\x64\$(Configuration)\*.dll">
+        <VSIXSubPath>DebuggerGrpcServer</VSIXSubPath>
+      </VSIXSourceItem>
+      <VSIXSourceItem Include="$(ThirdPartyRootDir)DebuggerGrpcServer\bin\x64\$(Configuration)\DebuggerGrpcServer.exe">
+        <Link>DebuggerGrpcServer.exe</Link>
+        <VSIXSubPath>DebuggerGrpcServer</VSIXSubPath>
+      </VSIXSourceItem>
+      <VSIXSourceItem Include="$(ThirdPartyRootDir)DebuggerGrpcServer\bin\x64\$(Configuration)\DebuggerGrpcServer.exe.config">
+        <Link>DebuggerGrpcServer.exe.config</Link>
+        <VSIXSubPath>DebuggerGrpcServer</VSIXSubPath>
+      </VSIXSourceItem>
+      <VSIXSourceItem Include="$(ThirdPartyRootDir)DebuggerGrpcServer\bin\x64\$(Configuration)\libgrpc_csharp_ext.x64.dylib">
+        <Link>libgrpc_csharp_ext.x64.dylib</Link>
+        <VSIXSubPath>DebuggerGrpcServer</VSIXSubPath>
+      </VSIXSourceItem>
+      <VSIXSourceItem Include="$(ThirdPartyRootDir)DebuggerGrpcServer\bin\x64\$(Configuration)\libgrpc_csharp_ext.x64.so">
+        <Link>libgrpc_csharp_ext.x64.so</Link>
+        <VSIXSubPath>DebuggerGrpcServer</VSIXSubPath>
       </VSIXSourceItem>
     </ItemGroup>
   </Target>

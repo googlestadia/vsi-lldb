@@ -28,10 +28,16 @@
       <StubTestSample Include="$(ThirdPartyRootDir)YetiVSI.Tests\GameLaunch\StubTestSample\StubTestSample.vcxproj" />
       <StubTestBinary Include="$(ThirdPartyRootDir)YetiVSI.Tests\GameLaunch\StubTestSample\GGP\Debug\StubTestSample" />
       <StubTestExe Include="$(ThirdPartyRootDir)YetiVSI.Tests\GameLaunch\StubTestSample\GGP\Debug\StubTestSample.exe" />
+      <DebuggerGrpcContents Include="$(ThirdPartyRootDir)DebuggerGrpcServer\bin\x64\$(Configuration)\*.dll" />
+      <DebuggerGrpcContents Include="$(ThirdPartyRootDir)DebuggerGrpcServer\bin\x64\$(Configuration)\DebuggerGrpcServer.exe" />
+      <DebuggerGrpcContents Include="$(ThirdPartyRootDir)DebuggerGrpcServer\bin\x64\$(Configuration)\DebuggerGrpcServer.exe.config" />
+      <DebuggerGrpcContents Include="$(ThirdPartyRootDir)DebuggerGrpcServer\bin\x64\$(Configuration)\libgrpc_csharp_ext.x64.dylib" />
+      <DebuggerGrpcContents Include="$(ThirdPartyRootDir)DebuggerGrpcServer\bin\x64\$(Configuration)\libgrpc_csharp_ext.x64.so" />
     </ItemGroup>
     <Copy SourceFiles="@(StubTestSample)" DestinationFolder="$(OutDir)TestData\StubTestSample" />
     <Copy SourceFiles="@(StubTestBinary)" DestinationFolder="$(OutDir)TestData\StubTestSample\GGP\Debug" />
     <Copy SourceFiles="@(StubTestExe)" DestinationFolder="$(OutDir)TestData\StubTestSample\GGP\Debug" />
+    <Copy SourceFiles="%(DebuggerGrpcContents.FullPath)" DestinationFolder="$(OutDir)DebuggerGrpcServer" />
   </Target>
   <Choose>
     <When Condition="$(IsInternalBuild)">
