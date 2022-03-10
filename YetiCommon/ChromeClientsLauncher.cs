@@ -70,8 +70,6 @@ namespace YetiCommon
                 _chromeLauncher);
         }
 
-        const string _debugModeValue = "2";
-
         readonly Lazy<SdkConfig> _sdkConfig;
         SdkConfig SdkConfig => _sdkConfig.Value;
 

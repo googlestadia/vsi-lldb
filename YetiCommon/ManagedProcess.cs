@@ -112,6 +112,7 @@ namespace YetiCommon
         /// <remarks>
         /// Output and error data handlers are guaranteed to be called before this task completes.
         /// </remarks>
+        /// <returns>The process exit code.</returns>
         Task<int> RunToExitAsync();
 
         /// <summary>
@@ -442,8 +443,6 @@ namespace YetiCommon
                 return;
             }
 
-            OnExit?.Invoke(this, args);
-
             try
             {
                 Trace.WriteLine($"Process {ProcessName} [{Id}] exited with code {ExitCode}");
@@ -454,6 +453,8 @@ namespace YetiCommon
                 Trace.WriteLine($"Failed to read an exit code of the process {ProcessName} " +
                     $"[{Id}] due to `{exception.Message}`, the process is already disposed.");
             }
+
+            OnExit?.Invoke(this, args);
         }
 
         public StreamReader StandardOutput => _process.StandardOutput;

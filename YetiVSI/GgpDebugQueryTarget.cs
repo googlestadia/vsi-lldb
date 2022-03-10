@@ -245,7 +245,8 @@ namespace YetiVSI
                 {
                     // Code path without debugging. Calls an RPC to launch the game and populates
                     // debugLaunchSettings in a way that instructs Visual Studio to launch
-                    // cmd.exe -c "ChromeClientLauncher.exe <base64 encoded params>".
+                    // cmd.exe -c "ChromeClientLauncher.exe <base64 encoded params>" if a Chrome
+                    // window is needed (i.e. unless launching to AnyEndpoint).
 
                     IVsiGameLaunch launch = _gameLauncher.CreateLaunch(launchParams);
                     if (launch == null)

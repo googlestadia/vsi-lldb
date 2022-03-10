@@ -31,7 +31,8 @@ namespace YetiVSI.Profiling
         /// <param name="gameletId">ID of the gamelet that runs the binary</param>
         public OrbitArgs(string gameletExecutablePath, string gameletId)
         {
-            Args = $"--target_process={gameletExecutablePath} --target_instance={gameletId}";
+            Args = $"--target_process={gameletExecutablePath} --target_instance={gameletId} " +
+                "--launched_from_vsi";
         }
     }
 
