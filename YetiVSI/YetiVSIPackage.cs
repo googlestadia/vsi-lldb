@@ -101,6 +101,7 @@ namespace YetiVSI
 
             CoreAttachCommand.Register(this);
             LaunchWithProfilerCommand.Register(taskContext, this, ProfilerType.Orbit);
+            LaunchWithProfilerCommand.Register(taskContext, this, ProfilerType.Dive);
             LLDBShellCommandTarget.Register(taskContext, this);
             DebuggerOptionsCommand.Register(taskContext, this);
 

@@ -96,6 +96,8 @@ namespace YetiVSI
             var backgroundProcessFactory = new BackgroundProcess.Factory();
             var orbitLauncher =
                 ProfilerLauncher<OrbitArgs>.CreateForOrbit(backgroundProcessFactory, fileSystem);
+            var diveLauncher =
+                ProfilerLauncher<DiveArgs>.CreateForDive(backgroundProcessFactory, fileSystem);
             var profilerSshTunnelManager = GetSshTunnelManager(managedProcessFactory);
 
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
@@ -105,7 +107,8 @@ namespace YetiVSI
                                            gameletSelectorFactory, cloudRunner, sdkVersion,
                                            launchCommandFormatter, yetiVsiService, gameLauncher,
                                            taskContext, new ProjectPropertiesMetricsParser(),
-                                           identityClient, orbitLauncher, profilerSshTunnelManager);
+                                           identityClient, orbitLauncher, diveLauncher,
+                                           profilerSshTunnelManager);
         }
 
         public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();

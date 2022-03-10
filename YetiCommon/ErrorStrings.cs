@@ -134,5 +134,10 @@ namespace YetiCommon
             "The Orbit for Stadia profiler is not installed. The Orbit binary was not found " +
             $"at {orbitBinaryPath}. Re-run the Stadia SDK Installer and include the " +
             "\"Orbit for Stadia\" feature.";
+
+        public static string DiveNotInstalled(string diveBinaryPath) =>
+            "The Dive for Stadia profiler is not installed. The Dive binary was not found " +
+            $"at {diveBinaryPath}. Re-run the Stadia SDK Installer and include the " +
+            "\"Dive for Stadia\" feature.";
     }
 }

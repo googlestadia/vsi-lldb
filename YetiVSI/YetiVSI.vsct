@@ -14,6 +14,17 @@
           <ButtonText>Stadia for Visual Studio</ButtonText>
         </Strings>
       </Menu>
+
+      <Menu guid="guidYetiVSIPackageCmdSet" id="yetiProfilerMenuController" priority="0x000" type="MenuController">
+        <Parent guid="guidYetiVSIPackageCmdSet" id="yetiStandardToolbarGroup"/>
+        <CommandFlag>IconAndText</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
+        <CommandFlag>TextIsAnchorCommand</CommandFlag>
+        <Strings>
+          <ButtonText>Profile Stadia project</ButtonText>
+          <CommandName>Launch Stadia project with a profiler attached</CommandName>
+        </Strings>
+      </Menu>
     </Menus>
 
     <Groups>
@@ -25,6 +36,9 @@
       </Group>
       <Group guid="guidYetiVSIPackageCmdSet" id="yetiStandardToolbarGroup" priority="0x900">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_TOOL_STANDARD"/>
+      </Group>
+      <Group guid="guidYetiVSIPackageCmdSet" id="yetiProfilerMenuControllerGroup" priority="0x000">
+        <Parent guid="guidYetiVSIPackageCmdSet" id="yetiProfilerMenuController" />
       </Group>
     </Groups>
 
@@ -51,13 +65,33 @@
         </Strings>
       </Button>
 
-      <Button guid="guidYetiVSIPackageCmdSet" id="cmdidLaunchWithOrbitCommandToolbar" priority="0x0100" type="Button">
+      <Button guid="guidYetiVSIPackageCmdSet" id="cmdidLaunchWithOrbitCommandToolbar" priority="0x0000" type="Button">
         <CommandFlag>IconAndText</CommandFlag>
-        <Parent guid="guidYetiVSIPackageCmdSet" id="yetiStandardToolbarGroup" />
+        <Parent guid="guidYetiVSIPackageCmdSet" id="yetiProfilerMenuControllerGroup" />
         <Icon guid="guidYetiIcons" id="yetiIcon1" />
         <Strings>
           <ButtonText>Orbit</ButtonText>
           <ToolTipText>Launch with Orbit CPU Profiler</ToolTipText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidYetiVSIPackageCmdSet" id="cmdidLaunchWithDiveCommandMenu" priority="0x0100" type="Button">
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Parent guid="guidYetiVSIPackageCmdSet" id="yetiDebugMenuGroup" />
+        <Icon guid="guidYetiIcons" id="yetiIcon1" />
+        <Strings>
+          <ButtonText>Launch with Di&amp;ve GPU Profiler</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidYetiVSIPackageCmdSet" id="cmdidLaunchWithDiveCommandToolbar" priority="0x0100" type="Button">
+        <CommandFlag>IconAndText</CommandFlag>
+        <Parent guid="guidYetiVSIPackageCmdSet" id="yetiProfilerMenuControllerGroup" />
+        <Icon guid="guidYetiIcons" id="yetiIcon1" />
+        <Strings>
+          <ButtonText>Dive</ButtonText>
+          <ToolTipText>Launch with Dive GPU Profiler</ToolTipText>
         </Strings>
       </Button>
 
@@ -100,12 +134,16 @@
       <IDSymbol name="yetiTopLevelMenuGroup" value="0x1021"/>
       <IDSymbol name="yetiTopLevelMenu" value="0x1022"/>
       <IDSymbol name="yetiStandardToolbarGroup" value="0x1023" />
+      <IDSymbol name="yetiProfilerMenuControllerGroup" value="0x1024" />
+      <IDSymbol name="yetiProfilerMenuController" value="0x1025" />
       <IDSymbol name="cmdidCrashDumpAttachCommand" value="256" />
       <IDSymbol name="cmdidLLDBShellExec" value="257" />
       <IDSymbol name="cmdidDebuggerOptionsCommand" value="258" />
       <IDSymbol name="cmdidReportBug" value="259" />
       <IDSymbol name="cmdidLaunchWithOrbitCommandMenu" value="260" />
       <IDSymbol name="cmdidLaunchWithOrbitCommandToolbar" value="261" />
+      <IDSymbol name="cmdidLaunchWithDiveCommandMenu" value="262" />
+      <IDSymbol name="cmdidLaunchWithDiveCommandToolbar" value="263" />
     </GuidSymbol>
     <GuidSymbol name="guidYetiIcons" value="{7ef24189-6258-4cf1-808b-0f513b5a50f4}">
       <IDSymbol name="yetiIcon1" value="1" />

@@ -78,6 +78,7 @@ namespace YetiVSI.Test
         IVsiGameLaunch _gameLaunch;
         IProjectPropertiesMetricsParser _projectPropertiesParser;
         IProfilerLauncher<OrbitArgs> _orbitLauncher;
+        IProfilerLauncher<DiveArgs> _diveLauncher;
         ISshTunnelManager _profilerSshTunnelManager;
 
         [SetUp]
@@ -174,6 +175,7 @@ namespace YetiVSI.Test
                 .Returns(Task.FromResult((VSIProjectProperties) null));
 
             _orbitLauncher = Substitute.For<IProfilerLauncher<OrbitArgs>>();
+            _diveLauncher = Substitute.For<IProfilerLauncher<DiveArgs>>();
             _profilerSshTunnelManager = Substitute.For<ISshTunnelManager>();
 
             _ggpDebugQueryTarget = new GgpDebugQueryTarget(fileSystem, sdkConfigFactory,
@@ -188,6 +190,7 @@ namespace YetiVSI.Test
                                                            _yetiVsiService, _gameLauncher,
                                                            taskContext, _projectPropertiesParser,
                                                            _identityClient, _orbitLauncher,
+                                                           _diveLauncher,
                                                            _profilerSshTunnelManager);
         }
 
@@ -690,6 +693,51 @@ namespace YetiVSI.Test
             var exceptionMsg = "Orbit process failed to launch";
             var e = new ProcessException(exceptionMsg);
             _orbitLauncher.When(x => x.Launch(Arg.Any<OrbitArgs>())).Do(x => { throw e; });
+            SetupReservedGamelet();
+
+            var result = await QueryDebugTargetsAsync(debugLaunchOptions);
+
+            Assert.That(result.Count, Is.EqualTo(0));
+            _dialogUtil.Received().ShowError(e.Message, e);
+        }
+
+        [Test]
+        public async Task LaunchWithDiveSucceedsAsync()
+        {
+            DebugLaunchOptions debugLaunchOptions = DebugLaunchOptions.NoDebug |
+                LaunchWithProfilerCommand.GetLaunchOption(ProfilerType.Dive);
+            _diveLauncher.IsInstalled.Returns(true);
+            SetupReservedGamelet();
+
+            var result = await QueryDebugTargetsAsync(debugLaunchOptions);
+
+            _diveLauncher.Received().Launch(Arg.Any<DiveArgs>());
+            Assert.That(result.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task LaunchWithDiveNotInstalledFailsAsync()
+        {
+            DebugLaunchOptions debugLaunchOptions = DebugLaunchOptions.NoDebug |
+                LaunchWithProfilerCommand.GetLaunchOption(ProfilerType.Dive);
+            _diveLauncher.IsInstalled.Returns(false);
+
+            var result = await QueryDebugTargetsAsync(debugLaunchOptions);
+
+            _dialogUtil.Received()
+                .ShowError(Arg.Is<string>(x => x.Contains("Dive") && x.Contains("not installed")));
+            Assert.That(result.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task LaunchWithDiveBrokenDiveProcessFailsAsync()
+        {
+            DebugLaunchOptions debugLaunchOptions = DebugLaunchOptions.NoDebug |
+                LaunchWithProfilerCommand.GetLaunchOption(ProfilerType.Dive);
+            _diveLauncher.IsInstalled.Returns(true);
+            var exceptionMsg = "Dive process failed to launch";
+            var e = new ProcessException(exceptionMsg);
+            _diveLauncher.When(x => x.Launch(Arg.Any<DiveArgs>())).Do(x => { throw e; });
             SetupReservedGamelet();
 
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);

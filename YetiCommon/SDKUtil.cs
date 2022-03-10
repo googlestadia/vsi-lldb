@@ -112,6 +112,15 @@ namespace YetiCommon
         }
 
         /// <summary>
+        /// Returns a path to the dir that contains Dive.
+        /// </summary>
+        public static string GetDivePath()
+        {
+            var sdkPath = GetSDKPath();
+            return Path.Combine(sdkPath, "tools", "Dive");
+        }
+
+        /// <summary>
         /// Returns a list of all paths within the Yeti SDK that contain target libraries.
         /// </summary>
         public static List<string> GetLibraryPaths()

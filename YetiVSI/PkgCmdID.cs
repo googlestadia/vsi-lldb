@@ -25,5 +25,7 @@ namespace YetiVSI
         public const int cmdidReportBug = 259;
         public const int cmdidLaunchWithOrbitCommandMenu = 260;
         public const int cmdidLaunchWithOrbitCommandToolbar = 261;
+        public const int cmdidLaunchWithDiveCommandMenu = 262;
+        public const int cmdidLaunchWithDiveCommandToolbar = 263;
     };
 }

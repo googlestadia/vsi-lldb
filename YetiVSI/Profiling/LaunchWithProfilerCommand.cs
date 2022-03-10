@@ -28,7 +28,8 @@ namespace YetiVSI.Profiling
 {
     public enum ProfilerType
     {
-        Orbit
+        Orbit,
+        Dive
     }
 
     // A menu command to launch a game and profile it with a profiler.
@@ -99,6 +100,9 @@ namespace YetiVSI.Profiling
                 case ProfilerType.Orbit:
                     return (PkgCmdID.cmdidLaunchWithOrbitCommandMenu,
                         PkgCmdID.cmdidLaunchWithOrbitCommandToolbar);
+                case ProfilerType.Dive:
+                    return (PkgCmdID.cmdidLaunchWithDiveCommandMenu,
+                        PkgCmdID.cmdidLaunchWithDiveCommandToolbar);
             }
 
             throw new NotImplementedException($"Unhandled ProfilerType {profilerType}");
@@ -108,8 +112,15 @@ namespace YetiVSI.Profiling
         {
             switch (profilerType)
             {
+                // These DebugLaunchOptions determine which profiler to use. It's the only
+                // information we can pass into GgpDebugQueryTarget.
                 case ProfilerType.Orbit:
                     return DebugLaunchOptions.Profiling;
+                case ProfilerType.Dive:
+                    // Unfortunately, there's no good way to pass a flag to "launch the other
+                    // profiler", so use DetachOnStop because that has no meaning in combination
+                    // with NoDebug (see Execute() below).
+                    return DebugLaunchOptions.DetachOnStop;
             }
 
             throw new NotImplementedException($"Unhandled ProfilerType {profilerType}");
@@ -165,7 +176,7 @@ namespace YetiVSI.Profiling
             if (res != VSConstants.S_OK)
             {
                 // GgpDebugQueryTarget shows a proper error message if this fails.
-                Trace.WriteLine($"Launch with Orbit command failed: DebugLaunch() return {res}");
+                Trace.WriteLine($"Launch with profiler command failed: DebugLaunch() return {res}");
                 return;
             }
         }

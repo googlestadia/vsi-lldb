@@ -57,6 +57,7 @@ namespace YetiVSI
         readonly IProjectPropertiesMetricsParser _projectPropertiesParser;
         readonly IIdentityClient _identityClient;
         readonly IProfilerLauncher<OrbitArgs> _orbitLauncher;
+        readonly IProfilerLauncher<DiveArgs> _diveLauncher;
         readonly ISshTunnelManager _profilerSshTunnelManager;
 
         // Constructor for tests.
@@ -76,6 +77,7 @@ namespace YetiVSI
                                    IProjectPropertiesMetricsParser projectPropertiesParser,
                                    IIdentityClient identityClient,
                                    IProfilerLauncher<OrbitArgs> orbitLauncher,
+                                   IProfilerLauncher<DiveArgs> diveLauncher,
                                    ISshTunnelManager profilerSshTunnelManager)
         {
             _fileSystem = fileSystem;
@@ -98,6 +100,7 @@ namespace YetiVSI
             _projectPropertiesParser = projectPropertiesParser;
             _identityClient = identityClient;
             _orbitLauncher = orbitLauncher;
+            _diveLauncher = diveLauncher;
             _profilerSshTunnelManager = profilerSshTunnelManager;
         }
 
@@ -125,6 +128,16 @@ namespace YetiVSI
                     return new IDebugLaunchSettings[] { };
                 }
 
+                // Check if Dive is installed.
+                bool launchWithDive = launchOptions.HasFlag(
+                    LaunchWithProfilerCommand.GetLaunchOption(ProfilerType.Dive));
+                if (launchWithDive && !_diveLauncher.IsInstalled)
+                {
+                    _dialogUtil.ShowError(
+                        YetiCommon.ErrorStrings.DiveNotInstalled(_diveLauncher.BinaryPath));
+                    return new IDebugLaunchSettings[] { };
+                }
+
                 _metrics.UseNewDebugSessionId();
                 var actionRecorder = new ActionRecorder(_metrics);
 
@@ -138,7 +151,9 @@ namespace YetiVSI
                     Cmd = gameletCommand,
                     RenderDoc = await project.GetLaunchRenderDocAsync(),
                     Rgp = await project.GetLaunchRgpAsync(),
-                    Dive = await project.GetLaunchDiveAsync(),
+                    // Note that Dive doesn't work without this flag, so enforce it. OTOH, the
+                    // Orbit flag is optional and just turns on enhanced Orbit functionality.
+                    Dive = launchWithDive || await project.GetLaunchDiveAsync(),
                     Orbit = await project.GetLaunchOrbitAsync(),
                     SurfaceEnforcementMode = await project.GetSurfaceEnforcementAsync(),
                     VulkanDriverVariant = await project.GetVulkanDriverVariantAsync(),
@@ -297,6 +312,11 @@ namespace YetiVSI
                         string gameletExecutablePath =
                             YetiConstants.RemoteGamePath + gameletExecutableRelPath;
                         _orbitLauncher.Launch(new OrbitArgs(gameletExecutablePath, gamelet.Id));
+                    }
+
+                    if (launchWithDive)
+                    {
+                        _diveLauncher.Launch(new DiveArgs());
                     }
                 }
                 else

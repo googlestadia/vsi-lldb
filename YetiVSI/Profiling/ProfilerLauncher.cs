@@ -36,6 +36,11 @@ namespace YetiVSI.Profiling
         }
     }
 
+    public class DiveArgs : IProfilerArgs
+    {
+        public string Args => string.Empty;
+    }
+
     public interface IProfilerLauncher<in TArgs> where TArgs : IProfilerArgs
     {
         /// <summary>
@@ -62,6 +67,12 @@ namespace YetiVSI.Profiling
             BackgroundProcess.Factory backgroundProcessFactory, IFileSystem fileSystem) =>
             new ProfilerLauncher<OrbitArgs>(SDKUtil.GetOrbitPath(), "Orbit.exe",
                                             backgroundProcessFactory, fileSystem);
+
+        // Creates an Dive launcher.
+        public static ProfilerLauncher<DiveArgs> CreateForDive(
+            BackgroundProcess.Factory backgroundProcessFactory, IFileSystem fileSystem) =>
+            new ProfilerLauncher<DiveArgs>(SDKUtil.GetDivePath(), "dive.exe",
+                                           backgroundProcessFactory, fileSystem);
 
         public string BinaryPath { get; }
         public bool IsInstalled => _fileSystem.File.Exists(BinaryPath);

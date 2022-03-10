@@ -26,6 +26,7 @@ namespace YetiVSI.Test.Profiling
         BackgroundProcess.Factory _processFactory;
         MockFileSystem _mockFileSystem;
         IProfilerLauncher<OrbitArgs> _orbitLauncher;
+        IProfilerLauncher<DiveArgs> _diveLauncher;
 
         [SetUp]
         public void SetUp()
@@ -34,6 +35,8 @@ namespace YetiVSI.Test.Profiling
             _mockFileSystem = new MockFileSystem();
             _orbitLauncher =
                 ProfilerLauncher<OrbitArgs>.CreateForOrbit(_processFactory, _mockFileSystem);
+            _diveLauncher =
+                ProfilerLauncher<DiveArgs>.CreateForDive(_processFactory, _mockFileSystem);
         }
 
         [Test]
@@ -55,11 +58,30 @@ namespace YetiVSI.Test.Profiling
         [Test]
         public void IsOrbitInstalled()
         {
-            Assert.That(_orbitLauncher.BinaryPath,
-                        Is.EqualTo(Path.Combine(SDKUtil.GetOrbitPath(), "Orbit.exe")));
+            string binPath = Path.Combine(SDKUtil.GetOrbitPath(), "Orbit.exe");
             Assert.That(_orbitLauncher.IsInstalled, Is.False);
-            _mockFileSystem.AddFile(_orbitLauncher.BinaryPath, null);
+            _mockFileSystem.AddFile(binPath, null);
             Assert.That(_orbitLauncher.IsInstalled, Is.True);
+        }
+
+        [Test]
+        public void LaunchDive()
+        {
+            var diveProcess = Substitute.For<IBackgroundProcess>();
+            _processFactory.Create(_diveLauncher.BinaryPath, "", SDKUtil.GetDivePath())
+                .Returns(diveProcess);
+
+            _diveLauncher.Launch(new DiveArgs());
+            diveProcess.Received().Start();
+        }
+
+        [Test]
+        public void IsDiveInstalled()
+        {
+            string binPath = Path.Combine(SDKUtil.GetDivePath(), "dive.exe");
+            Assert.That(_diveLauncher.IsInstalled, Is.False);
+            _mockFileSystem.AddFile(binPath, null);
+            Assert.That(_diveLauncher.IsInstalled, Is.True);
         }
     }
 }
