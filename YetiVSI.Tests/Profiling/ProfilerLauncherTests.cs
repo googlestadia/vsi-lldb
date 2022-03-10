@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using NSubstitute;
 using NUnit.Framework;
@@ -20,22 +21,23 @@ using YetiVSI.Profiling;
 
 namespace YetiVSI.Test.Profiling
 {
-    class OrbitLauncherTests
+    class ProfilerLauncherTests
     {
         BackgroundProcess.Factory _processFactory;
         MockFileSystem _mockFileSystem;
-        OrbitLauncher _orbitLauncher;
+        IProfilerLauncher<OrbitArgs> _orbitLauncher;
 
         [SetUp]
         public void SetUp()
         {
             _processFactory = Substitute.For<BackgroundProcess.Factory>();
             _mockFileSystem = new MockFileSystem();
-            _orbitLauncher = new OrbitLauncher(_processFactory, _mockFileSystem);
+            _orbitLauncher =
+                ProfilerLauncher<OrbitArgs>.CreateForOrbit(_processFactory, _mockFileSystem);
         }
 
         [Test]
-        public void Launch()
+        public void LaunchOrbit()
         {
             string gameletExecutablePath = "/srv/game/assets/larry_vs_sergey";
             string gameletId = "gamelet_id";
@@ -43,20 +45,21 @@ namespace YetiVSI.Test.Profiling
             var orbitProcess = Substitute.For<IBackgroundProcess>();
             var argMatcher =
                 Arg.Is<string>(x => x.Contains(gameletExecutablePath) && x.Contains(gameletId));
-            _processFactory
-                .Create(_orbitLauncher.OrbitBinaryPath, argMatcher, SDKUtil.GetOrbitPath())
+            _processFactory.Create(_orbitLauncher.BinaryPath, argMatcher, SDKUtil.GetOrbitPath())
                 .Returns(orbitProcess);
 
-            _orbitLauncher.Launch(gameletExecutablePath, gameletId);
+            _orbitLauncher.Launch(new OrbitArgs(gameletExecutablePath, gameletId));
             orbitProcess.Received().Start();
         }
 
         [Test]
         public void IsOrbitInstalled()
         {
-            Assert.That(_orbitLauncher.IsOrbitInstalled(), Is.False);
-            _mockFileSystem.AddFile(_orbitLauncher.OrbitBinaryPath, null);
-            Assert.That(_orbitLauncher.IsOrbitInstalled(), Is.True);
+            Assert.That(_orbitLauncher.BinaryPath,
+                        Is.EqualTo(Path.Combine(SDKUtil.GetOrbitPath(), "Orbit.exe")));
+            Assert.That(_orbitLauncher.IsInstalled, Is.False);
+            _mockFileSystem.AddFile(_orbitLauncher.BinaryPath, null);
+            Assert.That(_orbitLauncher.IsInstalled, Is.True);
         }
     }
 }

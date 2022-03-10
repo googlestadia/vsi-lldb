@@ -216,7 +216,7 @@
     <Compile Include="GameletMountChecker.cs" />
     <Compile Include="Metrics\ProjectPropertiesMetricsParser.cs" />
     <Compile Include="Profiling\LaunchWithProfilerCommand.cs" />
-    <Compile Include="Profiling\OrbitLauncher.cs" />
+    <Compile Include="Profiling\ProfilerLauncher.cs" />
     <Compile Include="ProjectInstanceSelectionWindow.xaml.cs">
       <DependentUpon>ProjectInstanceSelectionWindow.xaml</DependentUpon>
     </Compile>

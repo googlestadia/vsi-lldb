@@ -74,12 +74,11 @@ namespace YetiVSI
             var metrics = _serviceManager.GetGlobalService(typeof(SMetrics)) as IMetrics;
             var sdkVersion = GetSdkVersion();
             var sshManager = GetSshManager(managedProcessFactory, cloudRunner);
-            var launchParamsConverter =
-                new LaunchGameParamsConverter(new QueryParametersParser());
+            var launchParamsConverter = new LaunchGameParamsConverter(new QueryParametersParser());
             var debugSessionMetrics = new DebugSessionMetrics(metrics);
             var actionRecorder = new ActionRecorder(debugSessionMetrics);
             var gameLaunchManager = new GameLaunchBeHelper(gameletClientFactory.Create(cloudRunner),
-                                                          launchParamsConverter);
+                                                           launchParamsConverter);
             var vsiLaunchFactory = new VsiGameLaunchFactory(
                 gameletClientFactory.Create(cloudRunner), GetCancelableTaskFactory(),
                 gameLaunchManager, actionRecorder, _dialogUtil);
@@ -94,7 +93,8 @@ namespace YetiVSI
             var launchCommandFormatter = new ChromeClientLaunchCommandFormatter();
             var identityClient = new IdentityClient(cloudRunner);
             var backgroundProcessFactory = new BackgroundProcess.Factory();
-            var orbitLauncher = new OrbitLauncher(backgroundProcessFactory, fileSystem);
+            var orbitLauncher =
+                ProfilerLauncher<OrbitArgs>.CreateForOrbit(backgroundProcessFactory, fileSystem);
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,

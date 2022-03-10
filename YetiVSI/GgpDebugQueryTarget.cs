@@ -56,7 +56,7 @@ namespace YetiVSI
         readonly JoinableTaskContext _taskContext;
         readonly IProjectPropertiesMetricsParser _projectPropertiesParser;
         readonly IIdentityClient _identityClient;
-        readonly IOrbitLauncher _orbitLauncher;
+        readonly IProfilerLauncher<OrbitArgs> _orbitLauncher;
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
@@ -73,7 +73,8 @@ namespace YetiVSI
                                    IYetiVSIService yetiVsiService, IGameLauncher gameLauncher,
                                    JoinableTaskContext taskContext,
                                    IProjectPropertiesMetricsParser projectPropertiesParser,
-                                   IIdentityClient identityClient, IOrbitLauncher orbitLauncher)
+                                   IIdentityClient identityClient,
+                                   IProfilerLauncher<OrbitArgs> orbitLauncher)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -114,10 +115,10 @@ namespace YetiVSI
                 // Check if Orbit is installed.
                 bool launchWithOrbit = launchOptions.HasFlag(
                     LaunchWithProfilerCommand.GetLaunchOption(ProfilerType.Orbit));
-                if (launchWithOrbit && !_orbitLauncher.IsOrbitInstalled())
+                if (launchWithOrbit && !_orbitLauncher.IsInstalled)
                 {
                     _dialogUtil.ShowError(
-                        YetiCommon.ErrorStrings.OrbitNotInstalled(_orbitLauncher.OrbitBinaryPath));
+                        YetiCommon.ErrorStrings.OrbitNotInstalled(_orbitLauncher.BinaryPath));
                     return new IDebugLaunchSettings[] { };
                 }
 
@@ -283,7 +284,7 @@ namespace YetiVSI
                         // Launch Orbit.
                         string gameletExecutablePath =
                             YetiConstants.RemoteGamePath + gameletExecutableRelPath;
-                        _orbitLauncher.Launch(gameletExecutablePath, gamelet.Id);
+                        _orbitLauncher.Launch(new OrbitArgs(gameletExecutablePath, gamelet.Id));
                     }
                 }
                 else

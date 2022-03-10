@@ -77,7 +77,7 @@ namespace YetiVSI.Test
         IGameLauncher _gameLauncher;
         IVsiGameLaunch _gameLaunch;
         IProjectPropertiesMetricsParser _projectPropertiesParser;
-        IOrbitLauncher _orbitLauncher;
+        IProfilerLauncher<OrbitArgs> _orbitLauncher;
 
         [SetUp]
         public void SetUp()
@@ -110,7 +110,6 @@ namespace YetiVSI.Test
 
             _identityClient = Substitute.For<IIdentityClient>();
 
-            var remoteCommand = Substitute.For<IRemoteCommand>();
             _remoteDeploy = Substitute.For<IRemoteDeploy>();
             _dialogUtil = Substitute.For<IDialogUtil>();
 
@@ -125,7 +124,9 @@ namespace YetiVSI.Test
             _applicationClient = Substitute.For<IApplicationClient>();
             var application = new Application
             {
-                Id = _testApplicationId, Name = _testApplicationName, PlatformName = _platformName
+                Id = _testApplicationId,
+                Name = _testApplicationName,
+                PlatformName = _platformName
             };
             _applicationClient.LoadByNameOrIdAsync(_testApplicationName)
                 .Returns(Task.FromResult(application));
@@ -171,7 +172,7 @@ namespace YetiVSI.Test
             _projectPropertiesParser.GetStadiaProjectPropertiesAsync(Arg.Any<IAsyncProject>())
                 .Returns(Task.FromResult((VSIProjectProperties) null));
 
-            _orbitLauncher = Substitute.For<IOrbitLauncher>();
+            _orbitLauncher = Substitute.For<IProfilerLauncher<OrbitArgs>>();
 
             _ggpDebugQueryTarget = new GgpDebugQueryTarget(fileSystem, sdkConfigFactory,
                                                            gameletClientFactory,
@@ -649,23 +650,26 @@ namespace YetiVSI.Test
         [Test]
         public async Task LaunchWithOrbitSucceedsAsync()
         {
-            DebugLaunchOptions debugLaunchOptions =
-                DebugLaunchOptions.NoDebug | DebugLaunchOptions.Profiling;
-            _orbitLauncher.IsOrbitInstalled().Returns(true);
+            DebugLaunchOptions debugLaunchOptions = DebugLaunchOptions.NoDebug |
+                LaunchWithProfilerCommand.GetLaunchOption(ProfilerType.Orbit);
+            _orbitLauncher.IsInstalled.Returns(true);
             SetupReservedGamelet();
 
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);
 
-            _orbitLauncher.Received().Launch(YetiConstants.RemoteGamePath + "path", _testGameletId);
+            _orbitLauncher.Received()
+                .Launch(Arg.Is<OrbitArgs>(
+                            x => x.Args.Contains(YetiConstants.RemoteGamePath + "path") &&
+                                x.Args.Contains(_testGameletId)));
             Assert.That(result.Count, Is.EqualTo(1));
         }
 
         [Test]
         public async Task LaunchWithOrbitNotInstalledFailsAsync()
         {
-            DebugLaunchOptions debugLaunchOptions =
-                DebugLaunchOptions.NoDebug | DebugLaunchOptions.Profiling;
-            _orbitLauncher.IsOrbitInstalled().Returns(false);
+            DebugLaunchOptions debugLaunchOptions = DebugLaunchOptions.NoDebug |
+                LaunchWithProfilerCommand.GetLaunchOption(ProfilerType.Orbit);
+            _orbitLauncher.IsInstalled.Returns(false);
 
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);
 
@@ -677,14 +681,12 @@ namespace YetiVSI.Test
         [Test]
         public async Task LaunchWithOrbitBrokenOrbitProcessFailsAsync()
         {
-            DebugLaunchOptions debugLaunchOptions =
-                DebugLaunchOptions.NoDebug | DebugLaunchOptions.Profiling;
-            _orbitLauncher.IsOrbitInstalled().Returns(true);
+            DebugLaunchOptions debugLaunchOptions = DebugLaunchOptions.NoDebug |
+                LaunchWithProfilerCommand.GetLaunchOption(ProfilerType.Orbit);
+            _orbitLauncher.IsInstalled.Returns(true);
             var exceptionMsg = "Orbit process failed to launch";
             var e = new ProcessException(exceptionMsg);
-            _orbitLauncher
-                .When(x => x.Launch(YetiConstants.RemoteGamePath + "path", _testGameletId))
-                .Do(x => { throw e; });
+            _orbitLauncher.When(x => x.Launch(Arg.Any<OrbitArgs>())).Do(x => { throw e; });
             SetupReservedGamelet();
 
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);
