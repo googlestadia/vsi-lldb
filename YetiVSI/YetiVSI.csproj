@@ -466,9 +466,9 @@
           <Name>CloudGrpc</Name>
           <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
         </ProjectReference>
-        <ProjectReference Include="$(SolutionDir)YetiVSI.Internal\YetiVSI.Internal.csproj">
-          <Project>{40e5c6e2-b7cd-412a-8348-e5636cc794d7}</Project>
-          <Name>YetiVSI.Internal</Name>
+        <ProjectReference Include="$(SolutionDir)Metrics.Internal\Metrics.Internal.csproj">
+          <Project>{015547F7-F521-4810-8546-0FF1D3FD19B1}</Project>
+          <Name>Metrics.Internal</Name>
         </ProjectReference>
         <ProjectReference Include="$(SolutionDir)ProcessManagerCommon\ProcessManagerCommon.csproj">
           <Project>{e32c7e7e-7f57-4eea-90a8-2e99e9ebd697}</Project>
@@ -485,9 +485,9 @@
         <Reference Include="GgpGrpc, PublicKeyToken=b60cba24c9ed26a2">
           <HintPath>$(GGP_SDK_PATH)\dev\bin\GgpGrpc.dll</HintPath>
         </Reference>
-        <ProjectReference Include="..\YetiVSI.External\YetiVSI.External.csproj">
-          <Project>{8b6b1019-f3c1-41dd-b8ee-e397a92a9a7d}</Project>
-          <Name>YetiVSI.External</Name>
+        <ProjectReference Include="..\Metrics.External\Metrics.External.csproj">
+          <Project>{10FE3E2A-F97E-480D-8AF9-E7719BB26F49}</Project>
+          <Name>Metrics.External</Name>
         </ProjectReference>
       </ItemGroup>
     </Otherwise>
@@ -580,9 +580,9 @@
       <Project>{1731F5D3-FDF7-4D5B-99FE-910E0924173A}</Project>
       <Name>YetiVSI.ProjectSystem.Abstractions</Name>
     </ProjectReference>
-    <ProjectReference Include="..\YetiVSI.Shared\YetiVSI.Shared.csproj">
-      <Project>{5705c75b-5c0e-42e4-8414-fb9cf483dff7}</Project>
-      <Name>YetiVSI.Shared</Name>
+    <ProjectReference Include="..\Metrics.Shared\Metrics.Shared.csproj">
+      <Project>{BC01764A-F51E-4972-B17C-FE42FD961026}</Project>
+      <Name>Metrics.Shared</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

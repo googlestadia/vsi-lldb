@@ -31,7 +31,7 @@
     <ProjectReference Include="..\VSFake\VSFake.csproj" />
     <ProjectReference Include="..\YetiCommon\YetiCommon.csproj" />
     <ProjectReference Include="..\YetiVSI.ProjectSystem.Abstractions\YetiVSI.ProjectSystem.Abstractions.csproj" />
-    <ProjectReference Include="..\YetiVSI.Shared\YetiVSI.Shared.csproj" />
+    <ProjectReference Include="..\Metrics.Shared\Metrics.Shared.csproj" />
     <ProjectReference Include="..\YetiVSI\YetiVSI.csproj" />
   </ItemGroup>
   <ItemGroup>

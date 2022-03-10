@@ -56,11 +56,11 @@
     <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpcClient\DebuggerGrpcClient.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)LldbApi\LldbApi.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpc\DebuggerGrpc.csproj" />
-    <ProjectReference Include="..\SymbolStores\SymbolStores.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)SymbolStores\SymbolStores.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)TestsCommon\TestsCommon.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon.Tests\YetiCommon.Tests.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon\YetiCommon.csproj" />
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.Shared\YetiVSI.Shared.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)Metrics.Shared\Metrics.Shared.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)YetiVSITestsCommon\YetiVSITestsCommon.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI\YetiVSI.csproj" />
   </ItemGroup>
