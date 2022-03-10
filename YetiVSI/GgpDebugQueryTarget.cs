@@ -57,6 +57,7 @@ namespace YetiVSI
         readonly IProjectPropertiesMetricsParser _projectPropertiesParser;
         readonly IIdentityClient _identityClient;
         readonly IProfilerLauncher<OrbitArgs> _orbitLauncher;
+        readonly ISshTunnelManager _profilerSshTunnelManager;
 
         // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
@@ -74,7 +75,8 @@ namespace YetiVSI
                                    JoinableTaskContext taskContext,
                                    IProjectPropertiesMetricsParser projectPropertiesParser,
                                    IIdentityClient identityClient,
-                                   IProfilerLauncher<OrbitArgs> orbitLauncher)
+                                   IProfilerLauncher<OrbitArgs> orbitLauncher,
+                                   ISshTunnelManager profilerSshTunnelManager)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -96,6 +98,7 @@ namespace YetiVSI
             _projectPropertiesParser = projectPropertiesParser;
             _identityClient = identityClient;
             _orbitLauncher = orbitLauncher;
+            _profilerSshTunnelManager = profilerSshTunnelManager;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -199,6 +202,7 @@ namespace YetiVSI
                 debugLaunchSettings.LaunchOperation = DebugLaunchOperation.CreateProcess;
                 debugLaunchSettings.CurrentDirectory = await project.GetAbsoluteRootPathAsync();
 
+                var sshTarget = new SshTarget(gamelet);
                 if (launchParams.Orbit)
                 {
                     IAction deployOrbitLayerAction =
@@ -208,7 +212,7 @@ namespace YetiVSI
                                 async task =>
                                 {
                                     await _remoteDeploy.DeployOrbitVulkanLayerAsync(
-                                        project, new SshTarget(gamelet), task);
+                                        project, sshTarget, task);
                                 }).RunAndRecord(deployOrbitLayerAction);
 
                     if (!isLayerDeployed)
@@ -225,7 +229,7 @@ namespace YetiVSI
                                                  TestBenchmarkScope.Recorder))
                         {
                             await _remoteDeploy.DeployGameExecutableAsync(
-                                project, new SshTarget(gamelet), task, action);
+                                project, sshTarget, task, action);
                         }
 
                         task.Progress.Report(TaskMessages.CustomDeployCommand);
@@ -241,6 +245,11 @@ namespace YetiVSI
                     return new IDebugLaunchSettings[] { };
                 }
 
+                // Launch SSH tunnels for the profilers, if any.
+                _profilerSshTunnelManager.StartTunnelProcesses(sshTarget,
+                                                               launchParams.Rgp, launchParams.Dive,
+                                                               launchParams.RenderDoc);
+
                 if (launchOptions.HasFlag(DebugLaunchOptions.NoDebug))
                 {
                     // Code path without debugging. Calls an RPC to launch the game and populates
@@ -255,9 +264,11 @@ namespace YetiVSI
                         return new IDebugLaunchSettings[] { };
                     }
 
+                    _profilerSshTunnelManager.MonitorGameLifetime(sshTarget, launch);
+
                     if (launchParams.Endpoint == StadiaEndpoint.AnyEndpoint)
                     {
-                        // We dont need to start the ChromeClientLauncher,
+                        // We don't need to start the ChromeClientLauncher,
                         // as we won't open a Chrome window.
                         debugLaunchSettings.Arguments = "/c exit";
                         await _taskContext.Factory.SwitchToMainThreadAsync();

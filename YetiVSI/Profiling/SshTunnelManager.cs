@@ -21,8 +21,12 @@ using YetiVSI.GameLaunch;
 
 namespace YetiVSI.Profiling
 {
-    // Manages SSH tunnels for RenderDoc, RGP and Dive.
-    // The tunnels are kept alive as long as the game is alive.
+    /// <summary>
+    /// Manages SSH tunnels for RenderDoc, RGP and Dive.
+    /// The tunnels are kept alive as long as the game is alive.
+    /// All instances of the main implementation (SshTunnelManager) share the
+    /// same state for SSH tunnels.
+    /// </summary>
     public interface ISshTunnelManager
     {
         /// <summary>
@@ -48,16 +52,13 @@ namespace YetiVSI.Profiling
 
     public class SshTunnelManager : ISshTunnelManager
     {
-        readonly ManagedProcess.Factory _managedProcessFactory;
-        readonly object _locker = new object();
-
         /// <summary>
         /// SshTunnelManager manages separate tunnels per gamelet instance. This class keeps track
         /// of that.
         /// </summary>
         class Instance
         {
-            public List<SshTunnelProcess> Tunnels = new List<SshTunnelProcess>();
+            public readonly List<SshTunnelProcess> Tunnels = new List<SshTunnelProcess>();
             public GameLifetimeWatcher LifetimeWatcher;
             public System.Timers.Timer LaunchTimer;
 
@@ -94,7 +95,10 @@ namespace YetiVSI.Profiling
             }
         }
 
-        Dictionary<string, Instance> _ipToInstances = new Dictionary<string, Instance>();
+        // Note: _ipToInstances is static, so that all SshTunnelManagers share a common state.
+        static readonly Dictionary<string, Instance> _ipToInstances =
+            new Dictionary<string, Instance>();
+
         static TimeSpan _gameStartupTimeout = TimeSpan.FromSeconds(60);
         static TimeSpan _gameLaunchTimeout = TimeSpan.FromSeconds(20);
 
@@ -115,6 +119,8 @@ namespace YetiVSI.Profiling
         public event ShutdownEventHandler ShutdownForTesting;
         public event EventHandler LaunchTimerTriggeredForTesting;
 
+        ManagedProcess.Factory _managedProcessFactory;
+
         public SshTunnelManager(ManagedProcess.Factory managedProcessFactory)
         {
             _managedProcessFactory = managedProcessFactory;
@@ -124,7 +130,7 @@ namespace YetiVSI.Profiling
                                          bool renderDocEnabled)
         {
             GameLifetimeWatcher stoppedLifetimeWatcher = null;
-            lock (_locker)
+            lock (_ipToInstances)
             {
                 string key = Key(target);
                 if (!_ipToInstances.TryGetValue(key, out Instance inst))
@@ -185,7 +191,7 @@ namespace YetiVSI.Profiling
 
         public void MonitorGameLifetime(SshTarget target, IVsiGameLaunch launch)
         {
-            lock (_locker)
+            lock (_ipToInstances)
             {
                 if (!_ipToInstances.TryGetValue(Key(target), out Instance inst))
                 {
@@ -224,7 +230,7 @@ namespace YetiVSI.Profiling
         /// </summary>
         void OnLaunchTimeout(object sender, SshTarget target)
         {
-            lock (_locker)
+            lock (_ipToInstances)
             {
                 string key = Key(target);
                 if (!_ipToInstances.TryGetValue(key, out Instance inst))
@@ -244,7 +250,7 @@ namespace YetiVSI.Profiling
                 Debug.Assert(inst.LifetimeWatcher == null);
 
                 Trace.WriteLine($"Launch was not available after {_gameLaunchTimeout}. " +
-                                    "Stopping  SSH tunnels for profilers.");
+                                "Stopping  SSH tunnels for profilers.");
 
                 inst.StopTunnels();
                 inst.StopLaunchTimer();
@@ -266,7 +272,7 @@ namespace YetiVSI.Profiling
         /// <param name="errorMsg">Error message in case of failure, null if success.</param>
         void OnShutdown(GameLifetimeWatcher sender, SshTarget target, bool success, string errorMsg)
         {
-            lock (_locker)
+            lock (_ipToInstances)
             {
                 string key = Key(target);
                 if (!_ipToInstances.TryGetValue(key, out Instance inst))

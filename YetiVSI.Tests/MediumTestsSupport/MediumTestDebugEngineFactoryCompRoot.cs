@@ -22,6 +22,7 @@ using YetiCommon;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Exit;
 using YetiVSI.DebugEngine.NatvisEngine;
+using YetiVSI.Profiling;
 using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Test.TestSupport.DebugEngine.NatvisEngine;
 using YetiVSI.Util;
@@ -39,28 +40,18 @@ namespace YetiVSI.Test.MediumTestsSupport
     public class MediumTestDebugEngineFactoryCompRoot : DebugEngineFactoryCompRoot
     {
         readonly JoinableTaskContext _taskContext;
-
         ServiceManager _serviceManager;
-
         IGameletClientFactory _gameletClientFactory;
-
         NLogSpy _nLogSpy;
-
         NatvisDiagnosticLogger _natvisDiagnosticLogger;
-
         IVariableNameTransformer _variableNameTransformer;
-
         IFileSystem _fileSystem;
-
         YetiVSIService _vsiService;
-
         IChromeLauncher _chromeLauncher;
-
         CancelableTask.Factory _cancelableTaskFactory;
-
         IWindowsRegistry _windowsRegistry;
-
         IDialogUtil _dialogUtil;
+        ISshTunnelManager _profilerSshTunnelManager;
 
         public MediumTestDebugEngineFactoryCompRoot(JoinableTaskContext taskContext)
         {
@@ -220,6 +211,17 @@ namespace YetiVSI.Test.MediumTestsSupport
             }
 
             return _gameletClientFactory;
+        }
+
+        public override ISshTunnelManager GetProfilerSshTunnelManager(
+            ManagedProcess.Factory processFactory)
+        {
+            if (_profilerSshTunnelManager == null)
+            {
+                _profilerSshTunnelManager = Substitute.For<ISshTunnelManager>();
+            }
+
+            return _profilerSshTunnelManager;
         }
     }
 }

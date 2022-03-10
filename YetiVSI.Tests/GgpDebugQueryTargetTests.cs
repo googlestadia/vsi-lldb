@@ -78,6 +78,7 @@ namespace YetiVSI.Test
         IVsiGameLaunch _gameLaunch;
         IProjectPropertiesMetricsParser _projectPropertiesParser;
         IProfilerLauncher<OrbitArgs> _orbitLauncher;
+        ISshTunnelManager _profilerSshTunnelManager;
 
         [SetUp]
         public void SetUp()
@@ -173,6 +174,7 @@ namespace YetiVSI.Test
                 .Returns(Task.FromResult((VSIProjectProperties) null));
 
             _orbitLauncher = Substitute.For<IProfilerLauncher<OrbitArgs>>();
+            _profilerSshTunnelManager = Substitute.For<ISshTunnelManager>();
 
             _ggpDebugQueryTarget = new GgpDebugQueryTarget(fileSystem, sdkConfigFactory,
                                                            gameletClientFactory,
@@ -185,7 +187,8 @@ namespace YetiVSI.Test
                                                            _sdkVersion, _launchCommandFormatter,
                                                            _yetiVsiService, _gameLauncher,
                                                            taskContext, _projectPropertiesParser,
-                                                           _identityClient, _orbitLauncher);
+                                                           _identityClient, _orbitLauncher,
+                                                           _profilerSshTunnelManager);
         }
 
         [Test]

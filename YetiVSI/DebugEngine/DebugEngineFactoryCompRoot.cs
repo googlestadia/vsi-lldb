@@ -50,6 +50,7 @@ using YetiVSI.DebuggerOptions;
 using YetiVSI.GameLaunch;
 using YetiVSI.LLDBShell;
 using YetiVSI.Metrics;
+using YetiVSI.Profiling;
 using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Util;
 using static YetiVSI.DebugEngine.DebugEngine;
@@ -62,66 +63,38 @@ namespace YetiVSI.DebugEngine
         const int _metricsEventsBatchIntervalMs = 3000;
 
         YetiVSIService _vsiService;
-
         ISymbolSettingsProvider _symbolSettingsProvider;
-
         ITimeSource _timeSource;
-
         IFileSystem _fileSystem;
-
         IWindowsRegistry _windowsRegistry;
-
         NatvisLoader _natvisLoader;
-
         NatvisExpander _natvisExpander;
-
         NatvisDiagnosticLogger _natvisLogger;
         NatvisVisualizerScanner _natvisVisualizerScanner;
         NatvisExpressionEvaluator _natvisExpressionEvaluator;
-
         INatvisFileSource _natvisFileSource;
-
         TaskExecutor _taskExecutor;
-
         JoinableTaskContext _joinableTaskContext;
-
         DebugSessionMetrics _debugSessionMetrics;
-
         DebugEventRecorder _debugEventRecorder;
-
         ExpressionEvaluationRecorder _expressionEvaluationRecorder;
-
         IExceptionRecorder _exceptionRecorder;
-
         IDecorator _factoryDecorator;
-
         IVariableInformationFactory _variableInformationFactory;
-
         VarInfoBuilder _varInfoBuilder;
-
         LLDBVariableInformationFactory _lldbVarInfoFactory;
-
         IVariableNameTransformer _variableNameTransformer;
-
         CancelableTask.Factory _cancelableTaskFactory;
-
         ISolutionExplorer _solutionExplorer;
-
         IDialogUtil _dialogUtil;
-
         NatvisLoggerOutputWindowListener _natvisLogListener;
-
         ChromeTracingLogger _chromeTracingLogger;
-
         NLog.ILogger _callSequenceLogger;
-
         JsonUtil _jsonUtil;
-
         SdkConfig.Factory _sdkConfigFactory;
-
         CloudRunner _cloudRunner;
-
         IChromeLauncher _chromeLauncher;
+        ISshTunnelManager _profilerSshTunnelManager;
 
         public class DebugEngineCommands : IDebugEngineCommands
         {
@@ -157,9 +130,9 @@ namespace YetiVSI.DebugEngine
                 if (_natvisExpander == null || !_allowNatvisReload)
                 {
                     // User facing string (shown in the Watch window).
-                    resultDescription =
-                        _natvisExpander == null
-                        ? "No Natvis engine exists." : "Natvis is disabled.";
+                    resultDescription = _natvisExpander == null
+                        ? "No Natvis engine exists."
+                        : "Natvis is disabled.";
 
                     return false;
                 }
@@ -382,7 +355,8 @@ namespace YetiVSI.DebugEngine
                 debugEngineCommands,
                 GetDebugEventCallbackDecorator(GetVsiService().DebuggerOptions),
                 GetSymbolSettingsProvider(), deployLldbServer, gameLauncher,
-                GetDebugEventRecorder(), GetExpressionEvaluationRecorder());
+                GetDebugEventRecorder(), GetExpressionEvaluationRecorder(),
+                GetProfilerSshTunnelManager(processFactory));
             return GetFactoryDecorator().Decorate(factory);
         }
 
@@ -978,6 +952,17 @@ namespace YetiVSI.DebugEngine
             }
 
             return _cloudRunner;
+        }
+
+        public virtual ISshTunnelManager GetProfilerSshTunnelManager(
+            ManagedProcess.Factory processFactory)
+        {
+            if (_profilerSshTunnelManager == null)
+            {
+                _profilerSshTunnelManager = new SshTunnelManager(processFactory);
+            }
+
+            return _profilerSshTunnelManager;
         }
     }
 }

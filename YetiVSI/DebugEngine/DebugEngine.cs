@@ -35,6 +35,7 @@ using YetiVSI.DebuggerOptions;
 using YetiVSI.GameLaunch;
 using YetiVSI.LoadSymbols;
 using YetiVSI.Metrics;
+using YetiVSI.Profiling;
 using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Util;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
@@ -175,6 +176,7 @@ namespace YetiVSI.DebugEngine
             readonly IGameLauncher _gameLauncher;
             readonly DebugEventRecorder _debugEventRecorder;
             readonly ExpressionEvaluationRecorder _expressionEvaluationRecorder;
+            readonly ISshTunnelManager _profilerSshTunnelManager;
 
             public Factory(JoinableTaskContext taskContext, ServiceManager serviceManager,
                            DebugSessionMetrics debugSessionMetrics,
@@ -196,7 +198,8 @@ namespace YetiVSI.DebugEngine
                            DebugEventCallbackTransform debugEventCallbackDecorator,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
                            IGameLauncher gameLauncher, DebugEventRecorder debugEventRecorder,
-                           ExpressionEvaluationRecorder expressionEvaluationRecorder)
+                           ExpressionEvaluationRecorder expressionEvaluationRecorder,
+                           ISshTunnelManager profilerSshTunnelManager)
             {
                 _taskContext = taskContext;
                 _serviceManager = serviceManager;
@@ -227,6 +230,7 @@ namespace YetiVSI.DebugEngine
                 _gameLauncher = gameLauncher;
                 _debugEventRecorder = debugEventRecorder;
                 _expressionEvaluationRecorder = expressionEvaluationRecorder;
+                _profilerSshTunnelManager = profilerSshTunnelManager;
             }
 
             /// <summary>
@@ -256,7 +260,7 @@ namespace YetiVSI.DebugEngine
                                        _debugEngineCommands, _debugEventCallbackDecorator,
                                        sessionNotifier, _symbolSettingsProvider, _deployLldbServer,
                                        _gameLauncher, _debugEventRecorder,
-                                       _expressionEvaluationRecorder);
+                                       _expressionEvaluationRecorder, _profilerSshTunnelManager);
             }
         }
 
@@ -316,6 +320,7 @@ namespace YetiVSI.DebugEngine
         readonly DebugEventRecorder _debugEventRecorder;
         readonly ExpressionEvaluationRecorder _expressionEvaluationRecorder;
         readonly ISessionNotifier _sessionNotifier;
+        readonly ISshTunnelManager _profilerSshTunnelManager;
 
         // Keep track of the attach operation, so that it can be aborted by transport errors.
         ICancelableTask<ILldbAttachedProgram> _attachOperation;
@@ -323,9 +328,6 @@ namespace YetiVSI.DebugEngine
         // Variables set during launch and/or attach.
         string _executableFileName;
         string _executableFullPath;
-        bool _rgpEnabled;
-        bool _diveEnabled;
-        bool _renderDocEnabled;
         string _workingDirectory;
         SshTarget _target;
         string _coreFilePath;
@@ -366,7 +368,8 @@ namespace YetiVSI.DebugEngine
                            ISessionNotifier sessionNotifier,
                            ISymbolSettingsProvider symbolSettingsProvider, bool deployLldbServer,
                            IGameLauncher gameLauncher, DebugEventRecorder debugEventRecorder,
-                           ExpressionEvaluationRecorder expressionEvaluationRecorder) : base(self)
+                           ExpressionEvaluationRecorder expressionEvaluationRecorder,
+                           ISshTunnelManager profilerSshTunnelManager) : base(self)
         {
             taskContext.ThrowIfNotOnMainThread();
 
@@ -406,6 +409,7 @@ namespace YetiVSI.DebugEngine
             _gameLauncher = gameLauncher;
             _debugEventRecorder = debugEventRecorder;
             _expressionEvaluationRecorder = expressionEvaluationRecorder;
+            _profilerSshTunnelManager = profilerSshTunnelManager;
 
             // Register observers on long lived objects last so that they don't hold a reference
             // to this if an exception is thrown during construction.
@@ -458,7 +462,8 @@ namespace YetiVSI.DebugEngine
                                    enum_ATTACH_REASON reason)
         {
             _taskContext.ThrowIfNotOnMainThread();
-            var result = AttachInternal(programs, numPrograms, callback, reason, out ExitInfo exitInfo);
+            var result = AttachInternal(programs, numPrograms, callback, reason,
+                                        out ExitInfo exitInfo);
 
             if (result != VSConstants.S_OK)
             {
@@ -513,7 +518,8 @@ namespace YetiVSI.DebugEngine
                 _debugSessionMetrics.UseNewDebugSessionId();
             }
 
-            IAction lldbDeployAction = _actionRecorder.CreateToolAction(ActionType.LldbServerDeploy);
+            IAction lldbDeployAction =
+                _actionRecorder.CreateToolAction(ActionType.LldbServerDeploy);
             JoinableTask lldbDeployTask = DeployLLDBServerInBackgroundIfNeeded(lldbDeployAction);
 
             uint? attachPid = null;
@@ -645,8 +651,7 @@ namespace YetiVSI.DebugEngine
             }
             else
             {
-                Trace.WriteLine(
-                    "Failed to get target process ID; skipping remote build id check");
+                Trace.WriteLine("Failed to get target process ID; skipping remote build id check");
             }
 
             return attachPid;
@@ -657,8 +662,7 @@ namespace YetiVSI.DebugEngine
             var preflightCheckAction = _actionRecorder.CreateToolAction(
                 ActionType.DebugPreflightBinaryChecks);
 
-            string cmd =
-                _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s)) ??
+            string cmd = _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s)) ??
                 _executableFileName;
 
             // Note that Path.Combine works for both relative and full paths.
@@ -675,9 +679,8 @@ namespace YetiVSI.DebugEngine
                                           async _ =>
                                               await _preflightBinaryChecker
                                                   .CheckLocalAndRemoteBinaryOnLaunchAsync(
-                                                      _libPaths, _executableFileName,
-                                                      _target, remoteTargetPath,
-                                                      preflightCheckAction))
+                                                      _libPaths, _executableFileName, _target,
+                                                      remoteTargetPath, preflightCheckAction))
                 .RunAndRecord(preflightCheckAction);
         }
 
@@ -698,6 +701,7 @@ namespace YetiVSI.DebugEngine
                                 JoinableTask lldbDeployTask, uint? attachPid)
         {
             IAction startAction = CreateDebugStartAction();
+
             async Task<ILldbAttachedProgram> AttachAsync(ICancelable task)
             {
                 if (lldbDeployTask != null)
@@ -716,8 +720,7 @@ namespace YetiVSI.DebugEngine
 
                 // Attempt to start the transport. Pass on to the transport if our attach reason
                 // indicates we need to launch the main debugged process ourselves.
-                _yetiTransport.StartPreGame(_launchOption, _rgpEnabled, _diveEnabled,
-                                            _renderDocEnabled, _target, _grpcSession);
+                _yetiTransport.StartPreGame(_launchOption, _target, _grpcSession);
 
                 SafeErrorUtil.SafelyLogError(
                     () => RecordParameters(startAction, _extensionOptions, _debuggerOptions),
@@ -1082,8 +1085,7 @@ namespace YetiVSI.DebugEngine
 
         int LaunchSuspendedInternal(IDebugPort2 port, string executableFullPath, string args,
                                     string dir, string options, IDebugEventCallback2 callback,
-                                    out IDebugProcess2 process,
-                                    out ExitInfo exitInfo)
+                                    out IDebugProcess2 process, out ExitInfo exitInfo)
         {
             _taskContext.ThrowIfNotOnMainThread();
             exitInfo = ExitInfo.Normal(ExitReason.Unknown);
@@ -1153,10 +1155,6 @@ namespace YetiVSI.DebugEngine
                     Trace.WriteLine("Chrome Client parameters have not been supplied");
                     return VSConstants.E_FAIL;
                 }
-
-                _rgpEnabled = chromeLauncher.LaunchParams.Rgp;
-                _diveEnabled = chromeLauncher.LaunchParams.Dive;
-                _renderDocEnabled = chromeLauncher.LaunchParams.RenderDoc;
 
                 LaunchGame(chromeLauncher);
                 if (_vsiGameLaunch == null)
@@ -1235,8 +1233,13 @@ namespace YetiVSI.DebugEngine
                 {
                     return
                         _stadiaLldbDebuggerFactory
-                            .Create(_grpcSession.GrpcConnection, _debuggerOptions,
-                                    _libPaths, _executableFullPath, isCoreDumpAttach);
+                            .Create(
+                                _grpcSession
+                                    .GrpcConnection,
+                                _debuggerOptions,
+                                _libPaths,
+                                _executableFullPath,
+                                isCoreDumpAttach);
                 });
             });
 
@@ -1252,6 +1255,11 @@ namespace YetiVSI.DebugEngine
             _vsiGameLaunch = _gameLauncher.CreateLaunch(chromeClientsLauncher.LaunchParams);
             if (_vsiGameLaunch != null)
             {
+                // TODO: Once Renderdoc and RGP are integrated into the VS UI, check whether any of
+                //       the profilers needs to be launchable with the debugger attached. If not,
+                //       remove this code path and make the internal tunnel storage not static.
+                _profilerSshTunnelManager.MonitorGameLifetime(_target, _vsiGameLaunch);
+
                 chromeClientsLauncher.MaybeLaunchChrome(_vsiGameLaunch.LaunchName,
                                                         _vsiGameLaunch.LaunchId, _workingDirectory);
             }

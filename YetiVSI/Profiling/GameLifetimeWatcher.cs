@@ -61,12 +61,7 @@ namespace YetiVSI.Profiling
         /// </summary>
         public void Stop()
         {
-            if (_cancelSource == null)
-            {
-                return;
-            }
-
-            _cancelSource.Cancel();
+            _cancelSource?.Cancel();
             // Don't wait for the task here, it might deadlock!
         }
 
@@ -80,7 +75,16 @@ namespace YetiVSI.Profiling
                 return;
             }
 
-            Task.WaitAll(_watcherTask);
+            try
+            {
+                Task.WaitAll(_watcherTask);
+            }
+            catch (AggregateException ex) when (ex.InnerExceptions.Count == 1 &&
+                ex.InnerExceptions[0] is TaskCanceledException)
+            {
+                // Stop() was called.
+            }
+
             _watcherTask = null;
 
             _cancelSource.Dispose();
@@ -90,36 +94,29 @@ namespace YetiVSI.Profiling
         async Task PollForGameEndAsync(IVsiGameLaunch launch, DoneHandler onDone,
                                        CancellationToken token)
         {
-            try
+            bool launched = false;
+            Stopwatch stopWatch = new Stopwatch();
+            while (true)
             {
-                bool launched = false;
-                Stopwatch stopWatch = new Stopwatch();
-                while (true)
+                GgpGrpc.Models.GameLaunch state =
+                    await launch.GetLaunchStateAsync(null).WithCancellation(token);
+                if (state.GameLaunchState == GameLaunchState.GameLaunchEnded)
                 {
-                    GgpGrpc.Models.GameLaunch state =
-                        await launch.GetLaunchStateAsync(null).WithCancellation(token);
-                    if (state.GameLaunchState == GameLaunchState.GameLaunchEnded)
-                    {
-                        onDone.Invoke(this, true, null);
-                        return;
-                    }
-
-                    if (state.GameLaunchState == GameLaunchState.RunningGame)
-                    {
-                        launched = true;
-                    }
-
-                    if (!launched && stopWatch.Elapsed >= _startupTimeout)
-                    {
-                        onDone.Invoke(this, false, "Timed out waiting for game to start");
-                    }
-
-                    await Task.Delay(_pollInterval, token);
+                    onDone.Invoke(this, true, null);
+                    return;
                 }
-            }
-            catch (TaskCanceledException)
-            {
-                // Stop() was called.
+
+                if (state.GameLaunchState == GameLaunchState.RunningGame)
+                {
+                    launched = true;
+                }
+
+                if (!launched && stopWatch.Elapsed >= _startupTimeout)
+                {
+                    onDone.Invoke(this, false, "Timed out waiting for game to start");
+                }
+
+                await Task.Delay(_pollInterval, token);
             }
         }
     }

@@ -99,8 +99,7 @@ namespace YetiVSI.Test
         {
             SshTarget sshTargetNull = null;
             YetiDebugTransport.GrpcSession session = yetiDebugTransport.StartGrpcServer();
-            yetiDebugTransport.StartPreGame(LaunchOption.AttachToCore, false, false, false,
-                                            sshTargetNull, session);
+            yetiDebugTransport.StartPreGame(LaunchOption.AttachToCore, sshTargetNull, session);
             ExpectLocalProcessWithName(YetiConstants.DebuggerGrpcServerExecutable);
             Assert.IsNull(abortError);
         }
@@ -141,8 +140,7 @@ namespace YetiVSI.Test
         {
             SshTarget sshTarget = new SshTarget(_targetString);
             YetiDebugTransport.GrpcSession session = yetiDebugTransport.StartGrpcServer();
-            yetiDebugTransport.StartPreGame(LaunchOption.AttachToGame, false, false, false,
-                                            sshTarget, session);
+            yetiDebugTransport.StartPreGame(LaunchOption.AttachToGame, sshTarget, session);
             ExpectRemoteProcessWithArg("lldb-server", 1);
             ExpectRemoteProcessWithArg("-L", 1);
             ExpectLocalProcessWithName(YetiConstants.DebuggerGrpcServerExecutable);
@@ -202,8 +200,7 @@ namespace YetiVSI.Test
 
             SshTarget sshTarget = new SshTarget(_targetString);
             YetiDebugTransport.GrpcSession session = yetiDebugTransport.StartGrpcServer();
-            yetiDebugTransport.StartPreGame(LaunchOption.AttachToGame, true, true, true,
-                                            sshTarget, session);
+            yetiDebugTransport.StartPreGame(LaunchOption.AttachToGame, sshTarget, session);
 
             Assert.That(state, Is.EqualTo(GrpcState.ClientPipeHandlesReleased));
         }
@@ -213,52 +210,9 @@ namespace YetiVSI.Test
         {
             SshTarget sshTarget = new SshTarget(_targetString);
             YetiDebugTransport.GrpcSession session = yetiDebugTransport.StartGrpcServer();
-            yetiDebugTransport.StartPreGame(LaunchOption.LaunchGame, false, false, false,
-                                            sshTarget, session);
+            yetiDebugTransport.StartPreGame(LaunchOption.LaunchGame, sshTarget, session);
             ExpectRemoteProcessWithArg("lldb-server", 1);
             ExpectRemoteProcessWithArg("-L", 1);
-            ExpectLocalProcessWithName(YetiConstants.DebuggerGrpcServerExecutable);
-            Assert.IsNull(abortError);
-        }
-
-        [Test]
-        public void StartPreGameLaunchRenderDoc()
-        {
-            SshTarget sshTarget = new SshTarget(_targetString);
-
-            YetiDebugTransport.GrpcSession session = yetiDebugTransport.StartGrpcServer();
-            yetiDebugTransport.StartPreGame(LaunchOption.LaunchGame, false, false, true,
-                                            sshTarget, session);
-            ExpectRemoteProcessWithArg("lldb-server", 1);
-            ExpectRemoteProcessWithArg("-L", 2);
-            ExpectLocalProcessWithName(YetiConstants.DebuggerGrpcServerExecutable);
-            Assert.IsNull(abortError);
-        }
-
-        [Test]
-        public void StartPreGameLaunchRgp()
-        {
-            SshTarget sshTarget = new SshTarget(_targetString);
-            YetiDebugTransport.GrpcSession session = yetiDebugTransport.StartGrpcServer();
-            yetiDebugTransport.StartPreGame(LaunchOption.LaunchGame, true, false, false,
-                                            sshTarget, session);
-            ExpectRemoteProcessWithArg("lldb-server", 1);
-            ExpectRemoteProcessWithArg("-L", 2);
-            ExpectRemoteProcessWithArg("-L" + WorkstationPorts.RGP_LOCAL, 1);
-            ExpectLocalProcessWithName(YetiConstants.DebuggerGrpcServerExecutable);
-            Assert.IsNull(abortError);
-        }
-
-        [Test]
-        public void StartPreGameLaunchDive()
-        {
-            SshTarget sshTarget = new SshTarget(_targetString);
-            YetiDebugTransport.GrpcSession session = yetiDebugTransport.StartGrpcServer();
-            yetiDebugTransport.StartPreGame(LaunchOption.LaunchGame, false, true, false,
-                                            sshTarget, session);
-            ExpectRemoteProcessWithArg("lldb-server", 1);
-            ExpectRemoteProcessWithArg("-L", 2);
-            ExpectRemoteProcessWithArg("-L" + WorkstationPorts.DIVE_LOCAL, 1);
             ExpectLocalProcessWithName(YetiConstants.DebuggerGrpcServerExecutable);
             Assert.IsNull(abortError);
         }
@@ -276,8 +230,7 @@ namespace YetiVSI.Test
                 .Returns(mockProcess).AndDoes(x => { startInfo = x.Arg<ProcessStartInfo>(); });
 
             YetiDebugTransport.GrpcSession session = yetiDebugTransport.StartGrpcServer();
-            yetiDebugTransport.StartPreGame(LaunchOption.LaunchGame, false, false, false,
-                                            sshTarget, session);
+            yetiDebugTransport.StartPreGame(LaunchOption.LaunchGame, sshTarget, session);
 
             int exitCode = 123;
             mockProcess.StartInfo.Returns(startInfo);
@@ -285,7 +238,6 @@ namespace YetiVSI.Test
             mockProcess.OnExit += Raise.EventWith(mockProcess, new EventArgs());
             Assert.IsInstanceOf(typeof(ProcessExecutionException), abortError);
 
-            var processError = abortError as ProcessExecutionException;
             Assert.AreEqual(exitCode, ((ProcessExecutionException) abortError).ExitCode);
         }
 

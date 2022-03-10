@@ -36,6 +36,7 @@ namespace YetiVSI
         GameletClient.Factory _gameletClientFactory;
         RemoteCommand _remoteCommand;
         SshManager _sshManager;
+        SshTunnelManager _sshTunnelManager;
         TestAccountClient.Factory _testAccountClientFactory;
 
         public GgpDebugQueryTargetCompRoot(ServiceManager serviceManager, IDialogUtil dialogUtil)
@@ -95,6 +96,8 @@ namespace YetiVSI
             var backgroundProcessFactory = new BackgroundProcess.Factory();
             var orbitLauncher =
                 ProfilerLauncher<OrbitArgs>.CreateForOrbit(backgroundProcessFactory, fileSystem);
+            var profilerSshTunnelManager = GetSshTunnelManager(managedProcessFactory);
+
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,
@@ -102,7 +105,7 @@ namespace YetiVSI
                                            gameletSelectorFactory, cloudRunner, sdkVersion,
                                            launchCommandFormatter, yetiVsiService, gameLauncher,
                                            taskContext, new ProjectPropertiesMetricsParser(),
-                                           identityClient, orbitLauncher);
+                                           identityClient, orbitLauncher, profilerSshTunnelManager);
         }
 
         public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();
@@ -183,6 +186,17 @@ namespace YetiVSI
             }
 
             return _remoteCommand;
+        }
+
+        public virtual ISshTunnelManager GetSshTunnelManager(
+            ManagedProcess.Factory managedProcessFactory)
+        {
+            if (_sshTunnelManager == null)
+            {
+                _sshTunnelManager = new SshTunnelManager(managedProcessFactory);
+            }
+
+            return _sshTunnelManager;
         }
     }
 }

@@ -23,8 +23,11 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using NSubstitute;
 using TestsCommon.TestSupport;
 using YetiCommon;
+using YetiCommon.SSH;
+using YetiVSI.GameLaunch;
 using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Test.MediumTestsSupport;
 using YetiVSI.Util;
@@ -126,6 +129,18 @@ namespace YetiVSI.Test.GameLaunch
         }
 
         [Test]
+        public void LaunchIsPropagatedToSshTunnelManager()
+        {
+            var gameletClientFactory = new GameletClientStub.Factory().WithSampleInstance();
+            IVSFake vsFake = CreateVsFakeAndLoadProject(gameletClientFactory);
+
+            _taskContext.RunOnMainThread(() => vsFake.LaunchSuspended());
+            
+            _compRoot.GetProfilerSshTunnelManager(null).Received()
+                .MonitorGameLifetime(Arg.Any<SshTarget>(), Arg.Any<IVsiGameLaunch>());
+        }
+
+        [Test]
         public void RenderDocPropertyIsPropagatedToLaunchRequest()
         {
             var launches = new List<LaunchGameRequest>();
@@ -208,9 +223,8 @@ namespace YetiVSI.Test.GameLaunch
         public void LaunchDiveIsPropagatedToLaunchRequest()
         {
             var launches = new List<LaunchGameRequest>();
-            var gameletClientFactory =
-                new GameletClientStub.Factory().WithSampleInstance().WithLaunchRequestsTracker(
-                    launches);
+            var gameletClientFactory = new GameletClientStub.Factory().WithSampleInstance()
+                .WithLaunchRequestsTracker(launches);
             IVSFake vsFake = CreateVsFakeAndLoadProject(gameletClientFactory);
 
             (vsFake.ProjectAdapter as ProjectAdapter)?.SetLaunchDive(true);
@@ -218,25 +232,22 @@ namespace YetiVSI.Test.GameLaunch
             _taskContext.RunOnMainThread(() => vsFake.LaunchSuspended());
 
             Assert.That(launches.Count, Is.EqualTo(1));
-            Assert.That(
-                launches[0].EnvironmentVariablePairs,
-                Is.EqualTo(
-                    new Dictionary<string, string>
-                    {
-                        { "GGP_INTERNAL_LOAD_RGP", "1" },
-                        { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
-                        { "VK_INSTANCE_LAYERS", "VK_LAYER_dive_capture" },
-                        { "LD_PRELOAD", "librgpserver.so" }
-                    }));
+            Assert.That(launches[0].EnvironmentVariablePairs, Is.EqualTo(
+                            new Dictionary<string, string>
+                            {
+                                { "GGP_INTERNAL_LOAD_RGP", "1" },
+                                { "RGP_DEBUG_LOG_FILE", "/var/game/RGPDebug.log" },
+                                { "VK_INSTANCE_LAYERS", "VK_LAYER_dive_capture" },
+                                { "LD_PRELOAD", "librgpserver.so" }
+                            }));
         }
 
         [Test]
         public void LaunchOrbitIsPropagatedToLaunchRequest()
         {
             var launches = new List<LaunchGameRequest>();
-            var gameletClientFactory =
-                new GameletClientStub.Factory().WithSampleInstance().WithLaunchRequestsTracker(
-                    launches);
+            var gameletClientFactory = new GameletClientStub.Factory().WithSampleInstance()
+                .WithLaunchRequestsTracker(launches);
             IVSFake vsFake = CreateVsFakeAndLoadProject(gameletClientFactory);
 
             (vsFake.ProjectAdapter as ProjectAdapter)?.SetLaunchOrbit(true);
@@ -244,9 +255,14 @@ namespace YetiVSI.Test.GameLaunch
             _taskContext.RunOnMainThread(() => vsFake.LaunchSuspended());
 
             Assert.That(launches.Count, Is.EqualTo(1));
-            Assert.That(launches[0].EnvironmentVariablePairs,
-                        Is.EqualTo(new Dictionary<string, string> { { "ENABLE_ORBIT_VULKAN_LAYER",
-                                                                      "1" } }));
+            Assert.That(launches[0].EnvironmentVariablePairs, Is.EqualTo(
+                            new Dictionary<string, string>
+                            {
+                                {
+                                    "ENABLE_ORBIT_VULKAN_LAYER",
+                                    "1"
+                                }
+                            }));
         }
 
         [Test]

@@ -114,8 +114,7 @@ namespace YetiVSI
                                      "grpc-server"))
                 {
                     Stop(ExitReason.Unknown);
-                    throw new YetiDebugTransportException(
-                        "Failed to launch grpc server process");
+                    throw new YetiDebugTransportException("Failed to launch grpc server process");
                 }
 
                 Trace.WriteLine("Started debug transport.  Session ID: " +
@@ -128,14 +127,11 @@ namespace YetiVSI
             }
         }
 
-        public void StartPreGame(LaunchOption launchOption, bool rgpEnabled, bool diveEnabled,
-                                 bool renderdocEnabled, SshTarget target,
-                                 GrpcSession session)
+        public void StartPreGame(LaunchOption launchOption, SshTarget target, GrpcSession session)
         {
             lock (_thisLock)
             {
-                if (!LaunchPreGameProcesses(launchOption, rgpEnabled, diveEnabled, renderdocEnabled,
-                                            target, session))
+                if (!LaunchPreGameProcesses(launchOption, target, session))
                 {
                     Stop(ExitReason.Unknown);
                     throw new YetiDebugTransportException(
@@ -234,15 +230,11 @@ namespace YetiVSI
         /// Launches all needed processes that can be launched before the game.
         /// </summary>
         /// <param name="launchOption">How the game will be launched</param>
-        /// <param name="rgpEnabled">Whether RPG is enabled</param>
-        /// <param name="diveEnabled">Whether Dive is enabled</param>
-        /// <param name="renderdocEnabled">Whether Renderdoc is enabled</param>
         /// <param name="target">Remote instance</param>
         /// <returns>
         /// True if all processes launched successfully and false otherwise and we should abort.
         /// </returns>
-        bool LaunchPreGameProcesses(LaunchOption launchOption, bool rgpEnabled, bool diveEnabled,
-                                    bool renderdocEnabled, SshTarget target,
+        bool LaunchPreGameProcesses(LaunchOption launchOption, SshTarget target,
                                     GrpcSession session)
         {
             var processes = new List<ProcessStartData>();
@@ -251,24 +243,6 @@ namespace YetiVSI
             {
                 processes.Add(CreatePortForwardingProcessStartData(target, session));
                 processes.Add(CreateLldbServerProcessStartData(target, session));
-            }
-
-            if (launchOption == LaunchOption.LaunchGame)
-            {
-                if (renderdocEnabled)
-                {
-                    processes.Add(CreateRenderDocPortForwardingProcessStartData(target));
-                }
-
-                if (rgpEnabled)
-                {
-                    processes.Add(CreateRgpPortForwardingProcessStartData(target));
-                }
-
-                if (diveEnabled)
-                {
-                    processes.Add(CreateDivePortForwardingProcessStartData(target));
-                }
             }
 
             return LaunchProcesses(processes, "pre-game");
@@ -346,46 +320,6 @@ namespace YetiVSI
             return new ProcessStartData("lldb port forwarding", startInfo);
         }
 
-        ProcessStartData CreateRenderDocPortForwardingProcessStartData(SshTarget target)
-        {
-            var ports = new List<ProcessStartInfoBuilder.PortForwardEntry>()
-            {
-                new ProcessStartInfoBuilder.PortForwardEntry
-                {
-                    LocalPort = WorkstationPorts.RENDERDOC_LOCAL,
-                    RemotePort = WorkstationPorts.RENDERDOC_REMOTE,
-                }
-            };
-            var startInfo = ProcessStartInfoBuilder.BuildForSshPortForward(ports, target);
-            return new ProcessStartData("renderdoc port forwarding", startInfo);
-        }
-
-        ProcessStartData CreateRgpPortForwardingProcessStartData(SshTarget target)
-        {
-            var ports = new List<ProcessStartInfoBuilder.PortForwardEntry>()
-            {
-                new ProcessStartInfoBuilder.PortForwardEntry
-                {
-                    LocalPort = WorkstationPorts.RGP_LOCAL,
-                    RemotePort = WorkstationPorts.RGP_REMOTE,
-                }
-            };
-            var startInfo = ProcessStartInfoBuilder.BuildForSshPortForward(ports, target);
-            return new ProcessStartData("rgp port forwarding", startInfo);
-        }
-
-        ProcessStartData CreateDivePortForwardingProcessStartData(SshTarget target)
-        {
-            var ports = new List<ProcessStartInfoBuilder.PortForwardEntry>() {
-                new ProcessStartInfoBuilder.PortForwardEntry {
-                    LocalPort = WorkstationPorts.DIVE_LOCAL,
-                    RemotePort = WorkstationPorts.DIVE_REMOTE,
-                }
-            };
-            var startInfo = ProcessStartInfoBuilder.BuildForSshPortForward(ports, target);
-            return new ProcessStartData("dive port forwarding", startInfo);
-        }
-
         ProcessStartData CreateLldbServerProcessStartData(SshTarget target, GrpcSession session)
         {
             string lldbServerCommand = string.Format(
@@ -421,8 +355,7 @@ namespace YetiVSI
             ProcessManager.ProcessStopHandler stopHandler = (process, reason) =>
             {
                 // Did the game process, i.e. the process with pid |remotePid|, exit?
-                if (reason != ExitReason.ProcessExited &&
-                    reason != ExitReason.DebuggerTerminated)
+                if (reason != ExitReason.ProcessExited && reason != ExitReason.DebuggerTerminated)
                 {
                     Trace.WriteLine("Game process did not exit, won't wait for tail process exit");
                     return;
@@ -460,7 +393,7 @@ namespace YetiVSI
                 _grpcSession.GrpcConnection.RpcException += StopWithException;
                 _grpcSession.GrpcConnection.AsyncRpcCompleted += _onAsyncRpcCompleted;
                 _grpcCallInvoker.GetClientPipeHandles(out string[] inPipeHandles,
-                                                     out string[] outPipeHandles);
+                                                      out string[] outPipeHandles);
 
                 // Note: The server's input pipes are the client's output pipes and vice versa.
                 processStartInfo.Arguments = $"-i {string.Join(",", outPipeHandles)} " +
@@ -539,25 +472,6 @@ namespace YetiVSI
             //lldbGrpcStartInfo.EnvironmentVariables["GRPC_VERBOSITY"] = "DEBUG";
             return new ProcessStartData("lldb grpc server", startInfo, beforeStart: beforeStart,
                                         afterStart: afterStart);
-        }
-
-        static void LogCapturedOutput(string streamName, object sender, string message)
-        {
-            if (!string.IsNullOrEmpty(message))
-            {
-                Trace.WriteLine(
-                    ((IProcess) sender).ProcessName + " >" + streamName + "> " + message);
-            }
-        }
-
-        static void LogStdOut(object sender, TextReceivedEventArgs data)
-        {
-            LogCapturedOutput("stdout", sender, data.Text);
-        }
-
-        static void LogStdErr(object sender, TextReceivedEventArgs data)
-        {
-            LogCapturedOutput("stderr", sender, data.Text);
         }
 
         class ProcessStartData

@@ -15,6 +15,7 @@
 using GgpGrpc.Cloud;
 using NSubstitute;
 using YetiCommon;
+using YetiVSI.Profiling;
 using YetiVSITestsCommon;
 
 namespace YetiVSI.Test.MediumTestsSupport
@@ -69,5 +70,8 @@ namespace YetiVSI.Test.MediumTestsSupport
         public override ISshManager GetSshManager(ManagedProcess.Factory managedProcessFactory,
                                                   ICloudRunner cloudRunner) =>
             Substitute.For<ISshManager>();
+
+        public override ISshTunnelManager GetSshTunnelManager(
+            ManagedProcess.Factory managedProcessFactory) => Substitute.For<ISshTunnelManager>();
     }
 }

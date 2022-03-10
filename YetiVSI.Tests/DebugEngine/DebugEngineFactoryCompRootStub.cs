@@ -98,8 +98,7 @@ namespace YetiVSI.Test.DebugEngine
             YetiVSIService vsiService = GetVsiService();
             joinableTaskContext.ThrowIfNotOnMainThread();
 
-            var debugEngineCommands =
-                new DebugEngineCommands(joinableTaskContext, null, false);
+            var debugEngineCommands = new DebugEngineCommands(joinableTaskContext, null, false);
 
             var actionRecorder = new ActionRecorder(GetDebugSessionMetrics());
             var backgroundProcessFactory = new BackgroundProcess.Factory();
@@ -108,8 +107,7 @@ namespace YetiVSI.Test.DebugEngine
             var moduleFileFinder = Substitute.For<IModuleFileFinder>();
             var moduleFileLoadRecorderFactory =
                 new ModuleFileLoadMetricsRecorder.Factory(moduleFileFinder);
-            List<Interceptor> grpcInterceptors =
-                CreateGrpcInterceptors(vsiService.DebuggerOptions);
+            List<Interceptor> grpcInterceptors = CreateGrpcInterceptors(vsiService.DebuggerOptions);
             var vsOutputWindow =
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 serviceManager.GetGlobalService(typeof(SVsOutputWindow)) as IVsOutputWindow;
@@ -123,8 +121,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var chromeLauncher = new ChromeLauncher(backgroundProcessFactory);
             var testClientLauncherFactory = new ChromeClientsLauncher.Factory(
-                new ChromeClientLaunchCommandFormatter(),
-                GetSdkConfigFactory(), chromeLauncher);
+                new ChromeClientLaunchCommandFormatter(), GetSdkConfigFactory(), chromeLauncher);
 
             var exitDialogUtil = new ExitDialogUtil(_dialogUtil, GetDialogExecutionContext());
             var preflightBinaryChecker =
@@ -135,22 +132,22 @@ namespace YetiVSI.Test.DebugEngine
             IDebugEngineFactory factory = new YetiVSI.DebugEngine.DebugEngine.Factory(
                 joinableTaskContext, serviceManager, GetDebugSessionMetrics(),
                 _stadiaLldbDebuggerFactory, yetiTransport, actionRecorder, null,
-                moduleFileLoadRecorderFactory, moduleFileFinder,testClientLauncherFactory,
+                moduleFileLoadRecorderFactory, moduleFileFinder, testClientLauncherFactory,
                 GetNatvis(), GetNatvisDiagnosticLogger(), exitDialogUtil, preflightBinaryChecker,
-                _debugSessionLauncherFactory, _remoteDeploy, cancelableTaskFactory,
-                _dialogUtil, _vsiService, GetNatvisLoggerOutputWindowListener(),
-                GetSolutionExplorer(), debugEngineCommands,
-                GetDebugEventCallbackDecorator(vsiService.DebuggerOptions),
+                _debugSessionLauncherFactory, _remoteDeploy, cancelableTaskFactory, _dialogUtil,
+                _vsiService, GetNatvisLoggerOutputWindowListener(), GetSolutionExplorer(),
+                debugEngineCommands, GetDebugEventCallbackDecorator(vsiService.DebuggerOptions),
                 GetSymbolSettingsProvider(), deployLldbServer, _gameLauncher,
-                GetDebugEventRecorder(), GetExpressionEvaluationRecorder());
+                GetDebugEventRecorder(), GetExpressionEvaluationRecorder(),
+                GetProfilerSshTunnelManager(processFactory));
             return GetFactoryDecorator().Decorate(factory);
         }
 
-        public override IFileSystem GetFileSystem() => _fileSystem
-            ?? (_fileSystem = new MockFileSystem());
+        public override IFileSystem GetFileSystem() =>
+            _fileSystem ?? (_fileSystem = new MockFileSystem());
 
-        public override IWindowsRegistry GetWindowsRegistry() => _windowsRegistry
-            ?? (_windowsRegistry = TestDummyGenerator.Create<IWindowsRegistry>());
+        public override IWindowsRegistry GetWindowsRegistry() => _windowsRegistry ??
+            (_windowsRegistry = TestDummyGenerator.Create<IWindowsRegistry>());
 
         public override YetiVSIService GetVsiService()
         {
@@ -183,6 +180,7 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         CancelableTask.Factory _cancelableTaskFactory;
+
         public override CancelableTask.Factory GetCancelableTaskFactory()
         {
             if (_cancelableTaskFactory == null)
@@ -207,8 +205,8 @@ namespace YetiVSI.Test.DebugEngine
             null;
 
         public override IVariableNameTransformer GetVariableNameTransformer() =>
-            _variableNameTransformer
-            ?? (_variableNameTransformer = new TestNatvisVariableNameTransformer());
+            _variableNameTransformer ??
+            (_variableNameTransformer = new TestNatvisVariableNameTransformer());
 
         public override ISymbolSettingsProvider GetSymbolSettingsProvider()
         {
