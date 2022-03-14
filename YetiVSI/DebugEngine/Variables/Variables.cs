@@ -73,7 +73,7 @@ namespace YetiVSI.DebugEngine.Variables
         string DisplayName { get; }
 
         // String that the debugger can send to the built-in text visualizer.
-        string StringView { get; }
+        Task<string> StringViewAsync();
 
         // String that can be used for assignment operations involving this variable.
         string AssignmentValue { get; }
@@ -105,12 +105,12 @@ namespace YetiVSI.DebugEngine.Variables
         /// negatives.
         /// </summary>
         /// <returns>Returns true if this might have children.</returns>
-        bool MightHaveChildren();
+        Task<bool> MightHaveChildrenAsync();
 
         /// <summary>
         /// Gets an adapter for querying the children of this variable.
         /// </summary>
-        IChildAdapter GetChildAdapter();
+        Task<IChildAdapter> GetChildAdapterAsync();
 
         /// <summary>
         /// Special purpose Natvis visualizer. Used e.g. for some register sets. Mostly unused.
@@ -272,7 +272,7 @@ namespace YetiVSI.DebugEngine.Variables
 
         public virtual async Task<string> ValueAsync() => await VarInfo.ValueAsync();
 
-        public virtual string StringView => VarInfo.StringView;
+        public virtual async Task<string> StringViewAsync() => await VarInfo.StringViewAsync();
 
         public string FormatSpecifier => VarInfo.FormatSpecifier;
 
@@ -288,9 +288,11 @@ namespace YetiVSI.DebugEngine.Variables
 
         public bool IsNullPointer() => VarInfo.IsNullPointer();
 
-        public virtual bool MightHaveChildren() => VarInfo.MightHaveChildren();
+        public virtual async Task<bool> MightHaveChildrenAsync() => await VarInfo
+                                                                        .MightHaveChildrenAsync();
 
-        public virtual IChildAdapter GetChildAdapter() => VarInfo.GetChildAdapter();
+        public virtual async Task<
+            IChildAdapter> GetChildAdapterAsync() => await VarInfo.GetChildAdapterAsync();
 
         public virtual IEnumerable<SbType> GetAllInheritedTypes() => VarInfo.GetAllInheritedTypes();
 
@@ -406,7 +408,7 @@ namespace YetiVSI.DebugEngine.Variables
 
         public CustomVisualizer CustomVisualizer => CustomVisualizer.None;
 
-        public string StringView => "";
+        public Task<string> StringViewAsync() => Task.FromResult("");
 
         // TODO: In order to support aspect decorators we can't expose 'this'.
         public IVariableInformation GetCachedView() => this;
@@ -447,10 +449,10 @@ namespace YetiVSI.DebugEngine.Variables
 
         public IEnumerable<SbType> GetAllInheritedTypes() => throw new NotImplementedException();
 
-        public bool MightHaveChildren() => false;
+        public Task<bool> MightHaveChildrenAsync() => Task.FromResult(false);
 
-        public IChildAdapter GetChildAdapter() =>
-            new ListChildAdapter.Factory().Create(new List<IVariableInformation>());
+        public Task<IChildAdapter> GetChildAdapterAsync() => Task.FromResult(
+            new ListChildAdapter.Factory().Create(new List<IVariableInformation>()));
 
         public ulong? GetMemoryContextAddress() => null;
         public string GetMemoryAddressAsHex() => "";
@@ -546,9 +548,9 @@ namespace YetiVSI.DebugEngine.Variables
 
         public Task<string> ValueAsync() => Task.FromResult(Value);
 
-        public string StringView => !Error
-            ? _remoteValueFormat.FormatStringView(_remoteValue, FallbackValueFormat) ?? ""
-            : "";
+        public Task<string> StringViewAsync() => Task.FromResult(
+            !Error ? _remoteValueFormat.FormatStringView(_remoteValue, FallbackValueFormat) ?? ""
+                   : "");
 
         public string TypeName => Error ? "" : _remoteValue.GetTypeName();
 
@@ -558,12 +560,12 @@ namespace YetiVSI.DebugEngine.Variables
 
         public CustomVisualizer CustomVisualizer { get; }
 
-        public bool MightHaveChildren() => _remoteValueFormat.GetNumChildren(_remoteValue) != 0;
+        public Task<bool> MightHaveChildrenAsync() =>
+            Task.FromResult(_remoteValueFormat.GetNumChildren(_remoteValue) != 0);
 
-        public IChildAdapter GetChildAdapter() => _childAdapterFactory.Create(_remoteValue,
-                                                                              _remoteValueFormat,
-                                                                              _varInfoBuilder,
-                                                                              FormatSpecifier);
+        public Task<IChildAdapter> GetChildAdapterAsync() =>
+            Task.FromResult(_childAdapterFactory.Create(_remoteValue, _remoteValueFormat,
+                                                        _varInfoBuilder, FormatSpecifier));
 
         public IEnumerable<SbType> GetAllInheritedTypes()
         {
@@ -836,7 +838,7 @@ namespace YetiVSI.DebugEngine.Variables
         public string Fullname() => "[More]";
 
         public string DisplayName => "[More]";
-        public string StringView => "";
+        public Task<string> StringViewAsync() => Task.FromResult("");
         public string AssignmentValue => "";
 
         // Returns empty value so that there is no preview for [More].
@@ -863,9 +865,9 @@ namespace YetiVSI.DebugEngine.Variables
 
         public IVariableInformation GetCachedView() => this;
 
-        public bool MightHaveChildren() => true;
+        public Task<bool> MightHaveChildrenAsync() => Task.FromResult(true);
 
-        public IChildAdapter GetChildAdapter() => _childAdapter;
+        public Task<IChildAdapter> GetChildAdapterAsync() => Task.FromResult(_childAdapter);
         public CustomVisualizer CustomVisualizer => CustomVisualizer.None;
         public IEnumerable<SbType> GetAllInheritedTypes() => Enumerable.Empty<SbType>();
 
@@ -914,17 +916,14 @@ namespace YetiVSI.DebugEngine.Variables
         {
         }
 
-        public override string StringView
+        public override async Task<string> StringViewAsync()
         {
-            get
+            if (_cachedStringView == null)
             {
-                if (_cachedStringView == null)
-                {
-                    _cachedStringView = VarInfo.StringView;
-                }
-
-                return _cachedStringView;
+                _cachedStringView = await VarInfo.StringViewAsync();
             }
+
+            return _cachedStringView;
         }
 
         public override ValueFormat FallbackValueFormat
@@ -941,11 +940,11 @@ namespace YetiVSI.DebugEngine.Variables
             }
         }
 
-        public override IChildAdapter GetChildAdapter()
+        public override async Task<IChildAdapter> GetChildAdapterAsync()
         {
             if (_cachedChildAdapter == null)
             {
-                _cachedChildAdapter = VarInfo.GetChildAdapter();
+                _cachedChildAdapter = await VarInfo.GetChildAdapterAsync();
             }
 
             return _cachedChildAdapter;

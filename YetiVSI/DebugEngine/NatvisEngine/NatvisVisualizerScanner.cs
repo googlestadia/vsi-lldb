@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
+using System.Threading.Tasks;
 using DebuggerApi;
 using Microsoft.VisualStudio.Threading;
 using YetiVSI.DebugEngine.Variables;
@@ -185,7 +184,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// <summary>
         /// Find Natvis visualizer by variable.
         /// </summary>
-        public VisualizerInfo FindType(IVariableInformation variable)
+        public Task<VisualizerInfo> FindTypeAsync(IVariableInformation variable)
         {
             // Check for custom visualizers first.
             if (variable.CustomVisualizer != CustomVisualizer.None)
@@ -200,7 +199,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                                         $"'{visualizer?.Visualizer.Name ?? "null"} '" +
                                         $"for custom visualizer '{variable.CustomVisualizer}'");
 
-                    return visualizer;
+                    return Task.FromResult(visualizer);
                 }
 
                 visualizer = Scan(pseudoTypeName, TypeName.Parse(pseudoTypeName));
@@ -210,7 +209,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                                         $"'{visualizer.Visualizer.Name}'" +
                                         $" for custom visualizer '{variable.CustomVisualizer}'");
 
-                    return visualizer;
+                    return Task.FromResult(visualizer);
                 }
             }
 
@@ -224,7 +223,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                                     $"'{visualizer?.Visualizer.Name ?? "null"}' for type " +
                                     $"'{initialTypeName}'");
 
-                return visualizer;
+                return Task.FromResult(visualizer);
             }
 
             uint count = 0;
@@ -237,7 +236,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                         () => $"Selected Natvis Visualizer '{visualizer.Visualizer.Name}'" +
                             $" for type '{initialTypeName}'");
 
-                    return visualizer;
+                    return Task.FromResult(visualizer);
                 }
 
                 ++count;
@@ -254,7 +253,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             _logger.Verbose($"No Natvis Visualizer found for type '{initialTypeName}'");
-            return null;
+            return Task.FromResult<VisualizerInfo>(null);
         }
 
         private VisualizerInfo ScanForAliasOrCanonicalType(string initialTypeName, SbType type)

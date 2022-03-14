@@ -36,10 +36,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         readonly NatvisExpressionEvaluator _evaluator;
         readonly NatvisDiagnosticLogger _logger;
         readonly NatvisVisualizerScanner _visualizerScanner;
-        readonly ITaskExecutor _taskExecutor;
 
         const int _maxFormatDepth = 10;
-        const int _maxCharactersForPreview = 80;
         uint _curFormatStringElementDepth;
 
         static readonly Regex _expressionRegex = new Regex(@"^\{[^\}]*\}");
@@ -54,7 +52,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             _evaluator = evaluator;
             _logger = logger;
             _visualizerScanner = visualizerScanner;
-            _taskExecutor = taskExecutor;
         }
 
         /// <summary>
@@ -66,8 +63,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             try
             {
                 return await FormatDisplayStringAsync(
-                    BuildFormatStringContext<DisplayStringType>(
-                        variable, e => new DisplayStringElement(e)), variable);
+                    await BuildFormatStringContextAsync<DisplayStringType>(
+                        variable, e => new DisplayStringElement(e)),
+                    variable);
             }
             catch (ExpressionEvaluationFailed ex)
             {
@@ -80,29 +78,30 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         internal async Task<string> FormatDisplayStringAsync(
             FormatStringContext formatStringContext, IVariableInformation variable) =>
-            await FormatStringAsync(formatStringContext, variable, FormatDisplayStringAsync,
-                                    "display string",
-                                    async () => await ValueStringBuilder.BuildAsync(variable));
+            await FormatStringAsync(formatStringContext, variable,
+                                    varInfo => FormatDisplayStringAsync(varInfo), "display string",
+                                    () => ValueStringBuilder.BuildAsync(variable));
 
         /// <summary>
         /// Builds the format string context and returns a formatted string view accordingly.
         /// </summary>
         /// <param name="variable">The variable that the format string context
         /// should be built for.</param>
-        internal string FormatStringView(IVariableInformation variable)
+        internal async Task<string> FormatStringViewAsync(IVariableInformation variable)
         {
             try
             {
-                return FormatStringView(
-                    BuildFormatStringContext<StringViewType>(
-                        variable, e => new StringViewElement(e)), variable);
+                return await FormatStringViewAsync(
+                    await BuildFormatStringContextAsync<StringViewType>(
+                        variable, e => new StringViewElement(e)),
+                    variable);
             }
             catch (ExpressionEvaluationFailed ex)
             {
                 _logger.Log(NatvisLoggingLevel.ERROR,
                             $"Failed to format natvis string view. Reason: {ex.Message}.");
 
-                return variable.StringView;
+                return await variable.StringViewAsync();
             }
         }
 
@@ -111,16 +110,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// html, json). The visualizers can be accessed e.g. from the magnifier symbol in the Value
         /// column in the Watch window. Mostly based on the Natvis <StringView> node.
         /// </summary>
-        internal string FormatStringView(FormatStringContext formatStringContext,
-                                         IVariableInformation variable) =>
-            _taskExecutor.Run(async () =>
-                                  await FormatStringAsync(formatStringContext, variable,
-                                                          varInfo =>
-                                                              Task.FromResult(
-                                                                  FormatStringView(varInfo)),
-                                                          "string view",
-                                                          () => Task.FromResult(
-                                                              variable.StringView)));
+        internal async Task<string> FormatStringViewAsync(FormatStringContext formatStringContext,
+                                                          IVariableInformation variable) =>
+            await FormatStringAsync(formatStringContext, variable,
+                                    varInfo => FormatStringViewAsync(varInfo), "string view",
+                                    () => variable.StringViewAsync());
 
         /// <summary>
         /// Asynchronously returns a formatted string based on the format string context and
@@ -276,11 +270,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// that get found, plus a SmartPointerElement if the corresponding SmartPointerType is
         /// present, and the Natvis tokens to resolve in expressions involving those.
         /// </summary>
-        FormatStringContext BuildFormatStringContext<TElement>(
+        async Task<FormatStringContext> BuildFormatStringContextAsync<TElement>(
             IVariableInformation variable, Func<TElement, IStringElement> stringElementConstructor)
             where TElement : class
         {
-            VisualizerInfo visualizer = _visualizerScanner.FindType(variable);
+            VisualizerInfo visualizer = await _visualizerScanner.FindTypeAsync(variable);
             if (visualizer?.Visualizer.Items == null)
             {
                 return new FormatStringContext();

@@ -109,7 +109,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 IVariableInformation expandInfo = await _evaluator.EvaluateExpressionAsync(
                     _smartPointerItem.Value, _variable, _natvisScope, null);
 
-                _adapter = expandInfo.GetChildAdapter();
+                _adapter = await expandInfo.GetChildAdapterAsync();
             }
             catch (ExpressionEvaluationFailed ex)
             {

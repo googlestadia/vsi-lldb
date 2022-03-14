@@ -26,7 +26,7 @@ namespace YetiVSI.Test.TestSupport
         public static async Task<IVariableInformation[]> GetAllChildrenAsync(
             this IVariableInformation varInfo)
         {
-            IChildAdapter childAdapter = varInfo.GetChildAdapter();
+            IChildAdapter childAdapter = await varInfo.GetChildAdapterAsync();
             return (await childAdapter.GetChildrenAsync(0, await childAdapter.CountChildrenAsync()))
                 .ToArray();
         }

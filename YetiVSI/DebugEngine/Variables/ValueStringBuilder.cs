@@ -41,7 +41,7 @@ namespace YetiVSI.DebugEngine.Variables
             }
 
             string value = await UnwrapPointerValueAsync(varInfo, charactersLeft);
-            if (!string.IsNullOrEmpty(value) || !varInfo.MightHaveChildren())
+            if (!string.IsNullOrEmpty(value) || !await varInfo.MightHaveChildrenAsync())
             {
                 return value;
             }
@@ -53,7 +53,7 @@ namespace YetiVSI.DebugEngine.Variables
                                                           int charactersLeft,
                                                           string noChildrenMarker = "")
         {
-            IChildAdapter children = varInfo.GetChildAdapter();
+            IChildAdapter children = await varInfo.GetChildAdapterAsync();
             if (children is INatvisEntity)
             {
                 return "";
@@ -93,8 +93,8 @@ namespace YetiVSI.DebugEngine.Variables
                     string childValue =
                         await BuildAsync(currentChild, charactersLeft - sb.Length - 1);
 
-                    if (string.IsNullOrEmpty(childValue) && currentChild.GetChildAdapter()
-                                                                is INatvisEntity)
+                    if (string.IsNullOrEmpty(childValue) &&
+                        await currentChild.GetChildAdapterAsync() is INatvisEntity)
                     {
                         childValue = "{...}";
                     }

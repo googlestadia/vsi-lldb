@@ -15,6 +15,7 @@
 ﻿using DebuggerApi;
 using NSubstitute;
 using NUnit.Framework;
+using System.Threading.Tasks;
 using YetiVSI.DebugEngine.Variables;
 
 namespace YetiVSI.Test.DebugEngine.Variables
@@ -33,46 +34,46 @@ namespace YetiVSI.Test.DebugEngine.Variables
         }
 
         [Test]
-        public void DelegatesCallsToWrappedVariableWhenAccessedFirstTime()
+        public async Task DelegatesCallsToWrappedVariableWhenAccessedFirstTimeAsync()
         {
-            _cachingVariable.GetChildAdapter();
-            _wrappedVariable.Received(1).GetChildAdapter();
+            await _cachingVariable.GetChildAdapterAsync();
+            await _wrappedVariable.Received(1).GetChildAdapterAsync();
 
             _cachingVariable.GetCachedView();
             _wrappedVariable.Received(1).GetCachedView();
 
-            var dummy = _cachingVariable.StringView;
-            var dummyCheck = _wrappedVariable.Received(1).StringView;
+            await _cachingVariable.StringViewAsync();
+            await _wrappedVariable.Received(1).StringViewAsync();
         }
 
         [Test]
-        public void UseCachedValuesIfAlreadyInitialized()
+        public async Task UseCachedValuesIfAlreadyInitializedAsync()
         {
-            _cachingVariable.GetChildAdapter();
-            _cachingVariable.GetChildAdapter();
+            await _cachingVariable.GetChildAdapterAsync();
+            await _cachingVariable.GetChildAdapterAsync();
 
-            _wrappedVariable.Received(1).GetChildAdapter();
+            await _wrappedVariable.Received(1).GetChildAdapterAsync();
 
             _cachingVariable.GetCachedView();
             _cachingVariable.GetCachedView();
 
             _wrappedVariable.Received(1).GetCachedView();
 
-            var dummy = _cachingVariable.StringView;
-            var dummyAgain = _cachingVariable.StringView;
-            var dummyCheck = _wrappedVariable.Received(1).StringView;
+            await _cachingVariable.StringViewAsync();
+            await _cachingVariable.StringViewAsync();
+            await _wrappedVariable.Received(1).StringViewAsync();
         }
 
         [Test]
-        public void InvalidatesCacheWhenFallbackValueIsChanged()
+        public async Task InvalidatesCacheWhenFallbackValueIsChangedAsync()
         {
             _wrappedVariable.FallbackValueFormat.Returns(ValueFormat.Default);
 
-            _cachingVariable.GetChildAdapter();
+            await _cachingVariable.GetChildAdapterAsync();
             _cachingVariable.FallbackValueFormat = ValueFormat.Hex;
-            _cachingVariable.GetChildAdapter();
+            await _cachingVariable.GetChildAdapterAsync();
 
-            _wrappedVariable.Received(2).GetChildAdapter();
+            await _wrappedVariable.Received(2).GetChildAdapterAsync();
 
             _cachingVariable.GetCachedView();
             _cachingVariable.FallbackValueFormat = ValueFormat.Binary;
@@ -80,10 +81,10 @@ namespace YetiVSI.Test.DebugEngine.Variables
 
             _wrappedVariable.Received(2).GetCachedView();
 
-            var dummy = _cachingVariable.StringView;
+            await _cachingVariable.StringViewAsync();
             _cachingVariable.FallbackValueFormat = ValueFormat.Boolean;
-            var dummyAgain = _cachingVariable.StringView;
-            var dummyCheck = _wrappedVariable.Received(2).StringView;
+            await _cachingVariable.StringViewAsync();
+            await _wrappedVariable.Received(2).StringViewAsync();
         }
     }
 }

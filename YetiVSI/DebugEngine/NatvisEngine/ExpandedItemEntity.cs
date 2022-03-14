@@ -127,7 +127,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 IVariableInformation expandInfo = await _evaluator.EvaluateExpressionAsync(
                     _expandedItem.Value, _variable, _natvisScope, null);
 
-                _childAdapter = expandInfo.GetChildAdapter();
+                _childAdapter = await expandInfo.GetChildAdapterAsync();
             }
         }
 

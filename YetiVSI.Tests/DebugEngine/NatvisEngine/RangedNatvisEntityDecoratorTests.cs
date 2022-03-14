@@ -120,7 +120,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                                                   TestNatvisEntity.Create().WithCount(10));
 
             IList<IVariableInformation> children = await rangedEntity.GetChildrenAsync(0, 3);
-            var moreAdapter = children[2].GetChildAdapter();
+            var moreAdapter = await children[2].GetChildAdapterAsync();
 
             Assert.That(await moreAdapter.CountChildrenAsync(), Is.EqualTo(3));
 

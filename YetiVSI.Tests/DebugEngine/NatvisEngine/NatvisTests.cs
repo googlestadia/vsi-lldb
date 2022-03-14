@@ -158,8 +158,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(await varInfo.ValueAsync(), Is.EqualTo("actualValue"));
-            Assert.That(varInfo.MightHaveChildren, Is.EqualTo(false));
-            Assert.That(varInfo.StringView, Is.EqualTo(""));
+            Assert.That(await varInfo.MightHaveChildrenAsync(), Is.EqualTo(false));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo(""));
         }
 
         [Test]
@@ -529,7 +529,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(await varInfo.ValueAsync(), Is.EqualTo("smartPointerDisplayString"));
 
-            Assert.That(varInfo.MightHaveChildren());
+            Assert.That(await varInfo.MightHaveChildrenAsync());
             IVariableInformation[] children = await varInfo.GetAllChildrenAsync();
             Assert.That(children.Length, Is.EqualTo(2));
             Assert.That(children[0].DisplayName, Is.EqualTo("someVar_0"));
@@ -563,7 +563,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
 
-            Assert.That(varInfo.MightHaveChildren());
+            Assert.That(await varInfo.MightHaveChildrenAsync());
             IVariableInformation[] children = await varInfo.GetAllChildrenAsync();
             Assert.That(children.Length, Is.EqualTo(1));
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("\"MyItemValue\""));
@@ -620,7 +620,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 RemoteValueFakeUtil.CreateSimpleString("rawChildName", "rawChildValue"));
 
             var varInfo = CreateVarInfo(remoteValue);
-            Assert.That(varInfo.MightHaveChildren());
+            Assert.That(await varInfo.MightHaveChildrenAsync());
             IVariableInformation[] children = await varInfo.GetAllChildrenAsync();
             Assert.That(children.Length, Is.EqualTo(1));
             Assert.That(children[0].DisplayName, Is.EqualTo("rawChildName"));
@@ -1037,7 +1037,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         #region StringView
 
         [Test]
-        public void SimpleStringView()
+        public async Task SimpleStringViewAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1055,11 +1055,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(varInfo.StringView, Is.EqualTo("MyFormattedValue"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("MyFormattedValue"));
         }
 
         [Test]
-        public void StringViewWithWideCharString()
+        public async Task StringViewWithWideCharStringAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1077,7 +1077,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(varInfo.StringView, Is.EqualTo("MyFormattedValue"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("MyFormattedValue"));
         }
 
         [Test]
@@ -1099,11 +1099,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(await varInfo.ValueAsync(), Is.EqualTo("MyFormattedDisplayString"));
-            Assert.That(varInfo.StringView, Is.EqualTo(""));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo(""));
         }
 
         [Test]
-        public void StringViewItemWithConditionAttribute()
+        public async Task StringViewItemWithConditionAttributeAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1127,7 +1127,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(varInfo.StringView, Is.EqualTo("MyFormattedValue_2"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("MyFormattedValue_2"));
         }
 
         [Test]
@@ -1159,7 +1159,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             nLogSpy.Clear();
             var varInfo = CreateVarInfo(remoteValue);
 
-            Assert.That(varInfo.StringView, Is.EqualTo(""));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo(""));
 
             Assert.That(nLogSpy.GetOutput(), Does.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("invalidExpression"));
@@ -1172,7 +1172,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
-        public void StringViewWithExpressionTypeDefiningStringView()
+        public async Task StringViewWithExpressionTypeDefiningStringViewAsync()
         {
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1197,11 +1197,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue2);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(varInfo.StringView, Is.EqualTo("MyFormattedValue"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("MyFormattedValue"));
         }
 
         [Test]
-        public void StringViewWithExpressionTypeNotDefiningStringView()
+        public async Task StringViewWithExpressionTypeNotDefiningStringViewAsync()
         {
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1222,11 +1222,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(varInfo.StringView, Is.EqualTo(""));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo(""));
         }
 
         [Test]
-        public void StringViewWithFalseOptionalAttribute()
+        public async Task StringViewWithFalseOptionalAttributeAsync()
         {
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1247,12 +1247,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
 
             Assert.That(varInfo.DisplayName, Is.EqualTo("varName"));
-            Assert.That(varInfo.StringView, Is.EqualTo(""));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo(""));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("ERROR"));
         }
 
         [Test]
-        public void StringViewWithTrueOptionalAttribute()
+        public async Task StringViewWithTrueOptionalAttributeAsync()
         {
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1273,11 +1273,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(varInfo.DisplayName, Is.EqualTo("varName"));
-            Assert.That(varInfo.StringView, Is.EqualTo("ExpectedStringViewString"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("ExpectedStringViewString"));
         }
 
         [Test]
-        public void StringViewUsesSmartPointer()
+        public async Task StringViewUsesSmartPointerAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1300,14 +1300,14 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("pointeeInstance", pointeeInstance);
 
             var varInfo = CreateVarInfo(remoteValue);
-            Assert.That(varInfo.StringView, Is.EqualTo("pointeeStringViewText"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("pointeeStringViewText"));
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
         }
 
         [Test]
-        public void StringViewFallsBackToSmartPointerIfConditionFails()
+        public async Task StringViewFallsBackToSmartPointerIfConditionFailsAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1332,14 +1332,14 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
 
             var varInfo = CreateVarInfo(remoteValue);
-            Assert.That(varInfo.StringView, Is.EqualTo("pointeeStringViewText"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("pointeeStringViewText"));
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
         }
 
         [Test]
-        public void StringViewFallsBackToSmartPointerIfOptional()
+        public async Task StringViewFallsBackToSmartPointerIfOptionalAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1364,14 +1364,14 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
             var varInfo = CreateVarInfo(remoteValue);
-            Assert.That(varInfo.StringView, Is.EqualTo("pointeeStringViewText"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("pointeeStringViewText"));
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
         }
 
         [Test]
-        public void StringViewDoesNotUseSmartPointerIfValid()
+        public async Task StringViewDoesNotUseSmartPointerIfValidAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1395,14 +1395,14 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddStringLiteral("smartPointerStringViewText");
 
             var varInfo = CreateVarInfo(remoteValue);
-            Assert.That(varInfo.StringView, Is.EqualTo("smartPointerStringViewText"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("smartPointerStringViewText"));
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
         }
 
         [Test]
-        public void StringViewWithIncludeViewAttribute()
+        public async Task StringViewWithIncludeViewAttributeAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1418,17 +1418,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddStringLiteral("MyFormattedValue");
 
             var varInfo = CreateVarInfo(remoteValue);
-            Assert.That(varInfo.StringView, Is.EqualTo(""));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo(""));
 
             varInfo = CreateVarInfo(remoteValue, "view(MyIncludeView)");
-            Assert.That(varInfo.StringView, Is.EqualTo("MyFormattedValue"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("MyFormattedValue"));
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
         }
 
         [Test]
-        public void StringViewWithExcludeViewAttribute()
+        public async Task StringViewWithExcludeViewAttributeAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1444,10 +1444,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddStringLiteral("MyFormattedValue");
 
             var varInfo = CreateVarInfo(remoteValue);
-            Assert.That(varInfo.StringView, Is.EqualTo("MyFormattedValue"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("MyFormattedValue"));
 
             varInfo = CreateVarInfo(remoteValue, "view(MyExcludeView)");
-            Assert.That(varInfo.StringView, Is.EqualTo(""));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo(""));
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
@@ -1455,7 +1455,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
 
         [Test]
-        public void StringViewExpressionWithNonStringType()
+        public async Task StringViewExpressionWithNonStringTypeAsync()
         {
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1476,7 +1476,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(varInfo.StringView, Is.EqualTo(""));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo(""));
         }
 
         #endregion
@@ -1484,7 +1484,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         #region Expand
 
         [Test]
-        public void StringViewUnescapesStringsAndRemovesBraces()
+        public async Task StringViewUnescapesStringsAndRemovesBracesAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1501,7 +1501,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddStringLiteral(unescapedString);
 
             var varInfo = CreateVarInfo(remoteValue);
-            Assert.That(varInfo.StringView, Is.EqualTo(unescapedString));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo(unescapedString));
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
@@ -6000,7 +6000,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(children[0].DisplayName, Is.EqualTo("[Size]"));
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("17"));
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("17"));
-            Assert.That(children[0].StringView, Is.EqualTo("raw integer"));
+            Assert.That(await children[0].StringViewAsync(), Is.EqualTo("raw integer"));
         }
 
         [Test]
@@ -6028,7 +6028,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Make sure these don't explode.
             Assert.That(await children[0].ValueAsync(), Is.EqualTo(""));
-            Assert.That(children[0].StringView, Is.EqualTo(""));
+            Assert.That(await children[0].StringViewAsync(), Is.EqualTo(""));
         }
 
         [Test]
@@ -10112,7 +10112,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         #region MightHaveChildren
 
         [Test]
-        public void MightHaveChildrenChecksRemoteValueWhenNoVisualizerDefined()
+        public async Task MightHaveChildrenChecksRemoteValueWhenNoVisualizerDefinedAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -10135,15 +10135,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfoWithoutChildren = CreateVarInfo(remoteValueWithoutChildren);
             var varInfoWithChildren = CreateVarInfo(remoteValueWithChildren);
 
-            Assert.That(varInfoWithoutChildren.MightHaveChildren(), Is.False);
-            Assert.That(varInfoWithChildren.MightHaveChildren(), Is.True);
+            Assert.That(await varInfoWithoutChildren.MightHaveChildrenAsync(), Is.False);
+            Assert.That(await varInfoWithChildren.MightHaveChildrenAsync(), Is.True);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
         }
 
         [Test]
-        public void MightHaveChildrenChecksRemoteValueWhenNoExpandTypeDefined()
+        public async Task MightHaveChildrenChecksRemoteValueWhenNoExpandTypeDefinedAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -10169,15 +10169,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 CreateVarInfo(remoteValueWithoutChildren);
             IVariableInformation varInfoWithChildren = CreateVarInfo(remoteValueWithChildren);
 
-            Assert.That(varInfoWithoutChildren.MightHaveChildren(), Is.False);
-            Assert.That(varInfoWithChildren.MightHaveChildren(), Is.True);
+            Assert.That(await varInfoWithoutChildren.MightHaveChildrenAsync(), Is.False);
+            Assert.That(await varInfoWithChildren.MightHaveChildrenAsync(), Is.True);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
         }
 
         [Test]
-        public void MightHaveChildrenIsFalseWhenExpandIsEmptyAndRawViewIsHidden()
+        public async Task MightHaveChildrenIsFalseWhenExpandIsEmptyAndRawViewIsHiddenAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -10193,14 +10193,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_childVar", 16));
 
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
-            Assert.That(varInfo.MightHaveChildren(), Is.False);
+            Assert.That(await varInfo.MightHaveChildrenAsync(), Is.False);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
         }
 
         [Test]
-        public void MightHaveChildrenChecksRemoteValueWhenExpandIsEmptyAndRawViewIsVisible()
+        public async Task
+        MightHaveChildrenChecksRemoteValueWhenExpandIsEmptyAndRawViewIsVisibleAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -10222,15 +10223,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 CreateVarInfo(remoteValueWithoutChildren);
             IVariableInformation varInfoWithChildren = CreateVarInfo(remoteValueWithChildren);
 
-            Assert.That(varInfoWithoutChildren.MightHaveChildren(), Is.False);
-            Assert.That(varInfoWithChildren.MightHaveChildren(), Is.True);
+            Assert.That(await varInfoWithoutChildren.MightHaveChildrenAsync(), Is.False);
+            Assert.That(await varInfoWithChildren.MightHaveChildrenAsync(), Is.True);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
         }
 
         [Test]
-        public void MightHaveChildrenIsTrueWhenExpandIsNotEmpty()
+        public async Task MightHaveChildrenIsTrueWhenExpandIsNotEmptyAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -10253,7 +10254,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // In this case, MightHaveChildren() gives a false positive, but this is WAI as it
             // saves the evaluation of the synthetic condition.
-            Assert.That(varInfo.MightHaveChildren(), Is.True);
+            Assert.That(await varInfo.MightHaveChildrenAsync(), Is.True);
 
             // Ad-hoc check to confirm <Expand> children were NOT evaluated.
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("invalidExpression"));
@@ -10263,7 +10264,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
-        public void MightHaveChildrenIsTrueWhenSmartPointerIsDefined()
+        public async Task MightHaveChildrenIsTrueWhenSmartPointerIsDefinedAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -10279,7 +10280,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 RemoteValueFakeUtil.CreateClass("CustomType", "myVar", "");
 
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
-            Assert.That(varInfo.MightHaveChildren(), Is.True);
+            Assert.That(await varInfo.MightHaveChildrenAsync(), Is.True);
 
             // Ad-hoc check to confirm that <SmartPointer> was NOT evaluated.
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("invalidPointer"));
@@ -10399,7 +10400,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
-        public void RawFormatSpecifierMightHaveChildren()
+        public async Task RawFormatSpecifierMightHaveChildrenAsync()
         {
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -10420,7 +10421,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             nLogSpy.Clear();
             var varInfo = CreateVarInfo(remoteValue, FormatSpecifierUtil.RawFormatSpecifier);
 
-            Assert.That(varInfo.MightHaveChildren(), Is.False);
+            Assert.That(await varInfo.MightHaveChildrenAsync(), Is.False);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
         }
@@ -10477,8 +10478,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             IVariableInformation[] children = await varInfo.GetAllChildrenAsync();
 
+            IChildAdapter adapter = await varInfo.GetChildAdapterAsync();
             Assert.AreEqual("SSE", varInfo.DisplayName);
-            Assert.AreEqual(8, await varInfo.GetChildAdapter().CountChildrenAsync());
+            Assert.AreEqual(8, await adapter.CountChildrenAsync());
             Assert.AreEqual(8, children.Length);
             await CheckRegisterFormatAsync("xmm0f", "{0.00000E0}", "vf32", children[0]);
             await CheckRegisterFormatAsync("xmm1f", "{1.00000E0}", "vf32", children[1]);
@@ -10518,8 +10520,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             IVariableInformation[] children = await varInfo.GetAllChildrenAsync();
 
+            IChildAdapter adapter = await varInfo.GetChildAdapterAsync();
             Assert.AreEqual("SSE2", varInfo.DisplayName);
-            Assert.AreEqual(24, await varInfo.GetChildAdapter().CountChildrenAsync());
+            Assert.AreEqual(24, await adapter.CountChildrenAsync());
             Assert.AreEqual(24, children.Length);
             await CheckRegisterFormatAsync("xmm0d", "{0.00000000000000E0}", "vf64",children[0]);
             await CheckRegisterFormatAsync("xmm1d", "{1.00000000000000E0}", "vf64", children[1]);
@@ -10577,7 +10580,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
-        public void CustomVisualizersDontDefineStdStringByDefault()
+        public async Task CustomVisualizersDontDefineStdStringByDefaultAsync()
         {
             var remoteValue =
                 RemoteValueFakeUtil.CreateClass(BASIC_STRING_TYPE, "dummyVarName", "actualValue");
@@ -10587,11 +10590,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var varInfo = CreateVarInfo(remoteValue);
 
-            Assert.That(varInfo.StringView, Does.Not.Contain("StringViewValue"));
+            Assert.That(await varInfo.StringViewAsync(), Does.Not.Contain("StringViewValue"));
         }
 
         [Test]
-        public void CustomVisualizersDefinesStdStringIfEnabled()
+        public async Task CustomVisualizersDefinesStdStringIfEnabledAsync()
         {
             _natvisExpander.VisualizerScanner.EnableStringVisualizer();
             _natvisExpander.VisualizerScanner.Reload();
@@ -10604,11 +10607,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(varInfo.StringView, Is.EqualTo("StringViewValue"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("StringViewValue"));
         }
 
         [Test]
-        public void CustomVisualizersStdStringCanBeOverridden()
+        public async Task CustomVisualizersStdStringCanBeOverriddenAsync()
         {
             _natvisExpander.VisualizerScanner.EnableStringVisualizer();
             _natvisExpander.VisualizerScanner.Reload();
@@ -10629,7 +10632,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(varInfo.StringView, Is.EqualTo("StringViewOverride"));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo("StringViewOverride"));
         }
 
 #endregion

@@ -80,14 +80,16 @@ namespace YetiVSI.Test.DebugEngine.Variables
             Assert.That(children[2].DisplayName, Is.EqualTo("[More]"));
 
             IVariableInformation more = children[2];
-            CollectionAssert.AreEqual(new[] {"child3", "child4", "[More]"},
-                                      await GetAllChildNamesAsync(more.GetChildAdapter()));
+            IChildAdapter adapter = await more.GetChildAdapterAsync();
 
-            IVariableInformation nextMore =
-                (await more.GetChildAdapter().GetChildrenAsync(2, 1))[0];
+            CollectionAssert.AreEqual(new[] { "child3", "child4", "[More]" },
+                                      await GetAllChildNamesAsync(adapter));
 
-            CollectionAssert.AreEqual(new[] {"child5"},
-                                      await GetAllChildNamesAsync(nextMore.GetChildAdapter()));
+            IVariableInformation nextMore = (await adapter.GetChildrenAsync(2, 1))[0];
+
+            CollectionAssert.AreEqual(
+                new[] { "child5" },
+                await GetAllChildNamesAsync(await nextMore.GetChildAdapterAsync()));
         }
 
         [Test]

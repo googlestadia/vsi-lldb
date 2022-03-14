@@ -52,35 +52,36 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         public override async Task<string> ValueAsync() => await Task.FromResult(_displayValue);
 
-        public override bool MightHaveChildren()
+        public override Task<bool> MightHaveChildrenAsync()
         {
             // In contrast to regular variables, synthetic variables don't ever show raw view.
             ExpandType expandType = _syntheticItemType.Expand;
-            return expandType?.Items != null && expandType.Items.Length > 0;
+            return Task.FromResult(expandType?.Items != null && expandType.Items.Length > 0);
         }
 
-        public override IChildAdapter GetChildAdapter() =>
-            _natvisCollectionFactory.Create(VarInfo, _syntheticItemType.Expand, _natvisScope);
+        public override Task<IChildAdapter> GetChildAdapterAsync()
+        {
+            IChildAdapter adapter =
+                _natvisCollectionFactory.Create(VarInfo, _syntheticItemType.Expand, _natvisScope);
+            return Task.FromResult(adapter);
+        }
 
         public override IVariableInformation GetCachedView() =>
             new NatvisSyntheticVariableInformation(_stringFormatter, _natvisCollectionFactory,
                                                    _natvisScope, _syntheticItemType,
                                                    VarInfo.GetCachedView(), _displayValue);
 
-        public override string StringView
+        public override async Task<string> StringViewAsync()
         {
-            get
-            {
-                NatvisStringFormatter.FormatStringContext formatStringContext =
-                    _syntheticItemType.StringView == null
-                        ? new NatvisStringFormatter.FormatStringContext()
-                        : new NatvisStringFormatter.FormatStringContext {
-                              StringElements = _syntheticItemType.StringView.Select(
-                                  e => new StringViewElement(e)),
-                              NatvisScope = _natvisScope
-                          };
-                return _stringFormatter.FormatStringView(formatStringContext, VarInfo);
-            }
+            NatvisStringFormatter.FormatStringContext formatStringContext =
+                _syntheticItemType.StringView == null
+                    ? new NatvisStringFormatter.FormatStringContext()
+                    : new NatvisStringFormatter.FormatStringContext {
+                          StringElements =
+                              _syntheticItemType.StringView.Select(e => new StringViewElement(e)),
+                          NatvisScope = _natvisScope
+                      };
+            return await _stringFormatter.FormatStringViewAsync(formatStringContext, VarInfo);
         }
 
         #endregion

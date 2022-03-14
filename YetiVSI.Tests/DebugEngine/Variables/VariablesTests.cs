@@ -228,7 +228,8 @@ namespace YetiVSI.Test.DebugEngine.Variables
 
             RemoteValueVariableInformation varInfo = CreateVarInfo(remoteValue, "");
 
-            Assert.That(await varInfo.GetChildAdapter().CountChildrenAsync(), Is.EqualTo(42u));
+            IChildAdapter adapter = await varInfo.GetChildAdapterAsync();
+            Assert.That(await adapter.CountChildrenAsync(), Is.EqualTo(42u));
             Assert.That(logSpy.GetOutput(), Does.Not.Contain("WARNING"));
             Assert.That(logSpy.GetOutput(), Does.Not.Contain("ERROR"));
         }
@@ -247,7 +248,8 @@ namespace YetiVSI.Test.DebugEngine.Variables
                 varInfoBuilder, "5", RemoteValueFormatProvider.Get("5"), ValueFormat.Default,
                 remoteValue, "displayName", CustomVisualizer.None, childAdapterFactory);
 
-            Assert.That(await varInfo.GetChildAdapter().CountChildrenAsync(), Is.EqualTo(5u));
+            IChildAdapter adapter = await varInfo.GetChildAdapterAsync();
+            Assert.That(await adapter.CountChildrenAsync(), Is.EqualTo(5u));
             Assert.That(logSpy.GetOutput(), Does.Not.Contain("WARNING"));
             Assert.That(logSpy.GetOutput(), Does.Not.Contain("ERROR"));
         }
@@ -365,14 +367,14 @@ namespace YetiVSI.Test.DebugEngine.Variables
         }
 
         [Test]
-        public void StringViewUnescapesStringsAndRemovesBraces()
+        public async Task StringViewUnescapesStringsAndRemovesBracesAsync()
         {
             string unescapedString = "somes\\tring\"view";
             var remoteValue = RemoteValueFakeUtil.CreateSimpleString(
                 "x", CStringEscapeHelper.Escape(unescapedString));
 
             var varInfo = CreateVarInfo(remoteValue, "x");
-            Assert.That(varInfo.StringView, Is.EqualTo(unescapedString));
+            Assert.That(await varInfo.StringViewAsync(), Is.EqualTo(unescapedString));
         }
     }
 

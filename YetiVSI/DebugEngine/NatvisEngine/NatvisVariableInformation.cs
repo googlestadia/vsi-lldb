@@ -121,25 +121,28 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             _natvisExpander = natvisExpander;
         }
 
-        public override async Task<string> ValueAsync() => UseNatvis
-            ? await _natvisExpander.StringFormatter.FormatDisplayStringAsync(VarInfo)
-            : await VarInfo.ValueAsync();
+        public override async Task<string> ValueAsync() =>
+            await UseNatvisAsync()
+                ? await _natvisExpander.StringFormatter.FormatDisplayStringAsync(VarInfo)
+                : await VarInfo.ValueAsync();
 
-        public override bool MightHaveChildren() => UseNatvis
-            ? _natvisExpander.MightHaveChildren(VarInfo)
-            : VarInfo.MightHaveChildren();
+        public override async Task<bool> MightHaveChildrenAsync() =>
+            await UseNatvisAsync() ? await _natvisExpander.MightHaveChildrenAsync(VarInfo)
+                                   : await VarInfo.MightHaveChildrenAsync();
 
-        public override IChildAdapter GetChildAdapter() =>
-            UseNatvis ? _natvisExpander.GetChildAdapter(VarInfo) : VarInfo.GetChildAdapter();
+        public override async Task<IChildAdapter> GetChildAdapterAsync() =>
+            await UseNatvisAsync() ? await _natvisExpander.GetChildAdapterAsync(VarInfo)
+                                   : await VarInfo.GetChildAdapterAsync();
 
-        public override string StringView => UseNatvis
-            ? _natvisExpander.StringFormatter.FormatStringView(VarInfo)
-            : VarInfo.StringView;
+        public override async Task<string> StringViewAsync() =>
+            await UseNatvisAsync()
+                ? await _natvisExpander.StringFormatter.FormatStringViewAsync(VarInfo)
+                : await VarInfo.StringViewAsync();
 
         public override IVariableInformation GetCachedView() =>
             new NatvisVariableInformation(_natvisExpander, VarInfo.GetCachedView());
 
-        bool UseNatvis => _natvisExpander.IsTypeViewVisible(VarInfo);
+        async Task<bool> UseNatvisAsync() => await _natvisExpander.IsTypeViewVisibleAsync(VarInfo);
     }
 
     public class RawChildVariableInformation : VariableInformationDecorator

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 ﻿using System;
+using System.Threading.Tasks;
 using YetiCommon.CastleAspects;
 using YetiVSI.DebugEngine.Variables;
 
@@ -38,9 +39,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             VisualizerScanner = visualizerScanner;
         }
 
-        internal bool MightHaveChildren(IVariableInformation variable)
+        internal async Task<bool> MightHaveChildrenAsync(IVariableInformation variable)
         {
-            VisualizerInfo visualizer = VisualizerScanner.FindType(variable);
+            VisualizerInfo visualizer = await VisualizerScanner.FindTypeAsync(variable);
             ExpandType expandType = visualizer?.GetExpandType();
             if (expandType != null)
             {
@@ -49,11 +50,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     return true;
                 }
 
-                return !expandType.HideRawView && variable.MightHaveChildren();
+                return !expandType.HideRawView && await variable.MightHaveChildrenAsync();
             }
 
             SmartPointerType smartPointerType = visualizer?.GetSmartPointerType();
-            return smartPointerType != null || variable.MightHaveChildren();
+            return smartPointerType != null || await variable.MightHaveChildrenAsync();
         }
 
         /// <summary>
@@ -61,23 +62,24 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// IncludeView/ExcludeView attributes and the view should be hidden based on
         /// |variable.FormatSpecifier|. Returns true in all other cases.
         /// </summary>
-        internal bool IsTypeViewVisible(IVariableInformation variable)
+        internal async Task<bool> IsTypeViewVisibleAsync(IVariableInformation variable)
         {
-            VisualizerType visualizer = VisualizerScanner.FindType(variable)?.Visualizer;
+            VisualizerType visualizer =
+                (await VisualizerScanner.FindTypeAsync(variable))?.Visualizer;
             return visualizer != null &&
                 NatvisViewsUtil.IsViewVisible(variable.FormatSpecifier, visualizer.IncludeView,
                                               visualizer.ExcludeView);
         }
 
-        internal IChildAdapter GetChildAdapter(IVariableInformation variable)
+        internal async Task<IChildAdapter> GetChildAdapterAsync(IVariableInformation variable)
         {
-            VisualizerInfo visualizer = VisualizerScanner.FindType(variable);
+            VisualizerInfo visualizer = await VisualizerScanner.FindTypeAsync(variable);
             if (visualizer?.Visualizer.Items == null)
             {
-                return variable.GetChildAdapter();
+                return await variable.GetChildAdapterAsync();
             }
 
-            IChildAdapter childAdapter = CreateNatvisChildAdapter(visualizer, variable);
+            IChildAdapter childAdapter = await CreateNatvisChildAdapterAsync(visualizer, variable);
 
             // Special case for SSE registers. VS calls VariableInformationEnum.Count, even if
             // the SSE registers are not visible. Without this, we would have to expand all
@@ -91,8 +93,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             return childAdapter;
         }
 
-        IChildAdapter CreateNatvisChildAdapter(VisualizerInfo visualizer,
-                                               IVariableInformation variable)
+        async Task<IChildAdapter> CreateNatvisChildAdapterAsync(VisualizerInfo visualizer,
+                                                                IVariableInformation variable)
         {
             ExpandType expandType = visualizer.GetExpandType();
             if (expandType != null)
@@ -104,11 +106,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             SmartPointerType smartPointerType = visualizer.GetSmartPointerType();
             if (smartPointerType != null)
             {
-                return _smartPointerFactory.Create(
-                    variable, smartPointerType, visualizer.NatvisScope, variable.GetChildAdapter());
+                return _smartPointerFactory.Create(variable, smartPointerType,
+                                                   visualizer.NatvisScope,
+                                                   await variable.GetChildAdapterAsync());
             }
 
-            return variable.GetChildAdapter();
+            return await variable.GetChildAdapterAsync();
         }
     }
 }

@@ -138,12 +138,11 @@ namespace YetiVSI.DebugEngine
                                     enum_DBG_ATTRIB_FLAGS attributeFilter, string nameFilter,
                                     uint timeout, out IEnumDebugPropertyInfo2 propertyEnum)
         {
-            propertyEnum = _taskExecutor.Run(() =>
-            {
+            propertyEnum = _taskExecutor.Run(async () => {
                 _varInfo.FallbackValueFormat = GetFallbackValueFormat(radix);
                 IVariableInformation cachedVarInfo = _varInfo.GetCachedView();
                 IChildrenProvider childrenProvider = _childrenProviderFactory.Create(
-                    _target, cachedVarInfo.GetChildAdapter(), fields, radix);
+                    _target, await cachedVarInfo.GetChildAdapterAsync(), fields, radix);
 
                 return _varInfoEnumFactory.Create(childrenProvider);
             });
@@ -256,7 +255,7 @@ namespace YetiVSI.DebugEngine
                     info.dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_VALUE_ERROR;
                 }
 
-                if (cachedVarInfo.MightHaveChildren())
+                if (await cachedVarInfo.MightHaveChildrenAsync())
                 {
                     info.dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_OBJ_IS_EXPANDABLE;
                 }
@@ -266,7 +265,7 @@ namespace YetiVSI.DebugEngine
                     info.dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_VALUE_READONLY;
                 }
 
-                if (!string.IsNullOrEmpty(cachedVarInfo.StringView))
+                if (!string.IsNullOrEmpty(await cachedVarInfo.StringViewAsync()))
                 {
                     // Causes Visual Studio to show the text visualizer selector. i.e. the
                     // magnifying glass with Text Visualizer, XML Visualizer, etc.
@@ -310,14 +309,18 @@ namespace YetiVSI.DebugEngine
 
         public int GetStringCharLength(out uint pLen)
         {
-            string stringView = _varInfo.GetCachedView().StringView ?? string.Empty;
+            var cachedView = _varInfo.GetCachedView();
+            string stringView =
+                _taskExecutor.Run(async () => await cachedView.StringViewAsync() ?? string.Empty);
             pLen = (uint) stringView.Length;
             return VSConstants.S_OK;
         }
 
         public int GetStringChars(uint buflen, ushort[] rgString, out uint pceltFetched)
         {
-            string stringView = _varInfo.GetCachedView().StringView ?? string.Empty;
+            var cachedView = _varInfo.GetCachedView();
+            string stringView =
+                _taskExecutor.Run(async () => await cachedView.StringViewAsync() ?? string.Empty);
             uint numChars = Math.Min(buflen, (uint) stringView.Length);
             for (int i = 0; i < numChars; ++i)
             {
@@ -397,11 +400,11 @@ namespace YetiVSI.DebugEngine
                                             out IAsyncDebugPropertyInfoProvider
                                                 ppPropertiesProvider)
         {
-            ppPropertiesProvider = _taskExecutor.Run(() =>
-            {
+            ppPropertiesProvider = _taskExecutor.Run(async () => {
+                IVariableInformation cachedVarInfo = _varInfo.GetCachedView();
                 IChildrenProvider childrenProvider = _childrenProviderFactory.Create(
-                    _target, _varInfo.GetCachedView().GetChildAdapter(),
-                    (enum_DEBUGPROP_INFO_FLAGS) dwFields, dwRadix);
+                    _target, await cachedVarInfo.GetChildAdapterAsync(),
+                    (enum_DEBUGPROP_INFO_FLAGS)dwFields, dwRadix);
 
                 return new AsyncDebugPropertyInfoProvider(childrenProvider, _taskExecutor);
             });

@@ -40,7 +40,8 @@ namespace YetiVSI.DebugEngine.Variables
             static async Task<IVariableInformation> GetChildAsync(
                 IVariableInformation varInfo, int index)
             {
-                var children = (await varInfo.GetChildAdapter().GetChildrenAsync(index, 1));
+                var adapter = await varInfo.GetChildAdapterAsync();
+                var children = await adapter.GetChildrenAsync(index, 1);
                 return children.FirstOrDefault() ??
                     new ErrorVariableInformation(varInfo.DisplayName,
                                                  "<out-of-bounds child index in 'expand()' format specifier>");
