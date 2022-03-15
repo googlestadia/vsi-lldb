@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿namespace YetiVSI.Shared.Metrics
+namespace Metrics.Shared
 {
-    public class BinaryType
+    public class DeveloperApiEndpoint
     {
         public class Types
         {
             public enum Type
             {
-                Vsi,
+                Prod,
+                Custom,
             }
         }
     }

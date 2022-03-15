@@ -12,29 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿namespace YetiVSI.Shared.Metrics
+namespace Metrics.Shared
 {
-    public class BinarySignatureCheck
+    public class BinaryType
     {
         public class Types
         {
-            public enum Result
+            public enum Type
             {
-                AlwaysCopy,
-                YesCopy,
-                NoCopy,
-            }
-
-            public enum ErrorCode
-            {
-                LocalBinaryError,
-                LocalCommandError,
-                LocalSignatureMismatch,
-                LocalSignatureMissing,
-                RemoteBinaryError,
-                RemoteBinaryMismatch,
-                RemoteCommandError,
-                UnknownError,
+                Vsi,
             }
         }
     }

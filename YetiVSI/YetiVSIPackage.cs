@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -22,6 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EnvDTE;
 using EnvDTE80;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.Logging;
 using YetiVSI.Attributes;
@@ -30,12 +32,11 @@ using YetiVSI.DebugEngine;
 using YetiVSI.DebuggerOptions;
 using YetiVSI.LLDBShell;
 using YetiVSI.LoadSymbols;
-using YetiVSI.Metrics;
+using Metrics;
 using YetiVSI.Profiling;
-using YetiVSI.Shared.Metrics;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
 using Task = System.Threading.Tasks.Task;
-using Microsoft;
+using YetiVSI.Metrics;
 
 namespace YetiVSI
 {

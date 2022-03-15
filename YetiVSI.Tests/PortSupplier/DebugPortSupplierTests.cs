@@ -23,9 +23,9 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Metrics.Shared;
 using YetiCommon;
 using YetiVSI.PortSupplier;
-using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
 
 namespace YetiVSI.Test.PortSupplier

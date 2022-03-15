@@ -24,6 +24,7 @@ using DebuggerApi;
 using DebuggerGrpcClient;
 using ELFSharp.ELF;
 using GgpGrpc.Models;
+using Metrics.Shared;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
@@ -32,8 +33,6 @@ using YetiVSI.DebugEngine.CoreDumps;
 using YetiVSI.DebugEngine.NatvisEngine;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
-using YetiVSI.Util;
 using static YetiVSI.DebugEngine.DebugEngine;
 
 namespace YetiVSI.DebugEngine

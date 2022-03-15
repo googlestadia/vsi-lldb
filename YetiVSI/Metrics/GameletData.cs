@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using GgpGrpc.Models;
-using YetiVSI.Shared.Metrics;
+using GgpGrpc.Models;
+using Metrics.Shared;
 
 namespace YetiVSI.Metrics
 {

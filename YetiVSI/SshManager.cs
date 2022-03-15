@@ -14,12 +14,11 @@
 
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
-using System.Diagnostics;
 using System.Threading.Tasks;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI
 {

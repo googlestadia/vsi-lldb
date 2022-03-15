@@ -25,6 +25,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.DebugEngine.CoreDumps;
@@ -35,7 +36,6 @@ using YetiVSI.GameLaunch;
 using YetiVSI.LoadSymbols;
 using YetiVSI.Metrics;
 using YetiVSI.ProjectSystem.Abstractions;
-using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
 

@@ -18,13 +18,13 @@ using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Threading.Tasks;
+using Metrics.Shared;
 using NSubstitute;
 using NUnit.Framework;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.DebugEngine;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Test.DebugEngine
 {

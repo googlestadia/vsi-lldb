@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.Reflection;
+using System.Reflection;
+using Metrics.Shared;
 using YetiCommon.MethodRecorder;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Metrics
 {

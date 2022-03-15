@@ -29,11 +29,11 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 
 namespace YetiVSI.CoreAttach

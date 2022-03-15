@@ -12,26 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿namespace YetiVSI.Shared.Metrics
+namespace Metrics.Shared
 {
     /// <summary>
     /// This class is a stub for a proto. It uses a constant hash
     /// as it is only required to be able to override equality
     /// for testing purposes.
     /// </summary>
-    public class VSIBoundBreakpointsData
+    public class DebugSessionEndData
     {
-        public int? NumPendingBreakpoints { get; set; }
-        public int? NumBoundBreakpoints { get; set; }
+        public class Types
+        {
+            public enum EndReason
+            {
+                UnknownEndReason,
+                DebuggerStop,
+                ExecutableExit,
+                DebuggerError,
+                DebuggerDetached,
+                ProcessDetached,
+            }
+        }
+
+        public Types.EndReason? EndReason { get; set; }
 
         public override int GetHashCode()
         {
             return 42;
         }
 
-        public override bool Equals(object other) => Equals(other as VSIBoundBreakpointsData);
+        public override bool Equals(object other) => Equals(other as DebugSessionEndData);
 
-        public bool Equals(VSIBoundBreakpointsData other)
+        public bool Equals(DebugSessionEndData other)
         {
             if (ReferenceEquals(other, null))
             {
@@ -43,12 +55,7 @@
                 return true;
             }
 
-            if (other.NumPendingBreakpoints != NumPendingBreakpoints)
-            {
-                return false;
-            }
-
-            if (other.NumBoundBreakpoints != NumBoundBreakpoints)
+            if (other.EndReason != EndReason)
             {
                 return false;
             }
@@ -56,18 +63,13 @@
             return true;
         }
 
-        public VSIBoundBreakpointsData Clone() => (VSIBoundBreakpointsData) MemberwiseClone();
+        public DebugSessionEndData Clone() => (DebugSessionEndData) MemberwiseClone();
 
-        public void MergeFrom(VSIBoundBreakpointsData other)
+        public void MergeFrom(DebugSessionEndData other)
         {
-            if (other.NumPendingBreakpoints.HasValue)
+            if (other.EndReason.HasValue)
             {
-                NumPendingBreakpoints = other.NumPendingBreakpoints;
-            }
-
-            if (other.NumBoundBreakpoints.HasValue)
-            {
-                NumBoundBreakpoints = other.NumBoundBreakpoints;
+                EndReason = other.EndReason;
             }
         }
     }

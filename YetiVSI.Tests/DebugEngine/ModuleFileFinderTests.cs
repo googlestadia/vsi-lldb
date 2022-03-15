@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using NSubstitute;
+using NSubstitute;
 using NUnit.Framework;
 using SymbolStores;
 using System;
@@ -20,7 +20,7 @@ using System.IO;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiVSI.DebugEngine;
-using static YetiVSI.Shared.Metrics.DeveloperLogEvent.Types;
+using static Metrics.Shared.DeveloperLogEvent.Types;
 
 namespace YetiVSI.Test.DebugEngine
 {

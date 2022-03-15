@@ -15,9 +15,9 @@
 using System;
 using System.Collections.Generic;
 using DebuggerApi;
+using Metrics.Shared;
 using YetiCommon.PerformanceTracing;
 using YetiVSI.DebugEngine;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Metrics
 {

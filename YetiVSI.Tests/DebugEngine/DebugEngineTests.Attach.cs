@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using GgpGrpc.Models;
+using GgpGrpc.Models;
 using DebuggerGrpcClient;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
@@ -22,6 +22,7 @@ using NSubstitute.Core;
 using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
+using Metrics.Shared;
 using TestsCommon.TestSupport;
 using YetiCommon.SSH;
 using YetiVSI.DebugEngine;
@@ -30,7 +31,6 @@ using YetiVSI.LLDBShell;
 using YetiVSI.LoadSymbols;
 using YetiVSI.Metrics;
 using YetiVSI.PortSupplier;
-using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
 using YetiVSITestsCommon.Services;
 using static YetiVSI.DebugEngine.DebugEngine;

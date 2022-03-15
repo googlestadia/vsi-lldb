@@ -18,11 +18,11 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using DebuggerApi;
+using Metrics.Shared;
 using Microsoft.VisualStudio;
 using NSubstitute;
 using NUnit.Framework;
 using YetiVSI.DebugEngine;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Test.DebugEngine
 {

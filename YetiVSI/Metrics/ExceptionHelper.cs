@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using GgpGrpc;
 using GgpGrpc.Cloud.Interceptors;
 using Grpc.Core;
-using System;
+using Metrics.Shared;
 using YetiCommon;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Metrics
 {

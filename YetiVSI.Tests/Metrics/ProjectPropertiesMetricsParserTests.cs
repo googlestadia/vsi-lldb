@@ -1,19 +1,19 @@
 ﻿using System.Threading.Tasks;
+using Metrics.Shared;
 using NSubstitute;
 using NUnit.Framework;
 using YetiVSI.Metrics;
 using YetiVSI.ProjectSystem.Abstractions;
-using YetiVSI.Shared.Metrics;
 using DeployExecutableOnLaunch =
-    YetiVSI.Shared.Metrics.VSIProjectProperties.Types.Debugging.Types.DeployExecutableOnLaunch;
+    Metrics.Shared.VSIProjectProperties.Types.Debugging.Types.DeployExecutableOnLaunch;
 using SurfaceEnforcement =
-    YetiVSI.Shared.Metrics.VSIProjectProperties.Types.Debugging.Types.SurfaceEnforcement;
+    Metrics.Shared.VSIProjectProperties.Types.Debugging.Types.SurfaceEnforcement;
 using VulkanDriverVariant =
-    YetiVSI.Shared.Metrics.VSIProjectProperties.Types.Debugging.Types.VulkanDriverVariant;
+    Metrics.Shared.VSIProjectProperties.Types.Debugging.Types.VulkanDriverVariant;
 using StadiaEndpoint =
-    YetiVSI.Shared.Metrics.VSIProjectProperties.Types.Debugging.Types.StadiaEndpoint;
-using BoolValue = YetiVSI.Shared.Metrics.VSIProjectProperties.Types.BoolValue;
-using ValueType = YetiVSI.Shared.Metrics.VSIProjectProperties.Types.BoolValue.Types.Value;
+    Metrics.Shared.VSIProjectProperties.Types.Debugging.Types.StadiaEndpoint;
+using BoolValue = Metrics.Shared.VSIProjectProperties.Types.BoolValue;
+using ValueType = Metrics.Shared.VSIProjectProperties.Types.BoolValue.Types.Value;
 
 namespace YetiVSI.Test.Metrics
 {

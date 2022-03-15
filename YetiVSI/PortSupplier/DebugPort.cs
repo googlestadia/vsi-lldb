@@ -20,11 +20,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.DebugEngine;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.PortSupplier
 {

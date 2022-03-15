@@ -17,6 +17,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
+using Metrics.Shared;
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
@@ -26,7 +27,6 @@ using YetiCommon.SSH;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.ProjectSystem.Abstractions;
-using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
 
 namespace YetiVSI.Test.GameLaunch

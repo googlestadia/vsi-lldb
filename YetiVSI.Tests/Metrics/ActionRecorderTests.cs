@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using GgpGrpc.Cloud;
+using GgpGrpc.Cloud;
 using GgpGrpc.Cloud.Interceptors;
 using Grpc.Core;
 using Microsoft.VisualStudio.Threading;
@@ -21,10 +21,10 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using YetiCommon;
-using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
 using System.Threading.Tasks;
+using Metrics.Shared;
+using YetiVSI.Metrics;
 using ConfigurationException = YetiCommon.ConfigurationException;
 
 namespace YetiVSI.Test.Metrics

@@ -21,11 +21,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using GgpGrpc.Models;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.PortSupplier
 {

@@ -12,27 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿namespace YetiVSI.Shared.Metrics
+using Grpc.Core;
+
+namespace Metrics.Shared
 {
     /// <summary>
     /// This class is a stub for a proto. It uses a constant hash
     /// as it is only required to be able to override equality
     /// for testing purposes.
     /// </summary>
-    public class VSIMethodInfo
+    public class GrpcServiceCallDetails
     {
-        public string NamespaceName { get; set; }
-        public string ClassName { get; set; }
-        public string MethodName { get; set; }
+        public Status? Status { get; set; }
+        public string ServiceName { get; set; }
+        public string ServiceMethod { get; set; }
+        public long? RoundtripLatency { get; set; }
 
         public override int GetHashCode()
         {
             return 42;
         }
 
-        public override bool Equals(object other) => Equals(other as VSIMethodInfo);
+        public override bool Equals(object other) => Equals(other as GrpcServiceCallDetails);
 
-        public bool Equals(VSIMethodInfo other)
+        public bool Equals(GrpcServiceCallDetails other)
         {
             if (ReferenceEquals(other, null))
             {
@@ -44,17 +47,24 @@
                 return true;
             }
 
-            if (other.NamespaceName != NamespaceName)
+            if (other.Status.HasValue != Status.HasValue ||
+                other.Status.HasValue &&
+                other.Status.Value.StatusCode != Status.Value.StatusCode)
             {
                 return false;
             }
 
-            if (other.ClassName != ClassName)
+            if (other.ServiceName != ServiceName)
             {
                 return false;
             }
 
-            if (other.MethodName != MethodName)
+            if (other.ServiceMethod != ServiceMethod)
+            {
+                return false;
+            }
+
+            if (other.RoundtripLatency != RoundtripLatency)
             {
                 return false;
             }
@@ -62,23 +72,28 @@
             return true;
         }
 
-        public VSIMethodInfo Clone() => (VSIMethodInfo) MemberwiseClone();
+        public GrpcServiceCallDetails Clone() => (GrpcServiceCallDetails) MemberwiseClone();
 
-        public void MergeFrom(VSIMethodInfo other)
+        public void MergeFrom(GrpcServiceCallDetails other)
         {
-            if (other.NamespaceName != null)
+            if (other.Status.HasValue)
             {
-                NamespaceName = other.NamespaceName;
+                Status = other.Status;
             }
 
-            if (other.ClassName != null)
+            if (other.ServiceName != null)
             {
-                ClassName = other.ClassName;
+                ServiceName = other.ServiceName;
             }
 
-            if (other.MethodName != null)
+            if (other.ServiceMethod != null)
             {
-                MethodName = other.MethodName;
+                ServiceMethod = other.ServiceMethod;
+            }
+
+            if (other.RoundtripLatency.HasValue)
+            {
+                RoundtripLatency = other.RoundtripLatency;
             }
         }
     }

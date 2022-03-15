@@ -13,12 +13,12 @@
 // limitations under the License.
 
 using DebuggerApi;
+using Metrics.Shared;
 using NSubstitute;
 using NUnit.Framework;
 using YetiVSI.DebugEngine;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
-using static YetiVSI.Shared.Metrics.DeveloperLogEvent.Types;
+using static Metrics.Shared.DeveloperLogEvent.Types;
 
 namespace YetiVSI.Test.DebugEngine
 {

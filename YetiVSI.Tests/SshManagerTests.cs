@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc;
 using GgpGrpc.Models;
 using NSubstitute;
 using NUnit.Framework;
 using System.Threading.Tasks;
 using GgpGrpc.Cloud;
+using Metrics.Shared;
 using YetiCommon.SSH;
-using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 using YetiCommon;
+using YetiVSI.Metrics;
 
 namespace YetiVSI.Test
 {

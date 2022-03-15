@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using DebuggerApi;
+using Metrics.Shared;
 using NSubstitute;
 using NUnit.Framework;
 using YetiCommon.ExceptionRecorder;
 using YetiVSI.DebugEngine;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 using YetiVSI.Test.Metrics.TestSupport;
 
 namespace YetiVSI.Test.Metrics

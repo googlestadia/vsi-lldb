@@ -14,18 +14,18 @@
 
 using System;
 using DebuggerApi;
+using Metrics.Shared;
 using NSubstitute;
 using NUnit.Framework;
 using YetiCommon.PerformanceTracing;
 using YetiCommon.Tests.PerformanceTracing.TestSupport;
 using YetiVSI.DebugEngine;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 using YetiVSI.Test.Metrics.TestSupport;
 using ExpressionEvaluation =
-    YetiVSI.Shared.Metrics.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation;
+    Metrics.Shared.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation;
 using ExpressionEvaluationStep =
-    YetiVSI.Shared.Metrics.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
+    Metrics.Shared.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
     ExpressionEvaluationStep;
 using Step = YetiVSI.Metrics.ExpressionEvaluationRecorder.StepsRecorder.Step;
 

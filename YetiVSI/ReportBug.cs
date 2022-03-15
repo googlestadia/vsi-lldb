@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Linq;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.Logging;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 using Task = System.Threading.Tasks.Task;
 
 namespace YetiVSI

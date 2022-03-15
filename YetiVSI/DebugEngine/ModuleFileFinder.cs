@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using SymbolStores;
+using SymbolStores;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using YetiCommon;
 using YetiCommon.Logging;
-using static YetiVSI.Shared.Metrics.DeveloperLogEvent.Types;
+using static Metrics.Shared.DeveloperLogEvent.Types;
 
 namespace YetiVSI.DebugEngine
 {

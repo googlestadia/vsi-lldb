@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Security.Cryptography;
+using Metrics.Shared;
 using Microsoft.VisualStudio.Threading;
 using YetiCommon;
-using YetiVSI.Shared.Metrics;
 
-namespace YetiVSI.Metrics
+namespace Metrics
 {
     // Stub implementation of Metrics service.
     public sealed class MetricsService : SMetrics, IMetrics

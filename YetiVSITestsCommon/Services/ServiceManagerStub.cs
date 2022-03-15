@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
+using Metrics.Shared;
 using Microsoft.VisualStudio.Debugger.Interop;
 using YetiVSI;
 using YetiVSI.LLDBShell;
 using YetiVSI.LoadSymbols;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSITestsCommon.Services
 {

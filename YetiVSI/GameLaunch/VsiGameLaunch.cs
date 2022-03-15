@@ -18,10 +18,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
+using Metrics.Shared;
 using YetiCommon;
 using YetiVSI.Metrics;
-using YetiVSI.ProjectSystem.Abstractions;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.GameLaunch
 {

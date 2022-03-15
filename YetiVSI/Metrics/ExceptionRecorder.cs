@@ -17,8 +17,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Metrics.Shared;
 using YetiCommon.ExceptionRecorder;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Metrics
 {

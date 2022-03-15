@@ -2,8 +2,8 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using GgpGrpc.Models;
+using Metrics.Shared;
 using YetiVSI.ProjectSystem.Abstractions;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Metrics
 {

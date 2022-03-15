@@ -18,7 +18,6 @@ using System;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
-using YetiVSI.Shared.Metrics;
 using TestsCommon.TestSupport;
 using YetiVSI.LLDBShell;
 using YetiVSI.Test.MediumTestsSupport;
@@ -26,6 +25,7 @@ using YetiVSI.Util;
 using YetiVSITestsCommon.Services;
 using YetiVSITestsCommon;
 using System.Threading.Tasks;
+using Metrics.Shared;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebugEngine.Exit;
 

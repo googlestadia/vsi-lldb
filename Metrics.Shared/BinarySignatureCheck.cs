@@ -12,30 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿namespace YetiVSI.Shared.Metrics
+﻿namespace Metrics.Shared
 {
-    public class DeveloperEventStatus
+    public class BinarySignatureCheck
     {
         public class Types
         {
-            public enum Code
+            public enum Result
             {
-                CommandFailure,
-                AuthorizationFailure,
-                ConnectionFailure,
-                InternalError,
-                Success,
-                ExternalToolFailure,
-                ExternalToolUnavailable,
-                InvalidInput,
-                InvalidConfiguration,
-                InvalidObjectState,
-                CanceledSubTask,
-                Timeout,
-                UnknownStatus,
-                FeatureDisabled,
-                Cancelled,
-                GameLaunchFailure
+                AlwaysCopy,
+                YesCopy,
+                NoCopy,
+            }
+
+            public enum ErrorCode
+            {
+                LocalBinaryError,
+                LocalCommandError,
+                LocalSignatureMismatch,
+                LocalSignatureMissing,
+                RemoteBinaryError,
+                RemoteBinaryMismatch,
+                RemoteCommandError,
+                UnknownError,
             }
         }
     }

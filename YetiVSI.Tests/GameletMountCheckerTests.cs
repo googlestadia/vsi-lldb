@@ -18,10 +18,10 @@ using NSubstitute;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
 
 namespace YetiVSI.Test

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using NSubstitute;
+using Metrics.Shared;
+using NSubstitute;
 using NUnit.Framework;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Test.Metrics
 {

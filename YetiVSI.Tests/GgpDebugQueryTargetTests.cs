@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Threading.Tasks;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
@@ -32,7 +33,6 @@ using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Profiling;
 using YetiVSI.ProjectSystem.Abstractions;
-using YetiVSI.Shared.Metrics;
 using YetiVSITestsCommon;
 
 namespace YetiVSI.Test

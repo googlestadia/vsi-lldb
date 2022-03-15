@@ -16,8 +16,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DebuggerApi;
+using Metrics.Shared;
 using YetiVSI.DebugEngine;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Metrics
 {

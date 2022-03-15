@@ -20,9 +20,9 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DebuggerApi;
 using JetBrains.Annotations;
+using Metrics.Shared;
 using Microsoft.VisualStudio;
 using YetiCommon;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.DebugEngine
 {

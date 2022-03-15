@@ -19,10 +19,10 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.DebugEngine
 {

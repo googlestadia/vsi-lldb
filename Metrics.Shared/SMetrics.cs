@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿namespace YetiVSI.Shared.Metrics
+ namespace Metrics.Shared
 {
-    public class DeveloperApiEndpoint
+    // Passed to GetService(Type) to return a reference to IMetrics.
+    //
+    // Example:
+    //   var metrics = (IMetrics)Package.GetGlobalService(typeof(SMetrics));
+    public interface SMetrics
     {
-        public class Types
-        {
-            public enum Type
-            {
-                Prod,
-                Custom,
-            }
-        }
     }
 }

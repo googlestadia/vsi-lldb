@@ -15,9 +15,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Metrics.Shared;
 using YetiVSI.Util;
-using YetiVSI.Shared.Metrics;
-using static YetiVSI.Shared.Metrics.VSIDebugEventBatch.Types;
+using static Metrics.Shared.VSIDebugEventBatch.Types;
 
 namespace YetiVSI.Metrics
 {

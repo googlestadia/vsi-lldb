@@ -12,19 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿namespace YetiVSI.Shared.Metrics
+namespace Metrics.Shared
 {
-    public class CopyBinaryType
+    public class DeveloperEventStatus
     {
         public class Types
         {
-            public enum DeploymentMode
+            public enum Code
             {
-                UnknownDeploymentMode = 0,
-                Uncompressed = 1,
-                Compressed = 2,
-                BinaryDiff = 3,
-                GgpRsync = 4,
+                CommandFailure,
+                AuthorizationFailure,
+                ConnectionFailure,
+                InternalError,
+                Success,
+                ExternalToolFailure,
+                ExternalToolUnavailable,
+                InvalidInput,
+                InvalidConfiguration,
+                InvalidObjectState,
+                CanceledSubTask,
+                Timeout,
+                UnknownStatus,
+                FeatureDisabled,
+                Cancelled,
+                GameLaunchFailure
             }
         }
     }

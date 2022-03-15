@@ -26,6 +26,7 @@ using DebuggerGrpcClient;
 using EnvDTE;
 using EnvDTE80;
 using GgpGrpc.Cloud;
+using Metrics.Shared;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -50,7 +51,6 @@ using YetiVSI.GameLaunch;
 using YetiVSI.LLDBShell;
 using YetiVSI.Metrics;
 using YetiVSI.ProjectSystem.Abstractions;
-using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 using static YetiVSI.DebugEngine.DebugEngine;
 

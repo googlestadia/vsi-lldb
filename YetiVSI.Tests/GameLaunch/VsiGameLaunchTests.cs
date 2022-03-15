@@ -18,14 +18,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
+using Metrics.Shared;
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
 using YetiCommon;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
-using YetiVSI.ProjectSystem.Abstractions;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI.Test.GameLaunch
 {

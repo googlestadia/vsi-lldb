@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Microsoft.VisualStudio.Shell.Interop;
+using Metrics.Shared;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using YetiCommon;
-using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
+using Metrics;
 using YetiVSITestsCommon;
 using YetiVSITestsCommon.Services;
 

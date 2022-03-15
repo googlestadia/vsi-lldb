@@ -18,10 +18,10 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.ProjectSystem.Abstractions;
-using YetiVSI.Shared.Metrics;
 
 namespace YetiVSI
 {

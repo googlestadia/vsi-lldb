@@ -17,8 +17,8 @@ using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using System.IO;
+using Metrics.Shared;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 using YetiVSI.Test.Metrics.TestSupport;
 
 namespace YetiVSI.Test.Metrics

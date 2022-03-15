@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 
-namespace YetiVSI.Shared.Metrics
+namespace Metrics.Shared
 {
     /// <summary>
     /// This class is a stub for a proto. It uses a constant hash

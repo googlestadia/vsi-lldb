@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
-using YetiVSI.Shared.Metrics;
+using System;
+using Metrics.Shared;
 
 namespace YetiVSI.Metrics
 {

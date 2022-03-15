@@ -12,13 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿namespace YetiVSI.Shared.Metrics
+namespace Metrics.Shared
 {
-    // Passed to GetService(Type) to return a reference to IMetrics.
-    //
-    // Example:
-    //   var metrics = (IMetrics)Package.GetGlobalService(typeof(SMetrics));
-    public interface SMetrics
+    public class CopyBinaryType
     {
+        public class Types
+        {
+            public enum DeploymentMode
+            {
+                UnknownDeploymentMode = 0,
+                Uncompressed = 1,
+                Compressed = 2,
+                BinaryDiff = 3,
+                GgpRsync = 4,
+            }
+        }
     }
 }

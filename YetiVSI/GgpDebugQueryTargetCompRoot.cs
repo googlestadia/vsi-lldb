@@ -14,13 +14,13 @@
 
 using GgpGrpc.Cloud;
 using System.IO.Abstractions;
+using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Profiling;
-using YetiVSI.Shared.Metrics;
 using YetiVSI.Util;
 
 namespace YetiVSI

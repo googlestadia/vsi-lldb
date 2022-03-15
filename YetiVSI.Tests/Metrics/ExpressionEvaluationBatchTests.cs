@@ -19,9 +19,9 @@ using System.Collections.Generic;
 using YetiVSI.DebugEngine;
 using YetiVSI.Metrics;
 using ExpressionEvaluation =
-    YetiVSI.Shared.Metrics.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation;
+    Metrics.Shared.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation;
 using ExpressionEvaluationStep =
-    YetiVSI.Shared.Metrics.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
+    Metrics.Shared.VSIDebugExpressionEvaluationBatch.Types.ExpressionEvaluation.Types.
     ExpressionEvaluationStep;
 
 namespace YetiVSI.Test.Metrics

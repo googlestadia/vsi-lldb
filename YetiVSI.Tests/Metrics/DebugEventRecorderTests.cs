@@ -15,8 +15,8 @@
 using NSubstitute;
 using NUnit.Framework;
 using System.Linq;
+using Metrics.Shared;
 using YetiVSI.Metrics;
-using YetiVSI.Shared.Metrics;
 using YetiVSI.Test.Metrics.TestSupport;
 
 namespace YetiVSI.Test.Metrics
