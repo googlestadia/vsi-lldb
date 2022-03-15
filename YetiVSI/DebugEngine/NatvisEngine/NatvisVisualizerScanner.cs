@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -65,14 +66,17 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         private RemoteTarget _target;
         // Should we load the entire natvis (or just built-in visualizers)?
         readonly bool _loadEntireNatvis = false;
+        readonly Func<bool> _natvisCompilerEnabled;
 
         public NatvisVisualizerScanner(NatvisDiagnosticLogger logger, NatvisLoader natvisLoader,
-                                       JoinableTaskContext taskContext, bool loadEntireNatvis)
+                                       JoinableTaskContext taskContext, bool loadEntireNatvis,
+                                       Func<bool> natvisCompilerEnabled)
         {
             _logger = logger;
             _natvisLoader = natvisLoader;
             _taskContext = taskContext;
             _loadEntireNatvis = loadEntireNatvis;
+            _natvisCompilerEnabled = natvisCompilerEnabled;
 
             InitDataStructures();
         }
@@ -184,7 +188,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// <summary>
         /// Find Natvis visualizer by variable.
         /// </summary>
-        public Task<VisualizerInfo> FindTypeAsync(IVariableInformation variable)
+        public async Task<VisualizerInfo> FindTypeAsync(IVariableInformation variable)
         {
             // Check for custom visualizers first.
             if (variable.CustomVisualizer != CustomVisualizer.None)
@@ -199,17 +203,18 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                                         $"'{visualizer?.Visualizer.Name ?? "null"} '" +
                                         $"for custom visualizer '{variable.CustomVisualizer}'");
 
-                    return Task.FromResult(visualizer);
+                    return visualizer;
                 }
 
-                visualizer = Scan(pseudoTypeName, TypeName.Parse(pseudoTypeName));
+                visualizer = await ScanAsync(pseudoTypeName, TypeName.Parse(pseudoTypeName),
+                                             variable.GetRemoteValue().GetTypeInfo());
                 if (visualizer != null)
                 {
                     _logger.Verbose(() => $"Selected Natvis Visualizer " +
                                         $"'{visualizer.Visualizer.Name}'" +
                                         $" for custom visualizer '{variable.CustomVisualizer}'");
 
-                    return Task.FromResult(visualizer);
+                    return visualizer;
                 }
             }
 
@@ -223,20 +228,35 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                                     $"'{visualizer?.Visualizer.Name ?? "null"}' for type " +
                                     $"'{initialTypeName}'");
 
-                return Task.FromResult(visualizer);
+                return visualizer;
+            }
+
+            // TODO: The following if checks for dereferencing the variable are not
+            // really needed. However, LLDB doesn't handle dereferencing types of dynamic values
+            // properly, but this solution turned out to work fine. We should delete these checks
+            // after the bug in LLDB is fixed.
+            if (variable.IsReference || variable.IsPointer)
+            {
+                variable = variable.Dereference();
+            }
+            if (variable == null || variable.IsPointer)
+            {
+                // Visualizers are not used on pointer-to-pointer variables.
+                return null;
             }
 
             uint count = 0;
             foreach (SbType type in variable.GetAllInheritedTypes())
             {
-                VisualizerInfo visualizer = ScanForAliasOrCanonicalType(initialTypeName, type);
+                VisualizerInfo visualizer =
+                    await ScanForAliasOrCanonicalTypeAsync(initialTypeName, type);
                 if (visualizer != null)
                 {
                     _logger.Verbose(
                         () => $"Selected Natvis Visualizer '{visualizer.Visualizer.Name}'" +
                             $" for type '{initialTypeName}'");
 
-                    return Task.FromResult(visualizer);
+                    return visualizer;
                 }
 
                 ++count;
@@ -253,10 +273,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             _logger.Verbose($"No Natvis Visualizer found for type '{initialTypeName}'");
-            return Task.FromResult<VisualizerInfo>(null);
+            return null;
         }
 
-        private VisualizerInfo ScanForAliasOrCanonicalType(string initialTypeName, SbType type)
+        private async Task<VisualizerInfo> ScanForAliasOrCanonicalTypeAsync(string initialTypeName,
+                                                                            SbType type)
         {
             var typeName = type.GetName();
             var parsedName = TypeName.Parse(typeName);
@@ -269,7 +290,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 () => $"Scanning for Natvis Visualizer for type '{parsedName.BaseName}' for " +
                       $"variable of type '{initialTypeName}'");
 
-            VisualizerInfo visualizer = Scan(initialTypeName, parsedName);
+            VisualizerInfo visualizer = await ScanAsync(initialTypeName, parsedName, type);
             if (visualizer != null)
             {
                 return visualizer;
@@ -297,7 +318,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                                   $"'{parsedCanonicalName.BaseName}' for variable of type " +
                                   $"'{initialTypeName}'");
 
-            return Scan(initialTypeName, parsedCanonicalName);
+            return await ScanAsync(initialTypeName, parsedCanonicalName, type.GetCanonicalType());
         }
 
         void InitDataStructures()
@@ -307,15 +328,15 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             CreateCustomVisualizers();
         }
 
-        VisualizerInfo Scan(string varTypeName, TypeName typeNameToFind)
+        async Task<VisualizerInfo> ScanAsync(string varTypeName, TypeName typeNameToFind,
+                                             SbType sbType)
         {
             // Iterate list in reverse order, so that files loaded later take precedence.
             // In particular, CustomVisualizers can be overridden by user files.
             // TODO: Ordering is a bit brittle, consider using another way to make
             // CustomVisualizers overridable, e.g. priority, a custom built-in flag or storing
             // built-in Natvis in a file that can be changed by users.
-            TypeInfo bestMatch = null;
-            TypeName.MatchScore bestScore = null;
+            var candidates = new List<Tuple<TypeInfo, TypeName.MatchScore>>();
             for (int index = _typeVisualizers.Count - 1; index >= 0; --index)
             {
                 FileInfo fileInfo = _typeVisualizers[index];
@@ -323,22 +344,42 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 // TODO: match on version, etc
                 foreach (TypeInfo v in fileInfo.Visualizers)
                 {
-                    var score = new TypeName.MatchScore();
+                    var score = new TypeName.MatchScore(v.Visualizer.Priority);
                     if (v.ParsedName.Match(typeNameToFind, score))
                     {
-                        if (bestScore == null || score.CompareTo(bestScore) > 0)
-                        {
-                            bestScore = score;
-                            bestMatch = v;
-                        }
+                        candidates.Add(Tuple.Create(v, score));
                     }
                 }
             }
 
-            _visualizerCache[varTypeName] =
-                bestMatch != null ? new VisualizerInfo(bestMatch, typeNameToFind) : null;
+            // Sort candidates by score from the highest to the lowest.
+            candidates.Sort((x, y) => y.Item2.CompareTo(x.Item2));
 
-            return _visualizerCache[varTypeName];
+            if (!_natvisCompilerEnabled())
+            {
+                _visualizerCache[varTypeName] =
+                    candidates.Count > 0 ? new VisualizerInfo(candidates[0].Item1, typeNameToFind)
+                                         : null;
+                return _visualizerCache[varTypeName];
+            }
+
+            var compiler = new NatvisCompiler(_target, sbType, _logger);
+            foreach (var candidate in candidates)
+            {
+                var vizInfo = new VisualizerInfo(candidate.Item1, typeNameToFind);
+                if (await compiler.IsCompilableAsync(vizInfo))
+                {
+                    _visualizerCache[varTypeName] = vizInfo;
+                    return vizInfo;
+                }
+                // Otherwise there was an error. Log that the visualizer is ignored.
+                _logger.Verbose(
+                    $"Ignoring visualizer for type '{typeNameToFind.FullyQualifiedName}' " +
+                    $"labeled as '{candidate.Item1.Visualizer.Name}'.");
+            }
+
+            _visualizerCache[varTypeName] = null;
+            return null;
         }
 
         public void EnableStringVisualizer()

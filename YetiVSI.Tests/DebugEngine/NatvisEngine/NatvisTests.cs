@@ -14,8 +14,11 @@
 
 using Castle.DynamicProxy;
 using DebuggerApi;
+using Microsoft.VisualStudio.Threading;
+using NSubstitute;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,12 +26,12 @@ using TestsCommon.TestSupport;
 using TestsCommon.TestSupport.CastleAspects;
 using YetiVSI.DebugEngine.NatvisEngine;
 using YetiVSI.DebugEngine.Variables;
+using YetiVSI.DebuggerOptions;
+using YetiVSI.Test.MediumTestsSupport;
 using YetiVSI.Test.TestSupport;
+using YetiVSI.Test.TestSupport.Lldb;
 using YetiVSI.Test.TestSupport.NUnitExtensions;
 using Does = YetiVSI.Test.TestSupport.NUnitExtensions.Does;
-using YetiVSI.DebuggerOptions;
-using Microsoft.VisualStudio.Threading;
-using YetiVSI.Test.MediumTestsSupport;
 
 namespace YetiVSI.Test.DebugEngine.NatvisEngine
 {
@@ -77,6 +80,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         TestDoubleProxyHelper testDoubleHelper;
 
         private NatvisExpander _natvisExpander;
+        private NatvisVisualizerScanner _natvisScanner;
+        private RemoteTarget _mockTarget;
 
         private RemoteValueFake FALSE_REMOTE_VALUE;
         private RemoteValueFake TRUE_REMOTE_VALUE;
@@ -118,6 +123,14 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 DebuggerOptionState.ENABLED;
             ((OptionPageGrid)compRoot.GetVsiService().Options).ExpressionEvaluationEngine =
                 _expressionEvaluationEngineFlag;
+
+            SbType mockType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+            SbError successError = new SbErrorStub(success: true);
+            _natvisScanner = compRoot.GetNatvisVisualizerScanner();
+            _mockTarget = Substitute.For<RemoteTarget>();
+            _mockTarget.CompileExpressionAsync(default, default, default)
+                .ReturnsForAnyArgs(Tuple.Create(mockType, successError));
+            _natvisScanner.SetTarget(_mockTarget);
 
             nLogSpy = compRoot.GetNatvisDiagnosticLogSpy();
             nLogSpy.Attach();
@@ -748,6 +761,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task DisplayStringItemWithInvalidConditionAsync()
         {
+            // Errors in watch window are expected when Natvis compilation is disabled.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""MyCustomType"">
@@ -880,6 +896,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task DisplayStringWithFalseOptionalAttributeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""MyCustomType"">
@@ -906,6 +925,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task DisplayStringWithTrueOptionalAttributeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""MyCustomType"">
@@ -1133,6 +1155,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task StringViewItemWithInvalidConditionAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
           <Type Name=""MyCustomType"">
@@ -1228,6 +1253,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task StringViewWithFalseOptionalAttributeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
           <Type Name=""MyCustomType"">
@@ -1562,6 +1590,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task InvalidExpandConditionDoesntAffectDisplayStringAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""MyCustomType"">
@@ -1980,6 +2011,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task ArrayItemsTypeWithInvalidConditionsAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""ParentType"">
@@ -2097,6 +2131,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task ArrayValuePointerTypeWithInvalidConditionsAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""ParentType"">
@@ -2534,6 +2571,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task ArrayItemsSizeWithInvalidSizeValueAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""ParentType"">
@@ -3275,6 +3315,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task IndexListItemsSizeWithInvalidSizeValueAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
           <Type Name=""ParentType"">
@@ -3532,7 +3575,6 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task IndexListItemsWithoutValidValueNodeAsync()
         {
-
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""ParentType"">
@@ -3565,6 +3607,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task IndexListItemsTypeMissingSizeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""ParentType"">
@@ -3658,8 +3703,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
-        public async Task IndexListItemsTypeNullValueNodeTypeAsync()
+        public async Task IndexListItemsWithoutValueNodeExperimentsDisabledAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""ParentType"">
@@ -3704,8 +3752,49 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
+        public async Task IndexListItemsWithoutValueNodeAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""ParentType"">
+    <Expand>
+      <IndexListItems>
+        <Size>listSize</Size>
+      </IndexListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClass("ParentType", "parentName", "parentValue");
+            remoteValue.AddChild(RemoteValueFakeUtil.CreateClass("string", "siblingVar", "a"));
+            remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("listSize", 2));
+            remoteValue.AddValueFromExpression(
+                "list[0]", RemoteValueFakeUtil.CreateClass("string", "$10", "a"));
+            remoteValue.AddValueFromExpression(
+                "list[1]", RemoteValueFakeUtil.CreateClass("string", "$11", "b"));
+
+            var varInfo = CreateVarInfo(remoteValue);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            Assert.That(children.Length, Is.EqualTo(2));
+            Assert.That(children[0].DisplayName, Is.EqualTo("siblingVar"));
+            Assert.That(await children[0].ValueAsync(), Is.EqualTo("a"));
+            Assert.That(children[1].DisplayName, Is.EqualTo("listSize"));
+            Assert.That(await children[1].ValueAsync(), Is.EqualTo("2"));
+
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("ERROR"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("no <ValueNode> found"));
+        }
+
+        [Test]
         public async Task IndexListItemsTypeEmptyValueNodeTypeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""ParentType"">
@@ -3945,6 +4034,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task ItemTypeWithFalseOptionalAttributeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""ParentType"">
@@ -4663,6 +4755,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsSizeWithFalseOptionalAttributeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""LinkedList&lt;*&gt;"">
@@ -4951,12 +5046,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var item0 =
                 RemoteValueFakeUtil.CreateClassPointer("LinkedListNode", "_head", MEM_ADDRESS2);
-            item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 2));
-            item0.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
-            item0.AddChild(item1);
 
-            item0.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
-            item0.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
+            // TODO: Automatically set the correct dereferenced value. Expression
+            // evaluation methods are called on different object depending on evaluation engine.
+            // We should make this consistent.
+            var item0Deref = RemoteValueFakeUtil.CreateClass("LinkedListNode", "*_head", "value");
+            var item0WithChildren =
+                _expressionEvaluationEngineFlag == ExpressionEvaluationEngineFlag.LLDB ? item0
+                                                                                       : item0Deref;
+            item0WithChildren.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 2));
+            item0WithChildren.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_value", 10));
+            item0WithChildren.AddChild(item1);
+            item0.SetDereference(item0Deref);
 
             var varInfo = CreateVarInfo(item0);
             var children = await varInfo.GetAllChildrenAsync();
@@ -5075,6 +5176,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsWithEmptyValueNodeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""LinkedList&lt;*&gt;"">
@@ -5129,6 +5233,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsWithMissingValueNodeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""LinkedList&lt;*&gt;"">
@@ -5186,6 +5293,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsTypeNullValueNodeTypeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""LinkedList&lt;*&gt;"">
@@ -5425,6 +5535,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 2));
             remoteValue.AddChild(item0);
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+            var nodePtrType = item1.GetTypeInfo();
+            // First <LinkedListItems> isn't handled because it is optional.
+            target.AddTypeFromExpression(intType, "_listSize");
+            target.AddTypeFromExpression(nodePtrType, "_head");
+            target.AddTypeFromExpression(nodePtrType, "_next");
+            target.AddTypeFromExpression(intType, "_value");
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -5438,11 +5559,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("11"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
         public async Task LinkedListItemsTypeWithFalseOptionalAttributeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""LinkedList&lt;*&gt;"">
@@ -5915,6 +6040,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task SyntheticItemWithFalseOptionalAttributeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""MyCustomType"">
@@ -6279,6 +6407,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task TreeItemsWithFalseOptionalAttributeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomTreeType"">
@@ -6487,6 +6618,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task TreeItemsWithInvalidSizeExpressionAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomTreeType"">
@@ -6900,6 +7034,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task TreeItemsWithInvalidHeadPointerAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomTreeType"">
@@ -7179,6 +7316,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task TreeItemsWithEmptyValueNodeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomTreeType"">
@@ -7863,14 +8003,24 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var list = RemoteValueFakeUtil.CreateClassPointer("List", "l", MEM_ADDRESS1);
 
+            // TODO: Automatically set the correct dereferenced value.
+            var listDeref = RemoteValueFakeUtil.CreateClass("List", "lderef", "value");
+            list.SetDereference(listDeref);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
+
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            // There are no expressions to be processed because CustomListItems is optional.
+            _natvisScanner.SetTarget(target);
 
             Assert.That(children.Length, Is.EqualTo(0));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("CustomListItems"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("cur"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("this->head"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -7890,6 +8040,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             LoadFromString(xml);
 
             var list = RemoteValueFakeUtil.CreateClassPointer("List", "l", MEM_ADDRESS1);
+
+            // TODO: Automatically set the correct dereferenced value.
+            var listDeref = RemoteValueFakeUtil.CreateClass("List", "lderef", "value");
+            list.SetDereference(listDeref);
 
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
@@ -8016,6 +8170,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var list = RemoteValueFakeUtil.CreateClassPointer("List", "l", MEM_ADDRESS1);
             list.AddValueFromExpression("if_cond",
                 RemoteValueFakeUtil.CreateError("<invalid expression>"));
+
+            // TODO: Automatically set the correct dereferenced value.
+            var listDeref = RemoteValueFakeUtil.CreateClass("List", "lderef", "value");
+            list.SetDereference(listDeref);
 
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
@@ -8379,6 +8537,22 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             list.AddValueFromExpression("outerloop_cond",
                 RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = index_var.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var nodePtrType = cur_var.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(nodePtrType, "this->head");
+            contextArgs.Add("cur", nodePtrType);
+            target.AddTypeFromExpression(intType, "0", contextArgs);
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(boolType, "outerloop_cond", contextArgs);
+            target.AddTypeFromExpression(boolType, "innerloop_cond", contextArgs);
+            target.AddTypeFromExpression(intType, "item_name", contextArgs);
+            target.AddTypeFromExpression(intType, "item_expr", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -8391,6 +8565,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[3].DisplayName, Is.EqualTo("11"));
             Assert.That(await children[3].ValueAsync(), Is.EqualTo("11"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -8559,6 +8734,23 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             list.AddValueFromExpression("cur != nullptr",
                 RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = index_var.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var nodePtrType = cur_var.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(nodePtrType, "this->head");
+            contextArgs.Add("cur", nodePtrType);
+            target.AddTypeFromExpression(intType, "0", contextArgs);
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(boolType, "cur != nullptr", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "cur->value", contextArgs);
+            target.AddTypeFromExpression(nodePtrType, "cur = cur->next", contextArgs);
+            target.AddTypeFromExpression(intType, "index++", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -8567,6 +8759,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("2"));
             Assert.That(children[1].DisplayName, Is.EqualTo("1"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("4"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -8613,6 +8806,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             list.AddValueFromExpression("break_condition",
                                         RemoteValueFakeUtil.CreateSimpleBool("tmp", true));
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = index_var.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(intType, "0");
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(boolType, "break_condition", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "item_expr", contextArgs);
+            target.AddTypeFromExpression(intType, "index++", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -8621,6 +8827,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("2"));
             Assert.That(children[1].DisplayName, Is.EqualTo("1"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("4"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -8708,6 +8915,29 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             list.AddValueFromExpression("cur != nullptr",
                 RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = index_var.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var nodePtrType = cur_var.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(nodePtrType, "this->head");
+            contextArgs.Add("cur", cur_var.GetTypeInfo());
+            target.AddTypeFromExpression(intType, "0", contextArgs);
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(boolType, "cur != nullptr", contextArgs);
+            target.AddTypeFromExpression(boolType, "if_cond", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "if_expr", contextArgs);
+            target.AddTypeFromExpression(boolType, "elseif_cond", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "elseif_expr", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "else_expr", contextArgs);
+            target.AddTypeFromExpression(nodePtrType, "cur = cur->next", contextArgs);
+            target.AddTypeFromExpression(intType, "index++", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -8718,6 +8948,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("200"));
             Assert.That(children[2].DisplayName, Is.EqualTo("2"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("300"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -8807,6 +9038,29 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             list.AddValueFromExpression("cur == nullptr",
                     RemoteValueFakeUtil.CreateSimpleBool("tmp", true));
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = index_var.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var nodePtrType = cur_var.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(nodePtrType, "this->head");
+            contextArgs.Add("cur", cur_var.GetTypeInfo());
+            target.AddTypeFromExpression(intType, "0", contextArgs);
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(boolType, "cur == nullptr", contextArgs);
+            target.AddTypeFromExpression(boolType, "if_cond", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "if_expr", contextArgs);
+            target.AddTypeFromExpression(boolType, "elseif_cond", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "elseif_expr", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "else_expr", contextArgs);
+            target.AddTypeFromExpression(nodePtrType, "cur = cur->next", contextArgs);
+            target.AddTypeFromExpression(intType, "index++", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -8817,44 +9071,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("200"));
             Assert.That(children[2].DisplayName, Is.EqualTo("2"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("300"));
-        }
-
-        [Test]
-        public async Task CustomListItemsNonOptionalFailureFirstElementAsync()
-        {
-
-            var xml = @"
-<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
-  <Type Name=""List"">
-    <Expand HideRawView=""true"">
-      <CustomListItems Optional=""false"">
-        <If Condition=""if_cond""></If>
-      </CustomListItems>
-    </Expand>
-  </Type>
-</AutoVisualizer>
-";
-            LoadFromString(xml);
-
-            var list = RemoteValueFakeUtil.CreateClass("List", "myList", "myValue");
-
-            list.AddValueFromExpression("if_cond",
-                                        RemoteValueFakeUtil.CreateError("<invalid expression>"));
-
-            var varInfo = CreateVarInfo(list);
-            var children = await varInfo.GetAllChildrenAsync();
-
-            Assert.That(children.Length, Is.EqualTo(2));
-
-            Assert.That(children[0].DisplayName, Is.EqualTo("<Error>"));
-            Assert.That(await children[0].ValueAsync(), Does.Contain("List"));
-            Assert.That(await children[0].ValueAsync(), Does.Contain("if_cond"));
-
-            Assert.That(children[1].DisplayName, Is.EqualTo("[Raw View]"));
-
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("List"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("if_cond"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("ERROR"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -8875,6 +9092,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var list = RemoteValueFakeUtil.CreateClassPointer("List", "l", MEM_ADDRESS1);
 
+            // TODO: Automatically set the correct dereferenced value.
+            var listDeref = RemoteValueFakeUtil.CreateClass("List", "lderef", "value");
+            list.SetDereference(listDeref);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -8888,6 +9109,9 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task CustomListItemsOptionalFailureAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""List"">
@@ -8954,12 +9178,23 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             list.AddValueFromExpression("foo",
                 RemoteValueFakeUtil.CreateSimpleInt("foo", 42));
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(intType, "0");
+            contextArgs.Add("var", intType);
+            target.AddTypeFromExpression(intType, "var", contextArgs);
+            target.AddTypeFromExpression(intType, "foo", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             varInfo.FallbackValueFormat = ValueFormat.Hex;
             var children = await varInfo.GetAllChildrenAsync();
 
             Assert.That(children.Length, Is.EqualTo(1));
             Assert.That(children[0].DisplayName, Is.EqualTo("0xaf"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -9144,6 +9379,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 "index < 100",
                 RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = index_var.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(intType, "0");
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(boolType, "index < 100", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -9159,6 +9406,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(list.ExpressionValues["index"].Count, Is.EqualTo(79));
             Assert.That(list.ExpressionValues["index < 100"].Count, Is.EqualTo(80));
             Assert.That(list.ExpressionValues["index += 1"].Count, Is.EqualTo(80));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -9203,6 +9451,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 "index < 100",
                 RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = index_var.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(intType, "0");
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(boolType, "index < 100", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -9218,6 +9478,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(list.ExpressionValues["index"].Count, Is.EqualTo(94));
             Assert.That(list.ExpressionValues["index < 100"].Count, Is.EqualTo(95));
             Assert.That(list.ExpressionValues["index += 1"].Count, Is.EqualTo(95));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -9262,6 +9523,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 "index < 2",
                 RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = index_var.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(intType, "0");
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(boolType, "index < 2", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -9271,6 +9544,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             {
                 Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
             }
+
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -9309,6 +9584,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                                             RemoteValueFakeUtil.CreateSimpleInt("tmp", i + 1));
             }
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = indexVar.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(intType, "0");
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(intType, "5", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -9317,6 +9603,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             {
                 Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
             }
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -9360,6 +9647,21 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                                             RemoteValueFakeUtil.CreateSimpleInt("tmp", i + 1));
             }
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = indexVar.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(intType, "0");
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(boolType, "false", contextArgs);
+            target.AddTypeFromExpression(intType, "5", contextArgs);
+            target.AddTypeFromExpression(boolType, "true", contextArgs);
+            target.AddTypeFromExpression(intType, "6", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -9368,6 +9670,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             {
                 Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
             }
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -9410,6 +9713,21 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                                             RemoteValueFakeUtil.CreateSimpleInt("tmp", i + 1));
             }
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = indexVar.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(intType, "0");
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(boolType, "cond1", contextArgs);
+            target.AddTypeFromExpression(intType, "5", contextArgs);
+            target.AddTypeFromExpression(boolType, "cond2", contextArgs);
+            target.AddTypeFromExpression(intType, "6", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -9419,11 +9737,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 Assert.That(await children[i].ValueAsync(), Is.EqualTo(i.ToString()));
             }
             Assert.That(children[20].DisplayName, Is.EqualTo("[More]"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
         public async Task CustomListItemsInvalidSizeExpressionAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""List"">
@@ -9501,6 +9823,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             list.AddValueFromExpression("index < 2",
                                         RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
 
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var intType = indexVar.GetTypeInfo();
+            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+            var contextArgs = new Dictionary<string, SbType>();
+            target.AddTypeFromExpression(intType, "0");
+            contextArgs.Add("index", intType);
+            target.AddTypeFromExpression(intType, "4", contextArgs);
+            target.AddTypeFromExpression(boolType, "index < 2", contextArgs);
+            target.AddTypeFromExpression(intType, "index", contextArgs);
+            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(list);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -9518,6 +9853,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
 #endregion
@@ -9583,7 +9919,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
     <DisplayString>Low Priority Value</DisplayString>
   </Type>
   <Type Name=""MyCustomType"" Priority=""High"">
-    <DisplayString>HighPriority Value</DisplayString>
+    <DisplayString>High Priority Value</DisplayString>
   </Type>
   <Type Name=""MyCustomType"" Priority=""MediumLow"">
     <DisplayString>Medium Priority Value</DisplayString>
@@ -9601,7 +9937,95 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("High Priority Value"));
+        }
+
+        [Test]
+        public async Task ConcreteTemplateArgumentIsPreferredToPriorityAttributeAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""MyCustomType&lt;int&gt;"" Priority=""Low"">
+    <DisplayString>Low Priority Value</DisplayString>
+  </Type>
+  <Type Name=""MyCustomType&lt;*&gt;"" Priority=""High"">
+    <DisplayString>High Priority Value</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+
+            LoadFromString(xml);
+
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClass("MyCustomType<int>", "varName", "value");
+            var varInfo = CreateVarInfo(remoteValue);
+
             Assert.That(await varInfo.ValueAsync(), Is.EqualTo("Low Priority Value"));
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+        }
+
+        [Test]
+        public async Task VisualizerWithHighPriorityDoesNotCompileAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""MyCustomType"" Priority=""Low"">
+    <DisplayString>Low Priority Value</DisplayString>
+  </Type>
+  <Type Name=""MyCustomType"" Priority=""High"">
+    <DisplayString>High Priority Value {invalid_expr}</DisplayString>
+  </Type>
+  <Type Name=""MyCustomType"" Priority=""MediumLow"">
+    <DisplayString>MediumLow Priority Value</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+
+            LoadFromString(xml);
+
+            // Setup fake target.
+            var target = new RemoteTargetStub("path");
+            var error = new SbErrorStub(false, "error: undeclared identifier invalid_expr");
+            target.AddErrorFromExpression(error, "invalid_expr");
+            _natvisScanner.SetTarget(target);
+
+            var remoteValue = RemoteValueFakeUtil.CreateClass("MyCustomType", "varName", "value");
+            var varInfo = CreateVarInfo(remoteValue);
+
+            Assert.That(varInfo.Error, Is.False);
+            Assert.That(varInfo.DisplayName, Is.EqualTo("varName"));
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("MediumLow Priority Value"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("ERROR"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("undeclared identifier invalid_expr"));
+            Assert.That(
+                nLogSpy.GetOutput(),
+                Does.Contain(
+                    "Ignoring visualizer for type 'MyCustomType' labeled as 'MyCustomType'"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
+        }
+
+        [Test]
+        public async Task CompilationIsDisabledWhenNatvisExperimentsAreDisabledAsync()
+        {
+            DisableNatvisExperiments();
+
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""MyCustomType"">
+    <DisplayString>{child}</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+
+            LoadFromString(xml);
+
+            var remoteValue = RemoteValueFakeUtil.CreateClass("MyCustomType", "varName", "value");
+            remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("child", 15));
+            var varInfo = CreateVarInfo(remoteValue);
+
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("15"));
+            // Check that CompileExpression was not called.
+            await _mockTarget.DidNotReceiveWithAnyArgs().CompileExpressionAsync(default, default, default);
         }
 
         [Test]
@@ -9878,6 +10302,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var remoteValue =
                 RemoteValueFakeUtil.CreateClassReference("MyCustomType", "myVar", MEM_ADDRESS1);
+            // TODO: Automatically set the correct dereferenced value.
+            var remoteValueDeref =
+                RemoteValueFakeUtil.CreateClass("MyCustomType", "myVarObj", "value");
+            remoteValue.SetDereference(remoteValueDeref);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
@@ -9899,6 +10328,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             var remoteValue =
                 RemoteValueFakeUtil.CreateClassPointer("MyCustomType", "myVar", MEM_ADDRESS1);
+            // TODO: Automatically set the correct dereferenced value.
+            var remoteValueDeref =
+                RemoteValueFakeUtil.CreateClass("MyCustomType", "myVarObj", "value");
+            remoteValue.SetDereference(remoteValueDeref);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
@@ -10609,6 +11043,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 remoteValue, formatSpecifier: new FormatSpecifier(formatSpecifier));
         }
 
-        #endregion
+        void DisableNatvisExperiments()
+        {
+            compRoot.GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] =
+                DebuggerOptionState.DISABLED;
+        }
+
+#endregion
     }
 }

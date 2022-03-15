@@ -121,6 +121,7 @@
     <Compile Include="DebugEngine\NatvisEngine\CustomListItemsContext.cs" />
     <Compile Include="DebugEngine\NatvisEngine\CustomListItemsEntity.cs" />
     <Compile Include="DebugEngine\NatvisEngine\ExpandedItemEntity.cs" />
+    <Compile Include="DebugEngine\NatvisEngine\NatvisCompiler.cs" />
     <Compile Include="DebugEngine\NatvisEngine\NatvisExpander.cs" />
     <Compile Include="DebugEngine\NatvisEngine\NatvisScope.cs" />
     <Compile Include="DebugEngine\NatvisEngine\NatvisTextMatcher.cs" />

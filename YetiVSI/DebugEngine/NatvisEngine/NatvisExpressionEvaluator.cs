@@ -192,9 +192,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             string displayName, ExpressionEvaluationStrategy strategy,
             ExpressionEvaluationRecorder.StepsRecorder stepsRecorder)
         {
-            bool variableReplaced = false;
-            expression = expression.MapValue(
-                v => ReplaceScopedNames(v, natvisScope?.ScopedNames, out variableReplaced));
+            expression = expression.MapValue(v => ReplaceScopedNames(v, natvisScope?.ScopedNames));
 
             var lldbErrors = new List<string>();
 
@@ -316,10 +314,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         public async Task DeclareVariableAsync(IVariableInformation variable, string variableName,
                                                string valueExpression, NatvisScope natvisScope)
         {
-            string scratchVar =
-                ReplaceScopedNames(variableName, natvisScope?.ScopedNames, out bool ignore);
-            VsExpression vsExpression = _vsExpressionCreator.Create(valueExpression, "")
-                .MapValue(e => ReplaceScopedNames(e, natvisScope?.ScopedNames, out ignore));
+            string scratchVar = ReplaceScopedNames(variableName, natvisScope?.ScopedNames);
+            VsExpression vsExpression =
+                _vsExpressionCreator.Create(valueExpression, "")
+                    .MapValue(e => ReplaceScopedNames(e, natvisScope?.ScopedNames));
 
             // Declare variable and return it. Pure declaration expressions will always return
             // error because these expressions don't return a valid value.
@@ -464,11 +462,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         /// <summary>
         /// Replace occurrences of the scopedNames dictionary keys with the corresponding
-        /// values. Output parameter |variableReplaced| indicates whether a scratch variable
-        /// was replaced (e.g. var => $var_0).
+        /// values.
         /// </summary>
-        string ReplaceScopedNames(string expression, IDictionary<string, string> scopedNames,
-                                  out bool variableReplaced)
+        static internal string ReplaceScopedNames(string expression,
+                                                  IDictionary<string, string> scopedNames)
         {
             TokenSubstitutor replaceTemplateTokens = token =>
             {
@@ -481,8 +478,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return null;
             };
 
-            return SubstituteExpressionTokens(expression, out variableReplaced,
-                                              replaceTemplateTokens);
+            return SubstituteExpressionTokens(expression, replaceTemplateTokens);
         }
 
         /// <summary>
@@ -490,10 +486,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// token is replaced by the first non-null value returned by a token substitutor. The
         /// resulting expression is returned.
         /// </summary>
-        string SubstituteExpressionTokens(string expression, out bool variableReplaced,
-                                          params TokenSubstitutor[] tokenSubstitutors)
+        static string SubstituteExpressionTokens(string expression,
+                                                 params TokenSubstitutor[] tokenSubstitutors)
         {
-            variableReplaced = false;
             StringBuilder result = new StringBuilder();
             int pos = 0;
             do
@@ -515,14 +510,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     {
                         result.Append(repl);
                         found = true;
-                        if (repl.StartsWith("$"))
-                        {
-                            // TODO: Improve check for scratch variable replacement.
-                            // If the replacement string starts with a '$', then it is considered
-                            // to be a scratch variable, e.g. var => $var_0.
-                            variableReplaced = true;
-                        }
-
                         break; // found a substitute
                     }
                 }

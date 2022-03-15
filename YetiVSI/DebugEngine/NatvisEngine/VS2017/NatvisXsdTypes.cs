@@ -3419,6 +3419,20 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         Property,
     }
 
+    /// Possible values for <Type>'s and <AlternativeType>'s Priority attribute.
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.6.1055.0")]
+    [System.SerializableAttribute()]
+    [System.Xml.Serialization.XmlTypeAttribute(
+        Namespace = "http://schemas.microsoft.com/vstudio/debugger/natvis/2010")]
+    public enum PriorityType
+    {
+        Low,
+        MediumLow,
+        Medium,
+        MediumHigh,
+        High,
+    }
+
     /// <remarks/>
     [System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.6.1055.0")]
     [System.SerializableAttribute()]
@@ -3430,7 +3444,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         private string nameField;
 
-        private string priorityField;
+        private PriorityType priorityField = PriorityType.Medium;
 
         private bool inheritableField;
 
@@ -3451,8 +3465,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         }
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute()]
-        public string Priority
+        [System.Xml.Serialization.XmlAttributeAttribute()] public PriorityType Priority
         {
             get
             {
@@ -3514,7 +3527,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         private string excludeViewField;
 
-        private string priorityField;
+        private PriorityType priorityField = PriorityType.Medium;
 
         private bool inheritableField;
 
@@ -3611,8 +3624,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         }
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute()]
-        public string Priority
+        [System.Xml.Serialization.XmlAttributeAttribute()] public PriorityType Priority
         {
             get
             {

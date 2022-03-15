@@ -477,15 +477,15 @@ namespace YetiVSI.DebugEngine
                 bool fullNatvisSupportEnabled =
                     GetVsiService().Options.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED;
 
-                _natvisVisualizerScanner =
-                    new NatvisVisualizerScanner(GetNatvisDiagnosticLogger(), GetNatvisLoader(),
-                                                GetJoinableTaskContext(), fullNatvisSupportEnabled);
+                _natvisVisualizerScanner = new NatvisVisualizerScanner(
+                    GetNatvisDiagnosticLogger(), GetNatvisLoader(), GetJoinableTaskContext(),
+                    fullNatvisSupportEnabled, natvisCompilerEnabled: GetNatvisExperimentsEnabled);
             }
 
             return _natvisVisualizerScanner;
         }
 
-        public bool GetCustomListsEnabled() =>
+        public bool GetNatvisExperimentsEnabled() =>
             GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] ==
             DebuggerOptionState.ENABLED;
 
@@ -909,6 +909,7 @@ namespace YetiVSI.DebugEngine
                 itemFactory, syntheticItemFactory, expandedItemFactory, indexListItemsFactory,
                 arrayItemsFactory, linkedListItemsFactory, treeItemsFactory, customListItemsFactory,
                 GetNatvisDiagnosticLogger());
+
         }
 
         public virtual INatvisFileSource GetSolutionNatvisFileSource()
