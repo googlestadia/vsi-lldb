@@ -66,6 +66,8 @@ service RemoteTargetRpcService {
   }
   rpc AddListener(AddListenerRequest) returns (AddListenerResponse) {
   }
+  rpc CompileExpression(CompileExpressionRequest) returns (CompileExpressionResponse) {
+  }
 }
 
 message AttachToProcessWithIDRequest {
@@ -233,4 +235,21 @@ message AddListenerRequest {
 
 message AddListenerResponse {
   uint32 result = 1;
+}
+
+message ContextArgument {
+  string name = 1;
+  Common.GrpcSbType type = 2;
+}
+
+message CompileExpressionRequest {
+  Common.GrpcSbTarget target = 1;
+  Common.GrpcSbType scope = 2;
+  string expression = 3;
+  repeated ContextArgument contextArguments = 4;
+}
+
+message CompileExpressionResponse {
+  Common.GrpcSbType type = 1;
+  Common.GrpcSbError error = 2;
 }

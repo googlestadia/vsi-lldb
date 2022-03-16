@@ -107,8 +107,9 @@ namespace DebuggerGrpcServer
             var sbCommandReturnObjectRpc = new SbCommandReturnObjectServiceImpl(
                 commandReturnObjectManager);
             var sbPlatformRpc = new SbPlatformRpcServiceImpl();
-            var remoteTargetRpc = new RemoteTargetRpcServiceImpl(targetManager, listenerManager,
-                processManager, moduleManager, watchpointManager, addressManager);
+            var remoteTargetRpc = new RemoteTargetRpcServiceImpl(
+                targetManager, listenerManager, processManager, moduleManager, watchpointManager,
+                addressManager, typeManager);
             var sbListenerRpc = new SbListenerRpcServiceImpl(listenerManager);
 
             var sbProcessRpc = new SbProcessRpcServiceImpl(processManager, threadManager,

@@ -20,11 +20,13 @@
 
 #include "LLDBError.h"
 #include "LLDBStackFrame.h"
+#include "LLDBTarget.h"
+#include "LLDBType.h"
 #include "LLDBValue.h"
+#include "ValueUtil.h"
 #include "lldb-eval/api.h"
 #include "lldb/API/SBFrame.h"
 #include "lldb/API/SBValue.h"
-#include "ValueUtil.h"
 
 namespace YetiVSI {
 namespace DebugEngine {
@@ -88,6 +90,40 @@ SbValue ^
   return gcnew LLDBValue(result, error);
 }
 
+System::Tuple<SbType ^, SbError ^> ^ LldbEval::CompileExpression(
+    SbTarget ^ target, SbType ^ scope, System::String ^ expression,
+    IDictionary<System::String ^, SbType ^> ^ contextArgs) {
+  std::string expr = msclr::interop::marshal_as<std::string>(expression);
+  lldb::SBTarget sbTarget = safe_cast<LLDBTarget ^>(target)->GetNativeObject();
+  lldb::SBType sbType = safe_cast<LLDBType ^>(scope)->GetNativeObject();
+
+  // Convert `IDictionary` to `std::vector`.
+  msclr::interop::marshal_context context;
+  std::vector<lldb_eval::ContextArgument> args;
+  for each (auto arg in contextArgs) {
+    const char* name = context.marshal_as<const char*>(arg.Key);
+    lldb::SBType type = safe_cast<LLDBType ^>(arg.Value)->GetNativeObject();
+    args.push_back({name, type});
+  }
+
+  // Calls to this method are coming from NatVis engine and supposed to be
+  // idempotent. Thus side effects to the target process are not allowed.
+  lldb_eval::Options opts;
+  opts.allow_side_effects = false;
+  opts.context_args = {args.data(), args.size()};
+
+  lldb::SBError error;
+  std::shared_ptr<lldb_eval::CompiledExpr> compiledExpr =
+      lldb_eval::CompileExpression(sbTarget, sbType, expr.c_str(), opts, error);
+
+  // TODO: In the future we should return the entire compiled
+  // expression, but right now the information about resulting type is enough.
+  lldb::SBType resultType =
+      compiledExpr != nullptr ? compiledExpr->result_type : lldb::SBType();
+  SbType ^ lldbType = gcnew LLDBType(resultType);
+  SbError ^ lldbError = gcnew LLDBError(error);
+  return gcnew System::Tuple<SbType ^, SbError ^>(lldbType, lldbError);
+}
+
 }  // namespace DebugEngine
 }  // namespace YetiVSI
-

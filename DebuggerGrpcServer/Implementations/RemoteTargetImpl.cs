@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using YetiVSI.DebugEngine;
 
 namespace DebuggerGrpcServer
 {
@@ -258,9 +259,13 @@ namespace DebuggerGrpcServer
 
         public SbBroadcaster GetBroadcaster() => _sbTarget.GetBroadcaster();
 
-        #endregion
+        public Tuple<SbType, SbError> CompileExpression(SbType scope, string expression,
+                                                        IDictionary<string, SbType> contextArgs) =>
+            LldbEval.CompileExpression(_sbTarget, scope, expression, contextArgs);
 
-        #region RemoteTarget Helpers
+#endregion
+
+#region RemoteTarget Helpers
 
         /// <summary>
         /// This method tries to figure out whether we have an instruction on the page boundary.

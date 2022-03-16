@@ -19,6 +19,7 @@ using DebuggerCommonApi;
 using DebuggerGrpcClient.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using YetiCommon;
 
 namespace DebuggerGrpcClient
@@ -49,19 +50,23 @@ namespace DebuggerGrpcClient
         readonly GrpcModuleFactory moduleFactory;
         readonly GrpcWatchpointFactory watchpointFactory;
         readonly GrpcAddressFactory addressFactory;
+        readonly GrpcTypeFactory typeFactory;
 
-        public RemoteTargetProxy(GrpcConnection connection, GrpcSbTarget grpcSbTarget) : this(
-            connection, grpcSbTarget,
-            new RemoteTargetRpcService.RemoteTargetRpcServiceClient(connection.CallInvoker),
-            new GrpcBreakpointFactory(), new GrpcErrorFactory(), new GrpcProcessFactory(),
-            new GrpcModuleFactory(), new GrpcWatchpointFactory(), new GrpcAddressFactory())
+        public RemoteTargetProxy(GrpcConnection connection, GrpcSbTarget grpcSbTarget)
+            : this(connection, grpcSbTarget,
+                   new RemoteTargetRpcService.RemoteTargetRpcServiceClient(connection.CallInvoker),
+                   new GrpcBreakpointFactory(), new GrpcErrorFactory(), new GrpcProcessFactory(),
+                   new GrpcModuleFactory(), new GrpcWatchpointFactory(), new GrpcAddressFactory(),
+                   new GrpcTypeFactory())
         { }
 
         public RemoteTargetProxy(GrpcConnection connection, GrpcSbTarget grpcSbTarget,
-            RemoteTargetRpcService.RemoteTargetRpcServiceClient client,
-            GrpcBreakpointFactory breakpointFactory, GrpcErrorFactory errorFactory,
-            GrpcProcessFactory processFactory, GrpcModuleFactory moduleFactory,
-            GrpcWatchpointFactory watchpointFactory, GrpcAddressFactory addressFactory)
+                                 RemoteTargetRpcService.RemoteTargetRpcServiceClient client,
+                                 GrpcBreakpointFactory breakpointFactory,
+                                 GrpcErrorFactory errorFactory, GrpcProcessFactory processFactory,
+                                 GrpcModuleFactory moduleFactory,
+                                 GrpcWatchpointFactory watchpointFactory,
+                                 GrpcAddressFactory addressFactory, GrpcTypeFactory typeFactory)
         {
             this.connection = connection;
             this.grpcSbTarget = grpcSbTarget;
@@ -72,6 +77,7 @@ namespace DebuggerGrpcClient
             this.moduleFactory = moduleFactory;
             this.watchpointFactory = watchpointFactory;
             this.addressFactory = addressFactory;
+            this.typeFactory = typeFactory;
         }
 
         public SbProcess AttachToProcessWithID(SbListener listener, ulong pid, out SbError error)
@@ -467,6 +473,42 @@ namespace DebuggerGrpcClient
                 return (EventType)response.Result;
             }
             return 0;
+        }
+
+        public async Task<Tuple<SbType, SbError>> CompileExpressionAsync(
+            SbType scope, string expression, IDictionary<string, SbType> contextArgs)
+        {
+            CompileExpressionRequest request =
+                new CompileExpressionRequest { Target = grpcSbTarget,
+                                               Scope = new GrpcSbType { Id = scope.GetId() },
+                                               Expression = expression };
+            if (contextArgs != null)
+            {
+                foreach (var arg in contextArgs)
+                {
+                    request.ContextArguments.Add(
+                        new ContextArgument { Name = arg.Key,
+                                              Type = new GrpcSbType { Id = arg.Value.GetId() } });
+                }
+            }
+
+            CompileExpressionResponse response = null;
+            if (await connection.InvokeRpcAsync(
+                    async () => { response = await client.CompileExpressionAsync(request); }))
+            {
+                SbType type = null;
+                SbError error = null;
+                if (response.Type != null && response.Type.Id != 0)
+                {
+                    type = typeFactory.Create(connection, response.Type);
+                }
+                if (response.Error != null)
+                {
+                    error = errorFactory.Create(response.Error);
+                }
+                return new Tuple<SbType, SbError>(type, error);
+            }
+            return null;
         }
     }
 }

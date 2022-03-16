@@ -22,6 +22,7 @@ namespace YetiVSI {
 namespace DebugEngine {
 
 using namespace LldbApi;
+using System::Collections::Generic::IDictionary;
 
 public
 ref class LldbEval abstract sealed {
@@ -31,7 +32,11 @@ ref class LldbEval abstract sealed {
 
   static SbValue ^
       EvaluateExpression(SbValue ^ value, System::String ^ expression,
-          System::Collections::Generic::IDictionary<System::String ^, SbValue ^> ^ contextVars);
+                         IDictionary<System::String ^, SbValue ^> ^ contextVars);
+
+  static System::Tuple<SbType ^, SbError ^> ^
+      CompileExpression(SbTarget ^ target, SbType ^ scope, System::String ^ expression,
+                        IDictionary<System::String ^, SbType ^> ^ contextArgs);
 };
 
 }  // namespace DebugEngine

@@ -379,6 +379,7 @@ namespace YetiVSI.DebugEngine
                 // via SbTarget object.
                 // Add compiler specific visualizers and load the Natvis.
                 ApplyCompilerSpecificNatvis(stadiaDebugger.Target);
+                _natvisVisualizerScanner.SetTarget(stadiaDebugger.Target);
                 _natvisVisualizerScanner.Reload();
 
                 launchSucceeded = true;

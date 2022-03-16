@@ -18,6 +18,7 @@ using DebuggerCommonApi;
 using DebuggerGrpcServer.RemoteInterfaces;
 using Grpc.Core;
 using LldbApi;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -33,13 +34,15 @@ namespace DebuggerGrpcServer
         readonly UniqueObjectStore<SbModule> _moduleStore;
         readonly ObjectStore<SbWatchpoint> _watchpointStore;
         readonly ObjectStore<SbAddress> _addressStore;
+        readonly ObjectStore<SbType> _typeStore;
 
         public RemoteTargetRpcServiceImpl(ConcurrentDictionary<long, RemoteTarget> targetStore,
                                           ConcurrentDictionary<long, SbListener> listenerStore,
                                           ConcurrentDictionary<int, SbProcess> processStore,
                                           UniqueObjectStore<SbModule> moduleStore,
                                           ObjectStore<SbWatchpoint> watchpointStore,
-                                          ObjectStore<SbAddress> addressStore)
+                                          ObjectStore<SbAddress> addressStore,
+                                          ObjectStore<SbType> typeStore)
         {
             _targetStore = targetStore;
             _listenerStore = listenerStore;
@@ -47,6 +50,7 @@ namespace DebuggerGrpcServer
             _moduleStore = moduleStore;
             _watchpointStore = watchpointStore;
             _addressStore = addressStore;
+            _typeStore = typeStore;
         }
 
 #region RemoteTargetRpcService.RemoteTargetRpcServiceBase
@@ -372,6 +376,49 @@ namespace DebuggerGrpcServer
             return Task.FromResult(new AddListenerResponse { Result = response });
         }
 
-        #endregion
+        public override Task<CompileExpressionResponse> CompileExpression(
+            CompileExpressionRequest request, ServerCallContext context)
+        {
+            if (!_targetStore.TryGetValue(request.Target.Id, out RemoteTarget target))
+            {
+                ErrorUtils.ThrowError(StatusCode.Internal,
+                                      "Could not find target in store: " + request.Target.Id);
+            }
+
+            SbType scope = _typeStore.GetObject(request.Scope.Id);
+            if (scope == null)
+            {
+                ErrorUtils.ThrowError(StatusCode.Internal,
+                                      "Could not find type in store: " + request.Scope.Id);
+            }
+
+            var contextArgs = new Dictionary<string, SbType>();
+            if (request.ContextArguments != null)
+            {
+                foreach (var contextArg in request.ContextArguments)
+                {
+                    var type = _typeStore.GetObject(contextArg.Type.Id);
+                    if (type != null)
+                    {
+                        contextArgs.Add(contextArg.Name, type);
+                    }
+                }
+            }
+
+            (SbType result, SbError error) =
+                target.CompileExpression(scope, request.Expression, contextArgs);
+            var response = new CompileExpressionResponse();
+            if (result != null)
+            {
+                response.Type = GrpcFactoryUtils.CreateType(result, _typeStore.AddObject(result));
+            }
+            if (error != null)
+            {
+                response.Error = GrpcFactoryUtils.CreateError(error);
+            }
+            return Task.FromResult(response);
+        }
+
+#endregion
     }
 }

@@ -18,6 +18,7 @@ using DebuggerGrpcClient;
 using DebuggerGrpcClient.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using TestsCommon.TestSupport;
 
 namespace YetiVSI.Test.TestSupport.Lldb
@@ -124,6 +125,12 @@ namespace YetiVSI.Test.TestSupport.Lldb
             throw new NotImplementedTestDoubleException();
         }
 
-        #endregion
+        public Task<Tuple<SbType, SbError>> CompileExpressionAsync(
+            SbType scope, string expression, IDictionary<string, SbType> contextArgs)
+        {
+            throw new NotImplementedTestDoubleException();
+        }
+
+#endregion
     }
 }

@@ -15,6 +15,7 @@
 using DebuggerCommonApi;
 using DebuggerGrpcServer.RemoteInterfaces;
 using LldbApi;
+using System;
 using System.Collections.Generic;
 
 namespace DebuggerGrpcServer
@@ -144,5 +145,13 @@ namespace DebuggerGrpcServer
         /// Returns the corresponding broadcaster.
         /// </summary>
         SbBroadcaster GetBroadcaster();
+
+        /// <summary>
+        /// Compiles |expression| in the context of the target and the |scope| type using
+        /// lldb-eval. Returns the resulting type or error.
+        /// This method is not part of the LLDB API.
+        /// </summary>
+        Tuple<SbType, SbError> CompileExpression(SbType scope, string expression,
+                                                 IDictionary<string, SbType> contextArgs);
     }
 }

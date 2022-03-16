@@ -63,6 +63,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         readonly NatvisDiagnosticLogger _logger;
         readonly NatvisLoader _natvisLoader;
         readonly JoinableTaskContext _taskContext;
+        private RemoteTarget _target;
         // Should we load the entire natvis (or just built-in visualizers)?
         readonly bool _loadEntireNatvis = false;
 
@@ -119,7 +120,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             _natvisLoader.SetRegistryRoot(registryRoot);
         }
 
-        #endregion
+        public void SetTarget(RemoteTarget target)
+        {
+            _target = target;
+        }
+
+#endregion
 
         /// <summary>
         /// Outputs some statistics to the Natvis diagnostic logger and log files.

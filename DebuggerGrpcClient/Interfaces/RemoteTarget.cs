@@ -14,7 +14,9 @@
 
 using DebuggerCommonApi;
 using DebuggerGrpcClient.Interfaces;
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DebuggerApi
 {
@@ -139,5 +141,13 @@ namespace DebuggerApi
         /// <returns>An event mask, which specifies an actual event set,
         /// to which the listener was subscribed.</returns>
         EventType AddListener(SbListener listener, EventType eventMask);
+
+        /// <summary>
+        /// Compiles |expression| in the context of the target and the |scope| type using
+        /// lldb-eval. Returns the resulting type or error.
+        /// This method is not part of the LLDB API.
+        /// </summary>
+        Task<Tuple<SbType, SbError>> CompileExpressionAsync(
+            SbType scope, string expression, IDictionary<string, SbType> contextArgs);
     }
 }
