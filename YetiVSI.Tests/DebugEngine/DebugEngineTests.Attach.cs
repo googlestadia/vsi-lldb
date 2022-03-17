@@ -44,7 +44,7 @@ namespace YetiVSI.Test.DebugEngine
         readonly uint _celtPrograms = 1;
         readonly string _exePath = "disk:/path/file.exe";
         readonly string _gameletIp = "127.0.0.1";
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
 
         [Test]
         public async Task AttachNotImplementedForAutoAttachAsync()
@@ -190,7 +190,7 @@ namespace YetiVSI.Test.DebugEngine
             var compRoot = new DebugEngineFactoryCompRootStub(
                 stadiaLldbDebuggerFactory, debugSessionLauncherFactory, remoteDeploy,
                 Substitute.For<IGameLauncher>());
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             _metrics.NewDebugSessionId().Returns(_debugSessionId);
             ISessionNotifier sessionNotifier = Substitute.For<ISessionNotifier>();
             SLLDBShell lldbShell = TestDummyGenerator.Create<SLLDBShell>();

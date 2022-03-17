@@ -35,7 +35,7 @@ namespace YetiVSI.Test
         };
         IAction fakeAction = new Action(
             DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
-            Substitute.For<Timer.Factory>(), Substitute.For<IMetrics>());
+            Substitute.For<Timer.Factory>(), Substitute.For<IVsiMetrics>());
 
         IGameletClient gameletClient;
         GameletClient.Factory gameletClientFactory;

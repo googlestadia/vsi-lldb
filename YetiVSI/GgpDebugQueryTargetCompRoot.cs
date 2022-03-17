@@ -71,7 +71,7 @@ namespace YetiVSI
             var remoteFile = new RemoteFile(managedProcessFactory);
             var remoteDeploy = new RemoteDeploy(remoteCommand, remoteFile, managedProcessFactory,
                                                 fileSystem);
-            var metrics = _serviceManager.GetGlobalService(typeof(SMetrics)) as IMetrics;
+            var metrics = _serviceManager.GetGlobalService(typeof(SMetrics)) as IVsiMetrics;
             var sdkVersion = GetSdkVersion();
             var sshManager = GetSshManager(managedProcessFactory, cloudRunner);
             var launchParamsConverter = new LaunchGameParamsConverter(new QueryParametersParser());

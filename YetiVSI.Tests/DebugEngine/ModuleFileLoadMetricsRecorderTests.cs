@@ -35,7 +35,7 @@ namespace YetiVSI.Test.DebugEngine
             _mockModuleFileFinder = Substitute.For<IModuleFileFinder>();
             _action = new Action(
                 DeveloperEventType.Types.Type.VsiDebugEngineLoadSymbols,
-                Substitute.For<Timer.Factory>(), Substitute.For<IMetrics>());
+                Substitute.For<Timer.Factory>(), Substitute.For<IVsiMetrics>());
             _moduleFileLoadRecorder = new ModuleFileLoadMetricsRecorder(
                 _mockModuleFileFinder, _action);
         }

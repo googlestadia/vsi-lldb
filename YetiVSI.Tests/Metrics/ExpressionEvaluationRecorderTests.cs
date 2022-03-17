@@ -39,7 +39,7 @@ namespace YetiVSI.Test.Metrics
         BatchEventAggregator<ExpressionEvaluationBatch, ExpressionEvaluationBatchParams,
             ExpressionEvaluationBatchSummary> _batchEventAggregator;
 
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
         EventSchedulerFake _eventScheduler;
         ITimeSource _timeSource;
 
@@ -49,7 +49,7 @@ namespace YetiVSI.Test.Metrics
         [SetUp]
         public void SetUp()
         {
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             _eventScheduler = new EventSchedulerFake();
             var eventSchedulerFactory = Substitute.For<IEventSchedulerFactory>();
             eventSchedulerFactory

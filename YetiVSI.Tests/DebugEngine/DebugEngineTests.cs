@@ -74,7 +74,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var lldbShell = TestDummyGenerator.Create<SLLDBShell>();
             var vsiService = new YetiVSIService(OptionPageGrid.CreateForTesting());
-            var metrics = TestDummyGenerator.Create<IMetrics>();
+            var metrics = TestDummyGenerator.Create<IVsiMetrics>();
             var vsOutputWindow = new OutputWindowStub();
             var symbolSettingsManager = Substitute.For<IVsDebuggerSymbolSettingsManager120A>();
             var serviceManager = new ServiceManagerStub(metrics, lldbShell, vsiService,

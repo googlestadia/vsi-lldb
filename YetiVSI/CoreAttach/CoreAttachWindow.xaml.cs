@@ -90,7 +90,7 @@ namespace YetiVSI.CoreAttach
                 _sshManager = new SshManager(_gameletClientFactory, _cloudRunner, sshKeyLoader,
                                              sshKnownHostsWriter, remoteCommand);
                 _debugSessionMetrics = new DebugSessionMetrics(
-                    serviceProvider.GetService(typeof(SMetrics)) as IMetrics);
+                    serviceProvider.GetService(typeof(SMetrics)) as IVsiMetrics);
                 _debugSessionMetrics.UseNewDebugSessionId();
                 _actionRecorder = new ActionRecorder(_debugSessionMetrics);
 

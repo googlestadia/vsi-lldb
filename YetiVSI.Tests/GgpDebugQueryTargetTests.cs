@@ -62,7 +62,7 @@ namespace YetiVSI.Test
         IDialogUtil _dialogUtil;
         IRemoteDeploy _remoteDeploy;
         IYetiVSIService _yetiVsiService;
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
         IApplicationClient _applicationClient;
         IIdentityClient _identityClient;
         TestAccountClient.Factory _testAccountClientFactory;
@@ -154,7 +154,7 @@ namespace YetiVSI.Test
             var debuggerOptions = new YetiVSI.DebuggerOptions.DebuggerOptions();
             _yetiVsiService.DebuggerOptions.Returns(debuggerOptions);
             _yetiVsiService.Options.Returns(options);
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             _metrics.NewDebugSessionId().Returns(_testDebugSessionId);
             var debugMetrics = new DebugSessionMetrics(_metrics);
             var cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager,

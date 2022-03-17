@@ -27,21 +27,21 @@ namespace YetiVSI.Metrics
     /// </remarks>
     public class ActionRecorder
     {
-        readonly IMetrics metrics;
+        readonly IVsiMetrics metrics;
         readonly Timer.Factory timerFactory;
 
         /// <summary>
         /// Creates an action recorder that sends events to the given event recorder.
         /// </summary>
         /// <param name="metrics"></param>
-        public ActionRecorder(IMetrics metrics)
+        public ActionRecorder(IVsiMetrics metrics)
             : this(metrics, new Timer.Factory())
         { }
 
         /// <summary>
         /// Create an action recorder with an explicit timer factory. For use in testing.
         /// </summary>
-        public ActionRecorder(IMetrics metrics, Timer.Factory timerFactory)
+        public ActionRecorder(IVsiMetrics metrics, Timer.Factory timerFactory)
         {
             this.metrics = metrics;
             this.timerFactory = timerFactory;

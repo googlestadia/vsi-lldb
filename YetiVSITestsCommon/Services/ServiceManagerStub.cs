@@ -27,7 +27,7 @@ namespace YetiVSITestsCommon.Services
     {
         readonly IDictionary<Type, object> _services;
 
-        public ServiceManagerStub(IMetrics metrics, SLLDBShell lldbShell,
+        public ServiceManagerStub(IVsiMetrics metrics, SLLDBShell lldbShell,
                                   YetiVSIService yetiVsiService, SVsOutputWindow outputWindow,
                                   IVsDebuggerSymbolSettingsManager120A symbolSettingsManager,
                                   ISessionNotifier sessionNotifier = null)

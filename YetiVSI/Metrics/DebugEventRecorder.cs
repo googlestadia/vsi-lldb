@@ -25,11 +25,11 @@ namespace YetiVSI.Metrics
     public class DebugEventRecorder : IMethodInvocationRecorder
     {
         readonly IBatchEventAggregator<DebugEventBatchParams, DebugEventBatchSummary> _batchEventAggregator;
-        readonly IMetrics _metrics;
+        readonly IVsiMetrics _metrics;
 
         public DebugEventRecorder(
             IBatchEventAggregator<DebugEventBatchParams, DebugEventBatchSummary>
-                batchEventAggregator, IMetrics metrics)
+                batchEventAggregator, IVsiMetrics metrics)
         {
             _batchEventAggregator = batchEventAggregator;
             _metrics = metrics;

@@ -42,7 +42,7 @@ namespace YetiVSI.Test.GameLaunch
         IGameletClient _gameletClient;
         CancelableTask.Factory _cancelableTaskFactory;
         IGameLaunchBeHelper _gameLaunchBeHelper;
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
         ActionRecorder _actionRecorder;
         IDialogUtil _dialogUtil;
         IChromeClientsLauncher _launcher;
@@ -54,7 +54,7 @@ namespace YetiVSI.Test.GameLaunch
             _gameletClient = Substitute.For<IGameletClient>();
             _cancelableTaskFactory = Substitute.For<CancelableTask.Factory>();
             _gameLaunchBeHelper = Substitute.For<IGameLaunchBeHelper>();
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             _actionRecorder = Substitute.For<ActionRecorder>(_metrics);
             _dialogUtil = Substitute.For<IDialogUtil>();
             _launcher = Substitute.For<IChromeClientsLauncher>();

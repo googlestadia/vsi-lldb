@@ -125,7 +125,7 @@ namespace YetiVSI.Metrics
 
         readonly DeveloperEventType.Types.Type eventType;
         readonly Timer.Factory timerFactory;
-        readonly IMetrics metrics;
+        readonly IVsiMetrics metrics;
         readonly object logEventLock = new object();
 
         // Event for recording extra information during an action, protected by eventLock.
@@ -214,7 +214,7 @@ namespace YetiVSI.Metrics
         // ActionRecorder. It is public for use in tests only, where ActionRecorder is not
         // the right dependency to inject.
         public Action(DeveloperEventType.Types.Type eventType,
-            Timer.Factory timerFactory, IMetrics metrics)
+            Timer.Factory timerFactory, IVsiMetrics metrics)
         {
             this.eventType = eventType;
             logEvent = new DeveloperLogEvent

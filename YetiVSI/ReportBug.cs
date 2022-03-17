@@ -34,7 +34,7 @@ __DETAILS__
         readonly string _vsVersion;
         readonly string _projectId;
 
-        ReportBug(IMetrics metrics, string vsVersion, string projectId)
+        ReportBug(IVsiMetrics metrics, string vsVersion, string projectId)
         {
             var dsm = new DebugSessionMetrics(metrics);
             dsm.UseNewDebugSessionId();
@@ -87,7 +87,7 @@ __DETAILS__
 
         public static async Task InitializeAsync(AsyncPackage package)
         {
-            var metrics = (IMetrics)await package.GetServiceAsync(typeof(SMetrics));
+            var metrics = (IVsiMetrics)await package.GetServiceAsync(typeof(SMetrics));
             var vsVersion = await VsVersion.GetVisualStudioVersionAsync(package);
 
             var configFactory = new SdkConfig.Factory(new JsonUtil());

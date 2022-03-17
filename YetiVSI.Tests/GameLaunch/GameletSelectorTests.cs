@@ -59,7 +59,7 @@ namespace YetiVSI.Test.GameLaunch
 
         GameletSelector _gameletSelector;
 
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
         IDialogUtil _dialogUtil;
         IInstanceSelectionWindow _instanceSelectionWindow;
         IGameletClient _gameletClient;
@@ -92,7 +92,7 @@ namespace YetiVSI.Test.GameLaunch
                 State = GameletState.Reserved,
             };
 
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             _metrics.NewDebugSessionId().Returns(_testDebugSessionId);
 
             _dialogUtil = Substitute.For<IDialogUtil>();

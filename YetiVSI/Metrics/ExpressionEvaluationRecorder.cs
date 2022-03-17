@@ -26,11 +26,11 @@ namespace YetiVSI.Metrics
         readonly IBatchEventAggregator<ExpressionEvaluationBatchParams,
             ExpressionEvaluationBatchSummary> _batchEventAggregator;
 
-        readonly IMetrics _metrics;
+        readonly IVsiMetrics _metrics;
 
         public ExpressionEvaluationRecorder(
             IBatchEventAggregator<ExpressionEvaluationBatchParams, ExpressionEvaluationBatchSummary>
-                batchEventAggregator, IMetrics metrics)
+                batchEventAggregator, IVsiMetrics metrics)
         {
             _batchEventAggregator = batchEventAggregator;
             _metrics = metrics;

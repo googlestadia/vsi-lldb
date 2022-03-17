@@ -44,7 +44,7 @@ namespace YetiVSI.Test.PortSupplier
         IProcessListRequest _processListRequest;
         IDialogUtil _dialogUtil;
         ISshManager _sshManager;
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
 
         DebugPort.Factory _portFactory;
         IDebugPortSupplier2 _portSupplier;
@@ -65,7 +65,7 @@ namespace YetiVSI.Test.PortSupplier
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
 #pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
 
             _portFactory = new DebugPort.Factory(_processFactory, processListRequestFactory,
                                                  cancelableTaskFactory, _dialogUtil, _sshManager,

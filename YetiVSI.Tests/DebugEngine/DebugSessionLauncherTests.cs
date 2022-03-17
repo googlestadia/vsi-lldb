@@ -93,7 +93,7 @@ namespace YetiVSI.Test.DebugEngine
             _fileSystem = new MockFileSystem();
             _debugEngine = Substitute.For<IDebugEngine3>();
             _gameLaunch = Substitute.For<IVsiGameLaunch>();
-            _actionRecorder = new ActionRecorder(Substitute.For<IMetrics>());
+            _actionRecorder = new ActionRecorder(Substitute.For<IVsiMetrics>());
         }
 
         void CheckLldbListenerStops()

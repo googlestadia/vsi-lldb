@@ -18,7 +18,7 @@ namespace YetiVSI.Test.Metrics
         const int _maxStackTraceFrames = 2;
 
         EventSchedulerFake _eventScheduler;
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
         IExceptionRecorder _exceptionRecorder;
 
         // Object under test
@@ -33,7 +33,7 @@ namespace YetiVSI.Test.Metrics
             eventSchedulerFactory.Create(Arg.Do<System.Action>(a => _eventScheduler.Callback = a),
                                          _eventScheduler.Interval = _batchIntervalMs)
                 .Returns(_eventScheduler);
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             _exceptionRecorder =
                 new ExceptionRecorder(_metrics, _maxExceptionsChainLength, _maxStackTraceFrames);
             _batchEventAggregator =

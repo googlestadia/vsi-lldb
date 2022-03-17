@@ -35,7 +35,7 @@ namespace YetiVSI.Test.PortSupplier
     {
         const string _testDebugSessionId = "abc123";
 
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
         DebugPort.Factory _debugPortFactory;
         IGameletClient _gameletClient;
         IDialogUtil _dialogUtil;
@@ -58,7 +58,7 @@ namespace YetiVSI.Test.PortSupplier
 #pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
 #pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             _metrics.NewDebugSessionId().Returns(_testDebugSessionId);
 
             var cloudRunner = Substitute.For<ICloudRunner>();

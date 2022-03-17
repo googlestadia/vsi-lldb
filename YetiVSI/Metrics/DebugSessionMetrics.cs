@@ -18,19 +18,19 @@ using Metrics.Shared;
 namespace YetiVSI.Metrics
 {
     /// <summary>
-    /// Wrapper for IMetrics that can store a debug session ID and append it to events.
+    /// Wrapper for IVsiMetrics that can store a debug session ID and append it to events.
     /// </summary>
-    public class DebugSessionMetrics : IMetrics
+    public class DebugSessionMetrics : IVsiMetrics
     {
-        readonly IMetrics metricsService;
+        readonly IVsiMetrics metricsService;
 
         /// <summary>
         /// Optional session ID to record with each event.
-        /// If set, this value must come from IMetrics::NewDebugSessionId.
+        /// If set, this value must come from IVsiMetrics::NewDebugSessionId.
         /// </summary>
         public string DebugSessionId { get; set; }
 
-        public DebugSessionMetrics(IMetrics metricsService)
+        public DebugSessionMetrics(IVsiMetrics metricsService)
         {
             this.metricsService = metricsService;
             // TODO: Create a new debug session ID inside this constructor.

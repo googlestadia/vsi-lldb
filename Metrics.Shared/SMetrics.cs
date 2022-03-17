@@ -14,10 +14,10 @@
 
  namespace Metrics.Shared
 {
-    // Passed to GetService(Type) to return a reference to IMetrics.
+    // Passed to GetService(Type) to return a reference to IVsiMetrics.
     //
     // Example:
-    //   var metrics = (IMetrics)Package.GetGlobalService(typeof(SMetrics));
+    //   var metrics = (IVsiMetrics)Package.GetGlobalService(typeof(SMetrics));
     public interface SMetrics
     {
     }

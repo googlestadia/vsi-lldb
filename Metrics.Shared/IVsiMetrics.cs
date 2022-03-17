@@ -14,14 +14,17 @@
 
 namespace Metrics.Shared
 {
-    // Provides methods to record metric actions.
-    //
-    // Don't use this interface direclty. Instantiate an ActionRecorder object.
-    public interface IMetrics
+    public interface IBaseMetrics
     {
         // Non-blocking call to record the given event type and proto.
         void RecordEvent(DeveloperEventType.Types.Type type, DeveloperLogEvent proto);
+    }
 
+    // Provides methods to record metric actions.
+    //
+    // Don't use this interface direclty. Instantiate an ActionRecorder object.
+    public interface IVsiMetrics : IBaseMetrics
+    {
         // Create and store a new debug session ID that can be recorded in log events.
         string NewDebugSessionId();
     }

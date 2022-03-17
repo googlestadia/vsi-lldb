@@ -467,7 +467,7 @@ namespace YetiVSI.Test
             var cancelable = Substitute.For<ICancelableTask>();
             IAction action = new Action(DeveloperEventType.Types.Type.VsiDeployBinary,
                                         Substitute.For<Timer.Factory>(),
-                                        Substitute.For<IMetrics>());
+                                        Substitute.For<IVsiMetrics>());
 
             return (target, action, cancelable);
         }

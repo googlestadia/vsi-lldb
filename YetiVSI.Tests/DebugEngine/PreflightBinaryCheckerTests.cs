@@ -33,7 +33,7 @@ namespace YetiVSI.Test.DebugEngine
     {
         MockFileSystem _fileSystem;
         IModuleParser _moduleParser;
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
         IAction _action;
         PreflightBinaryChecker _checker;
 
@@ -54,7 +54,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             _fileSystem = new MockFileSystem();
             _moduleParser = Substitute.For<IModuleParser>();
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             _checker = new PreflightBinaryChecker(_fileSystem, _moduleParser);
             _action = new ActionRecorder(_metrics).CreateToolAction(
                 ActionType.DebugPreflightBinaryChecks);

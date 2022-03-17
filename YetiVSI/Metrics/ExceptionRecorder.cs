@@ -38,7 +38,7 @@ namespace YetiVSI.Metrics
             "ProcessManagerCommon", "SymbolStores", "System"
         };
 
-        readonly IMetrics _metrics;
+        readonly IVsiMetrics _metrics;
         readonly int _maxExceptionsChainLength;
         readonly int _maxStackTraceFrames;
 
@@ -54,7 +54,7 @@ namespace YetiVSI.Metrics
         /// <see cref="ChainTooLongException"/> after the last exception recorded.
         /// Effectively we record maxExceptionsChainLength+1 exceptions in total.
         /// </remarks>
-        public ExceptionRecorder(IMetrics metrics,
+        public ExceptionRecorder(IVsiMetrics metrics,
                                  int maxExceptionsChainLength = _defaultMaxExceptionsChainLength,
                                  int maxStackTraceFrames = _defaultMaxStackTraceFrames)
         {

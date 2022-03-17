@@ -21,11 +21,11 @@ using YetiCommon;
 namespace Metrics
 {
     // Stub implementation of Metrics service.
-    public sealed class MetricsService : SMetrics, IMetrics
+    public sealed class VsiMetricsService : SMetrics, IVsiMetrics
     {
         readonly RandomNumberGenerator _random;
 
-        public MetricsService(JoinableTaskContext taskContext, Versions versions)
+        public VsiMetricsService(JoinableTaskContext taskContext, Versions versions)
             : this(taskContext,
                    new CredentialConfig.Factory(new JsonUtil()),
                    new SdkConfig.Factory(new JsonUtil()),
@@ -35,7 +35,7 @@ namespace Metrics
         }
 
         // Create a metrics service with custom configs; used for large tests.
-        public MetricsService(JoinableTaskContext taskContext,
+        public VsiMetricsService(JoinableTaskContext taskContext,
                               CredentialConfig.Factory credentialConfigFactory,
                               SdkConfig.Factory sdkConfigFactory, RandomNumberGenerator random,
                               Versions versions)

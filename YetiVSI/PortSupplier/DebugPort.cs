@@ -38,7 +38,7 @@ namespace YetiVSI.PortSupplier
             readonly CancelableTask.Factory _cancelableTaskFactory;
             readonly IDialogUtil _dialogUtil;
             readonly ISshManager _sshManager;
-            readonly IMetrics _metrics;
+            readonly IVsiMetrics _metrics;
             readonly string _developerAccount;
 
             // For test substitution.
@@ -49,7 +49,7 @@ namespace YetiVSI.PortSupplier
             public Factory(DebugProcess.Factory debugProcessFactory,
                            ProcessListRequest.Factory processListRequestFactory,
                            CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
-                           ISshManager sshManager, IMetrics metrics, string developerAccount)
+                           ISshManager sshManager, IVsiMetrics metrics, string developerAccount)
             {
                 _debugProcessFactory = debugProcessFactory;
                 _processListRequestFactory = processListRequestFactory;
@@ -85,7 +85,7 @@ namespace YetiVSI.PortSupplier
         DebugPort(DebugProcess.Factory debugProcessFactory,
                   ProcessListRequest.Factory processListRequestFactory,
                   CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
-                  ISshManager sshManager, IMetrics metrics, Gamelet gamelet,
+                  ISshManager sshManager, IVsiMetrics metrics, Gamelet gamelet,
                   IDebugPortSupplier2 supplier, string debugSessionId, string developerAccount)
         {
             _debugProcessFactory = debugProcessFactory;

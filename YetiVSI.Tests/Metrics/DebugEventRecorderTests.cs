@@ -30,7 +30,7 @@ namespace YetiVSI.Test.Metrics
             _batchEventAggregator;
 
         EventSchedulerFake _eventScheduler;
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
 
         // Object under test
         DebugEventRecorder _debugEventRecorder;
@@ -43,7 +43,7 @@ namespace YetiVSI.Test.Metrics
             eventSchedulerFactory.Create(Arg.Do<System.Action>(a => _eventScheduler.Callback = a),
                                          _batchIntervalMs)
                 .Returns(_eventScheduler);
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             var exceptionRecorder = new ExceptionRecorder(_metrics);
             _batchEventAggregator =
                 new BatchEventAggregator<DebugEventBatch, DebugEventBatchParams,

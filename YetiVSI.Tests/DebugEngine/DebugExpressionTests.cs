@@ -46,7 +46,7 @@ namespace YetiVSI.Test.DebugEngine
         VarInfoBuilder _varInfoBuilder;
         IDebugEngineCommands _engineCommandsMock;
         VsExpressionCreator _vsExpressionCreator;
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
         ExpressionEvaluationRecorder _expressionEvaluationRecorder;
         ITimeSource _timeSource;
 
@@ -61,7 +61,7 @@ namespace YetiVSI.Test.DebugEngine
 
             _vsExpressionCreator = new VsExpressionCreator();
 
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             var eventScheduler = new EventSchedulerFake();
             var eventSchedulerFactory = Substitute.For<IEventSchedulerFactory>();
             eventSchedulerFactory.Create(Arg.Do<System.Action>(a => eventScheduler.Callback = a),

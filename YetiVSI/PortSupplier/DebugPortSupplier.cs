@@ -37,7 +37,7 @@ namespace YetiVSI.PortSupplier
         readonly DebugPort.Factory _debugPortFactory;
         readonly GameletClient.Factory _gameletClientFactory;
         readonly IDialogUtil _dialogUtil;
-        readonly IMetrics _metrics;
+        readonly IVsiMetrics _metrics;
         readonly CancelableTask.Factory _cancelableTaskFactory;
         readonly ICloudRunner _cloudRunner;
         readonly string _developerAccount;
@@ -79,7 +79,7 @@ namespace YetiVSI.PortSupplier
             var sshManager =
                 new SshManager(_gameletClientFactory, _cloudRunner, sshKeyLoader,
                                sshKnownHostsWriter, new RemoteCommand(managedProcessFactory));
-            _metrics = (IMetrics)serviceManager.RequireGlobalService(typeof(SMetrics));
+            _metrics = (IVsiMetrics)serviceManager.RequireGlobalService(typeof(SMetrics));
             _debugPortFactory = new DebugPort.Factory(
                 debugProcessFactory, processListRequestFactory, _cancelableTaskFactory, _dialogUtil,
                 sshManager, _metrics, _developerAccount);
@@ -89,7 +89,7 @@ namespace YetiVSI.PortSupplier
         public DebugPortSupplier(DebugPort.Factory debugPortFactory,
                                  GameletClient.Factory gameletClientFactory,
                                  IExtensionOptions options, IDialogUtil dialogUtil,
-                                 CancelableTask.Factory cancelableTaskFactory, IMetrics metrics,
+                                 CancelableTask.Factory cancelableTaskFactory, IVsiMetrics metrics,
                                  ICloudRunner cloudRunner, string developerAccount)
         {
             _debugPortFactory = debugPortFactory;

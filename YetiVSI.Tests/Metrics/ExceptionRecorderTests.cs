@@ -29,13 +29,13 @@ namespace YetiVSI.Test.Metrics
         const int _maxExceptionsChainLength = 2;
         const int _maxStackTraceFrames = 2;
 
-        IMetrics _fakeMetrics;
+        IVsiMetrics _fakeMetrics;
         ExceptionRecorder _exceptionRecorder;
 
         [SetUp]
         public void SetUp()
         {
-            _fakeMetrics = Substitute.For<IMetrics>();
+            _fakeMetrics = Substitute.For<IVsiMetrics>();
             _exceptionRecorder =
                 new ExceptionRecorder(_fakeMetrics, _maxExceptionsChainLength,
                                       _maxStackTraceFrames);

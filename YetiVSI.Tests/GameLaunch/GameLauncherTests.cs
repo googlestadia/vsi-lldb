@@ -53,7 +53,7 @@ namespace YetiVSI.Test.GameLaunch
         ILaunchGameParamsConverter _paramsConverter;
         CancelableTask.Factory _cancelableTaskFactory;
         IYetiVSIService _yetiVsiService;
-        IMetrics _metrics;
+        IVsiMetrics _metrics;
         ActionRecorder _actionRecorder;
         IDialogUtil _dialogUtil;
         IVsiGameLaunchFactory _vsiGameLaunchFactory;
@@ -71,7 +71,7 @@ namespace YetiVSI.Test.GameLaunch
             _paramsConverter = Substitute.For<ILaunchGameParamsConverter>();
             _cancelableTaskFactory = Substitute.For<CancelableTask.Factory>();
             _yetiVsiService = Substitute.For<IYetiVSIService>();
-            _metrics = Substitute.For<IMetrics>();
+            _metrics = Substitute.For<IVsiMetrics>();
             _actionRecorder = Substitute.For<ActionRecorder>(_metrics);
             _devEvent = SetupCreateLaunchEvent();
             _dialogUtil = Substitute.For<IDialogUtil>();

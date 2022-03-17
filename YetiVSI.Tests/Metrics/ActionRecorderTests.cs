@@ -60,7 +60,7 @@ namespace YetiVSI.Test.Metrics
         ActionRecorder actionRecorder;
 
         // Substitutions
-        IMetrics metrics;
+        IVsiMetrics metrics;
         ITimer timer;
         Timer.Factory timerFactory;
 
@@ -70,7 +70,7 @@ namespace YetiVSI.Test.Metrics
         [SetUp]
         public void SetUp()
         {
-            metrics = Substitute.For<IMetrics>();
+            metrics = Substitute.For<IVsiMetrics>();
             timer = Substitute.For<ITimer>();
             timer.ElapsedMilliseconds.Returns(ElapsedMilliseconds);
             timerFactory = Substitute.For<Timer.Factory>();

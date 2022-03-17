@@ -561,7 +561,7 @@ namespace YetiVSI.DebugEngine
             if (_debugSessionMetrics == null)
             {
                 _debugSessionMetrics = new DebugSessionMetrics(
-                    CreateServiceManager().GetGlobalService(typeof(SMetrics)) as IMetrics);
+                    CreateServiceManager().GetGlobalService(typeof(SMetrics)) as IVsiMetrics);
             }
 
             return _debugSessionMetrics;

@@ -61,7 +61,7 @@ namespace YetiVSI
         const string _packageGuidString = "5fc8481d-4b1a-4cdc-b123-fd6d32fc4096";
         JoinableTaskContext _taskContext;
         DTEEvents _packageDteEvents;
-        MetricsService _metricsService;
+        VsiMetricsService _metricsService;
 
         /// <summary>
         /// Initialization of the package; this method is called right after the
@@ -74,7 +74,7 @@ namespace YetiVSI
             var serviceManager = new ServiceManager();
             _taskContext = serviceManager.GetJoinableTaskContext();
             AddServices();
-            _metricsService = (MetricsService) await GetServiceAsync(typeof(SMetrics));
+            _metricsService = (VsiMetricsService) await GetServiceAsync(typeof(SMetrics));
             // MetricsService was registered in `AddServices`, so it should be present.
             Assumes.Present(_metricsService);
             _metricsService.RecordEvent(DeveloperEventType.Types.Type.VsiInitialized,
@@ -143,7 +143,7 @@ namespace YetiVSI
         {
             await _taskContext.Factory.SwitchToMainThreadAsync();
             string vsVersion = await VsVersion.GetVisualStudioVersionAsync(this);
-            return new MetricsService(_taskContext, Versions.Populate(vsVersion));
+            return new VsiMetricsService(_taskContext, Versions.Populate(vsVersion));
         }
 
         Task<object> CreateSDebugEngineManagerAsync(IAsyncServiceContainer container,
@@ -161,7 +161,7 @@ namespace YetiVSI
             ISessionNotifier sessionNotifier = new SessionNotifierService();
             var vsiService = (YetiVSIService) GetGlobalService(typeof(YetiVSIService));
             await _taskContext.Factory.SwitchToMainThreadAsync();
-            var metricsService = (IMetrics) await GetServiceAsync(typeof(SMetrics));
+            var metricsService = (IVsiMetrics) await GetServiceAsync(typeof(SMetrics));
             var exceptionRecorder = new ExceptionRecorder(metricsService);
             var loadSymbolsCommand = new LoadSymbolsCommand(
                 _taskContext, this, exceptionRecorder, vsiService);

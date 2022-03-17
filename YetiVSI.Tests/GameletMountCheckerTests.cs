@@ -142,7 +142,7 @@ namespace YetiVSI.Test
         {
             _remoteCommand = Substitute.For<IRemoteCommand>();
             _dialogUtil.ShowYesNo(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
-            _actionRecorder = new ActionRecorder(Substitute.For<IMetrics>());
+            _actionRecorder = new ActionRecorder(Substitute.For<IVsiMetrics>());
         }
 
         [Test]

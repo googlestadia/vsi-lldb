@@ -30,7 +30,7 @@ namespace YetiVSI.Test.Metrics
         DeveloperLogEvent logEvent;
 
         // Substitutions
-        IMetrics metrics;
+        IVsiMetrics metrics;
 
         // Object under test
         DebugSessionMetrics debugSessionMetrics;
@@ -45,7 +45,7 @@ namespace YetiVSI.Test.Metrics
                 LatencyType = DeveloperLogEvent.Types.LatencyType.LatencyTool
             };
 
-            metrics = Substitute.For<IMetrics>();
+            metrics = Substitute.For<IVsiMetrics>();
             debugSessionMetrics = new DebugSessionMetrics(metrics);
         }
 
