@@ -201,7 +201,6 @@ namespace YetiVSI.DebugEngine
             int targetPort, LaunchOption launchOption, IDebugEventCallback2 callback,
             StadiaLldbDebugger stadiaDebugger)
         {
-            var launchSucceeded = false;
             Stopwatch launchTimer = Stopwatch.StartNew();
             SbPlatform lldbPlatform = stadiaDebugger.CreatePlatform(grpcConnection);
             if (lldbPlatform == null)
@@ -210,169 +209,61 @@ namespace YetiVSI.DebugEngine
                                           ErrorStrings.FailedToCreateLldbPlatform);
             }
 
-            if (launchOption == LaunchOption.AttachToGame ||
-                launchOption == LaunchOption.LaunchGame)
-            {
-                task.ThrowIfCancellationRequested();
-                Trace.WriteLine("Attempting to connect debugger");
-                task.Progress.Report("Connecting to debugger");
-
-                string connectRemoteUrl = $"{_lldbConnectUrl}:{localDebuggerPort}";
-                string connectRemoteArgument =
-                    CreateConnectRemoteArgument(connectRemoteUrl, targetIpAddress, targetPort,
-                                                stadiaDebugger.IsStadiaPlatformAvailable());
-
-                SbPlatformConnectOptions lldbConnectOptions =
-                    _lldbPlatformConnectOptionsFactory.Create(connectRemoteArgument);
-
-                IAction debugerWaitAction =
-                    _actionRecorder.CreateToolAction(ActionType.DebugWaitDebugger);
-
-                bool TryConnectRemote()
-                {
-                    if (lldbPlatform.ConnectRemote(lldbConnectOptions).Success())
-                    {
-                        return true;
-                    }
-
-                    VerifyGameIsReady(debugerWaitAction);
-                    return false;
-                }
-
-                try
-                {
-                    debugerWaitAction.Record(() => RetryWithTimeout(
-                                                 task, TryConnectRemote, _launchRetryDelay,
-                                                 _launchTimeout, launchTimer));
-                }
-                catch (TimeoutException e)
-                {
-                    throw new AttachException(
-                        VSConstants.E_ABORT,
-                        ErrorStrings.FailedToConnectDebugger(lldbConnectOptions.GetUrl()), e);
-                }
-                Trace.WriteLine("LLDB successfully connected");
-            }
-            else if (launchOption != LaunchOption.AttachToCore)
+            if (launchOption == LaunchOption.Invalid)
             {
                 throw new AttachException(VSConstants.E_ABORT, ErrorStrings.InvalidLaunchOption(
                                                                    launchOption.ToString()));
             }
 
-            stadiaDebugger.Debugger.SetSelectedPlatform(lldbPlatform);
+            task.Progress.Report(TaskMessages.DebuggerAttaching);
+            if (launchOption == LaunchOption.AttachToGame ||
+                launchOption == LaunchOption.LaunchGame)
+            {
+                ConnectToRemoteProcess(task, localDebuggerPort, targetIpAddress, targetPort,
+                                       stadiaDebugger, launchTimer, lldbPlatform);
+            }
 
             task.ThrowIfCancellationRequested();
-            task.Progress.Report("Debugger is attaching (this can take a while)");
+            stadiaDebugger.Debugger.SetSelectedPlatform(lldbPlatform);
 
             var lldbListener = CreateListener(grpcConnection);
             // This is required to catch breakpoint change events.
             stadiaDebugger.Target.AddListener(lldbListener, EventType.STATE_CHANGED);
             var listenerSubscriber = new LldbListenerSubscriber(lldbListener);
-            var eventHandler = new EventHandler<FileUpdateReceivedEventArgs>(
-                (s, e) => ListenerSubscriberOnFileUpdateReceived(task, e));
-            listenerSubscriber.FileUpdateReceived += eventHandler;
+            LldbFileUpdateListener fileUpdateListener = new LldbFileUpdateListener(
+                listenerSubscriber, task);
             listenerSubscriber.Start();
+            fileUpdateListener.Subscribe();
 
+            var shouldStopListening = true;
             try
             {
-                if (launchOption == LaunchOption.AttachToCore)
-                {
-                    var loadCoreAction = _actionRecorder.CreateToolAction(ActionType.DebugLoadCore);
-                    SbProcess lldbDebuggerProcess = null;
-                    loadCoreAction.Record(() =>
-                        lldbDebuggerProcess = LoadCore(stadiaDebugger.Target, loadCoreAction));
-
-                    await _taskContext.Factory.SwitchToMainThreadAsync();
-
-                    // Load custom visualizers after successful attach.
-                    _natvisVisualizerScanner.Reload();
-
-                    return _attachedProgramFactory.Create(
-                        process, programId, _debugEngine, callback, stadiaDebugger.Debugger,
-                        stadiaDebugger.Target, listenerSubscriber, lldbDebuggerProcess,
-                        stadiaDebugger.Debugger.GetCommandInterpreter(), true,
-                        null, _moduleSearchLogHolder, remotePid: 0);
-                }
-
                 // Get process ID.
                 uint processId = 0;
                 switch (launchOption)
                 {
-                case LaunchOption.AttachToGame:
-                    if (!attachPid.HasValue)
-                    {
-                        throw new AttachException(VSConstants.E_ABORT,
-                                                  ErrorStrings.FailedToRetrieveProcessId);
-                    }
-
-                    processId = attachPid.Value;
-                    break;
-                case LaunchOption.LaunchGame:
-                    // Since we have no way of knowing when the remote process actually
-                    // starts, try a few times to get the pid.
-
-                    IAction debugWaitAction =
-                        _actionRecorder.CreateToolAction(ActionType.DebugWaitProcess);
-
-                    bool TryGetRemoteProcessId()
-                    {
-                        if (GetRemoteProcessId(_executableFileName, lldbPlatform, out processId))
-                        {
-                            return true;
-                        }
-
-                        VerifyGameIsReady(debugWaitAction);
-                        return false;
-                    }
-
-                    try
-                    {
-                        debugWaitAction.Record(() => RetryWithTimeout(task, TryGetRemoteProcessId,
-                                                                      _launchRetryDelay,
-                                                                      _launchTimeout, launchTimer));
-                    }
-                    catch (TimeoutException e)
-                    {
-                        throw new AttachException(VSConstants.E_ABORT,
-                                                  ErrorStrings.FailedToRetrieveProcessId, e);
-                    }
-
-                    break;
+                    case LaunchOption.AttachToCore:
+                        // No process to attach to, just attach to core and early out.
+                        return await AttachToCoreAsync(process, programId, callback, stadiaDebugger,
+                                                       listenerSubscriber);
+                    case LaunchOption.AttachToGame:
+                        processId = GetProcessIdFromAttachPid(attachPid);
+                        break;
+                    case LaunchOption.LaunchGame:
+                        processId = GetProcessIdFromGamelet(task, launchTimer, lldbPlatform,
+                                                            processId);
+                        break;
                 }
 
-                Trace.WriteLine($"Attaching to pid {processId}");
-                var debugAttachAction = _actionRecorder.CreateToolAction(ActionType.DebugAttach);
-
-                SbProcess debuggerProcess = null;
-                debugAttachAction.Record(() => {
-                    var moduleFileLoadRecorder =
-                        _moduleFileLoadRecorderFactory.Create(debugAttachAction);
-                    moduleFileLoadRecorder.RecordBeforeLoad(Array.Empty<SbModule>());
-
-                    using (new TestBenchmark("AttachToProcessWithID", TestBenchmarkScope.Recorder))
-                    {
-                        debuggerProcess = stadiaDebugger.Target.AttachToProcessWithID(
-                            lldbListener, processId, out SbError lldbError);
-
-                        if (lldbError.Fail())
-                        {
-                            throw new AttachException(
-                                VSConstants.E_ABORT,
-                                GetLldbAttachErrorDetails(lldbError, lldbPlatform, processId));
-                        }
-                    }
-
-                    RecordModules(stadiaDebugger.Target, moduleFileLoadRecorder);
-                });
-
-                var exceptionManager = _exceptionManagerFactory.Create(debuggerProcess);
-
+                SbProcess debuggerProcess = AttachToProcess(stadiaDebugger, lldbPlatform,
+                                                            lldbListener, processId);
                 await _taskContext.Factory.SwitchToMainThreadAsync();
                 ILldbAttachedProgram attachedProgram = _attachedProgramFactory.Create(
                     process, programId, _debugEngine, callback, stadiaDebugger.Debugger,
                     stadiaDebugger.Target, listenerSubscriber, debuggerProcess,
-                    stadiaDebugger.Debugger.GetCommandInterpreter(), false, exceptionManager,
-                    _moduleSearchLogHolder, processId);
+                    stadiaDebugger.Debugger.GetCommandInterpreter(), false,
+                    _exceptionManagerFactory.Create(debuggerProcess), _moduleSearchLogHolder,
+                    processId);
 
                 // At this point the executable should always be present locally (i.e. it was found
                 // in the search path, or downloaded by LLDB into the module cache) and accessible
@@ -382,19 +273,184 @@ namespace YetiVSI.DebugEngine
                 _natvisVisualizerScanner.SetTarget(stadiaDebugger.Target);
                 _natvisVisualizerScanner.Reload();
 
-                launchSucceeded = true;
+                shouldStopListening = false;
                 return attachedProgram;
             }
             finally
             {
-                // clean up the SBListener subscriber
-                listenerSubscriber.FileUpdateReceived -= eventHandler;
-                // stop the SBListener subscriber completely if the game failed to launch
-                if (!launchSucceeded)
+                fileUpdateListener.Unsubscribe();
+                if (shouldStopListening)
                 {
                     listenerSubscriber.Stop();
                 }
             }
+        }
+
+        SbListener CreateListener(GrpcConnection grpcConnection)
+        {
+            var lldbListener = _lldbListenerFactory.Create(grpcConnection, "LLDBWorker Listener");
+            if (lldbListener == null)
+            {
+                throw new AttachException(VSConstants.E_ABORT,
+                                          ErrorStrings.FailedToCreateDebugListener);
+            }
+
+            return lldbListener;
+        }
+
+        SbProcess AttachToProcess(StadiaLldbDebugger stadiaDebugger, SbPlatform lldbPlatform,
+                                  SbListener listener, uint processId)
+        {
+            Trace.WriteLine($"Attaching to pid {processId}");
+            IAction debugAttachAction = _actionRecorder.CreateToolAction(ActionType.DebugAttach);
+            SbProcess debuggerProcess = null;
+            debugAttachAction.Record(() =>
+            {
+                var moduleFileLoadRecorder =
+                    _moduleFileLoadRecorderFactory.Create(debugAttachAction);
+                moduleFileLoadRecorder.RecordBeforeLoad(Array.Empty<SbModule>());
+
+                using (new TestBenchmark("AttachToProcessWithID", TestBenchmarkScope.Recorder))
+                {
+                    debuggerProcess = stadiaDebugger.Target.AttachToProcessWithID(
+                        listener, processId, out SbError lldbError);
+
+                    if (lldbError.Fail())
+                    {
+                        throw new AttachException(
+                            VSConstants.E_ABORT,
+                            GetLldbAttachErrorDetails(lldbError, lldbPlatform, processId));
+                    }
+                }
+
+                RecordModules(stadiaDebugger.Target, moduleFileLoadRecorder);
+            });
+            return debuggerProcess;
+        }
+
+        uint GetProcessIdFromGamelet(ICancelable task, Stopwatch launchTimer,
+                                     SbPlatform lldbPlatform, uint processId)
+        {
+            IAction debugWaitAction =
+                _actionRecorder.CreateToolAction(ActionType.DebugWaitProcess);
+
+            try
+            {
+                // Since we have no way of knowing when the remote process actually
+                // starts, try a few times to get the pid.
+                debugWaitAction.Record(
+                    () => RetryWithTimeout(task, () => TryGetRemoteProcessId(lldbPlatform,
+                                                                             ref processId,
+                                                                             debugWaitAction),
+                                           _launchRetryDelay, _launchTimeout, launchTimer));
+            }
+            catch (TimeoutException e)
+            {
+                throw new AttachException(VSConstants.E_ABORT,
+                                            ErrorStrings.FailedToRetrieveProcessId, e);
+            }
+
+            return processId;
+        }
+
+        bool TryGetRemoteProcessId(SbPlatform lldbPlatform, ref uint processId,
+                                   IAction debugWaitAction)
+        {
+            if (GetRemoteProcessId(_executableFileName, lldbPlatform, out processId))
+            {
+                return true;
+            }
+
+            VerifyGameIsReady(debugWaitAction);
+            return false;
+        }
+
+        static uint GetProcessIdFromAttachPid(uint? attachPid)
+        {
+            if (!attachPid.HasValue)
+            {
+                throw new AttachException(VSConstants.E_ABORT,
+                                          ErrorStrings.FailedToRetrieveProcessId);
+            }
+
+            return attachPid.Value;
+        }
+
+        async Task<ILldbAttachedProgram> AttachToCoreAsync(
+            IDebugProcess2 process, Guid programId, IDebugEventCallback2 callback,
+            StadiaLldbDebugger stadiaDebugger, LldbListenerSubscriber listenerSubscriber)
+        {
+            var loadCoreAction = _actionRecorder.CreateToolAction(ActionType.DebugLoadCore);
+            SbProcess lldbDebuggerProcess = null;
+            loadCoreAction.Record(() =>
+                lldbDebuggerProcess = LoadCore(stadiaDebugger.Target, loadCoreAction));
+
+            await _taskContext.Factory.SwitchToMainThreadAsync();
+
+            // Load custom visualizers after successful attach.
+            _natvisVisualizerScanner.Reload();
+
+            return _attachedProgramFactory.Create(
+                process, programId, _debugEngine, callback, stadiaDebugger.Debugger,
+                stadiaDebugger.Target, listenerSubscriber, lldbDebuggerProcess,
+                stadiaDebugger.Debugger.GetCommandInterpreter(), true,
+                null, _moduleSearchLogHolder, remotePid: 0);
+        }
+
+        void ConnectToRemoteProcess(ICancelable task, int localDebuggerPort, string targetIpAddress,
+                                    int targetPort, StadiaLldbDebugger stadiaDebugger,
+                                    Stopwatch launchTimer, SbPlatform lldbPlatform)
+        {
+            task.ThrowIfCancellationRequested();
+            Trace.WriteLine("Attempting to connect debugger");
+            task.Progress.Report(TaskMessages.DebuggerConnecting);
+            SbPlatformConnectOptions lldbConnectOptions = CreatePlatformConnectionOptions(
+                localDebuggerPort, targetIpAddress, targetPort, stadiaDebugger);
+
+            IAction debuggerWaitAction =
+                _actionRecorder.CreateToolAction(ActionType.DebugWaitDebugger);
+
+            try
+            {
+                debuggerWaitAction.Record(() => RetryWithTimeout(
+                                             task, () => TryConnectRemote(lldbPlatform,
+                                                                          lldbConnectOptions,
+                                                                          debuggerWaitAction),
+                                             _launchRetryDelay, _launchTimeout, launchTimer));
+            }
+            catch (TimeoutException e)
+            {
+                throw new AttachException(
+                    VSConstants.E_ABORT,
+                    ErrorStrings.FailedToConnectDebugger(lldbConnectOptions.GetUrl()), e);
+            }
+            Trace.WriteLine("LLDB successfully connected");
+        }
+
+        bool TryConnectRemote(SbPlatform lldbPlatform, SbPlatformConnectOptions lldbConnectOptions,
+                              IAction debugerWaitAction)
+        {
+            if (lldbPlatform.ConnectRemote(lldbConnectOptions).Success())
+            {
+                return true;
+            }
+
+            VerifyGameIsReady(debugerWaitAction);
+            return false;
+        }
+
+        SbPlatformConnectOptions CreatePlatformConnectionOptions(
+            int localDebuggerPort,string targetIpAddress, int targetPort,
+            StadiaLldbDebugger stadiaDebugger)
+        {
+            string connectRemoteUrl = $"{_lldbConnectUrl}:{localDebuggerPort}";
+            string connectRemoteArgument =
+                CreateConnectRemoteArgument(connectRemoteUrl, targetIpAddress, targetPort,
+                                            stadiaDebugger.IsStadiaPlatformAvailable());
+
+            SbPlatformConnectOptions lldbConnectOptions =
+                _lldbPlatformConnectOptionsFactory.Create(connectRemoteArgument);
+            return lldbConnectOptions;
         }
 
         // TODO: remove once the backend bug is fixed.
@@ -640,38 +696,6 @@ namespace YetiVSI.DebugEngine
             return false;
         }
 
-        SbListener CreateListener(GrpcConnection grpcConnection)
-        {
-            var lldbListener = _lldbListenerFactory.Create(grpcConnection, "LLDBWorker Listener");
-            if (lldbListener == null)
-            {
-                throw new AttachException(VSConstants.E_ABORT,
-                                          ErrorStrings.FailedToCreateDebugListener);
-            }
-
-            return lldbListener;
-        }
-
-        void ListenerSubscriberOnFileUpdateReceived(ICancelable task,
-                                                    FileUpdateReceivedEventArgs args)
-        {
-            // Progress.Report uses SynchronizationContext and will take care about UI update.
-            var update = args.Update;
-            switch (update.Method)
-            {
-            case FileProcessingState.Read:
-                task.Progress.Report(
-                    $"Debugger is attaching:{Environment.NewLine}downloading {update.File}" +
-                    $" ({ToMegabytes(update.Size):F1} MB)");
-                break;
-            case FileProcessingState.Close:
-                task.Progress.Report("Debugger is attaching: loading modules");
-                break;
-            }
-
-            double ToMegabytes(uint bytes) => ((double)bytes) / 1048576;
-        }
-
         static void RecordModules(RemoteTarget lldbTarget,
                                   IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
         {
@@ -724,7 +748,7 @@ namespace YetiVSI.DebugEngine
         /// built with Clang version 10 or less, since the default LLDB formatter works as expected
         /// only since Clang version 11.
         /// </summary>
-        private void ApplyCompilerSpecificNatvis(RemoteTarget target)
+        void ApplyCompilerSpecificNatvis(RemoteTarget target)
         {
             if (target.GetNumModules() == 0)
             {

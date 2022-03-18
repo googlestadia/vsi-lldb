@@ -45,6 +45,9 @@ namespace YetiCommon
         public const string DeltaDeployEncode = "Computing executable diff...";
         public const string DeltaDeployDecode = "Restoring executable from diff...";
         public const string DeltaDeployCommand = "Deploying executable diff...";
+        public const string DebuggerAttaching = "Debugger is attaching (this can take a while)";
+        public const string DebuggerConnecting = "Connecting to debugger";
+        public const string LoadingModulesDuringAttach = "Debugger is attaching: loading modules";
 
         public static string GetDeployingProgress(long sentBytes)
         {

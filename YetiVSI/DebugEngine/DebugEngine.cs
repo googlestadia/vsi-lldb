@@ -1070,7 +1070,7 @@ namespace YetiVSI.DebugEngine
         {
             _taskContext.ThrowIfNotOnMainThread();
             var result = LaunchSuspendedInternal(port, executableFullPath, args, dir, options,
-                                             callback, out process, out ExitInfo exitInfo);
+                                                 callback, out process, out ExitInfo exitInfo);
 
             if (result != VSConstants.S_OK)
             {
