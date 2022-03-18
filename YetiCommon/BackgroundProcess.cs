@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace YetiCommon
@@ -31,6 +32,9 @@ namespace YetiCommon
 
         // Start running in the background.
         void Start();
+
+        // Terminates the process.
+        void Kill();
     }
 
     // Represents a background process.
@@ -39,41 +43,41 @@ namespace YetiCommon
         // Creates background processes.
         public class Factory
         {
-            public virtual IBackgroundProcess Create(
-                string fileName, string arguments, string workingDirectory)
+            public virtual IBackgroundProcess Create(string fileName, string arguments,
+                                                     string workingDirectory)
             {
-                return new BackgroundProcess(
-                    new ProcessStartInfo
-                    {
-                        FileName = fileName,
-                        Arguments = arguments,
-                        WorkingDirectory = workingDirectory,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                    });
+                return new BackgroundProcess(new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    WorkingDirectory = workingDirectory,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                });
             }
         }
 
-        Process process;
+        Process _process;
+
         BackgroundProcess(ProcessStartInfo startInfo)
         {
-            process = new Process
+            _process = new Process
             {
                 StartInfo = startInfo,
             };
         }
 
-        public int Id => process.Id;
-        public string ProcessName => process.ProcessName;
-        public ProcessStartInfo StartInfo => process.StartInfo;
+        public int Id => _process.Id;
+        public string ProcessName => _process.ProcessName;
+        public ProcessStartInfo StartInfo => _process.StartInfo;
 
         public void Start()
         {
             try
             {
-                process.Start();
-                Trace.WriteLine(string.Format("Started background process {0} {1} with id {2}",
-                    process.StartInfo.FileName, process.StartInfo.Arguments, process.Id));
+                _process.Start();
+                Trace.WriteLine($"Started background process {_process.StartInfo.FileName} " +
+                                $"{_process.StartInfo.Arguments} with id {_process.Id}");
             }
             catch (Exception e)
             {
@@ -83,6 +87,21 @@ namespace YetiCommon
                 // Warning: don't access any property of Process other than StartInfo, because
                 // they are not valid if the process could not be started.
                 throw new ProcessException($"Error launching '{StartInfo.FileName}'", e);
+            }
+        }
+
+        public void Kill()
+        {
+            try
+            {
+                // ProcessName and Id are not available anymore if the process already stopped.
+                Trace.WriteLine($"Killing process {StartInfo.FileName}");
+                _process.Kill();
+            }
+            catch (Exception e) when (e is InvalidOperationException || e is Win32Exception)
+            {
+                Trace.WriteLine($"Could not kill process {StartInfo.FileName}," +
+                                " probably already stopping or stopped");
             }
         }
     }

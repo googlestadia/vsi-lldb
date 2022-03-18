@@ -66,35 +66,72 @@ namespace YetiVSI.Profiling
         public static ProfilerLauncher<OrbitArgs> CreateForOrbit(
             BackgroundProcess.Factory backgroundProcessFactory, IFileSystem fileSystem) =>
             new ProfilerLauncher<OrbitArgs>(SDKUtil.GetOrbitPath(), "Orbit.exe",
-                                            backgroundProcessFactory, fileSystem);
+                                            backgroundProcessFactory, fileSystem,
+                                            ProfilerLauncher<OrbitArgs>.KillSlot.Orbit);
 
         // Creates an Dive launcher.
         public static ProfilerLauncher<DiveArgs> CreateForDive(
             BackgroundProcess.Factory backgroundProcessFactory, IFileSystem fileSystem) =>
             new ProfilerLauncher<DiveArgs>(SDKUtil.GetDivePath(), "dive.exe",
-                                           backgroundProcessFactory, fileSystem);
+                                           backgroundProcessFactory, fileSystem,
+                                           ProfilerLauncher<DiveArgs>.KillSlot.None);
 
         public string BinaryPath { get; }
         public bool IsInstalled => _fileSystem.File.Exists(BinaryPath);
 
+        /// <summary>
+        /// KillSlot is used to enforce that at most one process is running at a time.
+        /// If a valid slot (0 &le; slot &lt; Count) is used, the previously launched process (if
+        /// any) is killed before a new one is launched. Otherwise, None should be used. In this
+        /// case, previously launched processes will continue to exist.
+        /// </summary>
+        enum KillSlot
+        {
+            None = -1,
+            Orbit = 0,
+            Count = 1,
+        }
+
+        /// <summary>
+        /// Keeps track of profiler processes even across launcher instances. This is necessary
+        /// since Visual Studio recreates GgpDebugQueryTarget instances and hence the contained
+        /// launchers.
+        /// </summary>
+        static readonly IBackgroundProcess[] _processes =
+            new IBackgroundProcess[(int) KillSlot.Count];
+
         readonly string _profilerDir;
         readonly IFileSystem _fileSystem;
         readonly BackgroundProcess.Factory _backgroundProcessFactory;
+        readonly KillSlot _killSlot;
 
         ProfilerLauncher(string profilerDir, string profilerFileName,
-                         BackgroundProcess.Factory backgroundProcessFactory, IFileSystem fileSystem)
+                         BackgroundProcess.Factory backgroundProcessFactory, IFileSystem fileSystem,
+                         KillSlot killSlot)
         {
             _profilerDir = profilerDir;
             BinaryPath = Path.Combine(_profilerDir, profilerFileName);
             _backgroundProcessFactory = backgroundProcessFactory;
             _fileSystem = fileSystem;
+            _killSlot = killSlot;
         }
 
         public void Launch(TArgs args)
         {
+            int slot = (int) _killSlot;
+            if (_killSlot != KillSlot.None)
+            {
+                _processes[slot]?.Kill();
+            }
+
             IBackgroundProcess process =
                 _backgroundProcessFactory.Create(BinaryPath, args.Args, _profilerDir);
             process.Start();
+
+            if (_killSlot != KillSlot.None)
+            {
+                _processes[slot] = process;
+            }
         }
     }
 }
