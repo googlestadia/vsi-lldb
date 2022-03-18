@@ -99,9 +99,12 @@ namespace YetiVSI
             // attempts to close, which can happen multiple times during visual studio session.
             _packageDteEvents.OnBeginShutdown += HandleVisualStudioShutDown;
 
+            var dialogUtil = new DialogUtil();
             CoreAttachCommand.Register(this);
-            LaunchWithProfilerCommand.Register(taskContext, this, ProfilerType.Orbit);
-            LaunchWithProfilerCommand.Register(taskContext, this, ProfilerType.Dive);
+            LaunchWithProfilerCommand.Register(taskContext, this, ProfilerType.Orbit,
+                                               "Orbit CPU Profiler", dialogUtil);
+            LaunchWithProfilerCommand.Register(taskContext, this, ProfilerType.Dive,
+                                               "Dive GPU Profiler", dialogUtil);
             LLDBShellCommandTarget.Register(taskContext, this);
             DebuggerOptionsCommand.Register(taskContext, this);
 

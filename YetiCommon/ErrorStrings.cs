@@ -26,42 +26,58 @@ namespace YetiCommon
         public const string MalformedBuildId = "The build-id section is malformed.";
         public const string NoDebugLink = "Unable to extract the file's debuglink section.";
         public const string NoDebugDir = "Unable to extract the file's debug_info_dir section.";
+
         public const string QueryParametersWrongFormat =
             "The 'Custom Query Parameters' value is in a wrong format and will be ignored. " +
             " The setting should be in the form " +
             "'{param_1}={value_1}&{param_2=value_2}&{param_n=value_n}'. " +
             "Please edit the setting in 'Project Properties' -> " +
             "'Debugging' -> 'Custom Query Parameters'.";
+
         public static string ErrorWaitingForProcess(string process, string message) =>
             $"Error waiting for {process} to exit. {message}";
+
         public static string FailedToCreateSshDirectory(string message) =>
             $"Failed to create ssh directory. {message}";
+
         public static string FailedToCreateSshKeysDirectory(string message) =>
             $"Failed to create SSH keys directory. {message}";
+
         public static string FailedToLaunchProcess(string fileName, string message) =>
             $"Failed to launch {fileName}. {message}";
+
         public static string FailedToReadSshKeyFile(string message) =>
             $"Failed to read SSH key file. {message}";
+
         public static string FailedToRunSshKeyGeneration(string message) =>
             $"Failed to generate SSH key. {message}";
+
         public static string FailedToSetJobLimitInfo(int errorCode) =>
             "Failed to set job limit info. The Windows API 'SetInformationJobObject' returned " +
             $"{errorCode}.";
+
         public static string FailedToReadBuildId(string filepath, string message) =>
             $"Failed to read build ID of '{filepath}'. {message}";
+
         public static string InvalidSymbolFileFormat(string filepath) =>
             $"Failed to load '{filepath}'. The file was not recognized as a valid ELF object file.";
+
         public static string MissingDebugInfoInSymbolFile(string filepath) =>
             $"Failed to load '{filepath}'. " +
             "The file does not contain a debug information (.debug_info) section.";
+
         public static string FailedToReadSymbolFileName(string filepath, string message) =>
             $"Failed to read symbol file name of '{filepath}'. {message}";
+
         public static string FailedToReadSymbolFileDir(string filepath, string message) =>
             $"Failed to read symbol file directory of '{filepath}'. {message}";
+
         public static string FailedToWriteKnownHostsFile(string message) =>
             $"Failed to write known_hosts file. {message}";
+
         public static string ProcessExitedWithErrorCode(string process, int errorCode) =>
             $"{process} exited with error code {errorCode}.";
+
         public static string SshKeyGenerationFailed(string process, int errorCode) =>
             $"Failed to generate SSH key file. {process} exited with error code {errorCode}.";
 
@@ -88,7 +104,7 @@ namespace YetiCommon
 
         public static string TestAccountsNotSupportedWithExternalId(
             string testAccount, string externalId) =>
-            $"You specified both a test account ({testAccount}) and an external ID " + 
+            $"You specified both a test account ({testAccount}) and an external ID " +
             $"({externalId}) for this launch, however test accounts aren't compatible with " +
             "external IDs, so the test account will be ignored. " +
             "The external ID will be used for the launch.";
@@ -124,7 +140,7 @@ namespace YetiCommon
             $"values are: {string.Join(", ", expectedValues.Select(v => $"'{v}'"))}.";
 
         public static string InvalidBinaryName(string expected, string actual) =>
-            "The query parameter 'cmd' has an invalid binary name: " + 
+            "The query parameter 'cmd' has an invalid binary name: " +
             $"{(string.IsNullOrWhiteSpace(actual) ? "an empty value" : $"'{actual}'")}. " +
             $"Expected: '{expected}'. {Environment.NewLine}" +
             "To specify command line parameters for the binary, use the setting in " +
@@ -139,5 +155,11 @@ namespace YetiCommon
             "The Dive for Stadia profiler is not installed. The Dive binary was not found " +
             $"at {diveBinaryPath}. Re-run the Stadia SDK Installer and include the " +
             "\"Dive for Stadia\" feature.";
+
+        public const string ProfilingInDebugMode = "The startup project configuration is set to " +
+            "Debug. The results will likely not be accurate. Are you sure you want to continue?";
+
+        public static string ProfilingInDebugModeCaption(string profilerName) =>
+            $"Launch with {profilerName}";
     }
 }

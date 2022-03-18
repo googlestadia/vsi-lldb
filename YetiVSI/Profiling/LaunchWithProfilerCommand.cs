@@ -38,18 +38,22 @@ namespace YetiVSI.Profiling
         readonly JoinableTaskContext _taskContext;
         readonly IVsSolutionBuildManager _solutionBuildManager;
         readonly DebugLaunchOptions _profilerLaunchOption;
+        readonly string _profilerName;
+        readonly IDialogUtil _dialogUtil;
 
         // Events have to be stored in this object, see
         // https://stackoverflow.com/questions/3874015/subscription-to-dte-events-doesnt-seem-to-work-events-dont-get-called
         readonly EnvDTE.SelectionEvents _selectionEvents;
 
         public static LaunchWithProfilerCommand Register(JoinableTaskContext taskContext,
-                                                         Package package, ProfilerType profilerType)
+                                                         Package package, ProfilerType profilerType,
+                                                         string profilerName,
+                                                         IDialogUtil dialogUtil)
         {
             taskContext.ThrowIfNotOnMainThread();
 
             const string baseErrorMessage = "Failed to register LaunchWithProfilerCommand: ";
-            var serviceProvider = ((IServiceProvider)package);
+            var serviceProvider = ((IServiceProvider) package);
             if (!(serviceProvider.GetService(typeof(IVsSolutionBuildManager)) is
                 IVsSolutionBuildManager solutionBuildManager))
             {
@@ -72,8 +76,8 @@ namespace YetiVSI.Profiling
 
             EnvDTE.SelectionEvents selectionEvents = dte2.Events.SelectionEvents;
             var command = new LaunchWithProfilerCommand(taskContext, solutionBuildManager,
-                                                        GetLaunchOption(profilerType),
-                                                        selectionEvents);
+                                                        GetLaunchOption(profilerType), profilerName,
+                                                        dialogUtil, selectionEvents);
             (int menuCmdId, int toolbarCmdId) = GetMenuAndToolbarCmdIds(profilerType);
 
             var menuCommandId = new CommandID(YetiConstants.CommandSetGuid, menuCmdId);
@@ -132,11 +136,14 @@ namespace YetiVSI.Profiling
         public LaunchWithProfilerCommand(JoinableTaskContext taskContext,
                                          IVsSolutionBuildManager solutionBuildManager,
                                          DebugLaunchOptions profilerLaunchOption,
+                                         string profilerName, IDialogUtil dialogUtil,
                                          EnvDTE.SelectionEvents selectionEvents)
         {
             _taskContext = taskContext;
             _solutionBuildManager = solutionBuildManager;
             _profilerLaunchOption = profilerLaunchOption;
+            _profilerName = profilerName;
+            _dialogUtil = dialogUtil;
             _selectionEvents = selectionEvents;
         }
 
@@ -171,6 +178,14 @@ namespace YetiVSI.Profiling
         {
             _taskContext.ThrowIfNotOnMainThread();
 
+            // Warn if game was built in a debug configuration.
+            if (IsDebug() && !_dialogUtil.ShowYesNoWarning(
+                YetiCommon.ErrorStrings.ProfilingInDebugMode,
+                YetiCommon.ErrorStrings.ProfilingInDebugModeCaption(_profilerName)))
+            {
+                return;
+            }
+
             var launchOptions = DebugLaunchOptions.NoDebug | _profilerLaunchOption;
             int res = _solutionBuildManager.DebugLaunch((uint) launchOptions);
             if (res != VSConstants.S_OK)
@@ -182,10 +197,10 @@ namespace YetiVSI.Profiling
         }
 
         /// <summary>
-        /// Returns true if the the active configuration of the startup project has GGP as platform.
-        /// In other words, if you hit F5, a game would run on a gamelet.
+        /// Returns the name of the active configuration of the startup project, e.g. "Debug|GGP".
+        /// Logs and returns null on error.
         /// </summary>
-        bool IsGgpStartupProject()
+        string GetActiveConfigurationName()
         {
             _taskContext.ThrowIfNotOnMainThread();
 
@@ -194,7 +209,7 @@ namespace YetiVSI.Profiling
             if (_solutionBuildManager.get_StartupProject(out IVsHierarchy hier) != VSConstants.S_OK)
             {
                 Trace.WriteLine(baseErrorMessage + "Failed to get startup project");
-                return false;
+                return null;
             }
 
             var activeCfg = new IVsProjectCfg[1];
@@ -202,17 +217,42 @@ namespace YetiVSI.Profiling
             if (activeCfg[0] == null)
             {
                 Trace.WriteLine(baseErrorMessage + "Failed to get active project configuration");
-                return false;
+                return null;
             }
 
             if (activeCfg[0].get_CanonicalName(out string cname) != VSConstants.S_OK)
             {
                 Trace.WriteLine(baseErrorMessage + "Failed to get canonical name");
-                return false;
+                return null;
             }
 
+            return cname;
+        }
+
+        /// <summary>
+        /// Returns true if the active configuration of the startup project has GGP as platform.
+        /// In other words, if you hit F5, a game would run on a gamelet.
+        /// </summary>
+        bool IsGgpStartupProject()
+        {
+            _taskContext.ThrowIfNotOnMainThread();
+
             // E.g. "Debug|GGP".
-            return cname.EndsWith("|GGP");
+            string cname = GetActiveConfigurationName();
+            return cname != null && cname.EndsWith("|GGP");
+        }
+
+        /// <summary>
+        /// Returns true if the active configuration of the startup project is a debug
+        /// configuration. This is just a guess based on the name.
+        /// </summary>
+        bool IsDebug()
+        {
+            _taskContext.ThrowIfNotOnMainThread();
+
+            // E.g. "Debug|GGP".
+            string cname = GetActiveConfigurationName();
+            return cname != null && cname.StartsWith("Debug");
         }
     }
 }

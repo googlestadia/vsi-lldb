@@ -27,9 +27,12 @@ namespace YetiVSI.Test.Profiling
 {
     class LaunchWithProfilerCommandTests
     {
+        const string _profilerName = "burke";
+
         FakeMainThreadContext _mainThreadContext;
         IVsSolutionBuildManager _solutionBuildManager;
         DebugLaunchOptions _debugLaunchOption;
+        IDialogUtil _dialogUtil;
         LaunchWithProfilerCommand _command;
 
         [SetUp]
@@ -38,9 +41,10 @@ namespace YetiVSI.Test.Profiling
             _mainThreadContext = new FakeMainThreadContext();
             _solutionBuildManager = Substitute.For<IVsSolutionBuildManager>();
             _debugLaunchOption = DebugLaunchOptions.Profiling | DebugLaunchOptions.DetachOnStop;
+            _dialogUtil = Substitute.For<IDialogUtil>();
             _command = new LaunchWithProfilerCommand(_mainThreadContext.JoinableTaskContext,
                                                      _solutionBuildManager, _debugLaunchOption,
-                                                     null);
+                                                     _profilerName, _dialogUtil, null);
         }
 
         [Test]
@@ -49,52 +53,20 @@ namespace YetiVSI.Test.Profiling
             await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
             OleMenuCommand testCommand = new OleMenuCommand((sender, args) => { }, null);
 
-            var hier = Substitute.For<IVsHierarchy>();
-            var anyIVsHierarchy = Arg.Any<IVsHierarchy>();
-            _solutionBuildManager.get_StartupProject(out anyIVsHierarchy).Returns(x =>
-            {
-                x[0] = hier;
-                return VSConstants.S_OK;
-            });
-
-            var activeCfg = Substitute.For<IVsProjectCfg>();
-            _solutionBuildManager
-                .FindActiveProjectCfg(IntPtr.Zero, IntPtr.Zero, hier, Arg.Any<IVsProjectCfg[]>())
-                .Returns(x =>
-                {
-                    ((IVsProjectCfg[]) x[3])[0] = activeCfg;
-                    return VSConstants.S_OK;
-                });
-
-            // Mock a GGP project configuration.
-            var anyString = Arg.Any<string>();
-            activeCfg.get_CanonicalName(out anyString).Returns(x =>
-            {
-                x[0] = "Debug|GGP";
-                return VSConstants.S_OK;
-            });
-
+            SetupMockConfig("Debug|GGP");
             testCommand.Visible = false;
             _command.OnBeforeQueryStatus(testCommand, null);
             Assert.True(testCommand.Visible);
             Assert.True(testCommand.Enabled);
 
             // Mock a non-GGP project configuration.
-            activeCfg.get_CanonicalName(out anyString).Returns(x =>
-            {
-                x[0] = "Debug|x86";
-                return VSConstants.S_OK;
-            });
+            SetupMockConfig("Debug|x86");
             _command.OnBeforeQueryStatus(testCommand, null);
             Assert.False(testCommand.Visible);
             Assert.False(testCommand.Enabled);
 
             // Try to trick it into believing it's GGP.
-            activeCfg.get_CanonicalName(out anyString).Returns(x =>
-            {
-                x[0] = "Debug|NonGGP";
-                return VSConstants.S_OK;
-            });
+            SetupMockConfig("Debug|NonGGP");
             _command.OnBeforeQueryStatus(testCommand, null);
             Assert.False(testCommand.Visible);
             Assert.False(testCommand.Enabled);
@@ -108,6 +80,81 @@ namespace YetiVSI.Test.Profiling
             _command.Execute(null, null);
             var launchOptions = DebugLaunchOptions.NoDebug | _debugLaunchOption;
             _solutionBuildManager.Received().DebugLaunch((uint) launchOptions);
+        }
+
+        [Test]
+        public async Task ExecuteWarnsInDebugModeAsync()
+        {
+            await _mainThreadContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+
+            string msg = YetiCommon.ErrorStrings.ProfilingInDebugMode;
+            string caption = YetiCommon.ErrorStrings.ProfilingInDebugModeCaption(_profilerName);
+            var launchOptions = DebugLaunchOptions.NoDebug | _debugLaunchOption;
+
+            // Config name is Debug -> dialog, respond yes -> launch.
+            SetupMockConfig("Debug|GGP");
+            _dialogUtil.ShowYesNoWarning(msg, caption).Returns(true);
+            _command.Execute(null, null);
+            _dialogUtil.Received().ShowYesNoWarning(msg, caption);
+            _dialogUtil.ClearReceivedCalls();
+            _solutionBuildManager.Received().DebugLaunch((uint)launchOptions);
+            _solutionBuildManager.ClearReceivedCalls();
+
+            // Config name is Debug -> dialog, respond no -> no launch.
+            _dialogUtil.ShowYesNoWarning(msg, caption).Returns(false);
+            _command.Execute(null, null);
+            _solutionBuildManager.DidNotReceive().DebugLaunch((uint)launchOptions);
+
+            // Config name is Debug + something -> dialog.
+            SetupMockConfig("DebugWithoutAsserts|GGP");
+            _command.Execute(null, null);
+            _dialogUtil.Received().ShowYesNoWarning(msg, caption);
+            _dialogUtil.Received().ClearReceivedCalls();
+
+            // Config name is something + Debug -> no dialog.
+            SetupMockConfig("NoDebug|GGP");
+            _command.Execute(null, null);
+            _dialogUtil.DidNotReceive().ShowYesNoWarning(Arg.Any<string>(), Arg.Any<string>());
+            _dialogUtil.Received().ClearReceivedCalls();
+
+            // Config name is Release -> no dialog.
+            SetupMockConfig("Release|GGP");
+            _command.Execute(null, null);
+            _dialogUtil.DidNotReceive().ShowYesNoWarning(Arg.Any<string>(), Arg.Any<string>());
+            _dialogUtil.Received().ClearReceivedCalls();
+        }
+
+        /// <summary>
+        /// Sets up the _solutionBuildManager to return the given name as active configuration name
+        /// of the startup project.
+        /// </summary>
+        void SetupMockConfig(string name)
+        {
+            var hier = Substitute.For<IVsHierarchy>();
+            var anyIVsHierarchy = Arg.Any<IVsHierarchy>();
+            _solutionBuildManager.get_StartupProject(out anyIVsHierarchy).Returns(x =>
+            {
+                x[0] = hier;
+                return VSConstants.S_OK;
+            });
+
+            var activeCfg = Substitute.For<IVsProjectCfg>();
+            _solutionBuildManager
+                .FindActiveProjectCfg(IntPtr.Zero, IntPtr.Zero, hier, Arg.Any<IVsProjectCfg[]>())
+                .Returns(x =>
+                {
+                    ((IVsProjectCfg[])x[3])[0] = activeCfg;
+                    return VSConstants.S_OK;
+                });
+
+            // Mock a GGP project configuration.
+            var anyString = Arg.Any<string>();
+            activeCfg.get_CanonicalName(out anyString).Returns(x =>
+            {
+                x[0] = name;
+                return VSConstants.S_OK;
+            });
+
         }
     }
 }
