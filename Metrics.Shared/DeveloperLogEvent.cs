@@ -393,6 +393,7 @@ namespace Metrics.Shared
         public GameLaunchData GameLaunchData { get; set; }
         public VSIDebugExpressionEvaluationBatch DebugExpressionEvaluationBatch { get; set; }
         public VSIProjectProperties ProjectProperties { get; set; }
+        public MountRemoteData MountRemoteData { get; set; }
 
         public DeveloperLogEvent()
         {
@@ -573,12 +574,17 @@ namespace Metrics.Shared
                 return false;
             }
 
+            if (!Equals(other.MountRemoteData, MountRemoteData))
+            {
+                return false;
+            }
+
             return true;
         }
 
         public DeveloperLogEvent Clone()
         {
-            var clone = (DeveloperLogEvent)MemberwiseClone();
+            var clone = (DeveloperLogEvent) MemberwiseClone();
             clone.GrpcErrorDetails = GrpcErrorDetails?.Clone();
             clone.ExternalToolError = ExternalToolError?.Clone();
             clone.CommandData = CommandData?.Clone();
@@ -597,6 +603,7 @@ namespace Metrics.Shared
             clone.GameLaunchData = GameLaunchData?.Clone();
             clone.DebugExpressionEvaluationBatch = DebugExpressionEvaluationBatch?.Clone();
             clone.ProjectProperties = ProjectProperties?.Clone();
+            clone.MountRemoteData = MountRemoteData?.Clone();
             return clone;
         }
 
@@ -845,6 +852,16 @@ namespace Metrics.Shared
                 }
 
                 ProjectProperties.MergeFrom(other.ProjectProperties);
+            }
+
+            if (other.MountRemoteData != null)
+            {
+                if (MountRemoteData == null)
+                {
+                    MountRemoteData = new MountRemoteData();
+                }
+
+                MountRemoteData.MergeFrom(other.MountRemoteData);
             }
         }
     }
