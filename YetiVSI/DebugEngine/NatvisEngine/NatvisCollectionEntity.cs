@@ -39,7 +39,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             readonly CustomListItemsEntity.Factory _customListItemsFactory;
 
             readonly NatvisDiagnosticLogger _logger;
-            readonly Func<bool> _natvisExperimentsEnabled;
 
             public Factory(ItemEntity.Factory itemFactory,
                            SyntheticItemEntity.Factory syntheticItemFactory,
@@ -49,7 +48,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                            LinkedListItemsEntity.Factory linkedListItemsFactory,
                            TreeItemsEntity.Factory treeItemsFactory,
                            CustomListItemsEntity.Factory customListItemsFactory,
-                           NatvisDiagnosticLogger logger, Func<bool> natvisExperimentsEnabled)
+                           NatvisDiagnosticLogger logger)
             {
                 _itemFactory = itemFactory;
                 _syntheticItemFactory = syntheticItemFactory;
@@ -61,7 +60,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 _customListItemsFactory = customListItemsFactory;
 
                 _logger = logger;
-                _natvisExperimentsEnabled = natvisExperimentsEnabled;
             }
 
             public INatvisEntity Create(IVariableInformation variable, ExpandType expandType,
@@ -115,8 +113,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                             _maxChildrenPerRangeTreeItems,
                             _treeItemsFactory.Create(variable, natvisScope, treeItems)));
                     }
-                    else if (item is CustomListItemsType customListItems &&
-                             _natvisExperimentsEnabled())
+                    else if (item is CustomListItemsType customListItems)
                     {
                         // Use "MaxItemsPerView" attribute to limit the number of items per view.
                         // If not defined (default value is 0), use the "default" limit to avoid

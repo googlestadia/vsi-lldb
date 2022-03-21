@@ -7846,42 +7846,6 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         #region CustomListItems
 
         [Test]
-        public async Task CustomListNotNotSupportedWhenExperimentOffAsync()
-        {
-            // This controls the result of the function the custom list expander factory uses to
-            // check if the experiment is on.
-            compRoot.GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] =
-                DebuggerOptionState.DISABLED;
-
-            var xml = @"
-<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
-  <Type Name=""List"">
-    <Expand HideRawView=""true"">
-      <CustomListItems Optional=""true"">
-      </CustomListItems>
-    </Expand>
-  </Type>
-</AutoVisualizer>
-";
-            LoadFromString(xml);
-
-            var list = RemoteValueFakeUtil.CreateClassPointer("List", "l", MEM_ADDRESS1);
-
-            var children = await CreateVarInfo(list).GetAllChildrenAsync();
-
-            Assert.That(children.Length, Is.EqualTo(2));
-
-            Assert.That(children[0].DisplayName, Does.Contain("Error"));
-            Assert.That(await children[0].ValueAsync(), Does.Contain("List*"));
-            Assert.That(await children[0].ValueAsync(), Does.Contain("CustomListItems"));
-            Assert.That(children[1].DisplayName, Is.EqualTo("[Raw View]"));
-
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("List*"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("CustomListItems"));
-        }
-
-        [Test]
         public async Task CustomListItemsTypeWithOptionalAndVariableDeclarationFailedAsync()
         {
             var xml = @"

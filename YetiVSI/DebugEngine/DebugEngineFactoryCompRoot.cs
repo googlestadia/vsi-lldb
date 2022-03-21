@@ -908,7 +908,7 @@ namespace YetiVSI.DebugEngine
             return new NatvisCollectionEntity.Factory(
                 itemFactory, syntheticItemFactory, expandedItemFactory, indexListItemsFactory,
                 arrayItemsFactory, linkedListItemsFactory, treeItemsFactory, customListItemsFactory,
-                GetNatvisDiagnosticLogger(), GetCustomListsEnabled);
+                GetNatvisDiagnosticLogger());
         }
 
         public virtual INatvisFileSource GetSolutionNatvisFileSource()

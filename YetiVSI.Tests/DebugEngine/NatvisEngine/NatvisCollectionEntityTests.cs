@@ -39,7 +39,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 Substitute.For<ArrayItemsEntity.Factory>(),
                 Substitute.For<LinkedListItemsEntity.Factory>(),
                 Substitute.For<TreeItemsEntity.Factory>(),
-                Substitute.For<CustomListItemsEntity.Factory>(), logger, () => true);
+                Substitute.For<CustomListItemsEntity.Factory>(), logger);
         }
 
         [Test]
