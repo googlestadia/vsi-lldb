@@ -59,7 +59,14 @@ namespace Metrics.Shared
                 VsiGameLaunchGetExisting,
                 VsiDebugExpressionEvaluationBatch,
                 VsiReportFeedback,
-                VsiShutdown
+                VsiShutdown,
+                MrAddHost,
+                MrException,
+                MrListHosts,
+                MrProcessStart,
+                MrReconnect,
+                MrRemoveHost,
+                MrUpdateAllHosts
             }
         }
     }
