@@ -13,9 +13,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using Metrics.Shared;
 using YetiCommon.ExceptionRecorder;
@@ -30,7 +27,7 @@ namespace YetiVSI.Metrics
         const int _defaultMaxExceptionsChainLength = 10;
         const int _defaultMaxStackTraceFrames = 100;
 
-        static readonly string[] _namespaceAllowlist =
+        static readonly string[] _namespaceAllowList =
         {
             "YetiVSI", "YetiCommon", "Castle", "ChromeClientLauncher", "CloudGrpc",
             "DebuggerApi", "DebuggerCommonApi", "DebuggerGrpc", "DebuggerGrpcClient",
@@ -39,33 +36,34 @@ namespace YetiVSI.Metrics
         };
 
         readonly IVsiMetrics _metrics;
-        readonly int _maxExceptionsChainLength;
-        readonly int _maxStackTraceFrames;
+        readonly IExceptionWriter _writer;
 
         /// <summary>
         /// Create an ExceptionRecorder
         /// </summary>
         /// <param name="metrics">Metrics service to record events.</param>
+        /// <param name="writer">Exception writer, which writes
+        /// exception data to <see cref="VSIExceptionData"/>.</param>
         /// <param name="maxExceptionsChainLength">Maximum number of exceptions to record.</param>
         /// <param name="maxStackTraceFrames">Maximum number of stack trace frames to record per
         /// exception.</param>
         /// <remarks>
         /// If there are more exceptions than maxExceptionsChainLength, records a
-        /// <see cref="ChainTooLongException"/> after the last exception recorded.
+        /// <see cref="ExceptionWriter.ChainTooLongException"/> after the last exception recorded.
         /// Effectively we record maxExceptionsChainLength+1 exceptions in total.
         /// </remarks>
-        public ExceptionRecorder(IVsiMetrics metrics,
+        public ExceptionRecorder(IVsiMetrics metrics, IExceptionWriter writer = null,
                                  int maxExceptionsChainLength = _defaultMaxExceptionsChainLength,
                                  int maxStackTraceFrames = _defaultMaxStackTraceFrames)
         {
-            if (metrics == null)
+            _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
+            if (writer == null)
             {
-                throw new ArgumentNullException(nameof(metrics));
+                writer = new ExceptionWriter(_namespaceAllowList, maxExceptionsChainLength,
+                                             maxStackTraceFrames);
             }
 
-            _metrics = metrics;
-            _maxExceptionsChainLength = maxExceptionsChainLength;
-            _maxStackTraceFrames = maxStackTraceFrames;
+            _writer = writer;
         }
 
         #region IExceptionRecorder
@@ -83,8 +81,7 @@ namespace YetiVSI.Metrics
             }
 
             var data = new VSIExceptionData();
-            data.CatchSite = callSite.GetProto();
-            RecordExceptionChain(ex, data);
+            _writer.WriteToExceptionData(callSite, ex, data);
             var logEvent = new DeveloperLogEvent();
             logEvent.ExceptionsData.Add(data);
             logEvent.MergeFrom(ExceptionHelper.RecordException(ex));
@@ -92,83 +89,5 @@ namespace YetiVSI.Metrics
         }
 
         #endregion
-
-        void RecordExceptionChain(Exception ex, VSIExceptionData data)
-        {
-            for (uint i = 0; i < _maxExceptionsChainLength && ex != null; i++)
-            {
-                var exData = new VSIExceptionData.Types.Exception();
-                exData.ExceptionType = ex.GetType().GetProto();
-                exData.ExceptionStackTraceFrames.AddRange(GetStackTraceFrames(ex));
-
-                // TODO: record the exception stack trace.
-                data.ExceptionsChain.Add(exData);
-                ex = ex.InnerException;
-            }
-
-            if (ex != null)
-            {
-                data.ExceptionsChain.Add(new VSIExceptionData.Types.Exception
-                {
-                    ExceptionType = typeof(ChainTooLongException)
-                        .GetProto()
-                });
-            }
-        }
-
-        List<VSIExceptionData.Types.Exception.Types.StackTraceFrame> GetStackTraceFrames(
-            Exception ex)
-        {
-            var frames = new List<VSIExceptionData.Types.Exception.Types.StackTraceFrame>();
-            var stackTrace = new StackTrace(ex, true);
-
-            for (int curIndex = 0;
-                curIndex < stackTrace.GetFrames()?.Length && curIndex < _maxStackTraceFrames;
-                curIndex++)
-            {
-                var curFrame = stackTrace.GetFrame(curIndex);
-                var curTransformedFrame =
-                    new VSIExceptionData.Types.Exception.Types.StackTraceFrame();
-
-                curTransformedFrame.AllowedNamespace =
-                    IsMethodInAllowedNamespace(curFrame.GetMethod());
-
-                if (curTransformedFrame.AllowedNamespace.Value)
-                {
-                    curTransformedFrame.Method = curFrame.GetMethod().GetProto();
-                    curTransformedFrame.Filename = Path.GetFileName(curFrame.GetFileName());
-                    curTransformedFrame.LineNumber = (uint?) curFrame.GetFileLineNumber();
-                }
-
-                frames.Add(curTransformedFrame);
-            }
-
-            return frames;
-        }
-
-        bool IsMethodInAllowedNamespace(MethodBase method)
-        {
-            string methodNamespace = method?.DeclaringType?.Namespace;
-
-            if (string.IsNullOrEmpty(methodNamespace))
-            {
-                return false;
-            }
-
-            foreach (string curAllowedNamespace in _namespaceAllowlist)
-            {
-                if (methodNamespace.StartsWith(curAllowedNamespace + ".") ||
-                    methodNamespace == curAllowedNamespace)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public class ChainTooLongException : Exception
-        {
-        }
     }
 }

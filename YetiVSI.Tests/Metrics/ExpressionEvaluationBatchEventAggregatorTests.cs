@@ -35,7 +35,8 @@ namespace YetiVSI.Test.Metrics
                 .Returns(_eventScheduler);
             _metrics = Substitute.For<IVsiMetrics>();
             _exceptionRecorder =
-                new ExceptionRecorder(_metrics, _maxExceptionsChainLength, _maxStackTraceFrames);
+                new ExceptionRecorder(_metrics, null, _maxExceptionsChainLength,
+                                      _maxStackTraceFrames);
             _batchEventAggregator =
                 new BatchEventAggregator<ExpressionEvaluationBatch, ExpressionEvaluationBatchParams,
                     ExpressionEvaluationBatchSummary>(_batchIntervalMs, eventSchedulerFactory,

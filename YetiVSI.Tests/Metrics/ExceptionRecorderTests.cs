@@ -15,8 +15,6 @@
 using NSubstitute;
 using NUnit.Framework;
 using System;
-using System.Diagnostics;
-using System.IO;
 using Metrics.Shared;
 using YetiVSI.Metrics;
 using YetiVSI.Test.Metrics.TestSupport;
@@ -30,15 +28,17 @@ namespace YetiVSI.Test.Metrics
         const int _maxStackTraceFrames = 2;
 
         IVsiMetrics _fakeMetrics;
+        IExceptionWriter _fakeWriter;
         ExceptionRecorder _exceptionRecorder;
 
         [SetUp]
         public void SetUp()
         {
             _fakeMetrics = Substitute.For<IVsiMetrics>();
-            _exceptionRecorder =
-                new ExceptionRecorder(_fakeMetrics, _maxExceptionsChainLength,
-                                      _maxStackTraceFrames);
+            _fakeWriter = Substitute.For<IExceptionWriter>();
+            _exceptionRecorder = new ExceptionRecorder(_fakeMetrics, _fakeWriter,
+                                                       _maxExceptionsChainLength,
+                                                       _maxStackTraceFrames);
         }
 
         [Test]
@@ -48,125 +48,17 @@ namespace YetiVSI.Test.Metrics
 
             _exceptionRecorder.Record(TestClass.MethodInfo1, ex);
 
-            var exceptionData = new VSIExceptionData
-            {
-                CatchSite = TestClass.MethodInfo1.GetProto()
-            };
-            exceptionData.ExceptionsChain.Add(
-                new VSIExceptionData.Types.Exception
-                {
-                    ExceptionType = typeof(TestException1).GetProto()
-                });
-            exceptionData.ExceptionsChain.Add(
-                new VSIExceptionData.Types.Exception
-                {
-                    ExceptionType = typeof(TestException2).GetProto()
-                });
-
             var logEvent = new DeveloperLogEvent
             {
                 StatusCode = DeveloperEventStatus.Types.Code.InternalError
             };
-            logEvent.ExceptionsData.Add(exceptionData);
+            logEvent.ExceptionsData.Add(new VSIExceptionData());
 
             _fakeMetrics.Received()
                 .RecordEvent(DeveloperEventType.Types.Type.VsiException, logEvent);
         }
 
         [Test]
-        public void RecordWithStackTrace()
-        {
-            var ex = new TestException2();
-
-            // Throw exception to capture the stack trace
-            try
-            {
-                throw ex;
-            }
-            catch (TestException2)
-            {
-            }
-
-            _exceptionRecorder.Record(TestClass.MethodInfo1, ex);
-
-            var exceptionData = new VSIExceptionData
-            {
-                CatchSite = TestClass.MethodInfo1.GetProto()
-            };
-            var firstExceptionInChain = new VSIExceptionData.Types.Exception
-            {
-                ExceptionType = typeof(TestException2).GetProto()
-            };
-            var stackTraceFrame = new StackTrace(ex, true).GetFrame(0);
-            firstExceptionInChain.ExceptionStackTraceFrames.Add(
-                new VSIExceptionData.Types.Exception.Types.StackTraceFrame
-                {
-                    AllowedNamespace = true,
-                    Method = stackTraceFrame.GetMethod().GetProto(),
-                    Filename = Path.GetFileName(stackTraceFrame.GetFileName()),
-                    LineNumber = (uint?) stackTraceFrame.GetFileLineNumber()
-                });
-            exceptionData.ExceptionsChain.Add(firstExceptionInChain);
-
-            var logEvent = new DeveloperLogEvent
-            {
-                StatusCode = DeveloperEventStatus.Types.Code.InternalError
-            };
-            logEvent.ExceptionsData.Add(exceptionData);
-
-            _fakeMetrics.Received()
-                .RecordEvent(DeveloperEventType.Types.Type.VsiException, logEvent);
-        }
-
-        [Test]
-        public void RecordExceptionChainTooLong()
-        {
-            var ex = new TestException1("level1",
-                                        new TestException1(
-                                            "level2",
-                                            new TestException1("level3", new TestException2())));
-
-            _exceptionRecorder.Record(TestClass.MethodInfo1, ex);
-
-            _fakeMetrics.Received()
-                .RecordEvent(DeveloperEventType.Types.Type.VsiException,
-                             Arg.Is<DeveloperLogEvent>(
-                                 p => ExceptionChainOverflowRecorded(p.ExceptionsData[0])));
-        }
-
-        [Test]
-        public void RecordExceptionInNotAllowedNamespace()
-        {
-            var ex = NotAllowedNamespace.Test.ThrowException();
-            _exceptionRecorder.Record(TestClass.MethodInfo1, ex);
-
-            var exceptionData = new VSIExceptionData
-            {
-                CatchSite = TestClass.MethodInfo1.GetProto()
-            };
-
-            var firstExceptionInChain = new VSIExceptionData.Types.Exception
-            {
-                ExceptionType = typeof(Exception).GetProto()
-            };
-            firstExceptionInChain.ExceptionStackTraceFrames.Add(
-                new VSIExceptionData.Types.Exception.Types.StackTraceFrame
-                {
-                    AllowedNamespace = false
-                });
-            exceptionData.ExceptionsChain.Add(firstExceptionInChain);
-
-            var logEvent = new DeveloperLogEvent
-            {
-                StatusCode = DeveloperEventStatus.Types.Code.InternalError
-            };
-            logEvent.ExceptionsData.Add(exceptionData);
-
-            _fakeMetrics.Received(1)
-                .RecordEvent(DeveloperEventType.Types.Type.VsiException, logEvent);
-        }
-
-            [Test]
         public void RecordNullArgumentsFail()
         {
             Assert.Catch<ArgumentNullException>(
@@ -181,13 +73,6 @@ namespace YetiVSI.Test.Metrics
             Assert.Catch<ArgumentNullException>(() => new ExceptionRecorder(null));
         }
 
-        static bool ExceptionChainOverflowRecorded(VSIExceptionData data)
-        {
-            return data.ExceptionsChain.Count == _maxExceptionsChainLength + 1 && data
-                .ExceptionsChain[(int) _maxExceptionsChainLength]
-                .ExceptionType.Equals(typeof(ExceptionRecorder.ChainTooLongException).GetProto());
-        }
-
         class TestException1 : Exception
         {
             public TestException1(string message, Exception inner) : base(message, inner)
@@ -197,24 +82,6 @@ namespace YetiVSI.Test.Metrics
 
         class TestException2 : Exception
         {
-        }
-    }
-}
-
-namespace NotAllowedNamespace
-{
-    static class Test
-    {
-        public static Exception ThrowException()
-        {
-            try
-            {
-                throw new Exception("Test");
-            }
-            catch (Exception ex)
-            {
-                return ex;
-            }
         }
     }
 }

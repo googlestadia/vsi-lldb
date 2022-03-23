@@ -1,0 +1,11 @@
+.vs/*
+Debug/*
+bin/*
+obj/*
+packages/*
+x64/*
+*.sdf
+*.user
+*.VC.db
+*.VC.opendb
+
