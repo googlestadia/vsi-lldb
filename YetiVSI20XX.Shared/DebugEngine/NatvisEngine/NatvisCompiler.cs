@@ -16,6 +16,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         readonly NatvisDiagnosticLogger _logger;
         readonly VsExpressionCreator _vsExpressionCreator;
 
+        bool IsPointerType(SbType type)
+        {
+            return type != null && type.GetTypeFlags().HasFlag(TypeFlags.IS_POINTER);
+        }
+
         public NatvisCompiler(RemoteTarget target, SbType scope, NatvisDiagnosticLogger logger)
         {
             _target = target;
@@ -29,17 +34,19 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             public string VisualizerName { get; }
             public IDictionary<string, SbType> Arguments { get; private set; }
             public IDictionary<string, string> ScopedNames { get; }
+            public SbType Scope { get; set; }
 
-            public Context(string name, IDictionary<string, string> scopedNames)
+            public Context(string name, IDictionary<string, string> scopedNames, SbType scope)
             {
                 VisualizerName = name;
                 Arguments = new Dictionary<string, SbType>();
                 ScopedNames = new Dictionary<string, string>(scopedNames);
+                Scope = scope;
             }
 
             public Context Clone()
             {
-                Context context = new Context(VisualizerName, ScopedNames);
+                Context context = new Context(VisualizerName, ScopedNames, Scope);
                 context.Arguments = new Dictionary<string, SbType>(Arguments);
                 return context;
             }
@@ -80,7 +87,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return true;
             }
 
-            var context = new Context(vizInfo.Visualizer.Name, vizInfo.NatvisScope.ScopedNames);
+            var context =
+                new Context(vizInfo.Visualizer.Name, vizInfo.NatvisScope.ScopedNames, _scope);
 
             foreach (object obj in vizInfo.Visualizer.Items)
             {
@@ -149,7 +157,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 {
                     return false;
                 }
-                if (!displayString.Optional && displayString.Condition == null)
+                if (!displayString.Optional && displayString.Condition == null &&
+                    displayString.ExcludeView == null && displayString.IncludeView == null)
                 {
                     // It's safe to stop after an element without Condition or Optional.
                     // All subsequent elements certainly won't be used.
@@ -244,7 +253,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 {
                     return false;
                 }
-                if (!stringView.Optional && stringView.Condition == null)
+                if (!stringView.Optional && stringView.Condition == null &&
+                    stringView.ExcludeView == null && stringView.IncludeView == null)
                 {
                     // It's safe to stop after an element without Condition or Optional.
                     // All subsequent elements certainly won't be used.
@@ -433,7 +443,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 }
                 // It's safe to stop after an element which isn't optional or conditioned.
                 // All subsequent elements certainly won't be used.
-                if (!size.Optional && size.Condition == null)
+                if (!size.Optional && size.Condition == null && size.ExcludeView == null &&
+                    size.IncludeView == null)
                 {
                     return true;
                 }
@@ -523,11 +534,46 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return true;
             }
 
-            return await HandleSizeGroupAsync(linkedListItems.Size, context) &&
-                   await HandleExpressionAsync(linkedListItems.Condition, context) &&
-                   await HandleExpressionAsync(linkedListItems.HeadPointer, context) &&
-                   await HandleExpressionAsync(linkedListItems.NextPointer, context) &&
-                   await HandleListItemsNodeAsync(linkedListItems.ValueNode, context);
+            if (!await HandleSizeGroupAsync(linkedListItems.Size, context) ||
+                !await HandleExpressionAsync(linkedListItems.Condition, context))
+            {
+                return false;
+            }
+
+            // The node type should be pointer.
+            var headType = await CompileExpressionAsync(linkedListItems.HeadPointer, context);
+            if (!IsPointerType(headType))
+            {
+                _logger.Error($"(Natvis) Invalid <HeadPointer>: '{linkedListItems.HeadPointer}' " +
+                              "isn't a pointer type.");
+                return false;
+            }
+
+            // The rest expressions are evaluated in the context of the node type.
+            context = context.Clone();
+            context.Scope = headType.GetPointeeType();
+
+            // The next pointer type should be equal to `nodeType`.
+            var nextType = await CompileExpressionAsync(linkedListItems.NextPointer, context);
+            if (!IsPointerType(nextType))
+            {
+                _logger.Error($"(Natvis) Invalid <NextPointer>: '{linkedListItems.NextPointer}' " +
+                              "isn't a pointer type.");
+                return false;
+            }
+            if (nextType.GetName() != headType.GetName())
+            {
+                // TODO: There could be different types of the same name, but name
+                // comparison should be OK for now.
+                // The native VS is strict about type equality (e.g. the next pointer type isn't
+                // allowed to be dervied from the head pointer type).
+                _logger.Error("(Natvis) <HeadPointer> and <NextPointer> don't evaluate to the " +
+                              $"same type. Expected '{headType.GetName()}', got " +
+                              $"'{nextType.GetName()}'.");
+                return false;
+            }
+
+            return await HandleListItemsNodeAsync(linkedListItems.ValueNode, context);
         }
 
         /// <summary>
@@ -994,12 +1040,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         async Task<SbType> CompileExpressionAsync(string expr, Context context)
         {
             (SbType type, SbError error) =
-                await _target.CompileExpressionAsync(_scope, expr, context.Arguments);
+                await _target.CompileExpressionAsync(context.Scope, expr, context.Arguments);
 
             if (error != null && error.Fail())
             {
                 _logger.Error($"(Natvis) Error while parsing expression '{expr}' in the context " +
-                              $"of type '{_scope.GetName()}': {error.GetCString()}");
+                              $"of type '{context.Scope.GetName()}': {error.GetCString()}");
                 return null;
             }
 
@@ -1007,7 +1053,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             {
                 // Type is invalid, but error isn't set. This isn't expected to happen.
                 _logger.Warning($"(Natvis) Received null result while parsing expression " +
-                                $"'{expr}' in the context of type '{_scope.GetName()}'.");
+                                $"'{expr}' in the context of type '{context.Scope.GetName()}'.");
                 return null;
             }
 

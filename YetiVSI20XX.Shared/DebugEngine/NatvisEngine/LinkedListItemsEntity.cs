@@ -57,7 +57,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         int _lastIndex;
 
         bool _sizeDefined;
-        ErrorVariableInformation _nodeError;
+        ErrorVariableInformation _pendingNodeError;
         IVariableInformation _node;
 
         protected override string IncludeView => _linkedListItems.IncludeView;
@@ -164,9 +164,19 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             _store.ValidationError = initInfo.Error;
         }
 
+        bool IsExpectingMoreChildren()
+        {
+            if (_pendingNodeError != null)
+            {
+                return true;
+            }
+
+            return _node != null && !_node.IsNullPointer() && _lastIndex < ChildrenLimit;
+        }
+
         async Task<int> EvaluateChildrenCountAsync()
         {
-            while (_node != null && !_node.IsNullPointer() && _lastIndex < ChildrenLimit)
+            while (IsExpectingMoreChildren())
             {
                 await StoreNodeAndGetNextAsync();
             }
@@ -184,9 +194,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
         async Task StoreNodeAndGetNextAsync()
         {
-            if (_nodeError != null)
+            if (_pendingNodeError != null)
             {
-                _store.SaveVariable(_lastIndex, _nodeError);
+                _store.SaveVariable(_lastIndex, _pendingNodeError);
+                _pendingNodeError = null;
             }
             else if (_node.IsNullPointer())
             {
@@ -196,16 +207,16 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     _logger.Warning("<LinkedListItems> declared a size of " +
                                     $"{size} but only {_lastIndex} item(s) found.");
 
-                    _nodeError = new ErrorVariableInformation(
+                    _pendingNodeError = new ErrorVariableInformation(
                         "<Error>", $"Size declared as {size} but only {_lastIndex} item(s) found.");
                 }
                 else
                 {
-                    _nodeError = new ErrorVariableInformation(
+                    _pendingNodeError = new ErrorVariableInformation(
                         "<Error>", $"Item {_lastIndex} is out of bound.");
                 }
 
-                _store.SaveVariable(_lastIndex, _nodeError);
+                _store.SaveVariable(_lastIndex, _pendingNodeError);
             }
             else
             {
@@ -237,9 +248,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
             catch (ExpressionEvaluationFailed ex)
             {
-                _nodeError = Optional
-                    ? new ErrorVariableInformation("<Warning>", ex.Message)
-                    : new ErrorVariableInformation("<Error>", ex.Message);
+                _pendingNodeError = Optional ? new ErrorVariableInformation("<Warning>", ex.Message)
+                                             : new ErrorVariableInformation("<Error>", ex.Message);
 
                 return null;
             }

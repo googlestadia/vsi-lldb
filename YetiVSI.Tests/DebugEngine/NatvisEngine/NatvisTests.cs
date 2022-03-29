@@ -4224,6 +4224,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 3));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (_expressionEvaluationEngineFlag != ExpressionEvaluationEngineFlag.LLDB)
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -4239,6 +4251,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("11"));
             Assert.That(children[2].DisplayName, Is.EqualTo("[2]"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("12"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -4277,6 +4290,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -4292,6 +4316,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("11"));
             Assert.That(children[2].DisplayName, Is.EqualTo("[2]"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("12"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -4330,6 +4355,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 1));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -4341,11 +4378,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(children.Length, Is.EqualTo(1));
             Assert.That(children[0].DisplayName, Is.EqualTo("[0]"));
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("10"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
         public async Task LinkedListItemsWithMissingChildItemAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""LinkedList&lt;*&gt;"">
@@ -4434,6 +4475,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 4));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item1.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_listSize");
+                target.AddTypeFromExpression(intType, "_value");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -4452,11 +4505,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(children[3].DisplayName, Is.EqualTo("<Error>"));
             Assert.That(await children[3].ValueAsync(), Does.Contain("2"));
             Assert.That(await children[3].ValueAsync(), Does.Contain("4"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
         public async Task LinkedListItemsTypeWithEmptySizeAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""LinkedList&lt;*&gt;"">
@@ -4553,6 +4610,25 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize_1", 2));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item1.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                target.AddTypeFromExpression(boolType, "false");
+                target.AddTypeFromExpression(nodeType, "_head_0");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_listSize_0");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(boolType, "true");
+                target.AddTypeFromExpression(nodeType, "_head_1");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_listSize_1");
+                target.AddTypeFromExpression(intType, "_value");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -4564,6 +4640,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("11"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -4603,6 +4680,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 2));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -4611,6 +4700,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("11"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -4650,6 +4740,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 2));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -4658,6 +4760,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("11"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -4697,6 +4800,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 2));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -4705,6 +4820,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("11"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -4743,6 +4859,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 2));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -4755,6 +4883,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("11"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -4856,6 +4985,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize2", 2));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize1");
+                target.AddTypeFromExpression(intType, "_listSize2");
+            }
+            _natvisScanner.SetTarget(target);
+
             // _listSize1=1 does not get included here, so it falls back to _listSize2=2.
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(varInfo, Does.HaveChildrenWithValues("10", "11"));
@@ -4865,6 +5007,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -4904,6 +5047,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize2", 2));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize1");
+                target.AddTypeFromExpression(intType, "_listSize2");
+            }
+            _natvisScanner.SetTarget(target);
+
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(varInfo, Does.HaveChildWithValue("10"));
 
@@ -4913,6 +5069,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -4923,7 +5080,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
   <Type Name=""LinkedList&lt;*&gt;"">
     <Expand HideRawView=""true"">
       <LinkedListItems>
-        <Size Condition=""false"">_invalidListSize</Size>
+        <Size Condition=""false"">_wrongListSize</Size>
         <Size Condition=""true"">_listSize</Size>
         <HeadPointer>_head</HeadPointer>
         <NextPointer>_next</NextPointer>
@@ -4948,8 +5105,25 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
+            remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_wrongListSize", 100));
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 2));
             remoteValue.AddChild(item0);
+
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                target.AddTypeFromExpression(boolType, "false");
+                target.AddTypeFromExpression(intType, "_wrongListSize");
+                target.AddTypeFromExpression(boolType, "true");
+                target.AddTypeFromExpression(intType, "_listSize");
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+            }
+            _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(remoteValue);
 
@@ -4965,11 +5139,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("11"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
         public async Task LinkedListItemsWithMissingHeadPointerAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""LinkedList&lt;*&gt;"">
@@ -5064,6 +5242,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             item0WithChildren.AddChild(item1);
             item0.SetDereference(item0Deref);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item1.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "this");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(item0);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -5074,11 +5264,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("11"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
         public async Task LinkedListItemsWithMissingNextPointerAsync()
         {
+            // This test relies on not having the Natvis compilation feature.
+            DisableNatvisExperiments();
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""LinkedList&lt;*&gt;"">
@@ -5166,6 +5360,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 2));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(nodeType, "this");
+                target.AddTypeFromExpression(intType, "_listSize");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -5176,6 +5382,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo(MEM_ADDRESS2));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo(MEM_ADDRESS1));
+            Assert.That(target.CheckNoPendingExpressions());
         }
 
         [Test]
@@ -5672,6 +5879,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 1));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize");
+            }
+            _natvisScanner.SetTarget(target);
+
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(varInfo, Does.Not.HaveChildren());
 
@@ -5680,6 +5899,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -5712,6 +5932,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_listSize", 1));
             remoteValue.AddChild(item0);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = item0.GetTypeInfo();
+                target.AddTypeFromExpression(nodeType, "_head");
+                target.AddTypeFromExpression(nodeType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+                target.AddTypeFromExpression(intType, "_listSize");
+            }
+            _natvisScanner.SetTarget(target);
+
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(varInfo, Does.HaveChildWithValue("listValue"));
 
@@ -5720,6 +5952,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         #endregion
