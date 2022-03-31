@@ -459,6 +459,34 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
+        public void EvaluateInvalidSizeSpecifier()
+        {
+            string mainExpression = "str";
+            string sizeExpression = "bad_expr";
+            string expressionText = $"{mainExpression},[{sizeExpression}]";
+            // lldb-eval is only used because it simplifies calls setup to mock service.
+            IDebugExpression expression =
+                CreateExpression(expressionText, ExpressionEvaluationStrategy.LLDB_EVAL);
+
+            RemoteValueFake remoteValue =
+                RemoteValueFakeUtil.CreateSimpleCharArray("str", 'a', 'b', 'c');
+            RemoteValueFake errorValue = RemoteValueFakeUtil.CreateLldbEvalError(
+                LldbEvalErrorCode.UndeclaredIdentifier, "undeclared identifier 'bad_expr'");
+
+            _mockDebuggerStackFrame.EvaluateExpressionLldbEvalAsync(mainExpression)
+                .Returns(remoteValue);
+            _mockDebuggerStackFrame.EvaluateExpressionLldbEvalAsync(sizeExpression)
+                .Returns(errorValue);
+
+            Assert.AreEqual(VSConstants.S_OK,
+                            expression.EvaluateSync(0, 0, null, out IDebugProperty2 property));
+
+            Assert.AreEqual(expressionText, GetName(property));
+            Assert.AreEqual("Unable to resolve size specifier: undeclared identifier 'bad_expr'",
+                            GetValue(property));
+        }
+
+        [Test]
         public void InvalidCommand()
         {
             IDebugExpression expression = CreateExpression(".invalidcommand");

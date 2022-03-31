@@ -10505,7 +10505,70 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await varInfo.ValueAsync(), Is.EqualTo("0x10"));
         }
 
-        #endregion
+        [Test]
+        public async Task SizeSpecifierFailsToCompileAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""CustomType"">
+    <DisplayString>{str,[bad_expr]s}</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var remoteValue = RemoteValueFakeUtil.CreateClass("CustomType", "myVar", "rawValue");
+            var strChild = RemoteValueFakeUtil.CreateSimpleCharArray("str", 'a', 'b', 'c');
+            remoteValue.AddChild(strChild);
+
+            var target = new RemoteTargetStub("path");
+            var error = new SbErrorStub(false, "undeclared identifier 'bad_expr'");
+            target.AddErrorFromExpression(error, "bad_expr");
+            // Note: compilation of "bad_expr" takes place before "str". Since "bad_expr" fails,
+            // "str" is not reached.
+            _natvisScanner.SetTarget(target);
+
+            var varInfo = CreateVarInfo(remoteValue);
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("rawValue"));
+
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("ERROR"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("Failed to compile size specifier"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("undeclared identifier 'bad_expr'"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
+        }
+
+        [Test]
+        public async Task SizeSpecifierIsNotIntegerAsync()
+        {
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""CustomType"">
+    <DisplayString>{str,[bad_expr]s}</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var remoteValue = RemoteValueFakeUtil.CreateClass("CustomType", "myVar", "rawValue");
+            var strChild = RemoteValueFakeUtil.CreateSimpleCharArray("str", 'a', 'b', 'c');
+            remoteValue.AddChild(strChild);
+
+            var target = new RemoteTargetStub("path");
+            target.AddTypeFromExpression(strChild.GetTypeInfo(), "bad_expr");
+            // Note: compilation of "bad_expr" takes place before "str". Since "bad_expr" fails on
+            // type checking, "str" is not reached.
+            _natvisScanner.SetTarget(target);
+
+            var varInfo = CreateVarInfo(remoteValue);
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("rawValue"));
+
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("ERROR"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("Failed to compile size specifier"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("'bad_expr' isn't integer"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
+        }
+
+#endregion
 
         #region MightHaveChildren
 

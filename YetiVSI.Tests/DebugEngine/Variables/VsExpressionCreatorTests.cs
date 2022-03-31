@@ -548,44 +548,34 @@ namespace YetiVSI.Test.DebugEngine.Variables
         }
 
         [Test]
-        public async Task LogErrorIfEvaluationFailsAsync()
+        public void LogErrorIfEvaluationFails()
         {
             LogSpy traceLogSpy = new LogSpy();
             traceLogSpy.Attach();
 
-            _evaluateSize(Arg.Any<string>())
-                .Throws(new ExpressionEvaluationFailed("the error message"));
+            var exception = new ExpressionEvaluationFailed("undeclared identifier 'field'");
+            _evaluateSize(Arg.Any<string>()).Throws(exception);
 
-            var expression =
-                await _expressionCreator.CreateAsync("test,[field + 42]", _evaluateSize);
-
-            Assert.That(expression.Value, Is.EqualTo("test"));
-            Assert.That(expression.FormatSpecifier.Expression, Is.EqualTo("[field + 42]"));
-            Assert.That(expression.FormatSpecifier.Size, Is.Null);
-
-            string log = traceLogSpy.GetOutput();
-            Assert.That(log, Does.Contain("Failed to resolve size format expression"));
-            Assert.That(log, Does.Contain("field + 42"));
-            Assert.That(log, Does.Contain("the error message"));
+            var receivedException = Assert.ThrowsAsync<ExpressionEvaluationFailed>(
+                async () =>
+                    await _expressionCreator.CreateAsync("test,[field + 42]", _evaluateSize));
+            Assert.That(receivedException.Message, Is.EqualTo("undeclared identifier 'field'"));
         }
 
         [Test]
-        public async Task LogErrorIfEvaluationFailsWithValidSuffixAsync()
+        public void LogErrorIfEvaluationFailsWithValidSuffix()
         {
             LogSpy traceLogSpy = new LogSpy();
             traceLogSpy.Attach();
 
-            _evaluateSize(Arg.Any<string>())
-                .Throws(new ExpressionEvaluationFailed("the error message"));
+            var exception = new ExpressionEvaluationFailed("undeclared identifier 'bad_expr'");
+            _evaluateSize(Arg.Any<string>()).Throws(exception);
 
-            var expression =
-                await _expressionCreator.CreateAsync("test,[bad_expr]!sub", _evaluateSize);
+            var receivedException = Assert.ThrowsAsync<ExpressionEvaluationFailed>(
+                async () =>
+                    await _expressionCreator.CreateAsync("test,[bad_expr]!sub", _evaluateSize));
 
-            Assert.That(expression.Value, Is.EqualTo("test"));
-            Assert.That(expression.FormatSpecifier.Expression, Is.EqualTo("[bad_expr]!sub"));
-            Assert.That(expression.FormatSpecifier.Size, Is.Null);
-
-            Assert.That(traceLogSpy.GetOutput(), Does.Contain("the error message"));
+            Assert.That(receivedException.Message, Is.EqualTo("undeclared identifier 'bad_expr'"));
         }
 
         [Test]

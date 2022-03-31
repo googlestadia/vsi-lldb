@@ -45,6 +45,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
         }
 
+        bool IsIntegerType(SbType type)
+        {
+            return type != null && type.GetTypeFlags().HasFlag(TypeFlags.IS_INTEGER);
+        }
+
         /// <summary>
         /// Handles <Type> element.
         ///
@@ -962,12 +967,20 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return true;
             }
 
-            // Note: even if size expression fails to be parsed, it will only be ignored by YetiVSI
-            // (in the native VS, it is not ignored and treated as error).
-            // Returning 0U by default.
-            VsExpression vsExpression =
-                await _vsExpressionCreator.CreateAsync(expr, (sizeExpr) => Task.FromResult(0U));
+            VsExpression vsExpression;
+            try
+            {
+                // Split expression and try to compile size specifier.
+                vsExpression = await _vsExpressionCreator.CreateAsync(
+                    expr, sizeExpr => CompileSizeSpecifierAsync(sizeExpr, context));
+            }
+            catch (ExpressionEvaluationFailed ex)
+            {
+                _logger.Error($"(Natvis) Failed to compile size specifier: {ex.Message}");
+                return false;
+            }
 
+            // Compile the main expression.
             expr = NatvisExpressionEvaluator.ReplaceScopedNames(vsExpression.Value,
                                                                 context.ScopedNames);
 
@@ -999,6 +1012,21 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
 
             return type;
+        }
+
+        async Task<uint> CompileSizeSpecifierAsync(string expr, Context context)
+        {
+            var result = await CompileExpressionAsync(expr, context);
+            if (result == null)
+            {
+                throw new ExpressionEvaluationFailed($"invalid expression '{expr}'");
+            }
+            if (!IsIntegerType(result))
+            {
+                throw new ExpressionEvaluationFailed($"'{expr}' isn't integer");
+            }
+            // Any integer represents success.
+            return 0;
         }
     }
 }

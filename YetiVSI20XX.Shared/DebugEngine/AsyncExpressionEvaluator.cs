@@ -143,8 +143,19 @@ namespace YetiVSI.DebugEngine
 
         public async Task<EvaluationResult> EvaluateExpressionAsync()
         {
-            VsExpression vsExpression = await _vsExpressionCreator.CreateAsync(
-                _text, EvaluateSizeSpecifierExpressionAsync);
+            VsExpression vsExpression;
+            try
+            {
+                vsExpression = await _vsExpressionCreator.CreateAsync(
+                    _text, EvaluateSizeSpecifierExpressionAsync);
+            }
+            catch (ExpressionEvaluationFailed ex)
+            {
+                string message = $"Unable to resolve size specifier: {ex.Message}";
+                IVariableInformation errorInfo = new ErrorVariableInformation(_text, message);
+                IDebugProperty2 debugProperty = _propertyFactory.Create(_target, errorInfo);
+                return EvaluationResult.FromResult(debugProperty);
+            }
 
             if (vsExpression.Value.StartsWith("."))
             {

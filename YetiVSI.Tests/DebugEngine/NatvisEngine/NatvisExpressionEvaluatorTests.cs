@@ -605,5 +605,20 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await result.ValueAsync(), Is.EqualTo(expectedValue));
             Assert.That(result.DisplayName, Is.EqualTo("myVar"));
         }
+
+        [Test]
+        public async Task EvaluateInvalidSizeSpecifierAsync()
+        {
+            RemoteValueFake remoteValue =
+                RemoteValueFakeUtil.CreateClass("MyType", "myType", "myValue");
+            remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleCharArray("str", 'a', 'b', 'c'));
+            IVariableInformation varInfo = _varInfoFactory.Create(remoteValue);
+
+            IVariableInformation result = await _evaluator.GetExpressionValueOrErrorAsync(
+                "str,[bad_expr]", varInfo, new NatvisScope(), "displayString", "natvisType");
+
+            Assert.That(result.Error, Is.True);
+            Assert.That(await result.ValueAsync(), Does.Contain("bad_expr"));
+        }
     }
 }

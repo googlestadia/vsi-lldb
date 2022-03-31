@@ -93,7 +93,10 @@ namespace YetiVSI.DebugEngine.Variables
         }
 
         /// <summary>
-        /// Create a VsExpresion from a string representation of an expression
+        /// Create a VsExpresion from a string representation of an expression.
+        /// <exception cref="ExpressionEvaluationFailed">
+        /// Thrown if size specifier fails to evaluate.
+        /// </exception>
         /// </summary>
         public async Task<VsExpression> CreateAsync(string expression,
                                                     Func<string, Task<uint>> evaluate)
@@ -124,20 +127,9 @@ namespace YetiVSI.DebugEngine.Variables
             // Remove the starting '[' and ending ']'.
             sizeExpression = sizeExpression.Substring(1, sizeExpression.Length - 2);
 
+            uint size = await evaluate(sizeExpression);
             var formatSpecifier = new FormatSpecifier(
-                parsedExpressionAndSize.FormatSpecifier.Expression + validSuffix);
-            try
-            {
-                uint size = await evaluate(sizeExpression);
-                formatSpecifier = new FormatSpecifier(
-                    parsedExpressionAndSize.FormatSpecifier.Expression + validSuffix, size);
-            }
-            catch (ExpressionEvaluationFailed e)
-            {
-                Trace.WriteLine(
-                    $"ERROR: Failed to resolve size format expression: {sizeExpression}." +
-                    $" Reason: {e.Message}.");
-            }
+                parsedExpressionAndSize.FormatSpecifier.Expression + validSuffix, size);
 
             return new VsExpression(parsedExpressionAndSize.Value, formatSpecifier);
         }
