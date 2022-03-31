@@ -182,7 +182,9 @@ namespace YetiVSI
                         _taskContext.Factory.Run(async () =>
                         {
                             await _taskContext.Factory.SwitchToMainThreadAsync();
-                            _debugPane?.OutputStringThreadSafe(data.Text + "\n");
+#pragma warning disable RS0030 // symbol LoadedProject is banned
+                            _debugPane?.OutputString(data.Text + "\n");
+#pragma warning restore RS0030
                         });
                     }
                 };
@@ -335,8 +337,11 @@ namespace YetiVSI
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(YetiConstants.DebuggerGrpcServerDir,
-                                        YetiConstants.DebuggerGrpcServerExecutable),
+                FileName = File.Exists(Path.Combine(YetiConstants.DebuggerGrpcServerDir,
+                                                    YetiConstants.DebuggerGrpcServerExecutable)) ?
+                    Path.Combine(YetiConstants.DebuggerGrpcServerDir, 
+                                 YetiConstants.DebuggerGrpcServerExecutable) :
+                    Path.Combine(YetiConstants.RootDir, YetiConstants.DebuggerGrpcServerExecutable),
             };
             // (internal): grpcCallInvoker must be created right before the process is created!
             // If it is created before the other processes are created, they'll hold on to the

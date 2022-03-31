@@ -28,7 +28,6 @@ namespace YetiVSITestsCommon.Services
 
         public int GetPane(ref Guid rguidPane, out IVsOutputWindowPane ppPane)
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
             if (!panes.ContainsKey(rguidPane))
             {
                 int result = CreatePane(ref rguidPane, "", 0, 0);
