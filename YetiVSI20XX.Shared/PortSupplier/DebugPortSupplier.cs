@@ -54,9 +54,6 @@ namespace YetiVSI.PortSupplier
                 ((YetiVSIService)serviceManager.RequireGlobalService(typeof(YetiVSIService)))
                     .Options;
             var taskContext = serviceManager.GetJoinableTaskContext();
-            var debugPropertyFactory = new DebugProperty.Factory();
-            var debugProgramFactory = new DebugProgram.Factory(debugPropertyFactory, options);
-            var debugProcessFactory = new DebugProcess.Factory(debugProgramFactory);
             var managedProcessFactory = new ManagedProcess.Factory();
             var processListRequestFactory = new ProcessListRequest.Factory(managedProcessFactory);
             var jsonUtil = new JsonUtil();
@@ -81,7 +78,7 @@ namespace YetiVSI.PortSupplier
                                sshKnownHostsWriter, new RemoteCommand(managedProcessFactory));
             _metrics = (IVsiMetrics)serviceManager.RequireGlobalService(typeof(SMetrics));
             _debugPortFactory = new DebugPort.Factory(
-                debugProcessFactory, processListRequestFactory, _cancelableTaskFactory, _dialogUtil,
+                processListRequestFactory, _cancelableTaskFactory, _dialogUtil,
                 sshManager, _metrics, _developerAccount);
         }
 

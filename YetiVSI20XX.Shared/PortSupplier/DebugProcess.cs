@@ -22,25 +22,6 @@ namespace YetiVSI.PortSupplier
     // single 'program'.
     public class DebugProcess : IDebugProcess2
     {
-        public class Factory
-        {
-            readonly DebugProgram.Factory debugProgramFactory;
-
-            public Factory(DebugProgram.Factory debugProgramFactory)
-            {
-                this.debugProgramFactory = debugProgramFactory;
-            }
-
-            // Default constructor for test substitution.
-            public Factory() { }
-
-            public virtual IDebugProcess2 Create(
-                IDebugPort2 port, uint pid, string title, string command)
-            {
-                return new DebugProcess(debugProgramFactory, port, pid, title, command);
-            }
-        }
-
         IDebugPort2 port;
         uint pid;
         string title;
@@ -48,15 +29,14 @@ namespace YetiVSI.PortSupplier
         Guid guid;
         IDebugProgram2 program;
 
-        private DebugProcess(DebugProgram.Factory debugProgramFactory,
-            IDebugPort2 port, uint pid, string title, string command)
+        public DebugProcess(IDebugPort2 port, uint pid, string title, string command)
         {
             this.port = port;
             this.pid = pid;
             this.title = title;
             this.command = command;
             this.guid = Guid.NewGuid();
-            this.program = debugProgramFactory.Create(this);
+            this.program = new DebugProgram(this);
         }
 
         public int Attach(IDebugEventCallback2 callback, Guid[] specificEnginesGuid,

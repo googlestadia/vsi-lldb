@@ -28,19 +28,13 @@ namespace YetiVSI.Test.PortSupplier
         private const string TEST_COMMAND = "test command";
 
         IDebugProcess2 process;
-        IDebugProgram2 program;
 
         [SetUp]
         public void SetUp()
         {
-            program = Substitute.For<IDebugProgram2>();
-            var debugProgramFactory = Substitute.For<DebugProgram.Factory>();
-            debugProgramFactory.Create(Arg.Any<DebugProcess>()).Returns(program);
-
             var port = Substitute.For<IDebugPort2>();
 
-            process = new DebugProcess.Factory(debugProgramFactory).Create(
-                port, TEST_PID, TEST_TITLE, TEST_COMMAND);
+            process = new DebugProcess(port, TEST_PID, TEST_TITLE, TEST_COMMAND);
         }
 
         [Test]
@@ -58,7 +52,8 @@ namespace YetiVSI.Test.PortSupplier
             uint numFetched = 0;
             Assert.AreEqual(VSConstants.S_OK, programEnum.Next(num, programs, ref numFetched));
             Assert.AreEqual(1, numFetched);
-            Assert.AreEqual(programs[0], program);
+            programs[0].GetName(out string name);
+            Assert.AreEqual(name, TEST_COMMAND);
         }
     }
 }

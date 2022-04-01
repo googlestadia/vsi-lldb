@@ -222,7 +222,6 @@ namespace YetiVSI.Test.DebugEngine
         // DebugEngine.LaunchSuspended.
         IDebugPort2 CreateDebugPortForAttach(Gamelet gamelet)
         {
-            var processFactory = Substitute.For<DebugProcess.Factory>();
             var dialogUtil = Substitute.For<IDialogUtil>();
             var sshManager = Substitute.For<ISshManager>();
             var processListRequest = Substitute.For<IProcessListRequest>();
@@ -233,9 +232,9 @@ namespace YetiVSI.Test.DebugEngine
 #pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
                 FakeCancelableTask.CreateFactory(new JoinableTaskContext(), false);
 #pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
-            var portFactory = new DebugPort.Factory(processFactory, processListRequestFactory,
-                                                    cancelableTaskFactory, dialogUtil, sshManager,
-                                                    _metrics, reserverAccount);
+            var portFactory = new DebugPort.Factory(
+                processListRequestFactory, cancelableTaskFactory, dialogUtil, sshManager,
+                _metrics, reserverAccount);
             return portFactory.Create(gamelet, null, "290");
         }
 

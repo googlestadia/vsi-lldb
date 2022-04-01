@@ -22,34 +22,11 @@ namespace YetiVSI.PortSupplier
     // DebugProgram contains execution information about a process.
     public class DebugProgram : IDebugProgram2
     {
-        public class Factory
-        {
-            readonly DebugProperty.Factory debugPropertyFactory;
-            readonly IExtensionOptions options;
-
-            // For test substitution.
-            public Factory() { }
-
-            public Factory(DebugProperty.Factory debugPropertyFactory, IExtensionOptions options)
-            {
-                this.debugPropertyFactory = debugPropertyFactory;
-                this.options = options;
-            }
-
-            public virtual IDebugProgram2 Create(DebugProcess process)
-            {
-                return new DebugProgram(debugPropertyFactory, options, process);
-            }
-        }
-
-        readonly DebugProperty.Factory debugPropertyFactory;
         readonly DebugProcess process;
         readonly Guid guid;
 
-        private DebugProgram(DebugProperty.Factory debugPropertyFactory, IExtensionOptions options,
-            DebugProcess process)
+        public DebugProgram(DebugProcess process)
         {
-            this.debugPropertyFactory = debugPropertyFactory;
             this.process = process;
             this.guid = Guid.NewGuid();
         }

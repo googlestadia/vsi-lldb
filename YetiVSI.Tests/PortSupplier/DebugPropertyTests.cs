@@ -28,7 +28,7 @@ namespace YetiVSI.Test.PortSupplier
             var testName = "test name";
             var testValue = "test value";
 
-            var property = new DebugProperty.Factory().Create(testName, testValue);
+            var property = new DebugProperty(testName, testValue);
             var propertyInfo = new DEBUG_PROPERTY_INFO[1];
             Assert.AreEqual(VSConstants.S_OK, property.GetPropertyInfo(
                 (enum_DEBUGPROP_INFO_FLAGS)0, 0, 0, new IDebugReference2[0], 0, propertyInfo));

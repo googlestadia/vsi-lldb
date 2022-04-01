@@ -33,7 +33,6 @@ namespace YetiVSI.PortSupplier
     {
         public class Factory
         {
-            readonly DebugProcess.Factory _debugProcessFactory;
             readonly ProcessListRequest.Factory _processListRequestFactory;
             readonly CancelableTask.Factory _cancelableTaskFactory;
             readonly IDialogUtil _dialogUtil;
@@ -46,12 +45,10 @@ namespace YetiVSI.PortSupplier
             {
             }
 
-            public Factory(DebugProcess.Factory debugProcessFactory,
-                           ProcessListRequest.Factory processListRequestFactory,
+            public Factory(ProcessListRequest.Factory processListRequestFactory,
                            CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
                            ISshManager sshManager, IVsiMetrics metrics, string developerAccount)
             {
-                _debugProcessFactory = debugProcessFactory;
                 _processListRequestFactory = processListRequestFactory;
                 _cancelableTaskFactory = cancelableTaskFactory;
                 _dialogUtil = dialogUtil;
@@ -62,14 +59,13 @@ namespace YetiVSI.PortSupplier
 
             public virtual IDebugPort2 Create(
                 Gamelet gamelet, IDebugPortSupplier2 supplier, string debugSessionId) =>
-                new DebugPort(_debugProcessFactory, _processListRequestFactory,
-                              _cancelableTaskFactory, _dialogUtil, _sshManager, _metrics, gamelet,
-                              supplier, debugSessionId, _developerAccount);
+                new DebugPort(_processListRequestFactory, _cancelableTaskFactory, _dialogUtil,
+                              _sshManager, _metrics, gamelet, supplier, debugSessionId,
+                              _developerAccount);
         }
 
         readonly CancelableTask.Factory _cancelableTaskFactory;
         readonly ISshManager _sshManager;
-        readonly DebugProcess.Factory _debugProcessFactory;
         readonly ProcessListRequest.Factory _processListRequestFactory;
         readonly IDialogUtil _dialogUtil;
         readonly ActionRecorder _actionRecorder;
@@ -82,13 +78,11 @@ namespace YetiVSI.PortSupplier
 
         public string DebugSessionId => _debugSessionMetrics.DebugSessionId;
 
-        DebugPort(DebugProcess.Factory debugProcessFactory,
-                  ProcessListRequest.Factory processListRequestFactory,
+        DebugPort(ProcessListRequest.Factory processListRequestFactory,
                   CancelableTask.Factory cancelableTaskFactory, IDialogUtil dialogUtil,
                   ISshManager sshManager, IVsiMetrics metrics, Gamelet gamelet,
                   IDebugPortSupplier2 supplier, string debugSessionId, string developerAccount)
         {
-            _debugProcessFactory = debugProcessFactory;
             _processListRequestFactory = processListRequestFactory;
             _dialogUtil = dialogUtil;
             _guid = Guid.NewGuid();
@@ -157,20 +151,20 @@ namespace YetiVSI.PortSupplier
 
         public int EnumProcesses(out IEnumDebugProcesses2 processesEnum)
         {
-            List<IDebugProcess2> processes;
+            List<DebugProcess> processes;
             try
             {
                 var results = GetProcessList(_processListRequestFactory.Create());
                 processes =
                     results
-                        .Select(r => _debugProcessFactory.Create(this, r.Pid, r.Title, r.Command))
+                        .Select(r => new DebugProcess(this, r.Pid, r.Title, r.Command))
                         .ToList();
             }
             catch (ProcessException e)
             {
                 Trace.WriteLine($"ProcessException: {e.Demystify()}");
                 _dialogUtil.ShowError(ErrorStrings.ErrorQueryingGameletProcesses(e.Message), e);
-                processes = new List<IDebugProcess2>();
+                processes = new List<DebugProcess>();
             }
 
             processesEnum = new ProcessesEnum(processes.ToArray());

@@ -40,7 +40,6 @@ namespace YetiVSI.Test.PortSupplier
         const string _testGameletName = "gamelet name";
         const string _testDebugSessionId = "abc123";
 
-        DebugProcess.Factory _processFactory;
         IProcessListRequest _processListRequest;
         IDialogUtil _dialogUtil;
         ISshManager _sshManager;
@@ -52,7 +51,6 @@ namespace YetiVSI.Test.PortSupplier
         [SetUp]
         public void SetUp()
         {
-            _processFactory = Substitute.For<DebugProcess.Factory>();
             _dialogUtil = Substitute.For<IDialogUtil>();
             _sshManager = Substitute.For<ISshManager>();
 
@@ -67,9 +65,9 @@ namespace YetiVSI.Test.PortSupplier
 
             _metrics = Substitute.For<IVsiMetrics>();
 
-            _portFactory = new DebugPort.Factory(_processFactory, processListRequestFactory,
-                                                 cancelableTaskFactory, _dialogUtil, _sshManager,
-                                                 _metrics, _reserverAccount);
+            _portFactory = new DebugPort.Factory(
+                processListRequestFactory, cancelableTaskFactory, _dialogUtil, _sshManager,
+                _metrics, _reserverAccount);
             _portSupplier = Substitute.For<IDebugPortSupplier2>();
         }
 
@@ -149,14 +147,6 @@ namespace YetiVSI.Test.PortSupplier
             _processListRequest.GetBySshAsync(new SshTarget(_testGameletTarget))
                 .Returns(new List<ProcessListEntry>() { entry1, entry2 });
 
-            var process1 = Substitute.For<IDebugProcess2>();
-            _processFactory.Create(port, entry1.Pid, entry1.Title, entry1.Command)
-                .Returns(process1);
-
-            var process2 = Substitute.For<IDebugProcess2>();
-            _processFactory.Create(port, entry2.Pid, entry2.Title, entry2.Command)
-                .Returns(process2);
-
             Assert.AreEqual(VSConstants.S_OK,
                             port.EnumProcesses(out IEnumDebugProcesses2 processesEnum));
 
@@ -165,8 +155,12 @@ namespace YetiVSI.Test.PortSupplier
             Assert.AreEqual(VSConstants.S_OK,
                             processesEnum.Next((uint) processes.Length, processes, ref numFetched));
             Assert.AreEqual(2, numFetched);
-            Assert.AreEqual(processes[0], process1);
-            Assert.AreEqual(processes[1], process2);
+
+            processes[0].GetName(enum_GETNAME_TYPE.GN_TITLE, out string title1);
+            Assert.AreEqual(title1, entry1.Title);
+            processes[1].GetName(enum_GETNAME_TYPE.GN_TITLE, out string title2);
+            Assert.AreEqual(title2, entry2.Title);
+
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
                                  DeveloperEventStatus.Types.Code.Success);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiProcessList,

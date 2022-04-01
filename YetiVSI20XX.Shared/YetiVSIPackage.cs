@@ -162,13 +162,14 @@ namespace YetiVSI
                                                        CancellationToken cancellationToken,
                                                        Type serviceType)
         {
-            ISessionNotifier sessionNotifier = new SessionNotifierService();
             var vsiService = (YetiVSIService) GetGlobalService(typeof(YetiVSIService));
             await _taskContext.Factory.SwitchToMainThreadAsync();
             var metricsService = (IVsiMetrics) await GetServiceAsync(typeof(SMetrics));
             var exceptionRecorder = new ExceptionRecorder(metricsService);
             var loadSymbolsCommand = new LoadSymbolsCommand(
                 _taskContext, this, exceptionRecorder, vsiService);
+
+            ISessionNotifier sessionNotifier = new SessionNotifierService();
             sessionNotifier.SessionLaunched += loadSymbolsCommand.OnSessionLaunched;
             sessionNotifier.SessionStopped += loadSymbolsCommand.OnSessionStopped;
 

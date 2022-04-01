@@ -21,18 +21,10 @@ namespace YetiVSI.PortSupplier
     // DebugProperty provides a single named string property.
     public class DebugProperty : IDebugProperty2
     {
-        public class Factory
-        {
-            public virtual DebugProperty Create(string name, string value)
-            {
-                return new DebugProperty(name, value);
-            }
-        }
-
         private string name;
         private string value;
 
-        private DebugProperty(string name, string value)
+        public DebugProperty(string name, string value)
         {
             this.name = name;
             this.value = value;
