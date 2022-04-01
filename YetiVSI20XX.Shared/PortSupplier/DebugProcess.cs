@@ -141,18 +141,23 @@ namespace YetiVSI.PortSupplier
         {
             switch (type)
             {
-                case enum_GETNAME_TYPE.GN_FILENAME:
                 case enum_GETNAME_TYPE.GN_TITLE:
                     name = this.title;
-                    return VSConstants.S_OK;
+                    break;
+                case enum_GETNAME_TYPE.GN_FILENAME:
                 case enum_GETNAME_TYPE.GN_BASENAME:
                 case enum_GETNAME_TYPE.GN_NAME:
                     name = this.command;
-                    return VSConstants.S_OK;
+                    break;
+                case enum_GETNAME_TYPE.GN_MONIKERNAME:
+                case enum_GETNAME_TYPE.GN_URL:
+                case enum_GETNAME_TYPE.GN_STARTPAGEURL:
                 default:
                     name = null;
                     return VSConstants.E_NOTIMPL;
             }
+
+            return VSConstants.S_OK;
         }
 
         public int GetPhysicalProcessId(AD_PROCESS_ID[] processId)
