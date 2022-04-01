@@ -249,7 +249,7 @@ namespace YetiVSI.DebugEngine
                         // manager class (we could just have hit breakpoint that is being
                         // added by the main thread!).
                         await _taskContext.Factory.SwitchToMainThreadAsync();
-                        DebugEvent eventToSend = null;
+                        IGgpDebugEvent eventToSend = null;
                         switch (currentStopReason)
                         {
                         case StopReason.BREAKPOINT:
@@ -303,7 +303,7 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Handle a breakpoint stop event.
         /// </summary>
-        DebugEvent HandleBreakpointStop(RemoteThread thread)
+        IGgpDebugEvent HandleBreakpointStop(RemoteThread thread)
         {
             uint stopReasonDataCount = thread.GetStopReasonDataCount();
             List<IDebugBoundBreakpoint2> boundBreakpoints = new List<IDebugBoundBreakpoint2>();
@@ -339,7 +339,7 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Handle a watchpoint stop event.
         /// </summary>
-        DebugEvent HandleWatchpointStop(RemoteThread thread)
+        IGgpDebugEvent HandleWatchpointStop(RemoteThread thread)
         {
             int id = (int)thread.GetStopReasonDataAtIndex(0);
             if (!_lldbBreakpointManager.GetWatchpointById(id, out IWatchpoint watchpoint))
@@ -353,7 +353,7 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Handle a signal stop event.
         /// </summary>
-        DebugEvent HandleSignalStop(RemoteThread thread)
+        IGgpDebugEvent HandleSignalStop(RemoteThread thread)
         {
             var signalNumber = thread.GetStopReasonDataAtIndex(0);
             var signalTuple = SignalMap.Map[signalNumber];

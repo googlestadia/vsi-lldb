@@ -218,13 +218,14 @@ namespace YetiVSI.Test.DebugEngine
         {
             ProgramDestroyEvent destroyEvent = null;
             debugEngineHandler.SendEvent(
-                Arg.Do<DebugEvent>(e => destroyEvent = e as ProgramDestroyEvent),
+                Arg.Do<IGgpDebugEvent>(e => destroyEvent = e as ProgramDestroyEvent),
                 Arg.Any<IGgpDebugProgram>(), Arg.Any<IDebugThread2>())
                 .Returns(VSConstants.S_OK);
 
             debugEngineHandler.Abort(program, ExitInfo.Normal(exitReason));
             debugEngineHandler.Received(1).SendEvent(
-                Arg.Is<DebugEvent>(e => e is ProgramDestroyEvent), program, (IDebugThread2)null);
+                Arg.Is<IGgpDebugEvent>(
+                    e => e is ProgramDestroyEvent), program, (IDebugThread2)null);
 
             destroyEvent.ExitInfo.HandleResult(
                 r => Assert.That(r, Is.EqualTo(exitReason)),
@@ -237,7 +238,7 @@ namespace YetiVSI.Test.DebugEngine
             var breakpointError =
                 new DebugBreakpointError(null, enum_BP_ERROR_TYPE.BPET_SEV_GENERAL, "oops");
 
-            Predicate<DebugEvent> isBreakpointErrorEvent = e =>
+            Predicate<IGgpDebugEvent> isBreakpointErrorEvent = e =>
             {
                 var be = e as BreakpointErrorEvent;
                 if (be == null)
@@ -251,7 +252,8 @@ namespace YetiVSI.Test.DebugEngine
 
             debugEngineHandler.OnBreakpointError(breakpointError, program);
             debugEngineHandler.Received(1).SendEvent(
-                Arg.Is<DebugEvent>(e => isBreakpointErrorEvent(e)), program, (IDebugThread2)null);
+                Arg.Is<IGgpDebugEvent>(
+                    e => isBreakpointErrorEvent(e)), program, (IDebugThread2)null);
         }
 
         [Test]
@@ -262,7 +264,7 @@ namespace YetiVSI.Test.DebugEngine
             var factory = new BoundBreakpointEnumFactory();
             debugEngineHandler.OnBreakpointBound(breakpoint, boundLocations, factory, program);
             debugEngineHandler.Received(1).SendEvent(
-                Arg.Is<DebugEvent>(e => IsBreakpointBoundEvent(breakpoint, e)), program,
+                Arg.Is<IGgpDebugEvent>(e => IsBreakpointBoundEvent(breakpoint, e)), program,
                 (IDebugThread2)null);
         }
 
@@ -272,11 +274,11 @@ namespace YetiVSI.Test.DebugEngine
             var watchpoint = Substitute.For<IWatchpoint>();
             debugEngineHandler.OnWatchpointBound(watchpoint, program);
             debugEngineHandler.Received(1).SendEvent(
-                Arg.Is<DebugEvent>(e => IsBreakpointBoundEvent(watchpoint, e)), program,
+                Arg.Is<IGgpDebugEvent>(e => IsBreakpointBoundEvent(watchpoint, e)), program,
                 (IDebugThread2)null);
         }
 
-        bool IsBreakpointBoundEvent(IDebugPendingBreakpoint2 expected, DebugEvent actual)
+        bool IsBreakpointBoundEvent(IDebugPendingBreakpoint2 expected, IGgpDebugEvent actual)
         {
             var be = actual as BreakpointBoundEvent;
             if (be == null)
@@ -290,10 +292,21 @@ namespace YetiVSI.Test.DebugEngine
         }
     }
 
-    internal class TestEvent : DebugEvent
+    internal class TestEvent : IGgpDebugEvent
     {
-        public TestEvent(uint attributes) : base(attributes, Guid.NewGuid())
+        uint _attributes;
+
+        public TestEvent(uint attributes)
         {
+            _attributes = attributes;
+        }
+
+        public Guid EventId => typeof(TestEvent).GUID;
+
+        public int GetAttributes(out uint pdwAttrib)
+        {
+            pdwAttrib = _attributes;
+            return VSConstants.S_OK;
         }
     }
 }

@@ -21,36 +21,22 @@ using YetiCommon;
 
 namespace YetiVSI.DebugEngine
 {
-    // The event interface GUIDs can be extracted from
-    // C:\Program Files (x86)\Microsoft Visual Studio 14.0\VSSDK\VisualStudioIntegration\Common\IDL\msdbg.idl
-
-    class LoadCompleteEvent : DebugEvent, IDebugLoadCompleteEvent2
+    class LoadCompleteEvent :
+        StoppingDebugEvent<IDebugLoadCompleteEvent2>, IDebugLoadCompleteEvent2
     {
-        public LoadCompleteEvent()
-            : base((uint)(enum_EVENTATTRIBUTES.EVENT_STOPPING |
-                          enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS),
-                   new Guid("B1844850-1349-45D4-9F12-495212F5EB0B"))
-        {
-        }
     }
 
-    class EntryPointEvent : DebugEvent, IDebugEntryPointEvent2
+    class EntryPointEvent :
+        StoppingDebugEvent<IDebugEntryPointEvent2>, IDebugEntryPointEvent2
     {
-        public EntryPointEvent()
-            : base((uint)(enum_EVENTATTRIBUTES.EVENT_STOPPING |
-                          enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS),
-                   new Guid("E8414A3E-1642-48EC-829E-5F4040E16DA9"))
-        {
-        }
     }
 
-    public class EngineCreateEvent : DebugEvent, IDebugEngineCreateEvent2
+    public class EngineCreateEvent :
+        SyncDebugEvent<IDebugEngineCreateEvent2>, IDebugEngineCreateEvent2
     {
         readonly IDebugEngine2 _engine;
 
         public EngineCreateEvent(IDebugEngine2 engine)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS,
-                   new Guid("FE5B734C-759D-4E59-AB04-F103343BDD06"))
         {
             _engine = engine;
         }
@@ -62,22 +48,17 @@ namespace YetiVSI.DebugEngine
         }
     }
 
-    public class ProgramCreateEvent : DebugEvent, IDebugProgramCreateEvent2
+    public class ProgramCreateEvent :
+        SyncDebugEvent<IDebugProgramCreateEvent2>, IDebugProgramCreateEvent2
     {
-        public ProgramCreateEvent()
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS,
-                   new Guid("96CD11EE-ECD4-4E89-957E-B5D496FC4139"))
-        {
-        }
     }
 
-    public class ProgramDestroyEvent : DebugEvent, IDebugProgramDestroyEvent2
+    public class ProgramDestroyEvent :
+        SyncDebugEvent<IDebugProgramDestroyEvent2>, IDebugProgramDestroyEvent2
     {
         readonly uint _exitCode = 0;
 
         public ProgramDestroyEvent(ExitInfo exitInfo)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS,
-                   new Guid("E147E9E3-6440-4073-A7B7-A65592C714B5"))
         {
             ExitInfo = exitInfo;
         }
@@ -91,22 +72,17 @@ namespace YetiVSI.DebugEngine
         public ExitInfo ExitInfo { get; }
     }
 
-    public class ThreadCreateEvent : DebugEvent, IDebugThreadCreateEvent2
+    public class ThreadCreateEvent :
+        SyncDebugEvent<IDebugThreadCreateEvent2>, IDebugThreadCreateEvent2
     {
-        public ThreadCreateEvent()
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS,
-                   new Guid("2090CCFC-70C5-491D-A5E8-BAD2DD9EE3EA"))
-        {
-        }
     }
 
-    public class ThreadDestroyEvent : DebugEvent, IDebugThreadDestroyEvent2
+    public class ThreadDestroyEvent :
+        SyncDebugEvent<IDebugThreadDestroyEvent2>, IDebugThreadDestroyEvent2
     {
         readonly uint _exitCode;
 
         public ThreadDestroyEvent(uint exitCode)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS,
-                   new Guid("2C3B7532-A36F-4A6E-9072-49BE649B8541"))
         {
             _exitCode = exitCode;
         }
@@ -118,31 +94,22 @@ namespace YetiVSI.DebugEngine
         }
     }
 
-    public class BreakEvent : DebugEvent, IDebugBreakEvent2
+    public class BreakEvent :
+        StoppingDebugEvent<IDebugBreakEvent2>, IDebugBreakEvent2
     {
-        public BreakEvent()
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNC_STOP,
-                   new Guid("C7405D1D-E24B-44E0-B707-D8A5A4E1641B"))
-        {
-        }
     }
 
-    public class StepCompleteEvent : DebugEvent, IDebugStepCompleteEvent2
+    public class StepCompleteEvent :
+        StoppingDebugEvent<IDebugStepCompleteEvent2>, IDebugStepCompleteEvent2
     {
-        public StepCompleteEvent()
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNC_STOP,
-                   new Guid("0F7F24C1-74D9-4EA6-A3EA-7EDB2D81441D"))
-        {
-        }
     }
 
-    public class BreakpointEvent : DebugEvent, IDebugBreakpointEvent2
+    public class BreakpointEvent :
+        StoppingDebugEvent<IDebugBreakpointEvent2>, IDebugBreakpointEvent2
     {
         readonly IEnumDebugBoundBreakpoints2 _breakpointEnum;
 
         public BreakpointEvent(IEnumDebugBoundBreakpoints2 breakpointEnum)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNC_STOP,
-                   new Guid("501C1E21-C557-48B8-BA30-A1EAB0BC4A74"))
         {
             _breakpointEnum = breakpointEnum;
         }
@@ -154,13 +121,12 @@ namespace YetiVSI.DebugEngine
         }
     }
 
-    public class BreakpointErrorEvent : DebugEvent, IDebugBreakpointErrorEvent2
+    public class BreakpointErrorEvent :
+        SyncDebugEvent<IDebugBreakpointErrorEvent2>, IDebugBreakpointErrorEvent2
     {
         readonly DebugBreakpointError _breakpointError;
 
         public BreakpointErrorEvent(DebugBreakpointError breakpointError)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS,
-                   new Guid("ABB0CA42-F82B-4622-84E4-6903AE90F210"))
         {
             _breakpointError = breakpointError;
         }
@@ -172,15 +138,14 @@ namespace YetiVSI.DebugEngine
         }
     }
 
-    public class BreakpointBoundEvent : DebugEvent, IDebugBreakpointBoundEvent2
+    public class BreakpointBoundEvent :
+        SyncDebugEvent<IDebugBreakpointBoundEvent2>, IDebugBreakpointBoundEvent2
     {
         readonly IDebugPendingBreakpoint2 _pendingBreakpoint;
         readonly IEnumerable<IDebugBoundBreakpoint2> _newlyBoundBreakpoints;
         readonly BoundBreakpointEnumFactory _breakpointBoundEnumFactory;
 
         public BreakpointBoundEvent(IDebugPendingBreakpoint2 pendingBreakpoint)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS,
-                   new Guid("1dddb704-cf99-4b8a-b746-dabb01dd13a0"))
         {
             _pendingBreakpoint = pendingBreakpoint;
             _newlyBoundBreakpoints = null;
@@ -191,8 +156,6 @@ namespace YetiVSI.DebugEngine
             IDebugPendingBreakpoint2 pendingBreakpoint,
             IEnumerable<IDebugBoundBreakpoint2> newlyBoundBreakpoints,
             BoundBreakpointEnumFactory breakpointBoundEnumFactory)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS,
-                   new Guid("1dddb704-cf99-4b8a-b746-dabb01dd13a0"))
         {
             _pendingBreakpoint = pendingBreakpoint;
             _newlyBoundBreakpoints = newlyBoundBreakpoints;
@@ -219,16 +182,15 @@ namespace YetiVSI.DebugEngine
         }
     }
 
-    public class DebugExpressionEvaluationCompleteEvent : DebugEvent,
-                                                          IDebugExpressionEvaluationCompleteEvent2
+    public class DebugExpressionEvaluationCompleteEvent :
+        AsyncDebugEvent<IDebugExpressionEvaluationCompleteEvent2>,
+        IDebugExpressionEvaluationCompleteEvent2
     {
         readonly IDebugExpression2 _expr;
         readonly IDebugProperty2 _result;
 
         public DebugExpressionEvaluationCompleteEvent(IDebugExpression2 expr,
                                                       IDebugProperty2 result)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_ASYNCHRONOUS,
-                   new Guid("C0E13A85-238A-4800-8315-D947C960A843"))
         {
             _expr = expr;
             _result = result;
@@ -247,7 +209,7 @@ namespace YetiVSI.DebugEngine
         }
     }
 
-    public class ExceptionEvent : DebugEvent, IDebugExceptionEvent2
+    public class ExceptionEvent : StoppingDebugEvent<IDebugExceptionEvent2>, IDebugExceptionEvent2
     {
         readonly string _exceptionName;
         readonly string _detail;
@@ -256,7 +218,6 @@ namespace YetiVSI.DebugEngine
 
         public ExceptionEvent(string exceptionName, uint code, enum_EXCEPTION_STATE state,
                               string description)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_SYNC_STOP, YetiConstants.ExceptionEventGuid)
         {
             _exceptionName = exceptionName;
             _code = code;
@@ -275,7 +236,7 @@ namespace YetiVSI.DebugEngine
 
             pExceptionInfo[0] =
                 new EXCEPTION_INFO { bstrExceptionName = _exceptionName, dwCode = _code,
-                                     dwState = _state, guidType = Iid };
+                                     dwState = _state, guidType = EventId };
             return VSConstants.S_OK;
         }
 
@@ -294,14 +255,13 @@ namespace YetiVSI.DebugEngine
         public int PassToDebuggee(int fPass) => VSConstants.E_FAIL;
     }
 
-    public class DebugModuleLoadEvent : DebugEvent, IDebugModuleLoadEvent2
+    public class DebugModuleLoadEvent :
+        AsyncDebugEvent<IDebugModuleLoadEvent2>, IDebugModuleLoadEvent2
     {
         readonly IDebugModule2 _module;
         readonly bool _loaded; // true if a module was loaded, false if a module was unloaded
 
         public DebugModuleLoadEvent(IDebugModule2 module, bool loaded)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_ASYNCHRONOUS,
-                   new Guid("989DB083-0D7C-40D1-A9D9-921BF611A4B2"))
         {
             _module = module;
             _loaded = loaded;
@@ -316,7 +276,8 @@ namespace YetiVSI.DebugEngine
         }
     }
 
-    public class DebugSymbolSearchEvent : DebugEvent, IDebugSymbolSearchEvent2
+    public class DebugSymbolSearchEvent :
+        AsyncDebugEvent<IDebugSymbolSearchEvent2>, IDebugSymbolSearchEvent2
     {
         readonly IDebugModule3 _module;
         readonly string _moduleName;
@@ -325,8 +286,6 @@ namespace YetiVSI.DebugEngine
 
         public DebugSymbolSearchEvent(IDebugModule3 module, string moduleName, string errorMessage,
                                       bool loaded)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_ASYNCHRONOUS,
-                   new Guid("2A064CA8-D657-4CC8-B11B-F545BFC3FDD3"))
         {
             _module = module;
             _moduleName = moduleName;
@@ -355,13 +314,12 @@ namespace YetiVSI.DebugEngine
         }
     }
 
-    public class DebugProcessInfoUpdatedEvent : DebugEvent, IDebugProcessInfoUpdatedEvent158
+    public class DebugProcessInfoUpdatedEvent :
+        AsyncDebugEvent<IDebugProcessInfoUpdatedEvent158>, IDebugProcessInfoUpdatedEvent158
     {
         readonly uint _processId;
 
         public DebugProcessInfoUpdatedEvent(uint processId)
-            : base((uint)enum_EVENTATTRIBUTES.EVENT_ASYNCHRONOUS,
-                   new Guid("96C242FC-F584-4C3E-8FED-384D3D13EF36"))
         {
             _processId = processId;
         }
@@ -375,22 +333,45 @@ namespace YetiVSI.DebugEngine
         }
     }
 
-    public class DebugEvent : IDebugEvent2
+    public interface IGgpDebugEvent : IDebugEvent2
     {
-        readonly uint _attributes;
+        Guid EventId { get; }
+    }
 
-        public Guid Iid { get; private set; }
+    public abstract class DebugEvent<T> : IGgpDebugEvent
+    {
+        public Guid EventId => typeof(T).GUID;
 
-        protected DebugEvent(uint attributes, Guid iid)
-        {
-            _attributes = attributes;
-            Iid = iid;
-        }
+        protected abstract uint Attributes { get; }
 
         int IDebugEvent2.GetAttributes(out uint attributes)
         {
-            attributes = _attributes;
+            attributes = Attributes;
             return VSConstants.S_OK;
+        }
+    }
+
+    public class SyncDebugEvent<T> : DebugEvent<T>
+    {
+        protected override uint Attributes
+        {
+            get { return (uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS; }
+        }
+    }
+
+    public class AsyncDebugEvent<T> : DebugEvent<T>
+    {
+        protected override uint Attributes
+        {
+            get { return (uint)enum_EVENTATTRIBUTES.EVENT_ASYNCHRONOUS; }
+        }
+    }
+
+    public class StoppingDebugEvent<T> : DebugEvent<T>
+    {
+        protected override uint Attributes
+        {
+            get { return (uint)enum_EVENTATTRIBUTES.EVENT_STOPPING; }
         }
     }
 }

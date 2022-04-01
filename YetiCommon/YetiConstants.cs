@@ -30,9 +30,6 @@ namespace YetiCommon
         public static readonly Guid DebugEngineGuid =
             new Guid("{6e5c4e9a-119b-4cbf-8c39-24f304d34655}");
 
-        public static readonly Guid ExceptionEventGuid =
-            new Guid("51A94113-8788-4A54-AE15-08B74FF922D0");
-
         public static readonly string Command = "cmd.exe";
 
         public static readonly string DebuggerGrpcServerExecutable = "DebuggerGrpcServer.exe";

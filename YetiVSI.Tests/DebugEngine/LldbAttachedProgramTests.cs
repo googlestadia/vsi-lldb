@@ -89,7 +89,7 @@ namespace YetiVSI.Test
             var debugEngine = Substitute.For<IDebugEngine2>();
             _attachedProgram.Start(debugEngine);
 
-            Predicate<DebugEvent> enginesAreEqual = e =>
+            Predicate<IGgpDebugEvent> enginesAreEqual = e =>
             {
                 if (!(e is EngineCreateEvent engineCreateEvent))
                 {
@@ -100,12 +100,12 @@ namespace YetiVSI.Test
                 return receivedEngine == debugEngine;
             };
 
-            Predicate<DebugEvent> isProgramCreateEvent = e => e is ProgramCreateEvent;
+            Predicate<IGgpDebugEvent> isProgramCreateEvent = e => e is ProgramCreateEvent;
 
             Received.InOrder(() => {
-                _debugEngineHandler.SendEvent(Arg.Is<DebugEvent>(e => enginesAreEqual(e)),
+                _debugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(e => enginesAreEqual(e)),
                                               _debugProgram);
-                _debugEngineHandler.SendEvent(Arg.Is<DebugEvent>(e => isProgramCreateEvent(e)),
+                _debugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(e => isProgramCreateEvent(e)),
                                               _debugProgram);
             });
         }
@@ -146,7 +146,7 @@ namespace YetiVSI.Test
             _attachedProgram.ContinueInBreakMode();
 
             EXCEPTION_INFO[] info = null;
-            Predicate<DebugEvent> matchExceptionEvent = e =>
+            Predicate<IGgpDebugEvent> matchExceptionEvent = e =>
             {
                 if (!(e is ExceptionEvent exceptionEvent))
                 {
@@ -159,7 +159,7 @@ namespace YetiVSI.Test
             };
 
             Received.InOrder(() => {
-                _debugEngineHandler.SendEvent(Arg.Is<DebugEvent>(e => matchExceptionEvent(e)),
+                _debugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(e => matchExceptionEvent(e)),
                                               _debugProgram, selectedThread);
                 _lldbShell.AddDebugger(_debugger);
                 _debugProgram.Received().EnumModules(out _);
@@ -179,7 +179,7 @@ namespace YetiVSI.Test
 
             _attachedProgram.ContinueInBreakMode();
 
-            Predicate<DebugEvent> matchExceptionEvent = e =>
+            Predicate<IGgpDebugEvent> matchExceptionEvent = e =>
             {
                 if (!(e is ExceptionEvent exceptionEvent))
                 {
@@ -192,7 +192,7 @@ namespace YetiVSI.Test
             };
 
             Received.InOrder(() => {
-                _debugEngineHandler.SendEvent(Arg.Is<DebugEvent>(e => matchExceptionEvent(e)),
+                _debugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(e => matchExceptionEvent(e)),
                                               _debugProgram, selectedThread);
                 _lldbShell.AddDebugger(_debugger);
                 _debugProgram.Received().EnumModules(out _);
@@ -209,7 +209,7 @@ namespace YetiVSI.Test
 
             _attachedProgram.ContinueInBreakMode();
 
-            Predicate<DebugEvent> matchExceptionEvent = e =>
+            Predicate<IGgpDebugEvent> matchExceptionEvent = e =>
             {
                 ExceptionEvent exceptionEvent = e as ExceptionEvent;
                 if (exceptionEvent == null)
@@ -223,7 +223,7 @@ namespace YetiVSI.Test
             };
 
             Received.InOrder(() => {
-                _debugEngineHandler.SendEvent(Arg.Is<DebugEvent>(e => matchExceptionEvent(e)),
+                _debugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(e => matchExceptionEvent(e)),
                                               _debugProgram, selectedThread);
             });
         }

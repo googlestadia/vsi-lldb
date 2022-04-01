@@ -33,12 +33,12 @@ namespace YetiVSI.DebugEngine
         /// Converts a RemoteThread into an IDebugThread2, then sends a DebugEvent associated with
         /// the IDebugThread2 to the Visual Studio SDM.
         /// </summary>
-        int SendEvent(DebugEvent evnt, IGgpDebugProgram program, RemoteThread thread);
+        int SendEvent(IGgpDebugEvent evnt, IGgpDebugProgram program, RemoteThread thread);
 
         /// <summary>
         /// Called to send a DebugEvent associated with the IDebugThread2 to the Visual Studio SDM.
         /// </summary>
-        int SendEvent(DebugEvent evnt, IGgpDebugProgram program, IDebugThread2 thread);
+        int SendEvent(IGgpDebugEvent evnt, IGgpDebugProgram program, IDebugThread2 thread);
     }
 
     public static class DebugEngineHandlerExtensions
@@ -46,7 +46,7 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Called to send a DebugEvent with no associated thread to the Visual Studio SDM.
         /// </summary>
-        public static int SendEvent(this IDebugEngineHandler handler, DebugEvent evnt,
+        public static int SendEvent(this IDebugEngineHandler handler, IGgpDebugEvent evnt,
                                     IGgpDebugProgram program) =>
             handler.SendEvent(evnt, program, (IDebugThread2)null);
 
@@ -153,7 +153,7 @@ namespace YetiVSI.DebugEngine
         // Certain events require, allow, or do not allow program or thread objects
         // to be sent with them. Reference:
         // https://docs.microsoft.com/en-us/visualstudio/extensibility/debugger/supported-event-types
-        public int SendEvent(DebugEvent evnt, IGgpDebugProgram program, IDebugThread2 thread)
+        public int SendEvent(IGgpDebugEvent evnt, IGgpDebugProgram program, IDebugThread2 thread)
         {
             return _taskContext.Factory.Run(async () =>
             {
@@ -161,11 +161,11 @@ namespace YetiVSI.DebugEngine
             });
         }
 
-        public int SendEvent(DebugEvent evnt, IGgpDebugProgram program,
+        public int SendEvent(IGgpDebugEvent evnt, IGgpDebugProgram program,
                              RemoteThread thread) => SendEvent(evnt, program,
                                                                program.GetDebugThread(thread));
 
-        async Task<int> SendEventAsync(DebugEvent evnt, IGgpDebugProgram program,
+        async Task<int> SendEventAsync(IGgpDebugEvent evnt, IGgpDebugProgram program,
                                        IDebugThread2 thread)
         {
             await _taskContext.Factory.SwitchToMainThreadAsync();
@@ -176,8 +176,8 @@ namespace YetiVSI.DebugEngine
                 return VSConstants.E_FAIL;
             }
 
-            Guid eventIid = evnt.Iid;
-            return _eventCallback.Event(_debugEngine, null, program, thread, evnt, ref eventIid,
+            Guid eventId = evnt.EventId;
+            return _eventCallback.Event(_debugEngine, null, program, thread, evnt, ref eventId,
                                         attributes);
         }
     }

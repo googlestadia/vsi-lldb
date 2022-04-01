@@ -501,9 +501,9 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void DetachSuccess()
         {
-            DebugEvent capturedEvent = null;
+            IGgpDebugEvent capturedEvent = null;
             mockDebugEngineHandler
-                .SendEvent(Arg.Do<DebugEvent>(x => capturedEvent = x), Arg.Any<IGgpDebugProgram>())
+                .SendEvent(Arg.Do<IGgpDebugEvent>(x => capturedEvent = x), Arg.Any<IGgpDebugProgram>())
                 .Returns(0);
             mockSbProcess.Detach().Returns(true);
 
@@ -523,7 +523,7 @@ namespace YetiVSI.Test.DebugEngine
             Assert.AreEqual(VSConstants.E_FAIL, program.Detach());
 
             Assert.IsFalse(program.DetachRequested);
-            mockDebugEngineHandler.DidNotReceive().SendEvent(Arg.Any<DebugEvent>(),
+            mockDebugEngineHandler.DidNotReceive().SendEvent(Arg.Any<IGgpDebugEvent>(),
                 Arg.Any<IGgpDebugProgram>());
         }
 
@@ -537,9 +537,9 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void TerminateSuccess()
         {
-            DebugEvent capturedEvent = null;
+            IGgpDebugEvent capturedEvent = null;
             mockDebugEngineHandler
-                .SendEvent(Arg.Do<DebugEvent>(x => capturedEvent = x), Arg.Any<IGgpDebugProgram>())
+                .SendEvent(Arg.Do<IGgpDebugEvent>(x => capturedEvent = x), Arg.Any<IGgpDebugProgram>())
                 .Returns(0);
             mockSbProcess.Kill().Returns(true);
 
@@ -554,9 +554,9 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void TerminateFailed()
         {
-            DebugEvent capturedEvent = null;
+            IGgpDebugEvent capturedEvent = null;
             mockDebugEngineHandler
-                .SendEvent(Arg.Do<DebugEvent>(x => capturedEvent = x), Arg.Any<IGgpDebugProgram>())
+                .SendEvent(Arg.Do<IGgpDebugEvent>(x => capturedEvent = x), Arg.Any<IGgpDebugProgram>())
                 .Returns(0);
             mockSbProcess.Kill().Returns(false);
 

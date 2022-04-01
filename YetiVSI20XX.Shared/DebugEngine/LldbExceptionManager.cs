@@ -103,7 +103,7 @@ namespace YetiVSI.DebugEngine
         private bool IsStadiaException(EXCEPTION_INFO exception)
         {
             return exception.guidType == YetiConstants.DebugEngineGuid ||
-                exception.guidType == YetiConstants.ExceptionEventGuid;
+                exception.guidType == typeof(IDebugExceptionEvent2).GUID;
         }
     }
 }

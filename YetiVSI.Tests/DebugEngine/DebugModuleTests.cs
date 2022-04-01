@@ -178,7 +178,7 @@ namespace YetiVSI.Test.DebugEngine
 
             _mockModule.GetPlatformFileSpec().GetFilename().Returns("excludedModule");
             _mockModule.HasCompileUnits().Returns(true);
-            
+
             var flags = enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE;
             var moduleInfo = new MODULE_INFO[1];
 
@@ -231,7 +231,7 @@ namespace YetiVSI.Test.DebugEngine
             _debugModule.LoadSymbols();
 
             _mockEngineHandler.Received(1).SendEvent(
-                Arg.Is<DebugEvent>(e => e is IDebugSymbolSearchEvent2), _mockDebugProgram,
+                Arg.Is<IGgpDebugEvent>(e => e is IDebugSymbolSearchEvent2), _mockDebugProgram,
                 (IDebugThread2)null);
         }
     }
