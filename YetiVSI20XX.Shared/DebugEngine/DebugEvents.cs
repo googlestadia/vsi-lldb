@@ -355,6 +355,26 @@ namespace YetiVSI.DebugEngine
         }
     }
 
+    public class DebugProcessInfoUpdatedEvent : DebugEvent, IDebugProcessInfoUpdatedEvent158
+    {
+        readonly uint _processId;
+
+        public DebugProcessInfoUpdatedEvent(uint processId)
+            : base((uint)enum_EVENTATTRIBUTES.EVENT_ASYNCHRONOUS,
+                   new Guid("96C242FC-F584-4C3E-8FED-384D3D13EF36"))
+        {
+            _processId = processId;
+        }
+
+        public int GetUpdatedProcessInfo(out string pbstrName, out uint pdwSystemProcessId)
+        {
+            // For some reason `pbstrName` doesn't affect anything.
+            pbstrName = null;
+            pdwSystemProcessId = _processId;
+            return 0;
+        }
+    }
+
     public class DebugEvent : IDebugEvent2
     {
         readonly uint _attributes;

@@ -272,6 +272,8 @@ namespace YetiVSI.DebugEngine
         readonly IDebugModuleCache _debugModuleCache;
         readonly ILldbListenerSubscriber _listenerSubscriber;
 
+        public uint RemotePid { get; }
+
         public LldbAttachedProgram(IBreakpointManager breakpointManager, IEventManager eventManager,
                                    ILLDBShell lldbShell, IModuleFileLoader moduleFileLoader,
                                    IDebugEngineHandler debugEngineHandler,
@@ -308,6 +310,8 @@ namespace YetiVSI.DebugEngine
             // the engine has been created before the program is created.
             _debugEngineHandler.SendEvent(new EngineCreateEvent(debugEngine), _debugProgram);
             _debugEngineHandler.SendEvent(new ProgramCreateEvent(), _debugProgram);
+            _debugEngineHandler.SendEvent(
+                new DebugProcessInfoUpdatedEvent(RemotePid), _debugProgram);
         }
 
         /// <summary>
@@ -415,8 +419,6 @@ namespace YetiVSI.DebugEngine
 
         public void SetExceptions(IEnumerable<EXCEPTION_INFO> exceptions) =>
             _exceptionManager?.SetExceptions(exceptions);
-
-        public uint RemotePid { get; }
 
         void UpdateModulesList() => _debugProgram.EnumModules(out _);
 
