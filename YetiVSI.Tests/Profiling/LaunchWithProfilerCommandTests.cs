@@ -42,9 +42,14 @@ namespace YetiVSI.Test.Profiling
             _solutionBuildManager = Substitute.For<IVsSolutionBuildManager>();
             _debugLaunchOption = DebugLaunchOptions.Profiling | DebugLaunchOptions.DetachOnStop;
             _dialogUtil = Substitute.For<IDialogUtil>();
-            _command = new LaunchWithProfilerCommand(_mainThreadContext.JoinableTaskContext,
-                                                     _solutionBuildManager, _debugLaunchOption,
+            _command = new LaunchWithProfilerCommand(_solutionBuildManager, _debugLaunchOption,
                                                      _profilerName, _dialogUtil, null);
+        }
+
+        [TearDown]
+        public void TeadDown()
+        {
+            _mainThreadContext.Dispose();
         }
 
         [Test]

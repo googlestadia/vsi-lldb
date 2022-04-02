@@ -20,9 +20,7 @@ using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Threading;
 using YetiCommon;
-using YetiVSI.Util;
 
 namespace YetiVSI.Profiling
 {
@@ -35,7 +33,6 @@ namespace YetiVSI.Profiling
     // A menu command to launch a game and profile it with a profiler.
     public sealed class LaunchWithProfilerCommand
     {
-        readonly JoinableTaskContext _taskContext;
         readonly IVsSolutionBuildManager _solutionBuildManager;
         readonly DebugLaunchOptions _profilerLaunchOption;
         readonly string _profilerName;
@@ -45,12 +42,12 @@ namespace YetiVSI.Profiling
         // https://stackoverflow.com/questions/3874015/subscription-to-dte-events-doesnt-seem-to-work-events-dont-get-called
         readonly EnvDTE.SelectionEvents _selectionEvents;
 
-        public static LaunchWithProfilerCommand Register(JoinableTaskContext taskContext,
-                                                         Package package, ProfilerType profilerType,
+        public static LaunchWithProfilerCommand Register(Package package,
+                                                         ProfilerType profilerType,
                                                          string profilerName,
                                                          IDialogUtil dialogUtil)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             const string baseErrorMessage = "Failed to register LaunchWithProfilerCommand: ";
             var serviceProvider = ((IServiceProvider) package);
@@ -75,9 +72,9 @@ namespace YetiVSI.Profiling
             }
 
             EnvDTE.SelectionEvents selectionEvents = dte2.Events.SelectionEvents;
-            var command = new LaunchWithProfilerCommand(taskContext, solutionBuildManager,
-                                                        GetLaunchOption(profilerType), profilerName,
-                                                        dialogUtil, selectionEvents);
+            var command = new LaunchWithProfilerCommand(
+                solutionBuildManager, GetLaunchOption(profilerType), profilerName, dialogUtil,
+                selectionEvents);
             (int menuCmdId, int toolbarCmdId) = GetMenuAndToolbarCmdIds(profilerType);
 
             var menuCommandId = new CommandID(YetiConstants.CommandSetGuid, menuCmdId);
@@ -133,13 +130,11 @@ namespace YetiVSI.Profiling
         /// <summary>
         /// Constructor public for testing. Use Register() in production code.
         /// </summary>
-        public LaunchWithProfilerCommand(JoinableTaskContext taskContext,
-                                         IVsSolutionBuildManager solutionBuildManager,
+        public LaunchWithProfilerCommand(IVsSolutionBuildManager solutionBuildManager,
                                          DebugLaunchOptions profilerLaunchOption,
                                          string profilerName, IDialogUtil dialogUtil,
                                          EnvDTE.SelectionEvents selectionEvents)
         {
-            _taskContext = taskContext;
             _solutionBuildManager = solutionBuildManager;
             _profilerLaunchOption = profilerLaunchOption;
             _profilerName = profilerName;
@@ -154,7 +149,7 @@ namespace YetiVSI.Profiling
         /// </summary>
         public void OnBeforeQueryStatus(object sender, EventArgs e)
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             var command = sender as OleMenuCommand;
             if (command == null)
@@ -176,7 +171,7 @@ namespace YetiVSI.Profiling
         /// </summary>
         public void Execute(object sender, EventArgs e)
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             // Warn if game was built in a debug configuration.
             if (IsDebug() && !_dialogUtil.ShowYesNoWarning(
@@ -202,7 +197,7 @@ namespace YetiVSI.Profiling
         /// </summary>
         string GetActiveConfigurationName()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             string baseErrorMessage =
                 "Failed to determine whether active config in startup project is GGP: ";
@@ -235,7 +230,7 @@ namespace YetiVSI.Profiling
         /// </summary>
         bool IsGgpStartupProject()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             // E.g. "Debug|GGP".
             string cname = GetActiveConfigurationName();
@@ -248,7 +243,7 @@ namespace YetiVSI.Profiling
         /// </summary>
         bool IsDebug()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             // E.g. "Debug|GGP".
             string cname = GetActiveConfigurationName();

@@ -43,7 +43,7 @@ namespace YetiVSI
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.78.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
-    [Guid(_packageGuidString)]
+    [Guid("5fc8481d-4b1a-4cdc-b123-fd6d32fc4096")]
     [ProvideOptionPage(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 0, true)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideProfile(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 110, true,
@@ -58,9 +58,7 @@ namespace YetiVSI
     // This is boilerplate code needed to add a new entry to the Tools menu.
     public sealed class YetiVSIPackage : AsyncPackage
     {
-        const string _packageGuidString = "5fc8481d-4b1a-4cdc-b123-fd6d32fc4096";
-        JoinableTaskContext _taskContext;
-        DTEEvents _packageDteEvents;
+        DTEEvents _dteEvents;
         VsiMetricsService _metricsService;
 
         /// <summary>
@@ -71,54 +69,47 @@ namespace YetiVSI
         protected override async Task InitializeAsync(CancellationToken cancellationToken,
                                                       IProgress<ServiceProgressData> progress)
         {
-            // Do not use ServiceManager.GetJoinableTaskContext() as it causes deadlocks, see
-            // (internal).
-            _taskContext = ThreadHelper.JoinableTaskContext;
-            AddServices();
-            _metricsService = (VsiMetricsService) await GetServiceAsync(typeof(SMetrics));
-            // MetricsService was registered in `AddServices`, so it should be present.
-            Assumes.Present(_metricsService);
-            _metricsService.RecordEvent(DeveloperEventType.Types.Type.VsiInitialized,
-                                        new DeveloperLogEvent());
-
-            await InitializeAsync(_taskContext);
-        }
-
-        async Task InitializeAsync(JoinableTaskContext taskContext)
-        {
-            YetiLog.Initialize("YetiVSI", DateTime.Now);
-
-            await taskContext.Factory.SwitchToMainThreadAsync();
-
-            var applicationObj = (DTE2) await GetServiceAsync(typeof(DTE));
-            Assumes.Present(applicationObj);
-            _packageDteEvents = applicationObj.Events.DTEEvents;
-            // Microsoft documentation states that `OnBeginShutdown` is for internal use only.
-            // However there are multiple opensource projects which use this api.
-            // The other closest thing we could use is `QueryClose` or `CanClose` methods
-            // from AsyncPackage. But those methods are executed each time visual studio
-            // attempts to close, which can happen multiple times during visual studio session.
-            _packageDteEvents.OnBeginShutdown += HandleVisualStudioShutDown;
-
-            var dialogUtil = new DialogUtil();
-            CoreAttachCommand.Register(this);
-            LaunchWithProfilerCommand.Register(taskContext, this, ProfilerType.Orbit,
-                                               "Orbit CPU Profiler", dialogUtil);
-            LaunchWithProfilerCommand.Register(taskContext, this, ProfilerType.Dive,
-                                               "Dive GPU Profiler", dialogUtil);
-            LLDBShellCommandTarget.Register(taskContext, this);
-            DebuggerOptionsCommand.Register(taskContext, this);
-
-            await ReportBug.InitializeAsync(this);
-        }
-
-        void AddServices()
-        {
+            // First register the services this package provides.
             AddService(typeof(YetiVSIService), CreateYetiVsiServiceAsync, true);
             AddService(typeof(SLLDBShell), CreateSLLDBShellAsync, true);
             AddService(typeof(SMetrics), CreateSMetricsAsync, true);
             AddService(typeof(SDebugEngineManager), CreateSDebugEngineManagerAsync, true);
             AddService(typeof(SSessionNotifier), CreateSSessionNotifierAsync, true);
+
+            // MetricsService was just registered above, so it should be present.
+            _metricsService = (VsiMetricsService)await GetServiceAsync(typeof(SMetrics));
+            Assumes.Present(_metricsService);
+            _metricsService.RecordEvent(DeveloperEventType.Types.Type.VsiInitialized,
+                                        new DeveloperLogEvent());
+
+            YetiLog.Initialize("YetiVSI", DateTime.Now);
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            var dte2 = (DTE2)await GetServiceAsync(typeof(DTE));
+            Assumes.Present(dte2);
+            _dteEvents = dte2.Events.DTEEvents;
+            // Microsoft documentation states that `OnBeginShutdown` is for internal use only.
+            // However there are multiple opensource projects which use this api.
+            // The other closest thing we could use is `QueryClose` or `CanClose` methods
+            // from AsyncPackage. But those methods are executed each time visual studio
+            // attempts to close, which can happen multiple times during visual studio session.
+            _dteEvents.OnBeginShutdown += () =>
+            {
+                _metricsService.RecordEvent(
+                    DeveloperEventType.Types.Type.VsiShutdown, new DeveloperLogEvent());
+            };
+
+            var dialogUtil = new DialogUtil();
+            CoreAttachCommand.Register(this);
+            LaunchWithProfilerCommand.Register(this, ProfilerType.Orbit,
+                                               "Orbit CPU Profiler", dialogUtil);
+            LaunchWithProfilerCommand.Register(this, ProfilerType.Dive,
+                                               "Dive GPU Profiler", dialogUtil);
+            LLDBShellCommandTarget.Register(ThreadHelper.JoinableTaskContext, this);
+            DebuggerOptionsCommand.Register(ThreadHelper.JoinableTaskContext, this);
+
+            await ReportBug.InitializeAsync(this);
         }
 
         Task<object> CreateYetiVsiServiceAsync(IAsyncServiceContainer container,
@@ -135,20 +126,23 @@ namespace YetiVSI
                                                  CancellationToken cancellationToken,
                                                  Type serviceType)
         {
-            await _taskContext.Factory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var vsCommandWindow =
-                (IVsCommandWindow) await GetServiceAsync(typeof(SVsCommandWindow));
-            var commandWindowWriter = new CommandWindowWriter(_taskContext, vsCommandWindow);
-            return new LLDBShell.LLDBShell(_taskContext, commandWindowWriter);
+                (IVsCommandWindow)await GetServiceAsync(typeof(SVsCommandWindow));
+            var commandWindowWriter = new CommandWindowWriter(
+                ThreadHelper.JoinableTaskContext, vsCommandWindow);
+            return new LLDBShell.LLDBShell(
+                ThreadHelper.JoinableTaskContext, commandWindowWriter);
         }
 
         async Task<object> CreateSMetricsAsync(IAsyncServiceContainer container,
                                                CancellationToken cancellationToken,
                                                Type serviceType)
         {
-            await _taskContext.Factory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             string vsVersion = await VsVersion.GetVisualStudioVersionAsync(this);
-            return new VsiMetricsService(_taskContext, Versions.Populate(vsVersion));
+            return new VsiMetricsService(
+                ThreadHelper.JoinableTaskContext, Versions.Populate(vsVersion));
         }
 
         Task<object> CreateSDebugEngineManagerAsync(IAsyncServiceContainer container,
@@ -163,19 +157,20 @@ namespace YetiVSI
                                                        CancellationToken cancellationToken,
                                                        Type serviceType)
         {
-            var vsiService = (YetiVSIService) GetGlobalService(typeof(YetiVSIService));
-            await _taskContext.Factory.SwitchToMainThreadAsync();
-            var metricsService = (IVsiMetrics) await GetServiceAsync(typeof(SMetrics));
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            var vsiService = (YetiVSIService)await GetServiceAsync(typeof(YetiVSIService));
+            var metricsService = (IVsiMetrics)await GetServiceAsync(typeof(SMetrics));
             var exceptionRecorder = new ExceptionRecorder(metricsService);
             var loadSymbolsCommand = new LoadSymbolsCommand(
-                _taskContext, this, exceptionRecorder, vsiService);
+                ThreadHelper.JoinableTaskContext, this, exceptionRecorder, vsiService);
 
             ISessionNotifier sessionNotifier = new SessionNotifierService();
             sessionNotifier.SessionLaunched += loadSymbolsCommand.OnSessionLaunched;
             sessionNotifier.SessionStopped += loadSymbolsCommand.OnSessionStopped;
 
-            var noSourceWindowHider = new NoSourceWindowHider(_taskContext, this,
-                                                              exceptionRecorder, vsiService);
+            var noSourceWindowHider = new NoSourceWindowHider(
+                ThreadHelper.JoinableTaskContext, this, exceptionRecorder, vsiService);
             sessionNotifier.SessionLaunched += noSourceWindowHider.OnSessionLaunched;
             sessionNotifier.SessionStopped += noSourceWindowHider.OnSessionStopped;
 
@@ -188,12 +183,6 @@ namespace YetiVSI
             {
                 YetiLog.ToggleGrpcLogging(args.State == DebuggerOptionState.ENABLED);
             }
-        }
-
-        void HandleVisualStudioShutDown()
-        {
-            _metricsService.RecordEvent(DeveloperEventType.Types.Type.VsiShutdown,
-                                        new DeveloperLogEvent());
         }
     }
 } // namespace YetiVSI
