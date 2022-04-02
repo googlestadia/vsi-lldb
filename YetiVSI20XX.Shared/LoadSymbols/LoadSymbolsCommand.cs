@@ -20,15 +20,12 @@ using System.Reflection;
 using System.Windows.Automation;
 using EnvDTE;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.ProjectSystem;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiCommon.ExceptionRecorder;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebuggerOptions;
-using YetiVSI.Util;
-using StackFrame = EnvDTE.StackFrame;
 
 namespace YetiVSI.LoadSymbols
 {
@@ -42,7 +39,6 @@ namespace YetiVSI.LoadSymbols
         const int _loadSymbolsFromModuleId = 295;
 
         readonly Guid _moduleWindowGuid = new Guid("37ABA9BE-445A-11D3-9949-00C04F68FD0A");
-        readonly JoinableTaskContext _taskContext;
         readonly IServiceProvider _serviceProvider;
 
         readonly IExceptionRecorder _exceptionRecorder;
@@ -54,10 +50,9 @@ namespace YetiVSI.LoadSymbols
 
         readonly List<ILldbAttachedProgram> _programs;
 
-        public LoadSymbolsCommand(JoinableTaskContext taskContext, IServiceProvider serviceProvider,
+        public LoadSymbolsCommand(IServiceProvider serviceProvider,
                                   IExceptionRecorder exceptionRecorder, YetiVSIService vsiService)
         {
-            _taskContext = taskContext;
             _serviceProvider = serviceProvider;
             _exceptionRecorder = exceptionRecorder;
             _vsiService = vsiService;
@@ -67,7 +62,7 @@ namespace YetiVSI.LoadSymbols
 
         public void OnSessionLaunched(object sender, SessionLaunchedEventArgs args)
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
                 SubstituteDefaultCommand(args);
@@ -97,7 +92,7 @@ namespace YetiVSI.LoadSymbols
         // store. See (internal) for more details.
         void SubstituteDefaultCommand(SessionLaunchedEventArgs sessionLaunchedArgs)
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             _programs.Add(sessionLaunchedArgs.Program);
 
@@ -119,7 +114,7 @@ namespace YetiVSI.LoadSymbols
 
             try
             {
-                _taskContext.ThrowIfNotOnMainThread();
+                ThreadHelper.ThrowIfNotOnUIThread();
 
                 _programs.ForEach(LoadSymbols);
                 RefreshSymbolsLoadingStatus();
@@ -145,7 +140,7 @@ namespace YetiVSI.LoadSymbols
 
         void RefreshSymbolsLoadingStatus()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             RefreshCallStackWindow();
             RefreshModulesWindow();
@@ -156,7 +151,7 @@ namespace YetiVSI.LoadSymbols
         // See (internal) for more details.
         void RefreshCallStackWindow()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             Thread currentThread = GetDte().Debugger?.CurrentThread;
             Thread newThread = null;
@@ -186,7 +181,7 @@ namespace YetiVSI.LoadSymbols
         // We attempt to close and reopen the module window to refresh it.
         void RefreshModulesWindow()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             var vsUiShell = (IVsUIShell)_serviceProvider.GetService(typeof(SVsUIShell));
 
@@ -206,7 +201,7 @@ namespace YetiVSI.LoadSymbols
 
         void LoadSymbols(ILldbAttachedProgram program)
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             foreach (string moduleName in ListSelectedModules())
             {
@@ -219,7 +214,7 @@ namespace YetiVSI.LoadSymbols
 
         IEnumerable<string> ListSelectedModules()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             AutomationElement activeWindow = GetActiveWindow();
 
@@ -257,7 +252,7 @@ namespace YetiVSI.LoadSymbols
         IEnumerable<string> FindSelectedModulesInCallStackWindow(
             AutomationElement callStackWindowView)
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             var selectionPattern =
                 (SelectionPattern)callStackWindowView.GetCurrentPattern(SelectionPattern.Pattern);
@@ -276,7 +271,7 @@ namespace YetiVSI.LoadSymbols
         string ConvertCallStackEntryToModule(AutomationElement selectedRow,
                                              AutomationElement callStackWindowView)
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             string rowText = selectedRow.Current.Name;
 
@@ -313,7 +308,7 @@ namespace YetiVSI.LoadSymbols
                     "Cannot match selected row with a stack frame from DTE.");
             }
 
-            StackFrame frame = frames.Item(selectedFrameIndex);
+            EnvDTE.StackFrame frame = frames.Item(selectedFrameIndex);
             if (!rowText.Contains(frame.FunctionName))
             {
                 throw new InvalidOperationException(
@@ -326,7 +321,7 @@ namespace YetiVSI.LoadSymbols
 
         AutomationElement GetActiveWindow()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 #if VS2019
             int windowHandle = GetDte().ActiveWindow.HWnd;
             var activeWindow = AutomationElement.FromHandle(new IntPtr(windowHandle));
@@ -353,7 +348,7 @@ namespace YetiVSI.LoadSymbols
 
         DTE GetDte()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             var dte = (DTE) _serviceProvider.GetService(typeof(DTE));
             if (dte == null)

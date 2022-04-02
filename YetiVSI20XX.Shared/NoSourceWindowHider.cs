@@ -16,12 +16,11 @@
 using System.Diagnostics;
 using System.Reflection;
 using EnvDTE;
-using Microsoft.VisualStudio.Threading;
+using Microsoft.VisualStudio.Shell;
 using YetiCommon;
 using YetiCommon.ExceptionRecorder;
 using YetiVSI.DebuggerOptions;
 using YetiVSI.LoadSymbols;
-using YetiVSI.Util;
 using Process = EnvDTE.Process;
 using StackFrame = EnvDTE.StackFrame;
 
@@ -46,7 +45,6 @@ namespace YetiVSI
         const string _enableAddressLevelDebugging = "EnableAddressLevelDebugging";
         const string _showDisassembly = "ShowDisassemblyIfNoSource";
 
-        readonly JoinableTaskContext _taskContext;
         readonly IServiceProvider _serviceProvider;
         readonly DebuggerEvents _debuggerEvents;
 
@@ -58,12 +56,11 @@ namespace YetiVSI
         readonly IExceptionRecorder _exceptionRecorder;
         readonly YetiVSIService _vsiService;
 
-        public NoSourceWindowHider(JoinableTaskContext taskContext,
-                                   IServiceProvider serviceProvider,
+        public NoSourceWindowHider(IServiceProvider serviceProvider,
                                    IExceptionRecorder exceptionRecorder, YetiVSIService vsiService)
         {
-            taskContext.ThrowIfNotOnMainThread();
-            _taskContext = taskContext;
+            ThreadHelper.ThrowIfNotOnUIThread();
+
             _serviceProvider = serviceProvider;
             _exceptionRecorder = exceptionRecorder;
             _vsiService = vsiService;
@@ -75,7 +72,7 @@ namespace YetiVSI
         {
             RecordErrors(() =>
             {
-                _taskContext.ThrowIfNotOnMainThread();
+                ThreadHelper.ThrowIfNotOnUIThread();
                 if (newStackFrame != null)
                 {
                     Properties debuggingProperties = GetDte().Properties["Debugging", "General"];
@@ -90,7 +87,7 @@ namespace YetiVSI
         {
             RecordErrors(() =>
             {
-                _taskContext.ThrowIfNotOnMainThread();
+                ThreadHelper.ThrowIfNotOnUIThread();
 
                 if (_sessionsCount == 0)
                 {
@@ -106,7 +103,7 @@ namespace YetiVSI
         {
             RecordErrors(() =>
             {
-                _taskContext.ThrowIfNotOnMainThread();
+                ThreadHelper.ThrowIfNotOnUIThread();
 
                 _sessionsCount--;
 
@@ -120,7 +117,7 @@ namespace YetiVSI
 
         void ReadSettings()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             Properties debuggingProperties = GetDte().Properties["Debugging", "General"];
 
@@ -132,7 +129,7 @@ namespace YetiVSI
 
         void RestoreSettings()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             Properties debuggingProperties = GetDte().Properties["Debugging", "General"];
             debuggingProperties.Item(_enableAddressLevelDebugging).Value =
@@ -142,7 +139,7 @@ namespace YetiVSI
 
         DTE GetDte()
         {
-            _taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             var dte = (DTE) _serviceProvider.GetService(typeof(DTE));
             if (dte == null)
