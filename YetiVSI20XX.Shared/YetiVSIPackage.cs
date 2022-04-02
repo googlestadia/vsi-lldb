@@ -71,8 +71,9 @@ namespace YetiVSI
         protected override async Task InitializeAsync(CancellationToken cancellationToken,
                                                       IProgress<ServiceProgressData> progress)
         {
-            var serviceManager = new ServiceManager();
-            _taskContext = serviceManager.GetJoinableTaskContext();
+            // Do not use ServiceManager.GetJoinableTaskContext() as it causes deadlocks, see
+            // (internal).
+            _taskContext = ThreadHelper.JoinableTaskContext;
             AddServices();
             _metricsService = (VsiMetricsService) await GetServiceAsync(typeof(SMetrics));
             // MetricsService was registered in `AddServices`, so it should be present.

@@ -26,6 +26,7 @@ using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
+using Microsoft.VisualStudio.Shell;
 
 namespace YetiVSI.PortSupplier
 {
@@ -48,24 +49,20 @@ namespace YetiVSI.PortSupplier
         // Guid being in the registry.
         public DebugPortSupplier()
         {
-            // Factory creation for the PortSupplier entry point.
-            var serviceManager = new ServiceManager();
-            IExtensionOptions options =
-                ((YetiVSIService)serviceManager.RequireGlobalService(typeof(YetiVSIService)))
-                    .Options;
-            var taskContext = serviceManager.GetJoinableTaskContext();
             var managedProcessFactory = new ManagedProcess.Factory();
             var processListRequestFactory = new ProcessListRequest.Factory(managedProcessFactory);
             var jsonUtil = new JsonUtil();
             var sdkConfigFactory = new SdkConfig.Factory(jsonUtil);
             var credentialConfigFactory = new CredentialConfig.Factory(jsonUtil);
-            var accountOptionLoader = new VsiAccountOptionLoader(options);
+            var vsiService = (YetiVSIService)Package.GetGlobalService(typeof(YetiVSIService));
+            var accountOptionLoader = new VsiAccountOptionLoader(vsiService.Options);
             var credentialManager =
                 new CredentialManager(credentialConfigFactory, accountOptionLoader);
             _developerAccount = credentialManager.LoadAccount();
             _dialogUtil = new DialogUtil();
             var progressDialogFactory = new ProgressDialog.Factory();
-            _cancelableTaskFactory = new CancelableTask.Factory(taskContext, progressDialogFactory);
+            _cancelableTaskFactory = new CancelableTask.Factory(
+                ThreadHelper.JoinableTaskContext, progressDialogFactory);
             var cloudConnection = new CloudConnection();
             // NOTE: this CloudRunner is re-used for all subsequent Attach to Process windows.
             _cloudRunner = new CloudRunner(sdkConfigFactory, credentialManager, cloudConnection,
@@ -76,7 +73,8 @@ namespace YetiVSI.PortSupplier
             var sshManager =
                 new SshManager(_gameletClientFactory, _cloudRunner, sshKeyLoader,
                                sshKnownHostsWriter, new RemoteCommand(managedProcessFactory));
-            _metrics = (IVsiMetrics)serviceManager.RequireGlobalService(typeof(SMetrics));
+
+            _metrics = (IVsiMetrics)Package.GetGlobalService(typeof(SMetrics));
             _debugPortFactory = new DebugPort.Factory(
                 processListRequestFactory, _cancelableTaskFactory, _dialogUtil,
                 sshManager, _metrics, _developerAccount);
