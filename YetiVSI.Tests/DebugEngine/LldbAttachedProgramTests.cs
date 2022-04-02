@@ -89,24 +89,16 @@ namespace YetiVSI.Test
             var debugEngine = Substitute.For<IDebugEngine2>();
             _attachedProgram.Start(debugEngine);
 
-            Predicate<IGgpDebugEvent> enginesAreEqual = e =>
+            Predicate<EngineCreateEvent> enginesAreEqual = e =>
             {
-                if (!(e is EngineCreateEvent engineCreateEvent))
-                {
-                    return false;
-                }
-
-                engineCreateEvent.GetEngine(out IDebugEngine2 receivedEngine);
+                e.GetEngine(out IDebugEngine2 receivedEngine);
                 return receivedEngine == debugEngine;
             };
 
-            Predicate<IGgpDebugEvent> isProgramCreateEvent = e => e is ProgramCreateEvent;
-
             Received.InOrder(() => {
-                _debugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(e => enginesAreEqual(e)),
+                _debugEngineHandler.SendEvent(Arg.Is<EngineCreateEvent>(e => enginesAreEqual(e)),
                                               _debugProgram);
-                _debugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(e => isProgramCreateEvent(e)),
-                                              _debugProgram);
+                _debugEngineHandler.SendEvent(Arg.Any<ProgramCreateEvent>(), _debugProgram);
             });
         }
 
@@ -143,27 +135,22 @@ namespace YetiVSI.Test
             ulong sigAbort = 6;
             selectedThread.GetStopReasonDataAtIndex(0).Returns(sigAbort);
 
+            ExceptionEvent exceptionEvent = null;
+            _debugEngineHandler.SendEvent(Arg.Do<ExceptionEvent>(e => exceptionEvent = e),
+                                          _debugProgram, selectedThread);
+
             _attachedProgram.ContinueInBreakMode();
 
-            EXCEPTION_INFO[] info = null;
-            Predicate<IGgpDebugEvent> matchExceptionEvent = e =>
+            Received.InOrder(() =>
             {
-                if (!(e is ExceptionEvent exceptionEvent))
-                {
-                    return false;
-                }
-
-                info = new EXCEPTION_INFO[1];
-                exceptionEvent.GetException(info);
-                return true;
-            };
-
-            Received.InOrder(() => {
-                _debugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(e => matchExceptionEvent(e)),
-                                              _debugProgram, selectedThread);
+                _debugEngineHandler.SendEvent(
+                    Arg.Any<ExceptionEvent>(), _debugProgram, selectedThread);
                 _lldbShell.AddDebugger(_debugger);
                 _debugProgram.Received().EnumModules(out _);
             });
+
+            EXCEPTION_INFO[] info = new EXCEPTION_INFO[1];
+            exceptionEvent.GetException(info);
 
             Assert.That(info[0].dwState,
                         Is.EqualTo(enum_EXCEPTION_STATE.EXCEPTION_STOP_ALL |
@@ -179,20 +166,15 @@ namespace YetiVSI.Test
 
             _attachedProgram.ContinueInBreakMode();
 
-            Predicate<IGgpDebugEvent> matchExceptionEvent = e =>
+            Predicate<ExceptionEvent> matchExceptionEvent = e =>
             {
-                if (!(e is ExceptionEvent exceptionEvent))
-                {
-                    return false;
-                }
-
                 var info = new EXCEPTION_INFO[1];
-                exceptionEvent.GetException(info);
+                e.GetException(info);
                 return info[0].dwState == enum_EXCEPTION_STATE.EXCEPTION_NONE;
             };
 
             Received.InOrder(() => {
-                _debugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(e => matchExceptionEvent(e)),
+                _debugEngineHandler.SendEvent(Arg.Is<ExceptionEvent>(e => matchExceptionEvent(e)),
                                               _debugProgram, selectedThread);
                 _lldbShell.AddDebugger(_debugger);
                 _debugProgram.Received().EnumModules(out _);
@@ -209,21 +191,15 @@ namespace YetiVSI.Test
 
             _attachedProgram.ContinueInBreakMode();
 
-            Predicate<IGgpDebugEvent> matchExceptionEvent = e =>
+            Predicate<ExceptionEvent> matchExceptionEvent = e =>
             {
-                ExceptionEvent exceptionEvent = e as ExceptionEvent;
-                if (exceptionEvent == null)
-                {
-                    return false;
-                }
-
                 var info = new EXCEPTION_INFO[1];
-                exceptionEvent.GetException(info);
+                e.GetException(info);
                 return info[0].dwState == enum_EXCEPTION_STATE.EXCEPTION_NONE;
             };
 
             Received.InOrder(() => {
-                _debugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(e => matchExceptionEvent(e)),
+                _debugEngineHandler.SendEvent(Arg.Is<ExceptionEvent>(e => matchExceptionEvent(e)),
                                               _debugProgram, selectedThread);
             });
         }

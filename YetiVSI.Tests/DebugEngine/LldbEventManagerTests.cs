@@ -182,7 +182,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakEvent>(), _mockProgram, _mockRemoteThread);
         }
 
         [Test]
@@ -198,7 +198,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakEvent>(), _mockProgram, _mockRemoteThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(mainThreadId);
         }
 
@@ -216,7 +216,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakEvent>(), _mockProgram, _mockRemoteThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(mainThreadId);
         }
 
@@ -233,14 +233,14 @@ namespace YetiVSI.Test.DebugEngine
             // called.
             BreakpointEvent resultEvent = null;
             _mockDebugEngineHandler.SendEvent(
-                Arg.Do(delegate(IGgpDebugEvent x) { resultEvent = (BreakpointEvent)x; }),
+                Arg.Do<BreakpointEvent>(x => resultEvent = x),
                 _mockProgram, mockWorkerThread);
 
             RaiseSingleStateChanged();
 
             _mockSbProcess.Received(1).SetSelectedThreadById(mockWorkerThreadId);
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakpointEvent), _mockProgram, mockWorkerThread);
+                Arg.Any<BreakpointEvent>(), _mockProgram, mockWorkerThread);
             AssertBreakpointEvent(resultEvent,
                                   new List<IDebugBoundBreakpoint2> { _mockBoundBreakpoint2 });
         }
@@ -259,7 +259,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakEvent>(), _mockProgram, _mockRemoteThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(mainThreadId);
         }
 
@@ -276,7 +276,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, mockWorkerThread);
+                Arg.Any<BreakEvent>(), _mockProgram, mockWorkerThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(mockWorkerThreadId);
         }
 
@@ -295,13 +295,13 @@ namespace YetiVSI.Test.DebugEngine
             MockProcess(new List<RemoteThread> { _mockRemoteThread, mockWorkerThread });
             ExceptionEvent resultEvent = null;
             _mockDebugEngineHandler.SendEvent(
-                Arg.Do(delegate(IGgpDebugEvent x) { resultEvent = (ExceptionEvent)x; }),
+                Arg.Do<ExceptionEvent>(x => resultEvent = x),
                 _mockProgram, mockWorkerThread);
 
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is ExceptionEvent), _mockProgram, mockWorkerThread);
+                Arg.Any<ExceptionEvent>(), _mockProgram, mockWorkerThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(mockWorkerThreadId);
             AssertExceptionEvent(resultEvent, signalNumber);
         }
@@ -318,13 +318,13 @@ namespace YetiVSI.Test.DebugEngine
             MockBreakpointManagerForWatchpoint();
             BreakpointEvent resultEvent = null;
             _mockDebugEngineHandler.SendEvent(
-                Arg.Do(delegate(IGgpDebugEvent x) { resultEvent = (BreakpointEvent)x; }),
+                Arg.Do<BreakpointEvent>(x => resultEvent = x),
                 _mockProgram, mockWorkerThread);
 
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakpointEvent), _mockProgram, mockWorkerThread);
+                Arg.Any<BreakpointEvent>(), _mockProgram, mockWorkerThread);
             AssertBreakpointEvent(resultEvent,
                                   new List<IDebugBoundBreakpoint2> { _mockWatchpoint });
             _mockSbProcess.Received(1).SetSelectedThreadById(mockWorkerThreadId);
@@ -343,7 +343,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, mockWorkerThread);
+                Arg.Any<BreakEvent>(), _mockProgram, mockWorkerThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(mockWorkerThreadId);
         }
 
@@ -360,7 +360,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, mockWorkerThread);
+                Arg.Any<BreakEvent>(), _mockProgram, mockWorkerThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(mockWorkerThreadId);
         }
 
@@ -377,7 +377,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is StepCompleteEvent), _mockProgram,
+                Arg.Any<StepCompleteEvent>(), _mockProgram,
                 mockWorkerThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(mockWorkerThreadId);
         }
@@ -399,7 +399,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakEvent>(), _mockProgram, _mockRemoteThread);
             _mockSbProcess.DidNotReceive().SetSelectedThreadById(mockWorkerThreadId);
         }
 
@@ -416,7 +416,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, mockWorkerThread);
+                Arg.Any<BreakEvent>(), _mockProgram, mockWorkerThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(mockWorkerThreadId);
         }
 
@@ -433,7 +433,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, mockWorkerThread);
+                Arg.Any<BreakEvent>(), _mockProgram, mockWorkerThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(mockWorkerThreadId);
         }
 
@@ -453,7 +453,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is StepCompleteEvent), _mockProgram, mockPlanThread);
+                Arg.Any<StepCompleteEvent>(), _mockProgram, mockPlanThread);
             _mockSbProcess.Received(1).SetSelectedThreadById(planThreadId);
         }
 
@@ -461,9 +461,9 @@ namespace YetiVSI.Test.DebugEngine
         [TestCase(false, ExitReason.ProcessDetached)]
         public void HandleEventDetached(bool detachLocally, ExitReason exitReason)
         {
-            IGgpDebugEvent capturedEvent = null;
+            ProgramDestroyEvent capturedEvent = null;
             _mockDebugEngineHandler
-                .SendEvent(Arg.Do<IGgpDebugEvent>(x => capturedEvent = x),
+                .SendEvent(Arg.Do<ProgramDestroyEvent>(x => capturedEvent = x),
                            Arg.Any<IGgpDebugProgram>())
                 .Returns(0);
 
@@ -473,20 +473,20 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is ProgramDestroyEvent), _mockProgram);
+                Arg.Any<ProgramDestroyEvent>(), _mockProgram);
 
-            ((ProgramDestroyEvent)capturedEvent)
-                .ExitInfo.HandleResult(er => Assert.That(er, Is.EqualTo(exitReason)),
-                                       ex => Assert.Fail("Unexpected error in exit info: " + ex));
+            capturedEvent.ExitInfo.HandleResult(
+                er => Assert.That(er, Is.EqualTo(exitReason)),
+                ex => Assert.Fail("Unexpected error in exit info: " + ex));
         }
 
         [TestCase(true, ExitReason.DebuggerTerminated)]
         [TestCase(false, ExitReason.ProcessExited)]
         public void HandleEventExited(bool terminateLocally, ExitReason exitReason)
         {
-            IGgpDebugEvent capturedEvent = null;
+            ProgramDestroyEvent capturedEvent = null;
             _mockDebugEngineHandler
-                .SendEvent(Arg.Do<IGgpDebugEvent>(x => capturedEvent = x),
+                .SendEvent(Arg.Do<ProgramDestroyEvent>(x => capturedEvent = x),
                            Arg.Any<IGgpDebugProgram>())
                 .Returns(0);
 
@@ -495,11 +495,11 @@ namespace YetiVSI.Test.DebugEngine
 
             RaiseSingleStateChanged();
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is ProgramDestroyEvent), _mockProgram);
+                Arg.Any<ProgramDestroyEvent>(), _mockProgram);
 
-            ((ProgramDestroyEvent)capturedEvent)
-                .ExitInfo.HandleResult(er => Assert.That(er, Is.EqualTo(exitReason)),
-                                       ex => Assert.Fail("Unexpected error in exit info: " + ex));
+            capturedEvent.ExitInfo.HandleResult(
+                er => Assert.That(er, Is.EqualTo(exitReason)),
+                ex => Assert.Fail("Unexpected error in exit info: " + ex));
         }
 
         [Test]
@@ -510,7 +510,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakEvent>(), _mockProgram, _mockRemoteThread);
         }
 
         [Test]
@@ -520,13 +520,13 @@ namespace YetiVSI.Test.DebugEngine
             // called.
             BreakpointEvent resultEvent = null;
             _mockDebugEngineHandler.SendEvent(
-                Arg.Do(delegate(IGgpDebugEvent x) { resultEvent = (BreakpointEvent)x; }),
+                Arg.Do<BreakpointEvent>(x => resultEvent = x),
                 _mockProgram, _mockRemoteThread);
 
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakpointEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakpointEvent>(), _mockProgram, _mockRemoteThread);
             AssertBreakpointEvent(resultEvent, new List<IDebugBoundBreakpoint2> {
                 _mockBoundBreakpoint2, _mockBoundBreakpoint3, _mockBoundBreakpoint1
             });
@@ -555,13 +555,13 @@ namespace YetiVSI.Test.DebugEngine
             // called.
             BreakpointEvent resultEvent = null;
             _mockDebugEngineHandler.SendEvent(
-                Arg.Do(delegate(IGgpDebugEvent x) { resultEvent = (BreakpointEvent)x; }),
+                Arg.Do<BreakpointEvent>(x => resultEvent = x),
                 _mockProgram, _mockRemoteThread);
 
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakpointEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakpointEvent>(), _mockProgram, _mockRemoteThread);
             AssertBreakpointEvent(
                 resultEvent,
                 new List<IDebugBoundBreakpoint2> { _mockBoundBreakpoint2, _mockBoundBreakpoint3 });
@@ -581,10 +581,10 @@ namespace YetiVSI.Test.DebugEngine
             // called.
             BreakpointEvent resultEvent = null;
             _mockDebugEngineHandler.SendEvent(
-                Arg.Do(delegate(IGgpDebugEvent x) { resultEvent = (BreakpointEvent)x; }),
+                Arg.Do<BreakpointEvent>(x => resultEvent = x),
                 _mockProgram, _mockRemoteThread);
 
-            _mockDebugEngineHandler.SendEvent(Arg.Is<IGgpDebugEvent>(x => x is BreakpointEvent),
+            _mockDebugEngineHandler.SendEvent(Arg.Any<BreakpointEvent>(),
                                               _mockProgram, _mockRemoteThread);
 
             RaiseSingleStateChanged();
@@ -608,7 +608,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakEvent>(), _mockProgram, _mockRemoteThread);
         }
 
         [Test]
@@ -621,7 +621,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakpointEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakpointEvent>(), _mockProgram, _mockRemoteThread);
         }
 
         [Test]
@@ -637,7 +637,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakEvent>(), _mockProgram, _mockRemoteThread);
         }
 
         [Test]
@@ -650,7 +650,7 @@ namespace YetiVSI.Test.DebugEngine
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is BreakEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<BreakEvent>(), _mockProgram, _mockRemoteThread);
         }
 
         [Test]
@@ -662,13 +662,13 @@ namespace YetiVSI.Test.DebugEngine
             MockProcess(new List<RemoteThread> { _mockRemoteThread });
             ExceptionEvent exceptionEvent = null;
             _mockDebugEngineHandler.SendEvent(
-                Arg.Do(delegate(IGgpDebugEvent x) { exceptionEvent = (ExceptionEvent)x; }),
+                Arg.Do<ExceptionEvent>(x => exceptionEvent = x),
                 _mockProgram, _mockRemoteThread);
 
             RaiseSingleStateChanged();
 
             _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(x => x is ExceptionEvent), _mockProgram, _mockRemoteThread);
+                Arg.Any<ExceptionEvent>(), _mockProgram, _mockRemoteThread);
             AssertExceptionEvent(exceptionEvent, (uint)sigabrt);
         }
 

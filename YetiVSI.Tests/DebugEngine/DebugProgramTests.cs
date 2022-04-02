@@ -501,16 +501,18 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void DetachSuccess()
         {
-            IGgpDebugEvent capturedEvent = null;
+            ProgramDestroyEvent capturedEvent = null;
             mockDebugEngineHandler
-                .SendEvent(Arg.Do<IGgpDebugEvent>(x => capturedEvent = x), Arg.Any<IGgpDebugProgram>())
+                .SendEvent(
+                    Arg.Do<ProgramDestroyEvent>(x => capturedEvent = x),
+                    Arg.Any<IGgpDebugProgram>())
                 .Returns(0);
             mockSbProcess.Detach().Returns(true);
 
             Assert.AreEqual(VSConstants.S_OK, program.Detach());
 
             Assert.IsTrue(program.DetachRequested);
-            ((ProgramDestroyEvent)capturedEvent).ExitInfo.HandleResult(
+            capturedEvent.ExitInfo.HandleResult(
                 er => Assert.That(er, Is.EqualTo(ExitReason.DebuggerDetached)),
                 ex => Assert.Fail("Unexpected error in exit info: " + ex.ToString()));
         }
@@ -523,8 +525,8 @@ namespace YetiVSI.Test.DebugEngine
             Assert.AreEqual(VSConstants.E_FAIL, program.Detach());
 
             Assert.IsFalse(program.DetachRequested);
-            mockDebugEngineHandler.DidNotReceive().SendEvent(Arg.Any<IGgpDebugEvent>(),
-                Arg.Any<IGgpDebugProgram>());
+            mockDebugEngineHandler.DidNotReceive().SendEvent(
+                Arg.Any<ProgramDestroyEvent>(), Arg.Any<IGgpDebugProgram>());
         }
 
         [Test]
@@ -537,16 +539,18 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void TerminateSuccess()
         {
-            IGgpDebugEvent capturedEvent = null;
+            ProgramDestroyEvent capturedEvent = null;
             mockDebugEngineHandler
-                .SendEvent(Arg.Do<IGgpDebugEvent>(x => capturedEvent = x), Arg.Any<IGgpDebugProgram>())
+                .SendEvent(
+                    Arg.Do<ProgramDestroyEvent>(x => capturedEvent = x),
+                    Arg.Any<IGgpDebugProgram>())
                 .Returns(0);
             mockSbProcess.Kill().Returns(true);
 
             Assert.AreEqual(VSConstants.S_OK, program.Terminate());
 
             Assert.IsTrue(program.TerminationRequested);
-            ((ProgramDestroyEvent)capturedEvent).ExitInfo.HandleResult(
+            capturedEvent.ExitInfo.HandleResult(
                 er => Assert.That(er, Is.EqualTo(ExitReason.DebuggerTerminated)),
                 ex => Assert.Fail("Unexpected error in exit info: " + ex.ToString()));
         }
@@ -554,16 +558,18 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public void TerminateFailed()
         {
-            IGgpDebugEvent capturedEvent = null;
+            ProgramDestroyEvent capturedEvent = null;
             mockDebugEngineHandler
-                .SendEvent(Arg.Do<IGgpDebugEvent>(x => capturedEvent = x), Arg.Any<IGgpDebugProgram>())
+                .SendEvent(
+                    Arg.Do<ProgramDestroyEvent>(x => capturedEvent = x),
+                    Arg.Any<IGgpDebugProgram>())
                 .Returns(0);
             mockSbProcess.Kill().Returns(false);
 
             Assert.AreEqual(VSConstants.E_FAIL, program.Terminate());
 
             Assert.IsTrue(program.TerminationRequested);
-            ((ProgramDestroyEvent)capturedEvent).ExitInfo.HandleResult(
+            capturedEvent.ExitInfo.HandleResult(
                 er => Assert.Fail("Unexpected reason in exit info: " + er.ToString()),
                 ex => Assert.That(ex, Is.TypeOf<DebugProgram.TerminateProcessException>()));
 

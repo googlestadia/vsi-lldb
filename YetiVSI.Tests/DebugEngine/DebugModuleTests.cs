@@ -231,8 +231,7 @@ namespace YetiVSI.Test.DebugEngine
             _debugModule.LoadSymbols();
 
             _mockEngineHandler.Received(1).SendEvent(
-                Arg.Is<IGgpDebugEvent>(e => e is IDebugSymbolSearchEvent2), _mockDebugProgram,
-                (IDebugThread2)null);
+                Arg.Any<DebugSymbolSearchEvent>(), _mockDebugProgram, (IDebugThread2)null);
         }
     }
 }
