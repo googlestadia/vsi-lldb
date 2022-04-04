@@ -28,6 +28,15 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyVersion("1.77.0.0")]
 [assembly: AssemblyFileVersion("1.77.0.0")]
 
+// Grpc.Auth references Google.Apis.Auth (>= 1.46.0), however the lower versions of 
+// Google.Apis.Auth reference Newtonsoft.json v12. This causes a breakage because
+// all of the YetiVSI projects reference Newtonsoft.json v13.
+// This part of code tells the application to load newer version of Google.Apis.*
+// since they reference Newtonsoft.json v13.
+[assembly: ProvideBindingRedirection(AssemblyName = "Google.Apis", NewVersion = "1.57.0.0", OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "1.57.0.0")]
+[assembly: ProvideBindingRedirection(AssemblyName = "Google.Apis.Auth", NewVersion = "1.57.0.0", OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "1.57.0.0")]
+[assembly: ProvideBindingRedirection(AssemblyName = "Google.Apis.Core", NewVersion = "1.57.0.0", OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "1.57.0.0")]
+
 [assembly: ProvideBindingRedirection(AssemblyName = "System.Buffers", NewVersion = "4.0.3.0", OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "4.0.3.0")]
 [assembly: ProvideBindingRedirection(AssemblyName = "System.Numerics.Vectors", NewVersion = "4.1.4.0", OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "4.1.4.0")]
 [assembly: ProvideBindingRedirection(AssemblyName = "System.Runtime.CompilerServices.Unsafe", NewVersion = "4.0.6.0", OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "4.0.6.0")]
