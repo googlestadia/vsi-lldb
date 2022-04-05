@@ -41,7 +41,7 @@ using YetiVSI.Metrics;
 namespace YetiVSI
 {
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-    [InstalledProductRegistration("#110", "#112", "1.77.0", IconResourceID = 400)]
+    [InstalledProductRegistration("#110", "#112", "1.78.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(_packageGuidString)]
     [ProvideOptionPage(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 0, true)]

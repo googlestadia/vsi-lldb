@@ -23,8 +23,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
-[assembly: AssemblyVersion("1.76.0.0")]
-[assembly: AssemblyFileVersion("1.76.0.0")]
+[assembly: AssemblyVersion("1.78.0.0")]
+[assembly: AssemblyFileVersion("1.78.0.0")]
 
 // Visual Studio has it's own Newtonsoft.Json and it can have a lower version than we need.
 // We bundle our specific version, because there are dependencies that need it. This is not
