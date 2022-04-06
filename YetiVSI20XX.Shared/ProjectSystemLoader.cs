@@ -114,13 +114,6 @@ namespace YetiVSI
             }
         }
 
-        public static IProjectServiceAdapter CreateProjectServiceAdapter(
-            IProjectService projectService)
-        {
-            var version = projectService.GetType().Assembly.GetName().Version;
-            return LoadImpl<IProjectServiceAdapter>(version, projectService);
-        }
-
         public static IAsyncProject CreateAsyncProject(ConfiguredProject configuredProject)
         {
             var version = configuredProject.GetType().Assembly.GetName().Version;

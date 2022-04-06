@@ -10,6 +10,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)ConfiguredProjectAdapter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ProjectServiceAdapter.cs" />
   </ItemGroup>
 </Project>

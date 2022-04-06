@@ -45,7 +45,7 @@ namespace YetiVSI
         [ImportingConstructor]
         public GgpGameletDebugger(ConfiguredProject configuredProject)
             : base(configuredProject)
-        { 
+        {
             ThreadHelper.ThrowIfNotOnUIThread();
         }
     }
@@ -62,7 +62,6 @@ namespace YetiVSI
             var serviceManager = new ServiceManager();
             var dialogUtil = new DialogUtil();
             var compRoot = new GgpDebugQueryTargetCompRoot(serviceManager, dialogUtil);
-            serviceManager.GetJoinableTaskContext().ThrowIfNotOnMainThread();
             project = ProjectSystemLoader.CreateAsyncProject(configuredProject);
             ggpDebugQueryTarget = compRoot.Create();
         }

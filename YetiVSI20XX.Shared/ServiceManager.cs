@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft.VisualStudio.ComponentModelHost;
-using Microsoft.VisualStudio.ProjectSystem;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Threading;
 using System;
 using System.Diagnostics;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
 
 namespace YetiVSI
 {
@@ -50,10 +48,7 @@ namespace YetiVSI
         /// </summary>
         virtual public JoinableTaskContext GetJoinableTaskContext()
         {
-            var componentModel = (IComponentModel)GetGlobalService(typeof(SComponentModel));
-            var projectServiceAccessor = componentModel.GetService<IProjectServiceAccessor>();
-            var projectService = projectServiceAccessor.GetProjectService();
-            return ProjectSystemLoader.CreateProjectServiceAdapter(projectService).GetContext();
+            return ThreadHelper.JoinableTaskContext;
         }
     }
 }
