@@ -344,7 +344,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 // TODO: match on version, etc
                 foreach (TypeInfo v in fileInfo.Visualizers)
                 {
-                    var score = new TypeName.MatchScore(v.Visualizer.Priority);
+                    // Disable priority unless compilation is enabled.
+                    PriorityType priority =
+                        _natvisCompilerEnabled() ? v.Visualizer.Priority : PriorityType.Medium;
+                    var score = new TypeName.MatchScore(priority);
                     if (v.ParsedName.Match(typeNameToFind, score))
                     {
                         candidates.Add(Tuple.Create(v, score));

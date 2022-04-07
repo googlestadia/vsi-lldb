@@ -10029,6 +10029,31 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
+        public async Task PriorityIsDisabledWhenNatvisExperimentsAreDisabledAsync()
+        {
+            DisableNatvisExperiments();
+
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""MyCustomType"">
+    <DisplayString>Default Priority</DisplayString>
+  </Type>
+  <Type Name=""MyCustomType"" Priority=""High"">
+    <DisplayString>High Priority</DisplayString>
+  </Type>
+</AutoVisualizer>
+";
+
+            LoadFromString(xml);
+
+            var remoteValue = RemoteValueFakeUtil.CreateClass("MyCustomType", "varName", "value");
+            var varInfo = CreateVarInfo(remoteValue);
+
+            // Note: If Priority attribute is disabled, the first visualizer in a file is preferred.
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("Default Priority"));
+        }
+
+        [Test]
         public async Task VisualizerTypeWithInheritablettributeAsync()
         {
             var xml = @"
