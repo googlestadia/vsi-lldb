@@ -470,6 +470,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 // Since higher is better, do this.CompareTo(other).
                 return Priority.CompareTo(other.Priority);
             }
+
+            public bool Equals(MatchScore other)
+            {
+                return CompareTo(other) == 0;
+            }
         }
     }
 }

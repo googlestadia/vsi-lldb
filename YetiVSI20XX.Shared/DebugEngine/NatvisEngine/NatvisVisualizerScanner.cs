@@ -355,34 +355,54 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 }
             }
 
+            if (candidates.Count == 0)
+            {
+                _visualizerCache[varTypeName] = null;
+                return null;
+            }
+
             // Sort candidates by score from the highest to the lowest.
             candidates.Sort((x, y) => y.Item2.CompareTo(x.Item2));
 
-            if (!_natvisCompilerEnabled())
+            if (_natvisCompilerEnabled())
             {
-                _visualizerCache[varTypeName] =
-                    candidates.Count > 0 ? new VisualizerInfo(candidates[0].Item1, typeNameToFind)
-                                         : null;
-                return _visualizerCache[varTypeName];
-            }
-
-            var compiler = new NatvisCompiler(_target, sbType, _logger);
-            foreach (var candidate in candidates)
-            {
-                var vizInfo = new VisualizerInfo(candidate.Item1, typeNameToFind);
-                if (await compiler.IsCompilableAsync(vizInfo))
+                var compiler = new NatvisCompiler(_target, sbType, _logger);
+                foreach (var candidate in candidates)
                 {
-                    _visualizerCache[varTypeName] = vizInfo;
-                    return vizInfo;
+                    var vizInfo = new VisualizerInfo(candidate.Item1, typeNameToFind);
+                    if (await compiler.IsCompilableAsync(vizInfo))
+                    {
+                        _visualizerCache[varTypeName] = vizInfo;
+                        return vizInfo;
+                    }
+
+                    _logger.Verbose(
+                        $"Ignoring visualizer for type '{typeNameToFind.FullyQualifiedName}' " +
+                        $"labeled as '{candidate.Item1.Visualizer.Name}'.");
                 }
-                // Otherwise there was an error. Log that the visualizer is ignored.
-                _logger.Verbose(
-                    $"Ignoring visualizer for type '{typeNameToFind.FullyQualifiedName}' " +
-                    $"labeled as '{candidate.Item1.Visualizer.Name}'.");
+
+                _visualizerCache[varTypeName] = null;
+                return null;
             }
 
-            _visualizerCache[varTypeName] = null;
-            return null;
+            // Compilation is disabled. Pick the first visualizer and issue warnings for
+            // visualizers that could have been picked if the compiler was enabled.
+            var ret = candidates.First();
+            foreach (var candidate in candidates.Skip(1))
+            {
+                if (!candidate.Item2.Equals(ret.Item2))
+                {
+                    break;
+                }
+
+                _logger.Warning("Ignoring a potentially matching visualizer for type " +
+                                $"'{typeNameToFind.FullyQualifiedName}' labeled as " +
+                                $"'{candidate.Item1.Visualizer.Name}'.");
+            }
+
+            var visualizer = new VisualizerInfo(ret.Item1, typeNameToFind);
+            _visualizerCache[varTypeName] = visualizer;
+            return visualizer;
         }
 
         public void EnableStringVisualizer()

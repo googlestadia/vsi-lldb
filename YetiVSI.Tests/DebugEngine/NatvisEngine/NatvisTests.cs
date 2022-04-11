@@ -9927,8 +9927,6 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 </AutoVisualizer>
 ";
             LoadFromString(xml);
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
-            Assert.That(nLogSpy.GetOutput(), Does.Contain("Priority"));
 
             var remoteValue =
                 RemoteValueFakeUtil.CreateClass("MyCustomType", "dummyVarName", "actualValue");
@@ -9937,6 +9935,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
             Assert.That(await varInfo.ValueAsync(), Is.EqualTo("High Priority Value"));
         }
 
@@ -10024,6 +10023,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             var varInfo = CreateVarInfo(remoteValue);
 
             Assert.That(await varInfo.ValueAsync(), Is.EqualTo("15"));
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
             // Check that CompileExpression was not called.
             await _mockTarget.DidNotReceiveWithAnyArgs().CompileExpressionAsync(default, default, default);
         }
@@ -10051,6 +10052,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Note: If Priority attribute is disabled, the first visualizer in a file is preferred.
             Assert.That(await varInfo.ValueAsync(), Is.EqualTo("Default Priority"));
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
+            Assert.That(nLogSpy.GetOutput(),
+                        Does.Contain("Ignoring a potentially matching visualizer"));
         }
 
         [Test]

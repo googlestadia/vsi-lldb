@@ -133,8 +133,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 "The <Type>/<MostDerivedType> tag is not supported."));
             validators.Add(validatorBuilder.Build(@"count(//vs:Type/vs:Version)",
                 "The <Type>/<Version> tag is not supported."));
-            validators.Add(validatorBuilder.Build(@"count(//vs:Type[@Priority])",
-                "The 'Priority' attribute is not supported on the <Type> tag."));
             validators.Add(validatorBuilder.Build(@"count(//vs:Type[@Inheritable])",
                 "The 'Inheritable' attribute is not supported on the <Type> tag."));
             validators.Add(validatorBuilder.Build(@"count(//vs:AlternativeType[@Priority])",
