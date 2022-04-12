@@ -16,11 +16,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         readonly NatvisDiagnosticLogger _logger;
         readonly VsExpressionCreator _vsExpressionCreator;
 
-        bool IsPointerType(SbType type)
-        {
-            return type != null && type.GetTypeFlags().HasFlag(TypeFlags.IS_POINTER);
-        }
-
         public NatvisCompiler(RemoteTarget target, SbType scope, NatvisDiagnosticLogger logger)
         {
             _target = target;
@@ -52,9 +47,34 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
         }
 
-        bool IsIntegerType(SbType type)
+        class TypeChecker
+        {
+            public Predicate<SbType> Predicate { get; }
+            public string Message { get; }
+
+            public TypeChecker(Predicate<SbType> predicate, string message)
+            {
+                Predicate = predicate;
+                Message = message;
+            }
+        }
+
+        readonly TypeChecker _checkPointerOrArray = new TypeChecker(
+            type => IsPointerType(type) || IsArrayType(type), "type must be a pointer or an array");
+
+        static bool IsIntegerType(SbType type)
         {
             return type != null && type.GetTypeFlags().HasFlag(TypeFlags.IS_INTEGER);
+        }
+
+        static bool IsPointerType(SbType type)
+        {
+            return type != null && type.GetTypeFlags().HasFlag(TypeFlags.IS_POINTER);
+        }
+
+        static bool IsArrayType(SbType type)
+        {
+            return type != null && type.GetTypeFlags().HasFlag(TypeFlags.IS_ARRAY);
         }
 
         /// <summary>
@@ -409,7 +429,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             foreach (var valuePointer in valuePointerGroup)
             {
                 if (!await HandleExpressionAsync(valuePointer.Condition, context) ||
-                    !await HandleExpressionAsync(valuePointer.Value, context))
+                    !await HandleExpressionAsync(valuePointer.Value, context, _checkPointerOrArray))
                 {
                     return false;
                 }
@@ -1006,7 +1026,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// Handles a single expression (including possible formatting options, e.g. ",5s").
         /// </summary>
         /// <returns>Boolean value indicating the correctness of the expression.</returns>
-        async Task<bool> HandleExpressionAsync(string expr, Context context)
+        async Task<bool> HandleExpressionAsync(string expr, Context context,
+                                               TypeChecker resultTypeChecker = null)
         {
             if (expr == null || expr == "")
             {
@@ -1030,7 +1051,19 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             expr = NatvisExpressionEvaluator.ReplaceScopedNames(vsExpression.Value,
                                                                 context.ScopedNames);
 
-            return await CompileExpressionAsync(expr, context) != null;
+            SbType result = await CompileExpressionAsync(expr, context);
+            if (result == null)
+            {
+                return false;
+            }
+
+            if (resultTypeChecker != null && !resultTypeChecker.Predicate(result))
+            {
+                _logger.Error($"(Natvis) Invalid type of '{expr}': {resultTypeChecker.Message}");
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>

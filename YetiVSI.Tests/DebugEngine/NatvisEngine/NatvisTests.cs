@@ -1930,6 +1930,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[1]",
                 RemoteValueFakeUtil.CreateClass("string", "$12", "b"));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "arraySize");
+                target.AddTypeFromExpression(arrayType, "array");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -1939,6 +1949,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("a"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("b"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -1988,6 +1999,23 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array_2)[2]",
                 RemoteValueFakeUtil.CreateClass("string", "[2]", "z"));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(boolType, "false");
+                target.AddTypeFromExpression(intType, "arraySize_0");
+                target.AddTypeFromExpression(arrayType, "array_0");
+                target.AddTypeFromExpression(boolType, "true");
+                target.AddTypeFromExpression(intType, "arraySize_1");
+                target.AddTypeFromExpression(arrayType, "array_1");
+                target.AddTypeFromExpression(intType, "arraySize_2");
+                target.AddTypeFromExpression(arrayType, "array_2");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -2006,6 +2034,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[3].ValueAsync(), Is.EqualTo("y"));
             Assert.That(children[4].DisplayName, Is.EqualTo("[2]"));
             Assert.That(await children[4].ValueAsync(), Is.EqualTo("z"));
+
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -2116,6 +2146,21 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
                 RemoteValueFakeUtil.CreateClass("string", "[0]", "a"));
             remoteValue.AddValueFromExpression("(array_1)[1]",
                 RemoteValueFakeUtil.CreateClass("string", "[1]", "b"));
+
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "arraySize");
+                target.AddTypeFromExpression(boolType, "false");
+                target.AddTypeFromExpression(arrayType, "array_0");
+                target.AddTypeFromExpression(boolType, "true");
+                target.AddTypeFromExpression(arrayType, "array_1");
+                target.AddTypeFromExpression(arrayType, "array_2");
+            }
+            _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
@@ -2249,6 +2294,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[2]",
                 RemoteValueFakeUtil.CreateSimpleChar("", 'c'));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "arraySize");
+                target.AddTypeFromExpression(arrayType, "array");
+                target.AddTypeFromExpression(intType, "childValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -2267,6 +2323,8 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(children[3].DisplayName, Is.EqualTo("ChildItem"));
             Assert.That(await children[3].ValueAsync(), Is.EqualTo("7"));
+
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -2358,6 +2416,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[0]",
                 RemoteValueFakeUtil.CreateSimpleString("[0]", "arrayElement"));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "arraySize");
+                target.AddTypeFromExpression(arrayType, "array");
+            }
+            _natvisScanner.SetTarget(target);
+
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(varInfo, Does.Not.HaveChildren());
 
@@ -2366,6 +2434,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -2391,6 +2460,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[0]",
                 RemoteValueFakeUtil.CreateSimpleString("[0]", "arrayElement"));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "arraySize");
+                target.AddTypeFromExpression(arrayType, "array");
+            }
+            _natvisScanner.SetTarget(target);
+
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(varInfo, Does.HaveChildWithValue("arrayElement"));
 
@@ -2399,6 +2478,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -2431,6 +2511,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[1]",
                 RemoteValueFakeUtil.CreateSimpleInt("$12", 23));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "arraySize");
+                target.AddTypeFromExpression(arrayType, "array");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -2440,6 +2530,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("17"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("23"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -2472,6 +2563,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[1]",
                 RemoteValueFakeUtil.CreateSimpleInt("$12", 23));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "arraySize");
+                target.AddTypeFromExpression(arrayType, "array");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -2481,6 +2582,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("17"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("23"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -2513,6 +2615,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[1]",
                 RemoteValueFakeUtil.CreateSimpleInt("$12", 23));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "arraySize");
+                target.AddTypeFromExpression(arrayType, "array");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -2522,6 +2634,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("17"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("23"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -2557,6 +2670,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[1]",
                 RemoteValueFakeUtil.CreateSimpleInt("$12", 23));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "validArraySize_1");
+                target.AddTypeFromExpression(arrayType, "array");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -2566,6 +2689,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("17"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("23"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -2647,6 +2771,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[1]",
                 RemoteValueFakeUtil.CreateSimpleInt("$12", 23));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "arraySize1");
+                target.AddTypeFromExpression(intType, "arraySize2");
+                target.AddTypeFromExpression(arrayType, "array");
+            }
+            _natvisScanner.SetTarget(target);
+
             // arraySize1=1 does not get included here, so it falls back to arraySize2=2.
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(varInfo, Does.HaveChildrenWithValues("17", "23"));
@@ -2656,6 +2791,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -2686,6 +2822,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[1]",
                 RemoteValueFakeUtil.CreateSimpleInt("$12", 23));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(intType, "arraySize1");
+                target.AddTypeFromExpression(intType, "arraySize2");
+                target.AddTypeFromExpression(arrayType, "array");
+            }
+            _natvisScanner.SetTarget(target);
+
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(varInfo, Does.HaveChildWithValue("17"));
 
@@ -2695,6 +2842,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -2729,6 +2877,20 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("(array)[1]",
                 RemoteValueFakeUtil.CreateSimpleInt("$12", 23));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var arrayType = new SbTypeStub("int[2]", TypeFlags.IS_ARRAY);
+                target.AddTypeFromExpression(boolType, "false");
+                target.AddTypeFromExpression(intType, "invalidArraySize");
+                target.AddTypeFromExpression(boolType, "true");
+                target.AddTypeFromExpression(intType, "validArraySize");
+                target.AddTypeFromExpression(arrayType, "array");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
             var children = await varInfo.GetAllChildrenAsync();
 
@@ -2738,9 +2900,59 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("17"));
             Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("23"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
-        #endregion
+        [Test]
+        public async Task ArrayItemsWithInvalidValuePointerTypeAsync()
+        {
+            if (!IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""ParentType"">
+    <Expand HideRawView=""true"">
+      <ArrayItems>
+        <Size>arraySize</Size>
+        <ValuePointer>intExpr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClass("ParentType", "parentName", "parentValue");
+
+            var arraySize = RemoteValueFakeUtil.CreateSimpleInt("arraySize", 2);
+            remoteValue.AddChild(arraySize);
+
+            var target = new RemoteTargetStub("path");
+            var intType = arraySize.GetTypeInfo();
+            target.AddTypeFromExpression(intType, "arraySize");
+            target.AddTypeFromExpression(intType, "intExpr");
+            _natvisScanner.SetTarget(target);
+
+            var varInfo = CreateVarInfo(remoteValue);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            // Assert that we only see the raw view.
+            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("parentValue"));
+            Assert.That(children.Length, Is.EqualTo(1));
+            Assert.That(children[0].DisplayName, Is.EqualTo("arraySize"));
+            Assert.That(await children[0].ValueAsync(), Is.EqualTo("2"));
+
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("ERROR"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("Invalid type of 'intExpr'"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("must be a pointer or an array"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
+        }
+
+#endregion
 
         #region ExpandedItem
 
