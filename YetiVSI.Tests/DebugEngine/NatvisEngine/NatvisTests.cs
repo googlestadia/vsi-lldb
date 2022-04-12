@@ -3754,6 +3754,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task IndexListItemsWithoutValueNodeAsync()
         {
+            if (!IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""ParentType"">
@@ -5537,13 +5542,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
-            var nodePtrType = item1.GetTypeInfo();
-            // First <LinkedListItems> isn't handled because it is optional.
-            target.AddTypeFromExpression(intType, "_listSize");
-            target.AddTypeFromExpression(nodePtrType, "_head");
-            target.AddTypeFromExpression(nodePtrType, "_next");
-            target.AddTypeFromExpression(intType, "_value");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodePtrType = item1.GetTypeInfo();
+                // First <LinkedListItems> isn't handled because it is optional.
+                target.AddTypeFromExpression(intType, "_listSize");
+                target.AddTypeFromExpression(nodePtrType, "_head");
+                target.AddTypeFromExpression(nodePtrType, "_next");
+                target.AddTypeFromExpression(intType, "_value");
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(remoteValue);
@@ -8539,18 +8547,21 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = index_var.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var nodePtrType = cur_var.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(nodePtrType, "this->head");
-            contextArgs.Add("cur", nodePtrType);
-            target.AddTypeFromExpression(intType, "0", contextArgs);
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(boolType, "outerloop_cond", contextArgs);
-            target.AddTypeFromExpression(boolType, "innerloop_cond", contextArgs);
-            target.AddTypeFromExpression(intType, "item_name", contextArgs);
-            target.AddTypeFromExpression(intType, "item_expr", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = index_var.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var nodePtrType = cur_var.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(nodePtrType, "this->head");
+                contextArgs.Add("cur", nodePtrType);
+                target.AddTypeFromExpression(intType, "0", contextArgs);
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(boolType, "outerloop_cond", contextArgs);
+                target.AddTypeFromExpression(boolType, "innerloop_cond", contextArgs);
+                target.AddTypeFromExpression(intType, "item_name", contextArgs);
+                target.AddTypeFromExpression(intType, "item_expr", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -8736,19 +8747,22 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = index_var.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var nodePtrType = cur_var.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(nodePtrType, "this->head");
-            contextArgs.Add("cur", nodePtrType);
-            target.AddTypeFromExpression(intType, "0", contextArgs);
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(boolType, "cur != nullptr", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "cur->value", contextArgs);
-            target.AddTypeFromExpression(nodePtrType, "cur = cur->next", contextArgs);
-            target.AddTypeFromExpression(intType, "index++", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = index_var.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var nodePtrType = cur_var.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(nodePtrType, "this->head");
+                contextArgs.Add("cur", nodePtrType);
+                target.AddTypeFromExpression(intType, "0", contextArgs);
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(boolType, "cur != nullptr", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "cur->value", contextArgs);
+                target.AddTypeFromExpression(nodePtrType, "cur = cur->next", contextArgs);
+                target.AddTypeFromExpression(intType, "index++", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -8808,15 +8822,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = index_var.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(intType, "0");
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(boolType, "break_condition", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "item_expr", contextArgs);
-            target.AddTypeFromExpression(intType, "index++", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = index_var.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(intType, "0");
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(boolType, "break_condition", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "item_expr", contextArgs);
+                target.AddTypeFromExpression(intType, "index++", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -8917,25 +8934,28 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = index_var.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var nodePtrType = cur_var.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(nodePtrType, "this->head");
-            contextArgs.Add("cur", cur_var.GetTypeInfo());
-            target.AddTypeFromExpression(intType, "0", contextArgs);
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(boolType, "cur != nullptr", contextArgs);
-            target.AddTypeFromExpression(boolType, "if_cond", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "if_expr", contextArgs);
-            target.AddTypeFromExpression(boolType, "elseif_cond", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "elseif_expr", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "else_expr", contextArgs);
-            target.AddTypeFromExpression(nodePtrType, "cur = cur->next", contextArgs);
-            target.AddTypeFromExpression(intType, "index++", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = index_var.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var nodePtrType = cur_var.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(nodePtrType, "this->head");
+                contextArgs.Add("cur", cur_var.GetTypeInfo());
+                target.AddTypeFromExpression(intType, "0", contextArgs);
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(boolType, "cur != nullptr", contextArgs);
+                target.AddTypeFromExpression(boolType, "if_cond", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "if_expr", contextArgs);
+                target.AddTypeFromExpression(boolType, "elseif_cond", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "elseif_expr", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "else_expr", contextArgs);
+                target.AddTypeFromExpression(nodePtrType, "cur = cur->next", contextArgs);
+                target.AddTypeFromExpression(intType, "index++", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -9040,25 +9060,28 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = index_var.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var nodePtrType = cur_var.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(nodePtrType, "this->head");
-            contextArgs.Add("cur", cur_var.GetTypeInfo());
-            target.AddTypeFromExpression(intType, "0", contextArgs);
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(boolType, "cur == nullptr", contextArgs);
-            target.AddTypeFromExpression(boolType, "if_cond", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "if_expr", contextArgs);
-            target.AddTypeFromExpression(boolType, "elseif_cond", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "elseif_expr", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "else_expr", contextArgs);
-            target.AddTypeFromExpression(nodePtrType, "cur = cur->next", contextArgs);
-            target.AddTypeFromExpression(intType, "index++", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = index_var.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var nodePtrType = cur_var.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(nodePtrType, "this->head");
+                contextArgs.Add("cur", cur_var.GetTypeInfo());
+                target.AddTypeFromExpression(intType, "0", contextArgs);
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(boolType, "cur == nullptr", contextArgs);
+                target.AddTypeFromExpression(boolType, "if_cond", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "if_expr", contextArgs);
+                target.AddTypeFromExpression(boolType, "elseif_cond", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "elseif_expr", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "else_expr", contextArgs);
+                target.AddTypeFromExpression(nodePtrType, "cur = cur->next", contextArgs);
+                target.AddTypeFromExpression(intType, "index++", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -9180,12 +9203,15 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(intType, "0");
-            contextArgs.Add("var", intType);
-            target.AddTypeFromExpression(intType, "var", contextArgs);
-            target.AddTypeFromExpression(intType, "foo", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(intType, "0");
+                contextArgs.Add("var", intType);
+                target.AddTypeFromExpression(intType, "var", contextArgs);
+                target.AddTypeFromExpression(intType, "foo", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -9381,14 +9407,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = index_var.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(intType, "0");
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(boolType, "index < 100", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = index_var.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(intType, "0");
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(boolType, "index < 100", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -9453,14 +9482,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = index_var.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(intType, "0");
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(boolType, "index < 100", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = index_var.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(intType, "0");
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(boolType, "index < 100", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -9525,14 +9557,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = index_var.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(intType, "0");
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(boolType, "index < 2", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = index_var.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(intType, "0");
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(boolType, "index < 2", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -9586,13 +9621,16 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = indexVar.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(intType, "0");
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(intType, "5", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = indexVar.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(intType, "0");
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(intType, "5", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -9649,17 +9687,20 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = indexVar.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(intType, "0");
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(boolType, "false", contextArgs);
-            target.AddTypeFromExpression(intType, "5", contextArgs);
-            target.AddTypeFromExpression(boolType, "true", contextArgs);
-            target.AddTypeFromExpression(intType, "6", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = indexVar.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(intType, "0");
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(boolType, "false", contextArgs);
+                target.AddTypeFromExpression(intType, "5", contextArgs);
+                target.AddTypeFromExpression(boolType, "true", contextArgs);
+                target.AddTypeFromExpression(intType, "6", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -9715,17 +9756,20 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = indexVar.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(intType, "0");
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(boolType, "cond1", contextArgs);
-            target.AddTypeFromExpression(intType, "5", contextArgs);
-            target.AddTypeFromExpression(boolType, "cond2", contextArgs);
-            target.AddTypeFromExpression(intType, "6", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = indexVar.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(intType, "0");
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(boolType, "cond1", contextArgs);
+                target.AddTypeFromExpression(intType, "5", contextArgs);
+                target.AddTypeFromExpression(boolType, "cond2", contextArgs);
+                target.AddTypeFromExpression(intType, "6", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -9823,17 +9867,20 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             list.AddValueFromExpression("index < 2",
                                         RemoteValueFakeUtil.CreateSimpleBool("tmp", false));
 
-            // Setup fake target.
             var target = new RemoteTargetStub("path");
-            var intType = indexVar.GetTypeInfo();
-            var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
-            var contextArgs = new Dictionary<string, SbType>();
-            target.AddTypeFromExpression(intType, "0");
-            contextArgs.Add("index", intType);
-            target.AddTypeFromExpression(intType, "4", contextArgs);
-            target.AddTypeFromExpression(boolType, "index < 2", contextArgs);
-            target.AddTypeFromExpression(intType, "index", contextArgs);
-            target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            if (IsNatvisCompilerEnabled())
+            {
+                // Setup expressions to be compiled. This feature isn't enabled for LLDB.
+                var intType = indexVar.GetTypeInfo();
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                var contextArgs = new Dictionary<string, SbType>();
+                target.AddTypeFromExpression(intType, "0");
+                contextArgs.Add("index", intType);
+                target.AddTypeFromExpression(intType, "4", contextArgs);
+                target.AddTypeFromExpression(boolType, "index < 2", contextArgs);
+                target.AddTypeFromExpression(intType, "index", contextArgs);
+                target.AddTypeFromExpression(intType, "index += 1", contextArgs);
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(list);
@@ -9934,9 +9981,20 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             nLogSpy.Clear();
             var varInfo = CreateVarInfo(remoteValue);
 
-            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
-            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
-            Assert.That(await varInfo.ValueAsync(), Is.EqualTo("High Priority Value"));
+            if (IsNatvisCompilerEnabled())
+            {
+                Assert.That(await varInfo.ValueAsync(), Is.EqualTo("High Priority Value"));
+                Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+                Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
+            }
+            else
+            {
+                // Priority is disabled for LLDB.
+                Assert.That(await varInfo.ValueAsync(), Is.EqualTo("Low Priority Value"));
+                Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+                Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
+                Assert.That(nLogSpy.GetOutput(), Does.Contain("Priority"));
+            }
         }
 
         [Test]
@@ -9966,6 +10024,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task VisualizerWithHighPriorityDoesNotCompileAsync()
         {
+            if (!IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""MyCustomType"" Priority=""Low"">
@@ -10538,6 +10601,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task SizeSpecifierFailsToCompileAsync()
         {
+            if (!IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomType"">
@@ -10570,6 +10638,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task SizeSpecifierIsNotIntegerAsync()
         {
+            if (!IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomType"">
@@ -10584,9 +10657,12 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(strChild);
 
             var target = new RemoteTargetStub("path");
-            target.AddTypeFromExpression(strChild.GetTypeInfo(), "bad_expr");
-            // Note: compilation of "bad_expr" takes place before "str". Since "bad_expr" fails on
-            // type checking, "str" is not reached.
+            if (IsNatvisCompilerEnabled())
+            {
+                target.AddTypeFromExpression(strChild.GetTypeInfo(), "bad_expr");
+                // Note: compilation of "bad_expr" takes place before "str". Since "bad_expr" fails
+                // on type checking, "str" is not reached.
+            }
             _natvisScanner.SetTarget(target);
 
             var varInfo = CreateVarInfo(remoteValue);
@@ -11140,6 +11216,13 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         {
             compRoot.GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] =
                 DebuggerOptionState.DISABLED;
+        }
+
+        bool IsNatvisCompilerEnabled()
+        {
+            return _expressionEvaluationEngineFlag != ExpressionEvaluationEngineFlag.LLDB &&
+                   compRoot.GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] ==
+                       DebuggerOptionState.ENABLED;
         }
 
 #endregion

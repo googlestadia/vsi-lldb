@@ -65,11 +65,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         readonly JoinableTaskContext _taskContext;
         private RemoteTarget _target;
         // Should we load the entire natvis (or just built-in visualizers)?
-        readonly bool _loadEntireNatvis = false;
+        readonly Func<bool> _loadEntireNatvis;
         readonly Func<bool> _natvisCompilerEnabled;
 
         public NatvisVisualizerScanner(NatvisDiagnosticLogger logger, NatvisLoader natvisLoader,
-                                       JoinableTaskContext taskContext, bool loadEntireNatvis,
+                                       JoinableTaskContext taskContext, Func<bool> loadEntireNatvis,
                                        Func<bool> natvisCompilerEnabled)
         {
             _logger = logger;
@@ -97,7 +97,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             InitDataStructures();
             // Load Natvis files (from registry root and project).
             // TODO: Consider handling changes to this option in runtime.
-            if (_loadEntireNatvis)
+            if (_loadEntireNatvis())
             {
                 _natvisLoader.Reload(_typeVisualizers);
             }
@@ -328,6 +328,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             CreateCustomVisualizers();
         }
 
+        public void InvalidateCache()
+        {
+            _visualizerCache.Clear();
+        }
+
         async Task<VisualizerInfo> ScanAsync(string varTypeName, TypeName typeNameToFind,
                                              SbType sbType)
         {
@@ -344,7 +349,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 // TODO: match on version, etc
                 foreach (TypeInfo v in fileInfo.Visualizers)
                 {
-                    // Disable priority unless compilation is enabled.
+                    // Priority is enabled if compilation is enabled.
                     PriorityType priority =
                         _natvisCompilerEnabled() ? v.Visualizer.Priority : PriorityType.Medium;
                     var score = new TypeName.MatchScore(priority);
@@ -366,6 +371,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
             if (_natvisCompilerEnabled())
             {
+                // TODO: Handle compilation differently for lldb-eval and lldb-eval
+                // with fallback. In the case of lldb-eval with fallback, we should fallback to the
+                // next possible visualizer only in the case of "safe errors" (that are expected
+                // regardless of the method used).
                 var compiler = new NatvisCompiler(_target, sbType, _logger);
                 foreach (var candidate in candidates)
                 {
@@ -397,7 +406,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
 
                 _logger.Warning("Ignoring a potentially matching visualizer for type " +
                                 $"'{typeNameToFind.FullyQualifiedName}' labeled as " +
-                                $"'{candidate.Item1.Visualizer.Name}'.");
+                                $"'{candidate.Item1.Visualizer.Name}'. Priority attribute and " +
+                                "compilation of Natvis disabled for LLDB.");
             }
 
             var visualizer = new VisualizerInfo(ret.Item1, typeNameToFind);

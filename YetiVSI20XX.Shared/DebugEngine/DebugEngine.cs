@@ -437,6 +437,12 @@ namespace YetiVSI.DebugEngine
             {
                 _natvisLogger?.SetLogLevel(_extensionOptions.NatvisLoggingLevel);
             }
+            else if (e.PropertyName == nameof(OptionPageGrid.ExpressionEvaluationEngine))
+            {
+                // Using a different expression evaluation engine may change which visualizer is
+                // used for a particular type.
+                _natvisExpander?.VisualizerScanner.InvalidateCache();
+            }
         }
 
         void OnDebuggerOptionChanged(object sender, ValueChangedEventArgs args)
@@ -445,10 +451,9 @@ namespace YetiVSI.DebugEngine
 
             if (args.Option == DebuggerOption.NATVIS_EXPERIMENTAL)
             {
-                // TODO: Enable/disable natvis experimental features. Current use of
-                // the experimental flag is CustomListItems which is polling for updates. We should
-                // examine whether or not polling will work in all cases and if so, remove this
-                // code.
+                // Switching Natvis experimental flag may change which visualizer is used for a
+                // particular type.
+                _natvisExpander?.VisualizerScanner.InvalidateCache();
             }
         }
 

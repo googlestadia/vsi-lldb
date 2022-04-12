@@ -470,24 +470,30 @@ namespace YetiVSI.DebugEngine
             return _natvisLogger;
         }
 
+        bool GetNatvisCompilationEnabled()
+        {
+            return GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] ==
+                       DebuggerOptionState.ENABLED &&
+                   GetVsiService().Options.ExpressionEvaluationStrategy !=
+                       ExpressionEvaluationStrategy.LLDB;
+        }
+
+        bool GetFullNatvisSupportEnabled()
+        {
+            return GetVsiService().Options.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED;
+        }
+
         public NatvisVisualizerScanner GetNatvisVisualizerScanner()
         {
             if (_natvisVisualizerScanner == null)
             {
-                bool fullNatvisSupportEnabled =
-                    GetVsiService().Options.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED;
-
                 _natvisVisualizerScanner = new NatvisVisualizerScanner(
                     GetNatvisDiagnosticLogger(), GetNatvisLoader(), GetJoinableTaskContext(),
-                    fullNatvisSupportEnabled, natvisCompilerEnabled: GetNatvisExperimentsEnabled);
+                    GetFullNatvisSupportEnabled, GetNatvisCompilationEnabled);
             }
 
             return _natvisVisualizerScanner;
         }
-
-        public bool GetNatvisExperimentsEnabled() =>
-            GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] ==
-            DebuggerOptionState.ENABLED;
 
         public virtual ITaskExecutor GetTaskExecutor()
         {
