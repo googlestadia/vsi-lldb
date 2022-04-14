@@ -348,7 +348,20 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void HandleEventExecWorkerThread()
+        public void HandleEventExecWorkerThreadContinuesPastFirstEvent()
+        {
+            MockThread(_mockRemoteThread, StopReason.NONE, new List<ulong>());
+            var mockWorkerThread = Substitute.For<RemoteThread>();
+            MockThread(mockWorkerThread, StopReason.EXEC, new List<ulong>());
+            MockProcess(new List<RemoteThread> { _mockRemoteThread, mockWorkerThread });
+
+            RaiseSingleStateChanged();
+
+            _mockSbProcess.Received(1).Continue();
+        }
+
+        [Test]
+        public void HandleEventExecWorkerThreadStopsOnNextEvent()
         {
             MockThread(_mockRemoteThread, StopReason.NONE, new List<ulong>());
             var mockWorkerThread = Substitute.For<RemoteThread>();
@@ -358,10 +371,12 @@ namespace YetiVSI.Test.DebugEngine
             MockProcess(new List<RemoteThread> { _mockRemoteThread, mockWorkerThread });
 
             RaiseSingleStateChanged();
+            // Now pretend a second event occurred.
+            RaiseSingleStateChanged();
 
-            _mockDebugEngineHandler.Received(1).SendEvent(
-                Arg.Any<BreakEvent>(), _mockProgram, mockWorkerThread);
-            _mockSbProcess.Received(1).SetSelectedThreadById(mockWorkerThreadId);
+            _mockDebugEngineHandler.Received(1).SendEvent(Arg.Any<BreakEvent>(), _mockProgram,
+                                                          mockWorkerThread);
+            _mockSbProcess.Received(2).SetSelectedThreadById(mockWorkerThreadId);
         }
 
         [Test]

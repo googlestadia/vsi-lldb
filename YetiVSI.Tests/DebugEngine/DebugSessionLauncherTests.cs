@@ -467,7 +467,7 @@ namespace YetiVSI.Test.DebugEngine
             var platformName = stadiaPlatformAvailable
                 ? "remote-stadia"
                 : "remote-linux";
-            _platformFactory.AddFakeProcess(platformName, _gameBinary, 44);
+            _platformFactory.AddFakeProcess(platformName, "sh", 44);
             var exceptionManagerFactory =
                 new LldbExceptionManager.Factory(new Dictionary<int, Signal>());
             var connectOptionsFactory = new GrpcPlatformConnectOptionsFactory();

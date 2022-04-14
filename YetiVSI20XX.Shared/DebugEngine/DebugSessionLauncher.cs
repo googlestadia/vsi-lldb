@@ -709,7 +709,9 @@ namespace YetiVSI.DebugEngine
         bool GetRemoteProcessId(string executable, SbPlatform platform, out uint pid)
         {
             pid = 0;
-            var shellCommand = _lldbPlatformShellCommandFactory.Create($"pidof \"{executable}\"");
+            string cmd =
+                $"for i in /proc/*/cmdline; do if cat $i | tr \"\\0\" \" \" | grep -q \"{executable}\"; then echo \"$i\"; break; fi; done | egrep -o \"[0-9]+\"";
+            var shellCommand = _lldbPlatformShellCommandFactory.Create(cmd);
             if (platform == null)
             {
                 Trace.WriteLine("Unable to find process, no platform selected");

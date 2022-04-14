@@ -130,11 +130,11 @@ namespace YetiVSI.Test.TestSupport.Lldb
                 }
 
                 var commandText = command.GetCommand();
-                if (commandText.StartsWith("pidof"))
+                if (commandText.Contains("/proc/*/cmdline"))
                 {
-                    var processName = commandText.Substring("pidof".Length + 1)
-                        .TrimStart('"')
-                        .TrimEnd('"');
+                    // We're always looking for the 'sh' process when executing a command
+                    // with this location.
+                    var processName = "sh";
                     var process = _processes.FirstOrDefault(p => p.Name == processName);
                     if (process == null)
                     {

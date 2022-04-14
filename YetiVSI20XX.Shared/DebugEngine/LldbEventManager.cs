@@ -58,6 +58,12 @@ namespace YetiVSI.DebugEngine
 
         public bool IsRunning => _lldbListenerSubscriber.IsRunning;
         bool _subscribedToEvents = false;
+        /// <summary>
+        /// Controls whether or not we break on exec calls. Initially set to false, but after the
+        /// first exec event is set back to true. This is because our launcher process (/bin/sh)
+        /// execs out to the real game binary, and it is always the first exec.
+        /// </summary>
+        bool _shouldBreakOnExec = false;
 
         LldbEventManager(IDebugEngineHandler debugEngineHandler,
                          IBreakpointManager breakpointManager,
@@ -264,6 +270,17 @@ namespace YetiVSI.DebugEngine
                         case StopReason.PLAN_COMPLETE:
                             eventToSend = new StepCompleteEvent();
                             break;
+                        case StopReason.EXEC:
+                            if (_shouldBreakOnExec)
+                            {
+                                // Breaking here forces the VS to break on the exec event.
+                                break;
+                            }
+                            _shouldBreakOnExec = true;
+                            // Skip over this stop. See the discussion in the comment on the
+                            // _shouldBreakOnExec instance variable.
+                            this._lldbProcess.Continue();
+                            return;
                         default:
                             break;
                         }

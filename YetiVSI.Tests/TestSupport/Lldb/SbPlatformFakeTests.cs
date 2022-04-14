@@ -32,6 +32,7 @@ namespace YetiVSI.Test.TestSupport.Lldb
         {
             var factory = new GrpcPlatformFactoryFake(null);
             factory.AddFakeProcess("linux-remote", "myGame", 2222);
+            factory.AddFakeProcess("linux-remote", "sh", 2221);
             factory.AddFakeProcess("linux-remote", "ssh", 443244);
             factory.AddFakeProcess("linux-remote", "blah", 4545);
 
@@ -61,22 +62,12 @@ namespace YetiVSI.Test.TestSupport.Lldb
         }
 
         [Test]
-        public void TestRunPidCommandWithUnknownProcess()
+        public void TestRunPidCommand()
         {
-            var result = platform.Run(shellCommandFactory.Create("pidof \"test.exe\""));
-            Assert.That(result.Success(), Is.False);
-            Assert.That(result.GetCString(), Does.Contain("unknown process"));
-            Assert.That(result.GetCString(), Does.Contain("test.exe"));
-        }
-
-        [Test, Sequential]
-        public void TestRunPidCommand([Values("myGame", "ssh", "blah")] string process,
-            [Values(2222, 443244, 4545)] int pid)
-        {
-            var cmd = shellCommandFactory.Create($"pidof \"{process}\"");
+            var cmd = shellCommandFactory.Create("blah blah /proc/*/cmdline blah blah");
             var result = platform.Run(cmd);
             Assert.That(result.Success(), Is.True);
-            Assert.That(cmd.GetOutput(), Is.EqualTo(pid.ToString()));
+            Assert.That(cmd.GetOutput(), Is.EqualTo("2221"));
         }
     }
 }
