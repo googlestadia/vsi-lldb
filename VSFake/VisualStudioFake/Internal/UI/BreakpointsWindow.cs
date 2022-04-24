@@ -288,7 +288,10 @@ namespace Google.VisualStudioFake.Internal.UI
 
                 breakpoint.State = BreakpointState.Deleted;
                 _breakpoints.Remove(breakpoint);
-                _pendingToBreakpoint.Remove(breakpoint.PendingBreakpoint);
+                if (breakpoint.PendingBreakpoint != null)
+                {
+                    _pendingToBreakpoint.Remove(breakpoint.PendingBreakpoint);
+                }
             }, $"Delete breakpoint ({breakpoint})"));
         }
 
