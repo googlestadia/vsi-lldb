@@ -15,6 +15,7 @@
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,9 +48,11 @@ namespace YetiVSITestsCommon
         /// </summary>
         public JoinableTaskContext JoinableTaskContext { get; }
 
+        readonly Dictionary<string, object> _threadHelperSavedFields =
+            new Dictionary<string, object>();
+
         readonly Thread _mainThread;
         readonly Dispatcher _dispatcher;
-        readonly object _savedDispatcher;
 
         /// <summary>
         /// Creates a new FakeMainThreadContext and spins up a new thread.
@@ -83,10 +86,16 @@ namespace YetiVSITestsCommon
             // for tests.
             // Some code in the extension uses ThreadHelper, which points to global Dispatcher and
             // TaskContext by default. In tests we need to point it to our "fake" context.
-            var uiThreadDispatcher = typeof(ThreadHelper)
-                .GetField("uiThreadDispatcher", BindingFlags.Static | BindingFlags.NonPublic);
-            _savedDispatcher = uiThreadDispatcher.GetValue(null);
-            uiThreadDispatcher.SetValue(null, _dispatcher);
+            PatchThreadHelperField("uiThreadDispatcher", _dispatcher);
+            PatchThreadHelperField("_joinableTaskContextCache", JoinableTaskContext);
+
+            void PatchThreadHelperField(string field, object newValue)
+            {
+                var fieldInfo = typeof(ThreadHelper).GetField(
+                    field, BindingFlags.Static | BindingFlags.NonPublic);
+                _threadHelperSavedFields[field] = fieldInfo.GetValue(null);
+                fieldInfo.SetValue(null, newValue);
+            }
         }
 
         /// <summary>
@@ -99,10 +108,13 @@ namespace YetiVSITestsCommon
             _dispatcher.InvokeShutdown();
             _mainThread.Join();
 
-            // Restore the original dispatcher.
-            typeof(ThreadHelper)
-                .GetField("uiThreadDispatcher", BindingFlags.Static | BindingFlags.NonPublic)
-                .SetValue(null, _savedDispatcher);
+            // Restore original ThreadHelper fields.
+            foreach (var kv in _threadHelperSavedFields)
+            {
+                typeof(ThreadHelper)
+                    .GetField(kv.Key, BindingFlags.Static | BindingFlags.NonPublic)
+                    .SetValue(null, kv.Value);
+            }
         }
     }
 }

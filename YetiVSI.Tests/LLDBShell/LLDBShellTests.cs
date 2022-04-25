@@ -13,54 +13,44 @@
 // limitations under the License.
 
 using DebuggerApi;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
-using System;
 using TestsCommon.TestSupport;
+using YetiVSITestsCommon;
+using Task = System.Threading.Tasks.Task;
 
 namespace YetiVSI.Test.LLDBShell
 {
     [TestFixture]
     class LLDBShellTests
     {
-        private JoinableTaskContext taskContext;
+        FakeMainThreadContext mainThreadContext;
 
-        // Test target.
-        private YetiVSI.LLDBShell.ILLDBShell shell;
-
-        private SbDebugger debuggerMock;
-
-        private SbCommandInterpreter commandInterpreterMock;
-
-        private SbCommandReturnObject returnObjectMock;
-
-        // Used to satisfy out argument requirements when verifying HandleCommand() was not called.
-        private SbCommandReturnObject dummyReturnObject;
-
-        private IVsCommandWindow commandWindowMock;
+        YetiVSI.LLDBShell.ILLDBShell shell;
+        SbDebugger debuggerMock;
+        SbCommandInterpreter commandInterpreterMock;
+        SbCommandReturnObject returnObjectMock;
+        IVsCommandWindow commandWindowMock;
 
         // Captures all the text output to the |commandWindowMock|.
-        private string commandWindowText;
+        string commandWindowText;
 
-        private const string DUMMY_COMMAND = "dummy command";
+        const string DUMMY_COMMAND = "dummy command";
+        const string COMMAND_DESCRIPTION = "$omeRandomCmdDescription";
 
-        private const string COMMAND_DESCRIPTION = "$omeRandomCmdDescription";
-
-        private LogSpy logSpy;
-
-        private CommandWindowWriter commandWindowWriter;
+        LogSpy logSpy;
+        CommandWindowWriter commandWindowWriter;
 
         [SetUp]
         public void SetUp()
         {
+            mainThreadContext = new FakeMainThreadContext();
+
             logSpy = new LogSpy();
             logSpy.Attach();
-
-#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
-            taskContext = new JoinableTaskContext();
-#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             returnObjectMock = Substitute.For<SbCommandReturnObject>();
             returnObjectMock.GetDescription().Returns(COMMAND_DESCRIPTION);
@@ -79,9 +69,9 @@ namespace YetiVSI.Test.LLDBShell
             commandWindowMock.Print(Arg.Do<string>(x => commandWindowText += x));
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
-            commandWindowWriter = new CommandWindowWriter(taskContext, commandWindowMock);
+            commandWindowWriter = new CommandWindowWriter(commandWindowMock);
 
-            shell = new YetiVSI.LLDBShell.LLDBShell(taskContext, commandWindowWriter);
+            shell = new YetiVSI.LLDBShell.LLDBShell(commandWindowWriter);
             shell.AddDebugger(debuggerMock);
         }
 
@@ -89,11 +79,14 @@ namespace YetiVSI.Test.LLDBShell
         public void Cleanup()
         {
             logSpy.Detach();
+            mainThreadContext.Dispose();
         }
 
         [Test]
-        public void ExecuteCommandWithNoDebugger()
+        public async Task ExecuteCommandWithNoDebuggerAsync()
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             ClearDebuggers();
 
             shell.ExecuteCommand(DUMMY_COMMAND);
@@ -101,12 +94,14 @@ namespace YetiVSI.Test.LLDBShell
             Assert.That(commandWindowText, Does.Contain("ERROR"));
             Assert.That(logSpy.GetOutput(), Does.Contain("ERROR"));
             commandInterpreterMock.DidNotReceiveWithAnyArgs().HandleCommand(Arg.Any<string>(),
-                out dummyReturnObject);
+                out _);
         }
 
         [Test]
-        public void ExecuteCommandWithMultipleDebuggers()
+        public async Task ExecuteCommandWithMultipleDebuggersAsync()
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             var secondDebuggerMock = Substitute.For<SbDebugger>();
 
             ClearDebuggers();
@@ -122,14 +117,16 @@ namespace YetiVSI.Test.LLDBShell
             debuggerMock.DidNotReceive().GetCommandInterpreter();
             secondDebuggerMock.DidNotReceive().GetCommandInterpreter();
             commandInterpreterMock.DidNotReceiveWithAnyArgs().HandleCommand(Arg.Any<string>(),
-                out dummyReturnObject);
+                out _);
 
             Assert.That(logSpy.GetOutput(), Does.Contain(DUMMY_COMMAND));
         }
 
         [Test]
-        public void ExecuteCommandWithNoCommandInterpreter()
+        public async Task ExecuteCommandWithNoCommandInterpreterAsync()
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             debuggerMock.GetCommandInterpreter().Returns((SbCommandInterpreter)null);
 
             shell.ExecuteCommand(DUMMY_COMMAND);
@@ -137,12 +134,14 @@ namespace YetiVSI.Test.LLDBShell
             Assert.That(commandWindowText, Does.Contain("ERROR"));
             Assert.That(logSpy.GetOutput(), Does.Contain("ERROR"));
             commandInterpreterMock.DidNotReceiveWithAnyArgs().HandleCommand(Arg.Any<string>(),
-                out dummyReturnObject);
+                out _);
         }
 
         [Test]
-        public void ExecuteCommandWithNullResult()
+        public async Task ExecuteCommandWithNullResultAsync()
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             commandInterpreterMock.WhenForAnyArgs(x => x.HandleCommand(DUMMY_COMMAND,
                 out returnObjectMock)).Do(x => x[1] = null);
 
@@ -153,8 +152,10 @@ namespace YetiVSI.Test.LLDBShell
         }
 
         [Test]
-        public void ExecuteCommandSuccessfully()
+        public async Task ExecuteCommandSuccessfullyAsync()
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             shell.ExecuteCommand(DUMMY_COMMAND);
 
             Assert.That(commandWindowText, Does.Contain(COMMAND_DESCRIPTION));
@@ -165,13 +166,15 @@ namespace YetiVSI.Test.LLDBShell
         }
 
         [Test]
-        public void ExecuteCommandWithNoCommandWindow()
+        public async Task ExecuteCommandWithNoCommandWindowAsync()
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             // CommandWindowWriter grabs the SVsCommandWindow once in the constructor. If we change
             // the service provide mock we need to create a new CommandwindowWriter to pick up the
             // change.
-            commandWindowWriter = new CommandWindowWriter(taskContext, null);
-            shell = new YetiVSI.LLDBShell.LLDBShell(taskContext, commandWindowWriter);
+            commandWindowWriter = new CommandWindowWriter(null);
+            shell = new YetiVSI.LLDBShell.LLDBShell(commandWindowWriter);
             shell.AddDebugger(debuggerMock);
 
             shell.ExecuteCommand(DUMMY_COMMAND);

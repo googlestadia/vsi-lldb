@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Threading;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using EnvDTE;
 using EnvDTE80;
+using Metrics;
 using Metrics.Shared;
+using Microsoft;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiCommon.Logging;
 using YetiVSI.Attributes;
@@ -32,11 +33,10 @@ using YetiVSI.DebugEngine;
 using YetiVSI.DebuggerOptions;
 using YetiVSI.LLDBShell;
 using YetiVSI.LoadSymbols;
-using Metrics;
+using YetiVSI.Metrics;
 using YetiVSI.Profiling;
 using static YetiVSI.DebuggerOptions.DebuggerOptions;
 using Task = System.Threading.Tasks.Task;
-using YetiVSI.Metrics;
 
 namespace YetiVSI
 {
@@ -106,8 +106,8 @@ namespace YetiVSI
                                                "Orbit CPU Profiler", dialogUtil);
             LaunchWithProfilerCommand.Register(this, ProfilerType.Dive,
                                                "Dive GPU Profiler", dialogUtil);
-            LLDBShellCommandTarget.Register(ThreadHelper.JoinableTaskContext, this);
-            DebuggerOptionsCommand.Register(ThreadHelper.JoinableTaskContext, this);
+            LLDBShellCommandTarget.Register(this);
+            DebuggerOptionsCommand.Register(this);
 
             await ReportBug.InitializeAsync(this);
         }
@@ -129,10 +129,8 @@ namespace YetiVSI
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var vsCommandWindow =
                 (IVsCommandWindow)await GetServiceAsync(typeof(SVsCommandWindow));
-            var commandWindowWriter = new CommandWindowWriter(
-                ThreadHelper.JoinableTaskContext, vsCommandWindow);
-            return new LLDBShell.LLDBShell(
-                ThreadHelper.JoinableTaskContext, commandWindowWriter);
+            var commandWindowWriter = new CommandWindowWriter(vsCommandWindow);
+            return new LLDBShell.LLDBShell(commandWindowWriter);
         }
 
         async Task<object> CreateSMetricsAsync(IAsyncServiceContainer container,

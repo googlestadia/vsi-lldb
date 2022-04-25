@@ -13,32 +13,26 @@
 // limitations under the License.
 
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Threading;
+using Microsoft.VisualStudio.Shell;
 using System;
 using System.Diagnostics;
-using YetiVSI.Util;
 
 namespace YetiVSI
 {
     // Prints messages to a Command Window.
     public class CommandWindowWriter
     {
-        private JoinableTaskContext taskContext;
         private IVsCommandWindow commandWindow;
 
-        public CommandWindowWriter(JoinableTaskContext taskContext,
-            IVsCommandWindow commandWindow)
+        public CommandWindowWriter(IVsCommandWindow commandWindow)
         {
-            taskContext.ThrowIfNotOnMainThread();
-
-            this.taskContext = taskContext;
             this.commandWindow = commandWindow;
         }
 
         // Outputs an error message to the logs and a Command Window (if one exists).
         public void PrintErrorMsg(string message)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             Trace.WriteLine(message);
             commandWindow?.Print(message + Environment.NewLine);
@@ -46,7 +40,7 @@ namespace YetiVSI
 
         public void PrintLine(string message)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             Print(message + Environment.NewLine);
         }
@@ -54,7 +48,7 @@ namespace YetiVSI
         // Outputs a message to a Command Window (if one exists).
         public void Print(string message)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             if (commandWindow == null)
             {

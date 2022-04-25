@@ -176,13 +176,10 @@ namespace YetiVSI.DebuggerOptions
         /// </summary>
         class CommandTextWriter : TextWriter
         {
-            readonly JoinableTaskContext taskContext;
             readonly CommandWindowWriter cmdWindowWriter;
 
-            public CommandTextWriter(JoinableTaskContext taskContext,
-                CommandWindowWriter cmdWindowWriter)
+            public CommandTextWriter(CommandWindowWriter cmdWindowWriter)
             {
-                this.taskContext = taskContext;
                 this.cmdWindowWriter = cmdWindowWriter;
             }
 
@@ -190,21 +187,21 @@ namespace YetiVSI.DebuggerOptions
 
             public override void Write(string value)
             {
-                taskContext.ThrowIfNotOnMainThread();
+                ThreadHelper.ThrowIfNotOnUIThread();
 
                 cmdWindowWriter.Print(value);
             }
 
             public override void WriteLine(string value)
             {
-                taskContext.ThrowIfNotOnMainThread();
+                ThreadHelper.ThrowIfNotOnUIThread();
 
                 cmdWindowWriter.PrintLine(value);
             }
 
             public override void Write(char c)
             {
-                taskContext.ThrowIfNotOnMainThread();
+                ThreadHelper.ThrowIfNotOnUIThread();
 
                 cmdWindowWriter.Print($"{c}");
             }
@@ -212,15 +209,13 @@ namespace YetiVSI.DebuggerOptions
 
         readonly IDebugEngineManager debugEngineManager;
         readonly YetiVSIService vsiService;
-        readonly JoinableTaskContext taskContext;
         readonly CommandWindowWriter commandWindowWriter;
 
-        static public DebuggerOptionsCommand Register(JoinableTaskContext taskContext,
-            IServiceProvider serviceProvider)
+        static public DebuggerOptionsCommand Register(IServiceProvider serviceProvider)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
-            var menuCommand = new DebuggerOptionsCommand(taskContext,
+            var menuCommand = new DebuggerOptionsCommand(
                 (YetiVSIService)serviceProvider.GetService(typeof(YetiVSIService)),
                 (IDebugEngineManager)serviceProvider.GetService(typeof(SDebugEngineManager)),
                 (IVsCommandWindow)serviceProvider.GetService(typeof(SVsCommandWindow)),
@@ -229,19 +224,18 @@ namespace YetiVSI.DebuggerOptions
             return menuCommand;
         }
 
-        DebuggerOptionsCommand(JoinableTaskContext taskContext,
+        DebuggerOptionsCommand(
             YetiVSIService vsiService,
             IDebugEngineManager debugEngineManager,
             IVsCommandWindow commandWindow,
             IMenuCommandService menuCommandService)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
-            this.taskContext = taskContext;
             this.debugEngineManager = debugEngineManager;
             this.vsiService = vsiService;
 
-            commandWindowWriter = new CommandWindowWriter(taskContext, commandWindow);
+            commandWindowWriter = new CommandWindowWriter(commandWindow);
             var menuCommand = new OleMenuCommand(HandleCommand,
                 new CommandID(YetiConstants.CommandSetGuid, PkgCmdID.cmdidDebuggerOptionsCommand));
             // Accept any parameter value.
@@ -253,7 +247,7 @@ namespace YetiVSI.DebuggerOptions
         {
             try
             {
-                taskContext.ThrowIfNotOnMainThread();
+                ThreadHelper.ThrowIfNotOnUIThread();
 
                 var cmdEventArgs = eventArgs as OleMenuCmdEventArgs;
                 if (cmdEventArgs == null || !(cmdEventArgs.InValue is string))
@@ -286,12 +280,12 @@ namespace YetiVSI.DebuggerOptions
 
         CommandLineApplication BuildCommandParser()
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             var stadiaCmd = new CommandLineApplication();
             stadiaCmd.MakeSuggestionsInErrorMessage = true;
 
-            var cmdTextWriter = new CommandTextWriter(taskContext, commandWindowWriter);
+            var cmdTextWriter = new CommandTextWriter(commandWindowWriter);
             stadiaCmd.Error = cmdTextWriter;
             stadiaCmd.Out = cmdTextWriter;
 
@@ -388,7 +382,7 @@ namespace YetiVSI.DebuggerOptions
 
         void SetFeatureConfig(DebuggerOptionState optionState, IEnumerable<string> arguments)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             var stringBuilder = new StringBuilder();
             foreach (var argument in arguments)
@@ -417,7 +411,7 @@ namespace YetiVSI.DebuggerOptions
 
         void PrintListFeatureHint()
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             commandWindowWriter.PrintErrorMsg(
                 "No options specified.  Use 'Stadia.Debugger list' to view valid option names.");
@@ -425,7 +419,7 @@ namespace YetiVSI.DebuggerOptions
 
         void PrintFeatureConfig()
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             var output = new StringBuilder();
             foreach (var option in vsiService.DebuggerOptions)
@@ -442,7 +436,7 @@ namespace YetiVSI.DebuggerOptions
 
         void ResetFeatureConfig()
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             vsiService.DebuggerOptions.Reset();
             commandWindowWriter.PrintLine("All options reset to default values.");
@@ -450,7 +444,7 @@ namespace YetiVSI.DebuggerOptions
 
         void LogNatvisStats(int verbosityLevel)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             var debugEngine = TryGetDebugEngine();
             if (debugEngine == null)
@@ -468,7 +462,7 @@ namespace YetiVSI.DebuggerOptions
 
         IGgpDebugEngine TryGetDebugEngine()
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             var debugEngines = debugEngineManager.GetDebugEngines();
             // TODO: Provide a mechanism for the client to pick which debugger to dispatch

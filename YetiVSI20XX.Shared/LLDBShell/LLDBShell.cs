@@ -16,8 +16,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using DebuggerApi;
-using Microsoft.VisualStudio.Threading;
-using YetiVSI.Util;
+using Microsoft.VisualStudio.Shell;
 
 namespace YetiVSI.LLDBShell
 {
@@ -28,98 +27,80 @@ namespace YetiVSI.LLDBShell
     // added one.  We track multiple for debugging and error reporting purposes.
     public sealed class LLDBShell : SLLDBShell, ILLDBShell
     {
-        private JoinableTaskContext taskContext;
-        private CommandWindowWriter commandWindowWriter;
+        readonly CommandWindowWriter _commandWindowWriter;
+        readonly HashSet<SbDebugger> _debuggers;
 
-        private HashSet<SbDebugger> debuggers;
-
-        public LLDBShell(JoinableTaskContext taskContext, CommandWindowWriter commandWindowWriter)
+        public LLDBShell(CommandWindowWriter commandWindowWriter)
         {
-            this.taskContext = taskContext;
-            this.commandWindowWriter = commandWindowWriter;
-            debuggers = new HashSet<SbDebugger>();
+            _commandWindowWriter = commandWindowWriter;
+            _debuggers = new HashSet<SbDebugger>();
         }
 
-        #region ILLDBShell
-
-        // Should only be called from the UI thread!
         public void AddDebugger(SbDebugger debugger)
         {
-            taskContext.ThrowIfNotOnMainThread();
-
-            debuggers.Add(debugger);
+            _debuggers.Add(debugger);
         }
 
-        // Should only be called from the UI thread!
         public void RemoveDebugger(SbDebugger debugger)
         {
-            taskContext.ThrowIfNotOnMainThread();
-
-            debuggers.Remove(debugger);
+            _debuggers.Remove(debugger);
         }
 
-        // Should only be called from the UI thread!
         public void ClearAllDebuggers()
         {
-            taskContext.ThrowIfNotOnMainThread();
-
-            debuggers.Clear();
+            _debuggers.Clear();
         }
 
-        // Should only be called from the UI thread!
         public void ExecuteCommand(string command)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             Trace.WriteLine($"Executing LLDB Shell command '{command}'");
 
-            if (debuggers.Count == 0)
+            if (_debuggers.Count == 0)
             {
-                commandWindowWriter.PrintErrorMsg(
+                _commandWindowWriter.PrintErrorMsg(
                     "ERROR: LLDB Shell command not handled. No debuggers attached.");
                 return;
             }
 
             // TODO: Provide a mechanism for the client to pick which debugger to dispatch
             // the command to.
-            if (debuggers.Count > 1)
+            if (_debuggers.Count > 1)
             {
-                commandWindowWriter.PrintErrorMsg(
-                    $"ERROR: There appears to be multiple ({debuggers.Count}) LLDB debuggers " +
+                _commandWindowWriter.PrintErrorMsg(
+                    $"ERROR: There appears to be multiple ({_debuggers.Count}) LLDB debuggers " +
                     "attached and we don't currently support that. If this is unexpected you can " +
                     "try restarting Visual Studio.");
                 return;
             }
 
-            var commandInterpreter = debuggers.First().GetCommandInterpreter();
+            var commandInterpreter = _debuggers.First().GetCommandInterpreter();
             if (commandInterpreter == null)
             {
-                commandWindowWriter.PrintErrorMsg(
+                _commandWindowWriter.PrintErrorMsg(
                     "Unexpected ERROR: No command interpreter was found for the LLDB Shell.");
                 return;
             }
 
-            SbCommandReturnObject commandResult;
-            commandInterpreter.HandleCommand(command, out commandResult);
+            commandInterpreter.HandleCommand(command, out SbCommandReturnObject commandResult);
             PrintCommandResult(commandResult);
         }
-
-        #endregion
 
         // Prints the output from the |commandResult| to the Command Window.  If a Command Window
         // doesn't exist the output is printed to the logs instead.
         private void PrintCommandResult(SbCommandReturnObject commandResult)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             if (commandResult == null)
             {
                 string errorMessage = "ERROR: The LLDB Shell command failed to return a result.";
                 Trace.WriteLine(errorMessage);
-                commandWindowWriter.PrintLine(errorMessage);
+                _commandWindowWriter.PrintLine(errorMessage);
                 return;
             }
-            commandWindowWriter.PrintLine(commandResult.GetDescription());
+            _commandWindowWriter.PrintLine(commandResult.GetDescription());
         }
     }
 }

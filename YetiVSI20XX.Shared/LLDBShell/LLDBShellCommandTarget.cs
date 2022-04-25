@@ -12,42 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft.VisualStudio.Shell;
-using IServiceProvider = System.IServiceProvider;
 using System;
 using System.ComponentModel.Design;
-using YetiCommon;
-using Microsoft.VisualStudio.Threading;
-using YetiVSI.Util;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using YetiCommon;
 
 namespace YetiVSI.LLDBShell
 {
     // Handles LLDB Shell commands from a Command Window.
     public class LLDBShellCommandTarget
     {
-        private readonly JoinableTaskContext taskContext;
-
         private readonly IServiceProvider serviceProvider;
 
         private readonly CommandWindowWriter commandWindowWriter;
 
-        public static LLDBShellCommandTarget Register(JoinableTaskContext taskContext,
-            IServiceProvider serviceProvider)
+        public static LLDBShellCommandTarget Register(IServiceProvider serviceProvider)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
-            return new LLDBShellCommandTarget(taskContext, serviceProvider);
+            return new LLDBShellCommandTarget(serviceProvider);
         }
 
-        private LLDBShellCommandTarget(JoinableTaskContext taskContext,
-            IServiceProvider serviceProvider)
+        private LLDBShellCommandTarget(IServiceProvider serviceProvider)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
-            this.taskContext = taskContext;
             this.serviceProvider = serviceProvider;
-            commandWindowWriter = new CommandWindowWriter(taskContext,
+            commandWindowWriter = new CommandWindowWriter(
                 (IVsCommandWindow)serviceProvider.GetService(typeof(SVsCommandWindow)));
             var menuCommand = new OleMenuCommand(HandleLLDBCommand,
                 new CommandID(YetiConstants.CommandSetGuid, PkgCmdID.cmdidLLDBShellExec));
@@ -60,10 +52,9 @@ namespace YetiVSI.LLDBShell
 
         private void HandleLLDBCommand(object sender, EventArgs e)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
-            string shellCommand;
-            if (!TryGetCommand(e, out shellCommand))
+            if (!TryGetCommand(e, out string shellCommand))
             {
                 return;
             }
@@ -96,7 +87,7 @@ namespace YetiVSI.LLDBShell
         /// <returns>True if a non-null, non-empty string command was extracted.</returns>
         private bool TryGetCommand(EventArgs args, out string shellCommand)
         {
-            taskContext.ThrowIfNotOnMainThread();
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             shellCommand = null;
 

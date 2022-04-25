@@ -12,26 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using McMaster.Extensions.CommandLineUtils;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Threading;
-using NSubstitute;
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.IO;
+using McMaster.Extensions.CommandLineUtils;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using NSubstitute;
+using NUnit.Framework;
 using TestsCommon.TestSupport;
 using YetiCommon;
 using YetiVSI.DebugEngine;
 using YetiVSI.DebuggerOptions;
+using YetiVSITestsCommon;
+using Task = System.Threading.Tasks.Task;
 
 namespace YetiVSI.Test.DebuggerOptions
 {
     [TestFixture]
     class DebuggerOptionsCommandTests
     {
+        FakeMainThreadContext mainThreadContext;
         OleMenuCommandService menuCommandService;
         IServiceProvider serviceProviderMock;
         IVsCommandWindow commandWindowMock;
@@ -45,14 +47,12 @@ namespace YetiVSI.Test.DebuggerOptions
         string commandWindowText;
 
         [SetUp]
-        public void SetUp()
+        public async Task SetUpAsync()
         {
+            mainThreadContext = new FakeMainThreadContext();
+
             logSpy = new LogSpy();
             logSpy.Attach();
-
-#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
-            var taskContext = new JoinableTaskContext();
-#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             commandWindowText = "";
 
@@ -89,7 +89,9 @@ namespace YetiVSI.Test.DebuggerOptions
                 .Returns(menuCommandService);
 #pragma warning restore VSSDK006 // Check services exist
 
-            DebuggerOptionsCommand.Register(taskContext, serviceProviderMock);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            DebuggerOptionsCommand.Register(serviceProviderMock);
         }
 
         /// <summary>
@@ -98,16 +100,22 @@ namespace YetiVSI.Test.DebuggerOptions
         /// <param name="command">The Stadia Debugger Options command. Example: "list".</param>
         void Invoke(object command)
         {
-            MenuCommand menuCommand = menuCommandService.FindCommand(
-                new CommandID(YetiConstants.CommandSetGuid, PkgCmdID.cmdidDebuggerOptionsCommand));
-            Assert.That(menuCommand, Is.Not.Null);
-            menuCommand.Invoke(command);
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                MenuCommand menuCommand = menuCommandService.FindCommand(
+                    new CommandID(YetiConstants.CommandSetGuid, PkgCmdID.cmdidDebuggerOptionsCommand));
+                Assert.That(menuCommand, Is.Not.Null);
+                menuCommand.Invoke(command);
+            });
         }
 
         [TearDown]
         public void Cleanup()
         {
             logSpy.Detach();
+            mainThreadContext.Dispose();
         }
 
         [Test]

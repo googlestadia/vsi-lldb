@@ -12,46 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.ComponentModel.Design;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
-using System;
-using System.ComponentModel.Design;
 using TestsCommon.TestSupport;
 using YetiCommon;
 using YetiVSI.LLDBShell;
+using YetiVSITestsCommon;
+using Task = System.Threading.Tasks.Task;
 
 namespace YetiVSI.Test.LLDBShell
 {
     [TestFixture]
     class LLDBShellCommandTargetTests
     {
+        private FakeMainThreadContext mainThreadContext;
+
         private OleMenuCommandService menuCommandService;
 
         private IServiceProvider serviceProviderMock;
 
         private IVsCommandWindow commandWindowMock;
 
-        private OptionPageGrid yetiOptions;
-
         private ILLDBShell shellMock;
-
         private LogSpy logSpy;
 
         // Captures all the text output to the |commandWindowMock|.
         private string commandWindowText;
 
         [SetUp]
-        public void SetUp()
+        public async Task SetUpAsync()
         {
+            mainThreadContext = new FakeMainThreadContext();
+
             logSpy = new LogSpy();
             logSpy.Attach();
-
-#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
-            var taskContext = new JoinableTaskContext();
-#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
             shellMock = Substitute.For<ILLDBShell>();
 
@@ -64,7 +63,7 @@ namespace YetiVSI.Test.LLDBShell
 
             serviceProviderMock = Substitute.For<IServiceProvider>();
 
-            yetiOptions = Substitute.For<OptionPageGrid>();
+            var yetiOptions = Substitute.For<OptionPageGrid>();
             var yetiService = new YetiVSIService(yetiOptions);
 
 #pragma warning disable VSSDK006 // Check services exist
@@ -76,7 +75,9 @@ namespace YetiVSI.Test.LLDBShell
             serviceProviderMock.GetService(typeof(IMenuCommandService)).Returns(menuCommandService);
 #pragma warning restore VSSDK006 // Check services exist
 
-            LLDBShellCommandTarget.Register(taskContext, serviceProviderMock);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            LLDBShellCommandTarget.Register(serviceProviderMock);
         }
 
         /// <summary>
@@ -85,16 +86,22 @@ namespace YetiVSI.Test.LLDBShell
         /// <param name="command">The LLDB shell command. Example: "help".</param>
         private void Invoke(object command)
         {
-            var menuCommand = menuCommandService.FindCommand(
-                new CommandID(YetiConstants.CommandSetGuid, PkgCmdID.cmdidLLDBShellExec));
-            Assert.That(menuCommand, Is.Not.Null);
-            menuCommand.Invoke(command);
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                var menuCommand = menuCommandService.FindCommand(
+                    new CommandID(YetiConstants.CommandSetGuid, PkgCmdID.cmdidLLDBShellExec));
+                Assert.That(menuCommand, Is.Not.Null);
+                menuCommand.Invoke(command);
+            });
         }
 
         [TearDown]
         public void Cleanup()
         {
             logSpy.Detach();
+            mainThreadContext.Dispose();
         }
 
         [Test]
