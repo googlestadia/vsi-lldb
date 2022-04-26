@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using NSubstitute;
-using NUnit.Framework;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using NSubstitute;
+using NUnit.Framework;
 using YetiCommon;
 
 namespace SymbolStores.Tests
@@ -30,8 +30,17 @@ namespace SymbolStores.Tests
         [Test]
         public void Constructor_EmptyPath()
         {
+            Assert.IsFalse(FlatSymbolStore.IsFlatStore(_fakeFileSystem, _invalidPath));
             Assert.Throws<ArgumentException>(
                 () => new FlatSymbolStore(_fakeFileSystem, _moduleParser, ""));
+        }
+
+        [Test]
+        public void Constructor_InvalidStore()
+        {
+            Assert.IsFalse(FlatSymbolStore.IsFlatStore(_fakeFileSystem, _invalidPath));
+            Assert.Throws<ArgumentException>(
+                () => new FlatSymbolStore(_fakeFileSystem, _moduleParser, _invalidPath));
         }
 
         [Test]
@@ -66,18 +75,7 @@ namespace SymbolStores.Tests
                                   _log.ToString());
         }
 
-        [Test]
-        public async Task FindFile_InvalidStoreAsync()
-        {
-            var store = new FlatSymbolStore(_fakeFileSystem, _moduleParser, _invalidPath);
 
-            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
-                                                          _log, _forceLoad);
-
-            Assert.Null(fileReference);
-            StringAssert.Contains(Strings.FailedToSearchFlatStore(_invalidPath, _filename, ""),
-                                  _log.ToString());
-        }
 
         [Test]
         public async Task FindFile_ReadBuildIdFailureAsync()

@@ -29,7 +29,16 @@ namespace SymbolStores.Tests
         [Test]
         public void Constructor_EmptyPath()
         {
+            Assert.IsFalse(StructuredSymbolStore.IsStructuredStore(_fakeFileSystem, ""));
             Assert.Throws<ArgumentException>(() => new StructuredSymbolStore(_fakeFileSystem, ""));
+        }
+
+        [Test]
+        public void Constructor_InvalidStore()
+        {
+            Assert.IsFalse(StructuredSymbolStore.IsStructuredStore(_fakeFileSystem, _invalidPath));
+            Assert.Throws<ArgumentException>(
+                () => new StructuredSymbolStore(_fakeFileSystem, _invalidPath));
         }
 
         [Test]
@@ -44,20 +53,6 @@ namespace SymbolStores.Tests
             StringAssert.Contains(
                 Strings.FailedToSearchStructuredStore(_storePath, _filename, Strings.EmptyBuildId),
                 _log.ToString());
-        }
-
-        [Test]
-        public async Task FindFile_InvalidStoreAsync()
-        {
-            var store = new StructuredSymbolStore(_fakeFileSystem, _invalidPath);
-
-            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
-                                                          _log, _forceLoad);
-
-            Assert.Null(fileReference);
-            StringAssert.Contains(Strings.FailedToSearchStructuredStore(
-                                      _invalidPath, _filename, ""),
-                                  _log.ToString());
         }
 
         [Test]

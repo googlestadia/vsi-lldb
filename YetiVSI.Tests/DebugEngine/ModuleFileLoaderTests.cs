@@ -33,6 +33,9 @@ namespace YetiVSI.Test.DebugEngine
         int _moduleId = 0;
         const string _platformDirectory = "/path/bin";
         const string _loadOutput = "Load output.";
+        const string _includedModuleName = "included";
+        const string _excludedModuleName = "excluded";
+
         static readonly string[] _importantModules = new[]
         {
             "libc-2.24.so", "libc.so", "libc.so.6", "libc-2.24.so.6", "libBrokenLocale.so.1",
@@ -116,14 +119,14 @@ namespace YetiVSI.Test.DebugEngine
         {
             SbModule includedModule = CreateMockModule(
                 true, loadBinarySucceeds: true,
-                loadSymbolsSucceeds: true, name: "included");
+                loadSymbolsSucceeds: true, name: _includedModuleName);
             SbModule excludedModule = CreateMockModule(
                 true, loadBinarySucceeds: true,
-                loadSymbolsSucceeds: true, name: "excluded");
+                loadSymbolsSucceeds: true, name: _excludedModuleName);
             var modules = new List<SbModule> { includedModule, excludedModule };
 
             bool useIncludeList = true;
-            var includeList = new List<string>() { "included" };
+            var includeList = new List<string>() { _includedModuleName };
             var settings =
                 new SymbolInclusionSettings(useIncludeList, new List<string>(), includeList);
 
@@ -144,14 +147,14 @@ namespace YetiVSI.Test.DebugEngine
         {
             SbModule includedModule = CreateMockModule(
                 true, loadBinarySucceeds: true,
-                loadSymbolsSucceeds: true, name: "included");
+                loadSymbolsSucceeds: true, name: _includedModuleName);
             SbModule excludedModule = CreateMockModule(
                 true, loadBinarySucceeds: true,
-                loadSymbolsSucceeds: true, name: "excluded");
+                loadSymbolsSucceeds: true, name: _excludedModuleName);
             var modules = new List<SbModule> { includedModule, excludedModule };
 
             bool useIncludeList = false;
-            var excludeList = new List<string> { "excluded" };
+            var excludeList = new List<string> { _excludedModuleName };
             var settings =
                 new SymbolInclusionSettings(useIncludeList, excludeList, new List<string>());
 
@@ -172,14 +175,14 @@ namespace YetiVSI.Test.DebugEngine
         {
             SbModule includedModule = CreateMockModule(
                 true, loadBinarySucceeds: true,
-                loadSymbolsSucceeds: true, name: "included");
+                loadSymbolsSucceeds: true, name: _includedModuleName);
             SbModule excludedModule = CreateMockModule(
                 true, loadBinarySucceeds: true,
-                loadSymbolsSucceeds: true, name: "excluded");
+                loadSymbolsSucceeds: true, name: _excludedModuleName);
             var modules = new List<SbModule> { includedModule, excludedModule };
 
             bool useIncludeList = false;
-            var excludeList = new List<string> { "excluded" };
+            var excludeList = new List<string> { _excludedModuleName };
             var settings =
                 new SymbolInclusionSettings(useIncludeList, excludeList, new List<string>());
 
@@ -187,7 +190,7 @@ namespace YetiVSI.Test.DebugEngine
             await _moduleFileLoader.LoadModuleFilesAsync(
                 modules, settings, false, false, _mockTask, _mockModuleFileLoadRecorder);
 
-            Assert.AreEqual("Symbol loading disabled by Include/Exclude setting.",
+            Assert.AreEqual(SymbolInclusionSettings.ModuleExcludedMessage,
                             _moduleSearchLogHolder.GetSearchLog(excludedModule));
             Assert.AreEqual("", _moduleSearchLogHolder.GetSearchLog(includedModule));
 
@@ -203,7 +206,7 @@ namespace YetiVSI.Test.DebugEngine
             await _moduleFileLoader.LoadModuleFilesAsync(
                 modules, settings, false, false, _mockTask, _mockModuleFileLoadRecorder);
 
-            Assert.AreEqual("Symbol loading disabled by Include/Exclude setting.",
+            Assert.AreEqual(SymbolInclusionSettings.ModuleExcludedMessage,
                             _moduleSearchLogHolder.GetSearchLog(excludedModule));
             Assert.AreEqual("", _moduleSearchLogHolder.GetSearchLog(includedModule));
         }

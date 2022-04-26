@@ -153,7 +153,7 @@ namespace SymbolStores
                 {
                     storeSequence.AddStore(new StructuredSymbolStore(_fileSystem, pathElement));
                 }
-                else
+                else if (FlatSymbolStore.IsFlatStore(_fileSystem, pathElement))
                 {
                     storeSequence.AddStore(
                         new FlatSymbolStore(_fileSystem, _moduleParser, pathElement));
@@ -191,6 +191,7 @@ namespace SymbolStores
                     {
                         continue;
                     }
+
                     if (isCache)
                     {
                         Trace.WriteLine(
@@ -203,16 +204,24 @@ namespace SymbolStores
                             $"Warning: '{path}' is being used as a downstream " +
                             "store, but copying symbols to HTTP symbol stores is not supported.");
                     }
+
+                    continue;
                 }
-                else if (!string.IsNullOrEmpty(path))
+
+                if (StructuredSymbolStore.IsStructuredStore(_fileSystem, path))
                 {
-                    server.AddStore(new StructuredSymbolStore(_fileSystem, path));
+                    var symbolStore = new StructuredSymbolStore(_fileSystem, path);
+                    server.AddStore(symbolStore);
+                    continue;
                 }
-                else if (!string.IsNullOrEmpty(defaultPath))
+
+                if (StructuredSymbolStore.IsStructuredStore(_fileSystem, defaultPath))
                 {
-                    server.AddStore(new StructuredSymbolStore(_fileSystem, defaultPath));
+                    var symbolStore = new StructuredSymbolStore(_fileSystem, defaultPath);
+                    server.AddStore(symbolStore);
                 }
             }
+
             storeSequence.AddStore(server);
         }
 

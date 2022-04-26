@@ -98,6 +98,7 @@ namespace YetiVSI.DebugEngine
             {
                 throw new ArgumentNullException(Strings.FilenameNullOrEmpty, nameof(filename));
             }
+
             searchLog = searchLog ?? TextWriter.Null;
 
             searchLog.WriteLineAndTrace($"Searching for '{filename}'");

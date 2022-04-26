@@ -22,7 +22,6 @@ using DebuggerApi;
 using JetBrains.Annotations;
 using Metrics.Shared;
 using Microsoft.VisualStudio;
-using YetiCommon;
 
 namespace YetiVSI.DebugEngine
 {
@@ -329,7 +328,7 @@ namespace YetiVSI.DebugEngine
 
             if (moduleName.EndsWith("(deleted)"))
             {
-                return "Module marked as deleted by LLDB.";
+                return $"Module marked as deleted by LLDB.";
             }
 
             return settings?.IsModuleIncluded(moduleName) == false

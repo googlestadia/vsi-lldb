@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.IO.Abstractions;
+using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using YetiCommon;
 using YetiCommon.Logging;
 
@@ -39,7 +40,9 @@ namespace SymbolStores
     {
         // Structured symbol stores can be identified by the existence of a marker file
         public static bool IsStructuredStore(IFileSystem fileSystem, string path) =>
-            fileSystem.File.Exists(Path.Combine(path, _markerFileName));
+            !string.IsNullOrWhiteSpace(path)
+            && !fileSystem.Path.GetInvalidPathChars().Any(x=>path.Contains(x))
+            && fileSystem.File.Exists(Path.Combine(path, _markerFileName));
 
         const string _markerFileName = "pingme.txt";
 
@@ -58,15 +61,15 @@ namespace SymbolStores
             }
 
             _fileSystem = fileSystem;
-            _path = path;
+            _path = fileSystem.Path.GetFullPath(path);
         }
 
 #region SymbolStoreBase functions
 
         public override Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
-                                                                 bool isDebugInfoFile,
-                                                                 TextWriter log,
-                                                                 bool forceLoad)
+                                                           bool isDebugInfoFile,
+                                                           TextWriter log,
+                                                           bool forceLoad)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -92,6 +95,7 @@ namespace SymbolStores
                     Strings.FailedToSearchStructuredStore(_path, filename, e.Message));
                 return Task.FromResult<IFileReference>(null);
             }
+
             if (!_fileSystem.File.Exists(filepath))
             {
                 log.WriteLineAndTrace(Strings.FileNotFound(filepath));

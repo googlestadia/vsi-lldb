@@ -97,9 +97,10 @@ namespace YetiVSI.DebugEngine
                 BuildIdInfo buildIdInfo = _moduleParser.ParseBuildIdInfo(fullPath, isElf: true);
                 if (buildIdInfo.HasError)
                 {
-                    Trace.WriteLine($"Could not read build Id from {fullPath} " +
-                                    $"for module {lldbModule.GetFileSpec().GetFilename()} " +
-                                    $"(Message: {buildIdInfo.Error}).");
+                    string moduleName = lldbModule.GetFileSpec().GetFilename();
+                    searchLog.WriteLineAndTrace(
+                        $"Could not read build Id from {fullPath} for module " +
+                        $"{moduleName} (Message: {buildIdInfo.Error}).");
                 }
 
                 if (uuid == buildIdInfo.Data)
@@ -112,6 +113,7 @@ namespace YetiVSI.DebugEngine
                 ? await _moduleFileFinder.FindFileAsync(
                     symbolFileLocation.Filename, uuid, true, searchLog, forceLoad)
                 : null;
+
             if (filepath == null) { return false; }
 
             return AddSymbolFile(filepath, lldbModule, searchLog);
