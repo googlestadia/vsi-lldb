@@ -761,8 +761,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task DisplayStringItemWithInvalidConditionAsync()
         {
-            // Errors in watch window are expected when Natvis compilation is disabled.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -896,8 +899,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task DisplayStringWithFalseOptionalAttributeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -925,8 +931,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task DisplayStringWithTrueOptionalAttributeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1155,8 +1164,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task StringViewItemWithInvalidConditionAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1253,8 +1265,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task StringViewWithFalseOptionalAttributeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -1590,8 +1605,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task InvalidExpandConditionDoesntAffectDisplayStringAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -2041,8 +2059,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task ArrayItemsTypeWithInvalidConditionsAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -2176,8 +2197,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task ArrayValuePointerTypeWithInvalidConditionsAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -2695,8 +2719,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task ArrayItemsSizeWithInvalidSizeValueAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -3527,8 +3554,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task IndexListItemsSizeWithInvalidSizeValueAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
         <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -3870,8 +3900,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task IndexListItemsTypeMissingSizeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -3968,8 +4001,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task IndexListItemsWithoutValueNodeExperimentsDisabledAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -4060,8 +4096,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task IndexListItemsTypeEmptyValueNodeTypeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -4302,8 +4341,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task ItemTypeWithFalseOptionalAttributeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -4647,8 +4689,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsWithMissingChildItemAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -4774,8 +4819,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsTypeWithEmptySizeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -5152,8 +5200,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsSizeWithFalseOptionalAttributeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -5408,8 +5459,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsWithMissingHeadPointerAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -5533,8 +5587,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsWithMissingNextPointerAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -5651,8 +5708,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsWithEmptyValueNodeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -5708,8 +5768,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsWithMissingValueNodeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -5768,8 +5831,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsTypeNullValueNodeTypeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -6043,8 +6109,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task LinkedListItemsTypeWithFalseOptionalAttributeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -6544,8 +6613,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task SyntheticItemWithFalseOptionalAttributeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -6847,6 +6919,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_treeSize", 7));
             remoteValue.AddChild(node_10);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -6897,6 +6982,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreatePointer(
                 "TreeNode", "_pHead", MEM_ADDRESS_NULL));
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -6906,13 +7004,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
 
             Assert.That(children.Length, Is.EqualTo(0));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
         public async Task TreeItemsWithFalseOptionalAttributeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -7040,6 +7142,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -7058,6 +7173,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[2].DisplayName, Is.EqualTo("[2]"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("21"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -7108,6 +7224,21 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                var boolType = TRUE_REMOTE_VALUE.GetTypeInfo();
+                target.AddTypeFromExpression(boolType, "false");
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -7117,13 +7248,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
 
             Assert.That(children.Length, Is.EqualTo(0));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
         public async Task TreeItemsWithInvalidSizeExpressionAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -7200,6 +7335,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task TreeItemsWithNonIntSizeAsync()
         {
+            if (IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomTreeType"">
@@ -7318,6 +7458,18 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -7333,6 +7485,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[2].DisplayName, Is.EqualTo("[2]"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("21"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -7383,6 +7536,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -7407,6 +7573,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(children[5].DisplayName, Is.EqualTo("<Error>"));
             Assert.That(await children[5].ValueAsync(), Does.Contain("6"));
             Assert.That(await children[5].ValueAsync(), Does.Contain("3"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -7450,6 +7617,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_treeSize", 1));
             remoteValue.AddChild(node_10);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -7460,11 +7640,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(children.Length, Is.EqualTo(1));
             Assert.That(children[0].DisplayName, Is.EqualTo("[0]"));
             Assert.That(await children[0].ValueAsync(), Is.EqualTo("20"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
         public async Task TreeItemsWithEmptyHeadPointerAsync()
         {
+            if (IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomTreeType"">
@@ -7539,7 +7725,10 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         public async Task TreeItemsWithInvalidHeadPointerAsync()
         {
             // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -7654,6 +7843,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "this");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -7669,11 +7871,17 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Is.EqualTo("10"));
             Assert.That(children[2].DisplayName, Is.EqualTo("[2]"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("21"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
         public async Task TreeItemsWithEmptyLeftPointerAsync()
         {
+            if (IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomTreeType"">
@@ -7747,6 +7955,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task TreeItemsWithEmptyRightPointerAsync()
         {
+            if (IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomTreeType"">
@@ -7820,8 +8033,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task TreeItemsWithEmptyValueNodeAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -7896,6 +8112,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task TreeItemsWithInvalidValueNodeAsync()
         {
+            if (IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
   <Type Name=""CustomTreeType"">
@@ -8002,6 +8223,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(nodeType, "this");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -8016,6 +8250,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Does.Contain(MEM_ADDRESS1));
             Assert.That(children[2].DisplayName, Is.EqualTo("[2]"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo(MEM_ADDRESS3));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -8048,6 +8283,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_treeSize", 1));
             remoteValue.AddChild(head);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(varInfo, Does.Not.HaveChildren());
 
@@ -8056,6 +8304,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -8088,6 +8337,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("_treeSize", 1));
             remoteValue.AddChild(head);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             IVariableInformation varInfo = CreateVarInfo(remoteValue);
             Assert.That(varInfo, Does.HaveChildWithValue("99"));
 
@@ -8096,6 +8358,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
 
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
             Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("WARNING"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -8149,6 +8412,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -8164,6 +8440,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Does.Contain("10"));
             Assert.That(children[2].DisplayName, Is.EqualTo("[2]"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("21"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -8217,6 +8494,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -8232,6 +8522,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Does.Contain("10"));
             Assert.That(children[2].DisplayName, Is.EqualTo("[2]"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("21"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -8285,6 +8576,19 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             remoteValue.AddValueFromExpression("false", FALSE_REMOTE_VALUE);
             remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
 
+            var target = new RemoteTargetStub("path");
+            if (IsNatvisCompilerEnabled())
+            {
+                var intType = new SbTypeStub("int", TypeFlags.IS_INTEGER);
+                var nodeType = new SbTypeStub("TreeNode*", TypeFlags.IS_POINTER);
+                target.AddTypeFromExpression(intType, "_treeSize");
+                target.AddTypeFromExpression(nodeType, "_pHead");
+                target.AddTypeFromExpression(nodeType, "_pLeft");
+                target.AddTypeFromExpression(nodeType, "_pRight");
+                target.AddTypeFromExpression(intType, "_pValue");
+            }
+            _natvisScanner.SetTarget(target);
+
             var varInfo = CreateVarInfo(remoteValue);
 
             nLogSpy.Clear();
@@ -8300,6 +8604,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             Assert.That(await children[1].ValueAsync(), Does.Contain("10"));
             Assert.That(children[2].DisplayName, Is.EqualTo("[2]"));
             Assert.That(await children[2].ValueAsync(), Is.EqualTo("21"));
+            Assert.That(target.CheckNoPendingExpressions(), Is.True);
         }
 
         [Test]
@@ -9628,8 +9933,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task CustomListItemsOptionalFailureAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
@@ -10283,8 +10591,11 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         [Test]
         public async Task CustomListItemsInvalidSizeExpressionAsync()
         {
-            // This test relies on not having the Natvis compilation feature.
-            DisableNatvisExperiments();
+            if (IsNatvisCompilerEnabled())
+            {
+                // This test relies on not having the Natvis compilation feature.
+                Assert.Ignore();
+            }
 
             var xml = @"
 <AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">

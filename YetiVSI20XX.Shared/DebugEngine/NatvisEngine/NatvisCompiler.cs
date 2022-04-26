@@ -641,12 +641,62 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return true;
             }
 
-            return await HandleExpressionAsync(treeItems.Size, context) &&
-                   await HandleExpressionAsync(treeItems.Condition, context) &&
-                   await HandleExpressionAsync(treeItems.HeadPointer, context) &&
-                   await HandleExpressionAsync(treeItems.LeftPointer, context) &&
-                   await HandleExpressionAsync(treeItems.RightPointer, context) &&
-                   await HandleTreeItemsNodeAsync(treeItems.ValueNode, context);
+            if (!await HandleExpressionAsync(treeItems.Size, context) ||
+                !await HandleExpressionAsync(treeItems.Condition, context))
+            {
+                return false;
+            }
+
+            // The node type should be pointer.
+            var headType = await CompileExpressionAsync(treeItems.HeadPointer, context);
+            if (!IsPointerType(headType))
+            {
+                _logger.Error($"(Natvis) Invalid <HeadPointer>: '{treeItems.HeadPointer}' " +
+                              "isn't a pointer type.");
+                return false;
+            }
+
+            // The rest expressions are evaluated in the context of the node type.
+            context = context.Clone();
+            context.Scope = headType.GetPointeeType();
+
+            // The left pointer type should be equal to `headType`.
+            var leftType = await CompileExpressionAsync(treeItems.LeftPointer, context);
+            if (!IsPointerType(leftType))
+            {
+                _logger.Error($"(Natvis) Invalid <LeftPointer>: '{treeItems.LeftPointer}' " +
+                              "isn't a pointer.");
+                return false;
+            }
+            if (leftType.GetName() != headType.GetName())
+            {
+                // TODO: There could be different types of the same name, but name
+                // comparison should be OK for now.
+                // The native VS is strict about type equality (e.g. the next pointer type isn't
+                // allowed to be dervied from the head pointer type).
+                _logger.Error("(Natvis) <HeadPointer> and <LeftPointer> don't evaluate to the " +
+                              $"same type. Expected '{headType.GetName()}', got " +
+                              $"'{leftType.GetName()}'.");
+                return false;
+            }
+
+            // The right pointer type should be equal to `headType`.
+            var rightType = await CompileExpressionAsync(treeItems.RightPointer, context);
+            if (!IsPointerType(rightType))
+            {
+                _logger.Error($"(Natvis) Invalid <RightPointer>: '{treeItems.RightPointer}'" +
+                              "isn't a pointer.");
+                return false;
+            }
+            if (rightType.GetName() != headType.GetName())
+            {
+                _logger.Error("(Natvis) <HeadPointer> and <RightPointer> don't evaluate to the " +
+                              $"same type. Expected '{headType.GetName()}', got " +
+                              $"'{rightType.GetName()}'.");
+                return false;
+            }
+
+            return await HandleTreeItemsNodeAsync(treeItems.ValueNode, context);
         }
 
         /// <summary>
