@@ -35,6 +35,7 @@ namespace YetiVSI.Test.DebugEngine
         const string _loadOutput = "Load output.";
         const string _includedModuleName = "included";
         const string _excludedModuleName = "excluded";
+        const string _deleted = "wrapper.so (deleted)";
 
         static readonly string[] _importantModules = new[]
         {
@@ -115,6 +116,34 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
+        public async Task LoadModuleFilesSkipsDeletedAsync()
+        {
+            SbModule deletedModule = CreateMockModule(true, true, true, _deleted);
+            var modules = new List<SbModule> { deletedModule };
+            Assert.That(
+                (await _moduleFileLoader.LoadModuleFilesAsync(
+                    modules, null, false, false, _mockTask, _mockModuleFileLoadRecorder))
+                .ResultCode,
+                Is.EqualTo(VSConstants.S_OK));
+            Assert.AreEqual($"Module '{_deleted}' marked as deleted by LLDB.",
+                            _moduleSearchLogHolder.GetSearchLog(deletedModule));
+        }
+
+        [Test]
+        public async Task LoadModuleFilesSkipsEmptyNameAsync()
+        {
+            SbModule emptyNameModule = CreateMockModule(true, true, true, "");
+            var modules = new List<SbModule> { emptyNameModule };
+            Assert.That(
+                (await _moduleFileLoader.LoadModuleFilesAsync(
+                    modules, null, false, false, _mockTask, _mockModuleFileLoadRecorder))
+                .ResultCode,
+                Is.EqualTo(VSConstants.S_OK));
+            Assert.AreEqual($"Module name not set.",
+                            _moduleSearchLogHolder.GetSearchLog(emptyNameModule));
+        }
+
+        [Test]
         public async Task LoadModuleFilesWithInclusionSettingsAsync()
         {
             SbModule includedModule = CreateMockModule(
@@ -190,7 +219,7 @@ namespace YetiVSI.Test.DebugEngine
             await _moduleFileLoader.LoadModuleFilesAsync(
                 modules, settings, false, false, _mockTask, _mockModuleFileLoadRecorder);
 
-            Assert.AreEqual(SymbolInclusionSettings.ModuleExcludedMessage,
+            Assert.AreEqual(SymbolInclusionSettings.ModuleExcludedMessage(_excludedModuleName),
                             _moduleSearchLogHolder.GetSearchLog(excludedModule));
             Assert.AreEqual("", _moduleSearchLogHolder.GetSearchLog(includedModule));
 
@@ -206,7 +235,7 @@ namespace YetiVSI.Test.DebugEngine
             await _moduleFileLoader.LoadModuleFilesAsync(
                 modules, settings, false, false, _mockTask, _mockModuleFileLoadRecorder);
 
-            Assert.AreEqual(SymbolInclusionSettings.ModuleExcludedMessage,
+            Assert.AreEqual(SymbolInclusionSettings.ModuleExcludedMessage(_excludedModuleName),
                             _moduleSearchLogHolder.GetSearchLog(excludedModule));
             Assert.AreEqual("", _moduleSearchLogHolder.GetSearchLog(includedModule));
         }

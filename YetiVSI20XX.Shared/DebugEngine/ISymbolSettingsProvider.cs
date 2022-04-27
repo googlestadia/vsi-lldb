@@ -47,8 +47,8 @@ namespace YetiVSI.DebugEngine
 
     public class SymbolInclusionSettings
     {
-        public const string ModuleExcludedMessage =
-            "Symbol loading disabled by Include/Exclude setting.";
+        public static string ModuleExcludedMessage(string name) =>
+            $"Symbol loading for {name} disabled by Include/Exclude setting.";
 
         public bool IsManualLoad { get; }
 

@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -268,8 +269,8 @@ namespace YetiVSI.DebugEngine
                 SuggestToEnableSymbolStore = false
             };
 
-            IEnumerable<SbModule> preFilteredModules =
-                PrefilterModulesByName(modules, symbolSettings);
+            List<SbModule> preFilteredModules =
+                PrefilterModulesByName(modules, symbolSettings).ToList();
 
             List<SbModule> modulesWithBinariesLoaded = await ProcessModulePlaceholdersAsync(
                 preFilteredModules, task, isStadiaSymbolsServerUsed, loadSymbolData, result);
@@ -309,6 +310,7 @@ namespace YetiVSI.DebugEngine
                 }
                 else
                 {
+                    Trace.WriteLine(error);
                     _moduleSearchLogHolder.AppendSearchLog(sbModule, error);
                 }
             }
@@ -328,11 +330,11 @@ namespace YetiVSI.DebugEngine
 
             if (moduleName.EndsWith("(deleted)"))
             {
-                return $"Module marked as deleted by LLDB.";
+                return $"Module '{moduleName}' marked as deleted by LLDB.";
             }
 
             return settings?.IsModuleIncluded(moduleName) == false
-                ? SymbolInclusionSettings.ModuleExcludedMessage
+                ? SymbolInclusionSettings.ModuleExcludedMessage(moduleName)
                 : null;
         }
 
@@ -348,15 +350,16 @@ namespace YetiVSI.DebugEngine
         /// </remarks>
         /// <returns>List of modules with binaries loaded.</returns>
         async Task<List<SbModule>> ProcessModulePlaceholdersAsync(
-            IEnumerable<SbModule> preFilteredModules,
+            IReadOnlyList<SbModule> preFilteredModules,
             ICancelable task,
             bool isStadiaSymbolsServerUsed,
             DeveloperLogEvent.Types.LoadSymbolData loadSymbolData,
             LoadModuleFilesResult result)
         {
             var modulesWithBinary = new List<SbModule>();
-            foreach (SbModule sbModule in preFilteredModules)
+            for (int index = 0; index < preFilteredModules.Count; index++)
             {
+                SbModule sbModule = preFilteredModules[index];
                 if (sbModule.HasBinaryLoaded())
                 {
                     modulesWithBinary.Add(sbModule);
@@ -367,9 +370,8 @@ namespace YetiVSI.DebugEngine
                 TextWriter searchLog = new StringWriter();
 
                 task.ThrowIfCancellationRequested();
-                task.Progress.Report(
-                    $"Loading binary for {name}" +
-                    $"({sbModule.GetId()}/{loadSymbolData.ModulesCount})");
+                task.Progress.Report($"Loading binary for {name}" +
+                                     $"({index}/{preFilteredModules.Count})");
                 (SbModule outputModule, bool ok) =
                     await _binaryLoader.LoadBinaryAsync(sbModule, searchLog);
                 if (ok)
@@ -400,15 +402,16 @@ namespace YetiVSI.DebugEngine
         /// <c>result</c>'s ResultCode.
         /// </remarks>
         async Task ProcessModulesWithoutSymbolsAsync(
-            List<SbModule> modulesWithBinariesLoaded,
+            IReadOnlyList<SbModule> modulesWithBinariesLoaded,
             ICancelable task,
             bool useSymbolStores,
             bool forceLoad,
             DeveloperLogEvent.Types.LoadSymbolData loadSymbolData,
             LoadModuleFilesResult result)
         {
-            foreach (SbModule sbModule in modulesWithBinariesLoaded)
+            for (int index = 0; index < modulesWithBinariesLoaded.Count; index++)
             {
+                SbModule sbModule = modulesWithBinariesLoaded[index];
                 if (sbModule.HasSymbolsLoaded())
                 {
                     continue;
@@ -417,9 +420,8 @@ namespace YetiVSI.DebugEngine
                 string name = sbModule.GetPlatformFileSpec().GetFilename();
                 TextWriter searchLog = new StringWriter();
                 task.ThrowIfCancellationRequested();
-                task.Progress.Report(
-                    $"Loading symbols for {name} " +
-                    $"({sbModule.GetId()}/{loadSymbolData.ModulesCount})");
+                task.Progress.Report($"Loading symbols for {name} " +
+                                     $"({index}/{modulesWithBinariesLoaded.Count})");
                 bool ok = await _symbolLoader.LoadSymbolsAsync(
                     sbModule, searchLog, useSymbolStores, forceLoad);
                 if (!ok)
