@@ -470,26 +470,13 @@ namespace YetiVSI.DebugEngine
             return _natvisLogger;
         }
 
-        bool GetNatvisCompilationEnabled()
-        {
-            return GetVsiService().DebuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] ==
-                       DebuggerOptionState.ENABLED &&
-                   GetVsiService().Options.ExpressionEvaluationStrategy !=
-                       ExpressionEvaluationStrategy.LLDB;
-        }
-
-        bool GetFullNatvisSupportEnabled()
-        {
-            return GetVsiService().Options.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED;
-        }
-
         public NatvisVisualizerScanner GetNatvisVisualizerScanner()
         {
             if (_natvisVisualizerScanner == null)
             {
                 _natvisVisualizerScanner = new NatvisVisualizerScanner(
                     GetNatvisDiagnosticLogger(), GetNatvisLoader(), GetJoinableTaskContext(),
-                    GetFullNatvisSupportEnabled, GetNatvisCompilationEnabled);
+                    GetVsiService().Options, GetVsiService().DebuggerOptions);
             }
 
             return _natvisVisualizerScanner;

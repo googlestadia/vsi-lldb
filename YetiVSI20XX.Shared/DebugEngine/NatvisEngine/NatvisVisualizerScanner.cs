@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using DebuggerApi;
 using Microsoft.VisualStudio.Threading;
 using YetiVSI.DebugEngine.Variables;
+using YetiVSI.DebuggerOptions;
 using YetiVSI.Util;
 
 namespace YetiVSI.DebugEngine.NatvisEngine
@@ -64,19 +65,19 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         readonly NatvisLoader _natvisLoader;
         readonly JoinableTaskContext _taskContext;
         private RemoteTarget _target;
-        // Should we load the entire natvis (or just built-in visualizers)?
-        readonly Func<bool> _loadEntireNatvis;
-        readonly Func<bool> _natvisCompilerEnabled;
+        readonly IExtensionOptions _extensionOptions;
+        readonly DebuggerOptions.DebuggerOptions _debuggerOptions;
 
         public NatvisVisualizerScanner(NatvisDiagnosticLogger logger, NatvisLoader natvisLoader,
-                                       JoinableTaskContext taskContext, Func<bool> loadEntireNatvis,
-                                       Func<bool> natvisCompilerEnabled)
+                                       JoinableTaskContext taskContext,
+                                       IExtensionOptions extensionOptions,
+                                       DebuggerOptions.DebuggerOptions debuggerOptions)
         {
             _logger = logger;
             _natvisLoader = natvisLoader;
             _taskContext = taskContext;
-            _loadEntireNatvis = loadEntireNatvis;
-            _natvisCompilerEnabled = natvisCompilerEnabled;
+            _extensionOptions = extensionOptions;
+            _debuggerOptions = debuggerOptions;
 
             InitDataStructures();
         }
@@ -97,7 +98,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             InitDataStructures();
             // Load Natvis files (from registry root and project).
             // TODO: Consider handling changes to this option in runtime.
-            if (_loadEntireNatvis())
+            if (LoadEntireNatvis())
             {
                 _natvisLoader.Reload(_typeVisualizers);
             }
@@ -351,7 +352,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 {
                     // Priority is enabled if compilation is enabled.
                     PriorityType priority =
-                        _natvisCompilerEnabled() ? v.Visualizer.Priority : PriorityType.Medium;
+                        IsNatvisCompilerEnabled() ? v.Visualizer.Priority : PriorityType.Medium;
                     var score = new TypeName.MatchScore(priority);
                     if (v.ParsedName.Match(typeNameToFind, score))
                     {
@@ -369,13 +370,10 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             // Sort candidates by score from the highest to the lowest.
             candidates.Sort((x, y) => y.Item2.CompareTo(x.Item2));
 
-            if (_natvisCompilerEnabled())
+            if (IsNatvisCompilerEnabled())
             {
-                // TODO: Handle compilation differently for lldb-eval and lldb-eval
-                // with fallback. In the case of lldb-eval with fallback, we should fallback to the
-                // next possible visualizer only in the case of "safe errors" (that are expected
-                // regardless of the method used).
-                var compiler = new NatvisCompiler(_target, sbType, _logger);
+                var compiler = new NatvisCompiler(_target, sbType, _logger,
+                                                  _extensionOptions.ExpressionEvaluationStrategy);
                 foreach (var candidate in candidates)
                 {
                     var vizInfo = new VisualizerInfo(candidate.Item1, typeNameToFind);
@@ -418,6 +416,22 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         public void EnableStringVisualizer()
         {
             _enableStringVisualizer = true;
+        }
+
+        /// <summary>
+        /// Indicates whether the entire Natvis should be loaded or just built-in visualizers.
+        /// </summary>
+        bool LoadEntireNatvis()
+        {
+            return _extensionOptions.LLDBVisualizerSupport == LLDBVisualizerSupport.ENABLED;
+        }
+
+        bool IsNatvisCompilerEnabled()
+        {
+            return _debuggerOptions[DebuggerOption.NATVIS_EXPERIMENTAL] ==
+                       DebuggerOptionState.ENABLED &&
+                   _extensionOptions.ExpressionEvaluationStrategy !=
+                       ExpressionEvaluationStrategy.LLDB;
         }
 
         void CreateCustomVisualizers()

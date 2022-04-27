@@ -14,13 +14,16 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         readonly RemoteTarget _target;
         readonly SbType _scope;
         readonly NatvisDiagnosticLogger _logger;
+        readonly ExpressionEvaluationStrategy _expressionEvaluationStrategy;
         readonly VsExpressionCreator _vsExpressionCreator;
 
-        public NatvisCompiler(RemoteTarget target, SbType scope, NatvisDiagnosticLogger logger)
+        public NatvisCompiler(RemoteTarget target, SbType scope, NatvisDiagnosticLogger logger,
+                              ExpressionEvaluationStrategy expressionEvaluationStrategy)
         {
             _target = target;
             _scope = scope;
             _logger = logger;
+            _expressionEvaluationStrategy = expressionEvaluationStrategy;
             _vsExpressionCreator = new VsExpressionCreator();
         }
 
@@ -560,40 +563,19 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return false;
             }
 
-            // The node type should be pointer.
-            var headType = await CompileExpressionAsync(linkedListItems.HeadPointer, context);
-            if (!IsPointerType(headType))
+            var headType = await HandleHeadPointerAsync(linkedListItems.HeadPointer, context);
+            if (headType == null)
             {
-                _logger.Error($"(Natvis) Invalid <HeadPointer>: '{linkedListItems.HeadPointer}' " +
-                              "isn't a pointer type.");
                 return false;
             }
 
-            // The rest expressions are evaluated in the context of the node type.
+            // The rest expressions are evaluated in the context of the <HeadPointer> type.
             context = context.Clone();
             context.Scope = headType.GetPointeeType();
 
-            // The next pointer type should be equal to `nodeType`.
-            var nextType = await CompileExpressionAsync(linkedListItems.NextPointer, context);
-            if (!IsPointerType(nextType))
-            {
-                _logger.Error($"(Natvis) Invalid <NextPointer>: '{linkedListItems.NextPointer}' " +
-                              "isn't a pointer type.");
-                return false;
-            }
-            if (nextType.GetName() != headType.GetName())
-            {
-                // TODO: There could be different types of the same name, but name
-                // comparison should be OK for now.
-                // The native VS is strict about type equality (e.g. the next pointer type isn't
-                // allowed to be dervied from the head pointer type).
-                _logger.Error("(Natvis) <HeadPointer> and <NextPointer> don't evaluate to the " +
-                              $"same type. Expected '{headType.GetName()}', got " +
-                              $"'{nextType.GetName()}'.");
-                return false;
-            }
-
-            return await HandleListItemsNodeAsync(linkedListItems.ValueNode, context);
+            return await HandleChildNodePointerAsync(linkedListItems.NextPointer, context, headType,
+                                                     "<NextPointer>") &&
+                   await HandleListItemsNodeAsync(linkedListItems.ValueNode, context);
         }
 
         /// <summary>
@@ -647,56 +629,92 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 return false;
             }
 
-            // The node type should be pointer.
-            var headType = await CompileExpressionAsync(treeItems.HeadPointer, context);
-            if (!IsPointerType(headType))
+            var headType = await HandleHeadPointerAsync(treeItems.HeadPointer, context);
+            if (headType == null)
             {
-                _logger.Error($"(Natvis) Invalid <HeadPointer>: '{treeItems.HeadPointer}' " +
-                              "isn't a pointer type.");
                 return false;
             }
 
-            // The rest expressions are evaluated in the context of the node type.
+            // The rest expressions are evaluated in the context of the <HeadPointer> type.
             context = context.Clone();
             context.Scope = headType.GetPointeeType();
 
-            // The left pointer type should be equal to `headType`.
-            var leftType = await CompileExpressionAsync(treeItems.LeftPointer, context);
-            if (!IsPointerType(leftType))
+            return await HandleChildNodePointerAsync(treeItems.LeftPointer, context, headType,
+                                                     "<LeftPointer>") &&
+                   await HandleChildNodePointerAsync(treeItems.RightPointer, context, headType,
+                                                     "<RightPointer>") &&
+                   await HandleTreeItemsNodeAsync(treeItems.ValueNode, context);
+        }
+
+        /// <summary>
+        /// Handles <HeadPointer> expression (a child of <LinkedListItems> and <TreeItems>).
+        /// Performs type check and fails even for non-critical errors.
+        /// </summary>
+        /// <returns>The resulting type (guaranteed to be either a pointer type or null).</returns>
+        async Task<SbType> HandleHeadPointerAsync(string expression, Context context)
+        {
+            var (type, error) = await CompileExpressionAsync(expression, context);
+            if (type == null)
             {
-                _logger.Error($"(Natvis) Invalid <LeftPointer>: '{treeItems.LeftPointer}' " +
-                              "isn't a pointer.");
-                return false;
+                if (!IsCriticalError(error))
+                {
+                    // <HeadPointer> is one of exceptions where compilation fails even if the error
+                    // isn't critical. The reason is that the result type is required for
+                    // compilation of subsequent elements in the collection element.
+                    // Since the error isn't critical, it wasn't logged earlier and is logged here.
+                    _logger.Error($"(Natvis) Error while parsing expression '{expression}'" +
+                                  $" in the context of type '{context.Scope.GetName()}': " +
+                                  error.GetCString());
+                }
+                return null;
             }
-            if (leftType.GetName() != headType.GetName())
+
+            if (!IsPointerType(type))
             {
-                // TODO: There could be different types of the same name, but name
-                // comparison should be OK for now.
-                // The native VS is strict about type equality (e.g. the next pointer type isn't
-                // allowed to be dervied from the head pointer type).
-                _logger.Error("(Natvis) <HeadPointer> and <LeftPointer> don't evaluate to the " +
-                              $"same type. Expected '{headType.GetName()}', got " +
-                              $"'{leftType.GetName()}'.");
+                _logger.Error($"(Natvis) Invalid <HeadPointer>: '{expression}' isn't a pointer.");
+                return null;
+            }
+
+            return type;
+        }
+
+        /// <summary>
+        /// Handles expressions of <NextPointer>, <LeftPointer> and <RightPointer>.
+        /// Compares result with the type of corresponding <HeadPointer>.
+        /// </summary>
+        /// <param name="element">One of "<NextPointer>", "<LeftPointer>", "<RightPointer>".</param>
+        /// <returns>Boolean value indicating correctness of the expression.</returns>
+        async Task<bool> HandleChildNodePointerAsync(string expression, Context context,
+                                                     SbType headPointerType, string element)
+        {
+            var (type, error) = await CompileExpressionAsync(expression, context);
+
+            if (IsCriticalError(error))
+            {
                 return false;
             }
 
-            // The right pointer type should be equal to `headType`.
-            var rightType = await CompileExpressionAsync(treeItems.RightPointer, context);
-            if (!IsPointerType(rightType))
+            if (type != null)
             {
-                _logger.Error($"(Natvis) Invalid <RightPointer>: '{treeItems.RightPointer}'" +
-                              "isn't a pointer.");
-                return false;
-            }
-            if (rightType.GetName() != headType.GetName())
-            {
-                _logger.Error("(Natvis) <HeadPointer> and <RightPointer> don't evaluate to the " +
-                              $"same type. Expected '{headType.GetName()}', got " +
-                              $"'{rightType.GetName()}'.");
-                return false;
+                if (!IsPointerType(type))
+                {
+                    _logger.Error($"(Natvis) Invalid {element}: '{expression}' isn't a pointer.");
+                    return false;
+                }
+                if (type.GetName() != headPointerType.GetName())
+                {
+                    // TODO: There could be different types of the same name, but name
+                    // comparison should be OK for now.
+                    // The native VS is strict about type equality (e.g. the next pointer type isn't
+                    // allowed to be dervied from the head pointer type).
+                    _logger.Error($"(Natvis) <HeadPointer> and {element} don't evaluate to the " +
+                                  $"same type. Expected '{headPointerType.GetName()}', got " +
+                                  $"'{type.GetName()}'.");
+                    return false;
+                }
             }
 
-            return await HandleTreeItemsNodeAsync(treeItems.ValueNode, context);
+            return true;
         }
 
         /// <summary>
@@ -1025,12 +1043,22 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         /// <return>Boolean value indicating correctness of non-optional expressions.</return>
         async Task<bool> HandleVariableAsync(VariableType variable, Context context)
         {
-            var sbType = await CompileExpressionAsync(variable.InitialValue, context);
-            if (sbType != null)
+            var (type, error) = await CompileExpressionAsync(variable.InitialValue, context);
+            if (type != null)
             {
                 // Redefinition of the same name more than once is allowed.
-                context.Arguments.Add(variable.Name, sbType);
+                context.Arguments.Add(variable.Name, type);
                 return true;
+            }
+            else if (!IsCriticalError(error))
+            {
+                // Declaring variable is one of exceptions where compilation fails even if the
+                // error isn't critical. The reason is that the result type is required for context
+                // of subsequent elements in CustomListItems.
+                // Since the error isn't critical, it wasn't logged earlier and is logged here.
+                _logger.Error(
+                    $"(Natvis) Error while parsing expression '{variable.InitialValue}'" +
+                    $" in the context of type '{context.Scope.GetName()}': " + error.GetCString());
             }
             return false;
         }
@@ -1101,13 +1129,13 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             expr = NatvisExpressionEvaluator.ReplaceScopedNames(vsExpression.Value,
                                                                 context.ScopedNames);
 
-            SbType result = await CompileExpressionAsync(expr, context);
-            if (result == null)
+            var (type, error) = await CompileExpressionAsync(expr, context);
+            if (IsCriticalError(error))
             {
                 return false;
             }
 
-            if (resultTypeChecker != null && !resultTypeChecker.Predicate(result))
+            if (type != null && resultTypeChecker != null && !resultTypeChecker.Predicate(type))
             {
                 _logger.Error($"(Natvis) Invalid type of '{expr}': {resultTypeChecker.Message}");
                 return false;
@@ -1117,10 +1145,30 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         }
 
         /// <summary>
+        /// Determines whether it is kind of error which should result in compilation failure.
+        /// Some errors (e.g. "not implemented") do not cause failure when using "lldb-eval with
+        /// fallback" expression evalution strategy.
+        /// </summary>
+        public bool IsCriticalError(SbError error)
+        {
+            if (error == null)
+            {
+                return false;
+            }
+
+            // In the case of lldb-eval, fallback should happen for any kind of error.
+            // Otherwise, the option should be "lldb-eval with fallback". In that case, all
+            // errors except "Not implemented" should trigger a fallback. It's expected that
+            // features which are not implemented by lldb-eval could be handled better by LLDB.
+            return _expressionEvaluationStrategy == ExpressionEvaluationStrategy.LLDB_EVAL ||
+                   (LldbEvalErrorCode)error.GetError() != LldbEvalErrorCode.NotImplemented;
+        }
+
+        /// <summary>
         /// Compiled a simple expression (without formatting extensions).
         /// </summary>
         /// <returns>Type of result, or null in the case of error.</returns>
-        async Task<SbType> CompileExpressionAsync(string expr, Context context)
+        async Task<(SbType, SbError)> CompileExpressionAsync(string expr, Context context)
         {
             (SbType type, SbError error) =
                 await _target.CompileExpressionAsync(context.Scope, expr, context.Arguments);
@@ -1129,7 +1177,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             {
                 _logger.Error($"(Natvis) Error while parsing expression '{expr}' in the context " +
                               $"of type '{context.Scope.GetName()}': {error.GetCString()}");
-                return null;
+                return (null, error);
             }
 
             if (string.IsNullOrEmpty(type?.GetName()))
@@ -1137,20 +1185,20 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 // Type is invalid, but error isn't set. This isn't expected to happen.
                 _logger.Warning($"(Natvis) Received null result while parsing expression " +
                                 $"'{expr}' in the context of type '{context.Scope.GetName()}'.");
-                return null;
+                return (null, null);
             }
 
-            return type;
+            return (type, null);
         }
 
         async Task<uint> CompileSizeSpecifierAsync(string expr, Context context)
         {
-            var result = await CompileExpressionAsync(expr, context);
-            if (result == null)
+            var (type, error) = await CompileExpressionAsync(expr, context);
+            if (IsCriticalError(error))
             {
                 throw new ExpressionEvaluationFailed($"invalid expression '{expr}'");
             }
-            if (!IsIntegerType(result))
+            if (type != null && !IsIntegerType(type))
             {
                 throw new ExpressionEvaluationFailed($"'{expr}' isn't integer");
             }
