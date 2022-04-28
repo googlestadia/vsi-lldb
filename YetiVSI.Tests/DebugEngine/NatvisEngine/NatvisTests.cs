@@ -3785,6 +3785,57 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         }
 
         [Test]
+        public async Task IndexListItemsWithErrorInValueNodeConditionAsync()
+        {
+            if (IsNatvisCompilerEnabled())
+            {
+                Assert.Ignore();
+            }
+
+            var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+  <Type Name=""ParentType"">
+    <Expand HideRawView=""true"">
+      <IndexListItems>
+        <Size>listSize</Size>
+        <ValueNode Condition=""invalidExpr"">list[$i]</ValueNode>
+        <ValueNode Condition=""true"">list[$i]</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
+";
+            LoadFromString(xml);
+
+            var remoteValue =
+                RemoteValueFakeUtil.CreateClass("ParentType", "parentName", "parentValue");
+
+            remoteValue.AddChild(RemoteValueFakeUtil.CreateSimpleInt("listSize", 2));
+            var errorValue = RemoteValueFakeUtil.CreateError("undeclared identifier 'invalidExpr'");
+            remoteValue.AddValueFromExpression("invalid_expr", errorValue);
+            remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
+            remoteValue.AddValueFromExpression(
+                "list[0U]", RemoteValueFakeUtil.CreateClass("string", "$10", "a"));
+            remoteValue.AddValueFromExpression("invalidExpr", errorValue);
+            remoteValue.AddValueFromExpression("true", TRUE_REMOTE_VALUE);
+            remoteValue.AddValueFromExpression(
+                "list[1U]", RemoteValueFakeUtil.CreateClass("string", "$11", "b"));
+
+            var varInfo = CreateVarInfo(remoteValue);
+            var children = await varInfo.GetAllChildrenAsync();
+
+            Assert.That(nLogSpy.GetOutput(), Does.Not.Contain("ERROR"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("WARNING"));
+            Assert.That(nLogSpy.GetOutput(), Does.Contain("undeclared identifier 'invalidExpr'"));
+
+            Assert.That(children.Length, Is.EqualTo(2));
+            Assert.That(children[0].DisplayName, Is.EqualTo("[0]"));
+            Assert.That(await children[0].ValueAsync(), Is.EqualTo("a"));
+            Assert.That(children[1].DisplayName, Is.EqualTo("[1]"));
+            Assert.That(await children[1].ValueAsync(), Is.EqualTo("b"));
+        }
+
+        [Test]
         public async Task IndexListItemsWithoutValidValueNodeAsync()
         {
             var xml = @"

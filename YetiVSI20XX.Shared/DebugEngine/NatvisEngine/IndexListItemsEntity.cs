@@ -180,12 +180,20 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     continue;
                 }
 
-                // Pick the first entry whose condition evaluates to "true".
-                bool condition = await _evaluator.EvaluateConditionAsync(
-                    vn.Condition, _variable, scope);
-                if (condition)
+                try
                 {
-                    return vn;
+                    // Pick the first entry whose condition evaluates to "true".
+                    bool condition =
+                        await _evaluator.EvaluateConditionAsync(vn.Condition, _variable, scope);
+                    if (condition)
+                    {
+                        return vn;
+                    }
+                }
+                catch (ExpressionEvaluationFailed ex)
+                {
+                    // In the case of error in Condition, log a warning and continue the search.
+                    _logger.Warning($"Invalid Condition in <ValueNode> found: {ex.Message}");
                 }
             }
             _logger.Warning("No valid <ValueNode> found");
