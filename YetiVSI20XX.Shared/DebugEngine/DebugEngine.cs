@@ -536,7 +536,8 @@ namespace YetiVSI.DebugEngine
                 }
                 else if (_launchOption == LaunchOption.AttachToGame)
                 {
-                    attachPid = GetRemoteProcessIdAndCheckExecutable(process);
+                    attachPid = GetProcessId(process);
+                    CheckExecutable(attachPid);
                 }
             }
             catch (PreflightBinaryCheckerException e)
@@ -637,20 +638,19 @@ namespace YetiVSI.DebugEngine
             return VSConstants.S_OK;
         }
 
-        uint? GetRemoteProcessIdAndCheckExecutable(IDebugProcess2 process)
+        void CheckExecutable(uint? processId)
         {
             _taskContext.ThrowIfNotOnMainThread();
             var preflightCheckAction = _actionRecorder.CreateToolAction(
                 ActionType.DebugPreflightBinaryChecks);
 
-            uint? attachPid = GetProcessId(process);
-            if (attachPid.HasValue)
+            if (processId.HasValue)
             {
                 _cancelableTaskFactory.Create(TaskMessages.CheckingRemoteBinary,
                                               async _ =>
                                                   await _preflightBinaryChecker
                                                       .CheckRemoteBinaryOnAttachAsync(
-                                                          attachPid.Value, _target,
+                                                          processId.Value, _target,
                                                           preflightCheckAction))
                     .RunAndRecord(preflightCheckAction);
             }
@@ -658,8 +658,6 @@ namespace YetiVSI.DebugEngine
             {
                 Trace.WriteLine("Failed to get target process ID; skipping remote build id check");
             }
-
-            return attachPid;
         }
 
         void CheckIfLocalAndRemoteExecutableBinariesAreSame()
