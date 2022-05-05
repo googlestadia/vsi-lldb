@@ -35,6 +35,13 @@ using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI
 {
+    public class ExecutableNotFoundException : Exception,IUserVisibleError
+    {
+        public ExecutableNotFoundException(string message) : base(message)
+        {
+        }
+    }
+
     public class GgpDebugQueryTarget
     {
         readonly IFileSystem _fileSystem;
@@ -252,6 +259,14 @@ namespace YetiVSI
                                                  TestBenchmarkScope.Recorder))
                         {
                             await _remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
+                        }
+
+                        if (!await _remoteDeploy.FileExistsAsync(
+                                sshTarget, Path.Combine(YetiConstants.RemoteGamePath,
+                                                        gameletExecutableRelPath)))
+                        {
+                            throw new ExecutableNotFoundException(
+                                ErrorStrings.LaunchEndedGameBinaryNotFound);
                         }
                     }).RunAndRecord(action);
 

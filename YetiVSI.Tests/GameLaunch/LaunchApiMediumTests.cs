@@ -332,6 +332,10 @@ namespace YetiVSI.Test.GameLaunch
             var debugTargetCompRoot =
                 new MediumTestGgpDebugQueryTargetCompRoot(serviceManager, dialogUtil,
                                                           gameletClientFactory);
+            // Make the check for if the executable was loaded always succeed.
+            debugTargetCompRoot.GetRemoteCommand(null)
+                .RunWithSuccessCapturingOutputAsync(default, default)
+                .ReturnsForAnyArgs(new List<string> { "Yeah" });
             _taskContext.RunOnMainThread(() =>
             {
                 var debugTargetWrapperFactory = new GgpDebugQueryTargetWrapperFactory(

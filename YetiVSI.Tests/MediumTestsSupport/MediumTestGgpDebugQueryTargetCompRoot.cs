@@ -24,6 +24,7 @@ namespace YetiVSI.Test.MediumTestsSupport
     {
         CancelableTask.Factory _cancelableTaskFactory;
         IGameletClientFactory _gameletClientFactory;
+        IRemoteCommand _remoteCommand = Substitute.For<IRemoteCommand>();
 
         public MediumTestGgpDebugQueryTargetCompRoot(ServiceManager serviceManager,
                                                      IDialogUtil dialogUtil,
@@ -60,9 +61,8 @@ namespace YetiVSI.Test.MediumTestsSupport
             return _gameletClientFactory;
         }
 
-        public override IRemoteCommand GetRemoteCommand(
-            ManagedProcess.Factory managedProcessFactory) =>
-            Substitute.For<IRemoteCommand>();
+        public override IRemoteCommand
+        GetRemoteCommand(ManagedProcess.Factory managedProcessFactory) => _remoteCommand;
 
         public override Versions.SdkVersion GetSdkVersion() =>
             Versions.SdkVersion.Create("1.60");

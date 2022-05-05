@@ -113,6 +113,7 @@ namespace YetiVSI.Test
             _identityClient = Substitute.For<IIdentityClient>();
 
             _remoteDeploy = Substitute.For<IRemoteDeploy>();
+            _remoteDeploy.FileExistsAsync(default, default).ReturnsForAnyArgs(true);
             _dialogUtil = Substitute.For<IDialogUtil>();
 
             var credentialManager = Substitute.For<YetiCommon.ICredentialManager>();
@@ -280,6 +281,18 @@ namespace YetiVSI.Test
 
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiDeployBinary,
                                  DeveloperEventStatus.Types.Code.ExternalToolUnavailable);
+        }
+
+        [Test]
+        public async Task LaunchNoDebugDeploySucceedsButNoExecutableAsync()
+        {
+            Gamelet gamelet = SetupReservedGamelet();
+
+            _remoteDeploy.FileExistsAsync(default, default).ReturnsForAnyArgs(false);
+
+            await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
+            _dialogUtil.Received().ShowError(
+                Arg.Is<string>(x => x.Contains("game binary was not found")), Arg.Any<Exception>());
         }
 
         [Test]
