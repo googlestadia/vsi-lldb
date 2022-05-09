@@ -230,6 +230,15 @@ array<unsigned char> ^ ToArray(const void* data, size_t dataSize) {
   return managedData;
 }
 
+bool IsAllZero(const uint8_t* ptr, uint32_t size) {
+  for (uint32_t i = 0; i < size; ++i) {
+    if (ptr[i] != 0) {
+      return 0;
+    }
+  }
+  return true;
+}
+
 }  // namespace
 
 LLDBValue::LLDBValue(lldb::SBValue value) {
@@ -453,6 +462,11 @@ array<unsigned char> ^
     maxStringSize =
         static_cast<uint32_t>(min(maxStringSize, value_->GetByteSize()));
     address = value_->GetLoadAddress();
+    if (address == LLDB_INVALID_ADDRESS) {
+      // Invalid array address indicates that the string could be constructed
+      // locally by debugger (e.g. lldb-eval may construct strings this way).
+      return GetLocalArrayDataAsString(charSize, maxStringSize, error);
+    }
   } else {
     error = "<type must be pointer or array>";
     return nullptr;
@@ -513,6 +527,43 @@ array<unsigned char> ^
 
     // Read a bit more next time.
     bytesToRead = min(bytesToRead * 2, MAX_BYTES_TO_READ);
+  }
+
+  return ToArray(data.data(), data.size());
+}
+
+array<unsigned char> ^
+    LLDBValue::GetLocalArrayDataAsString(
+        uint32_t charSize, uint32_t maxStringSize,
+        [System::Runtime::InteropServices::Out] System::String ^ % error) {
+  error = nullptr;
+  if (!value_->GetType().IsArrayType()) {
+    // The caller performs type checks, too. This isn't expected to happen.
+    error = "<type must be array>";
+    return nullptr;
+  }
+
+  lldb::SBData sbData = value_->GetData();
+  if (!sbData.IsValid()) {
+    error = "<invalid>";
+    return nullptr;
+  }
+
+  maxStringSize =
+      min(maxStringSize, static_cast<uint32_t>(sbData.GetByteSize()));
+  std::vector<uint8_t> data;
+  data.resize(maxStringSize);
+  lldb::SBError sbError;
+  size_t count = sbData.ReadRawData(sbError, 0, data.data(), data.size());
+
+  // String should not be terminate at the first null value for arrays.
+  // However, trim the last '\0' for better display.
+  if (count >= charSize && IsAllZero(data.data() + count - charSize, charSize)) {
+    count -= charSize;
+  }
+
+  if (count < data.size()) {
+    data.resize(count);
   }
 
   return ToArray(data.data(), data.size());

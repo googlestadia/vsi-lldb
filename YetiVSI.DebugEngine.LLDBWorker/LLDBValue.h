@@ -73,6 +73,11 @@ ref class LLDBValue sealed : SbValue {
   lldb::SBValue GetNativeObject();
 
  private:
+  virtual array<unsigned char> ^ GetLocalArrayDataAsString(
+      uint32_t charSize, uint32_t maxStringSize,
+      [System::Runtime::InteropServices::Out] System::String ^ % error) sealed;
+
+ private:
   ManagedUniquePtr<lldb::SBValue> ^ value_;
   ManagedUniquePtr<lldb::SBError> ^ error_;
 };

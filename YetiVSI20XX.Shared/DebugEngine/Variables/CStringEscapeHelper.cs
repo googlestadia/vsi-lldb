@@ -34,6 +34,7 @@ namespace YetiVSI.DebugEngine.Variables
             { '\v', "\\v" },
             { '\\', "\\\\" },
             { '"', "\\\"" },
+            { '\0', "\\0" },
         };
 
         static readonly Dictionary<char, char> unescapeCharacters = new Dictionary<char, char>
@@ -47,6 +48,7 @@ namespace YetiVSI.DebugEngine.Variables
             { 'v', '\v' },
             { '\\', '\\' },
             { '"', '"' },
+            { '0', '\0' },
         };
 
         static readonly List<string> stringLiteralPrefixes = new List<string>()
