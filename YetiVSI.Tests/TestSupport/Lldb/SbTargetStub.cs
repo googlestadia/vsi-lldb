@@ -67,9 +67,10 @@ namespace YetiVSI.Test.TestSupport.Lldb
 
         public SbProcess LoadCore(string coreFile) => new SbProcessStub(this, coreFile);
 
-        public EventType AddListener(SbListener listener, EventType eventMask) => eventMask;
+        public EventType AddListener(SbListener listener,
+                                     TargetEventType eventMask) => (EventType)eventMask;
 
-        #region Not Implemented
+#region Not Implemented
         public SbModule AddModule(string path, string triple, string uuid)
         {
             throw new NotImplementedTestDoubleException();

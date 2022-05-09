@@ -28,20 +28,26 @@ namespace DebuggerGrpcServer
         readonly ConcurrentDictionary<long, SbListener> _listenerStore;
         readonly LLDBListenerFactory _listenerFactory;
         readonly LLDBBreakpointApi _breakpointApi;
+        readonly LLDBProcessApi _processApi;
+        readonly LLDBTargetApi _targetApi;
 
-        public SbListenerRpcServiceImpl(ConcurrentDictionary<long, SbListener> listenerStore) :
-            this(listenerStore, new LLDBListenerFactory(), new LLDBBreakpointApi())
+        public SbListenerRpcServiceImpl(ConcurrentDictionary<long, SbListener> listenerStore)
+            : this(listenerStore, new LLDBListenerFactory(), new LLDBBreakpointApi(),
+                   new LLDBProcessApi(), new LLDBTargetApi())
         {
         }
 
         // Constructor that can be used by tests to pass in mock objects.
         public SbListenerRpcServiceImpl(ConcurrentDictionary<long, SbListener> listenerStore,
                                         LLDBListenerFactory listenerFactory,
-                                        LLDBBreakpointApi breakpointApi)
+                                        LLDBBreakpointApi breakpointApi, LLDBProcessApi processApi,
+                                        LLDBTargetApi targetApi)
         {
             _listenerStore = listenerStore;
             _listenerFactory = listenerFactory;
             _breakpointApi = breakpointApi;
+            _processApi = processApi;
+            _targetApi = targetApi;
         }
 
         #region SbListenerRpcService.SbTargetRpcServiceBase
@@ -79,12 +85,13 @@ namespace DebuggerGrpcServer
             };
             if (result)
             {
-                response.Event = new GrpcSbEvent
-                {
+                response.Event = new GrpcSbEvent {
                     Type = (uint)evnt.GetEventType(),
                     Description = evnt.GetDescription(),
                     HasProcessResumed = evnt.GetProcessRestarted(),
-                    IsBreakpointEvent = _breakpointApi.EventIsBreakpointEvent(evnt)
+                    IsBreakpointEvent = _breakpointApi.EventIsBreakpointEvent(evnt),
+                    IsProcessEvent = _processApi.EventIsProcessEvent(evnt),
+                    IsTargetEvent = _targetApi.EventIsTargetEvent(evnt),
                 };
                 if ((evnt.GetEventType() & EventType.STATE_CHANGED) != 0)
                 {

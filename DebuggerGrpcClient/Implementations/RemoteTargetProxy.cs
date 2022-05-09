@@ -456,7 +456,7 @@ namespace DebuggerGrpcClient
             return new List<InstructionInfo>();
         }
 
-        public EventType AddListener(SbListener listener, EventType eventMask)
+        public EventType AddListener(SbListener listener, TargetEventType eventMask)
         {
             var request = new AddListenerRequest
             {

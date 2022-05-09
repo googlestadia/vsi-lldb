@@ -83,6 +83,11 @@ namespace YetiVSI.DebugEngine
         /// </summary>
         public virtual event EventHandler<BreakpointChangedEventArgs> BreakpointChanged;
 
+        /// <summary>
+        /// Raises when modules are loaded or unloaded.
+        /// </summary>
+        public virtual event EventHandler<ModulesChangedEventArgs> ModulesChanged;
+
         public LldbListenerSubscriber(SbListener lldbListener)
         {
             _lldbListener = lldbListener;
@@ -121,9 +126,21 @@ namespace YetiVSI.DebugEngine
                             BreakpointChanged?.Invoke(
                                 null, new BreakpointChangedEventArgs(lldbEvent));
                         }
-                        else if ((eventType & EventType.STATE_CHANGED) != 0)
+                        else if (lldbEvent.IsProcessEvent)
                         {
-                            StateChanged?.Invoke(null, new StateChangedEventArgs(lldbEvent));
+                            if ((eventType & EventType.STATE_CHANGED) != 0)
+                            {
+                                StateChanged?.Invoke(null, new StateChangedEventArgs(lldbEvent));
+                            }
+                        }
+                        else if (lldbEvent.IsTargetEvent)
+                        {
+                            TargetEventType targetEventType = (TargetEventType)eventType;
+                            if ((targetEventType & TargetEventType.MODULES_LOADED) != 0 ||
+                                (targetEventType & TargetEventType.MODULES_UNLOADED) != 0)
+                            {
+                                ModulesChanged?.Invoke(null, new ModulesChangedEventArgs());
+                            }
                         }
                         else if ((eventType & EventType.STRUCTURED_DATA) != 0)
                         {
@@ -201,6 +218,13 @@ namespace YetiVSI.DebugEngine
         public BreakpointChangedEventArgs(SbEvent evt)
         {
             Event = evt;
+        }
+    }
+
+    public sealed class ModulesChangedEventArgs : EventArgs
+    {
+        public ModulesChangedEventArgs()
+        {
         }
     }
 }

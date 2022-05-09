@@ -12,8 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace DebuggerApi
 {
+    [Flags]
+    public enum ProcessEventType : uint
+    {
+        STATE_CHANGED = (1 << 0),
+        INTERRUPT = (1 << 1),
+    }
+    ;
+
     // Interface mirrors the SBProcess API as closely as possible.
     public interface SbProcess
     {

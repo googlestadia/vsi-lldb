@@ -232,9 +232,9 @@ namespace YetiVSI.DebugEngine
 
                 var breakpointManager =
                     _breakpointManagerFactory.Create(debugEngineHandler, debugProgram);
-                var eventManager =
-                    _eventManagerFactory.Create(debugEngineHandler, breakpointManager, debugProgram,
-                                                process, listenerSubscriber);
+                var eventManager = _eventManagerFactory.Create(
+                    debugEngineHandler, breakpointManager, debugProgram, process, debugModuleCache,
+                    target, listenerSubscriber);
 
                 // TODO: Listen for module load/unload events from LLDB
                 binaryLoader.LldbModuleReplaced += (o, args) =>

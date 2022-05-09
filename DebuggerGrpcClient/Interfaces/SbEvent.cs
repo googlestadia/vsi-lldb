@@ -70,9 +70,17 @@ namespace DebuggerApi
         // Returns true if the process has resumed running after stop.
         bool GetProcessRestarted();
 
+        // Returns true if the event was raised by SBBreakpoint.
         bool IsBreakpointEvent { get; }
 
+        // Contains the information about a breakpoint event.
         IEventBreakpointData BreakpointData { get; }
+
+        // Returns true if the event was raised by SBProcess.
+        bool IsProcessEvent { get; }
+
+        // Returns true if the event represents a SBTarget event.
+        bool IsTargetEvent { get; }
     }
 
     public interface IEventBreakpointData

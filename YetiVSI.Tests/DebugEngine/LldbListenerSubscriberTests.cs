@@ -84,6 +84,7 @@ namespace YetiVSI.Test.DebugEngine
             var eventReceived = new AutoResetEvent(false);
             var mockSbEvent = Substitute.For<SbEvent>();
             mockSbEvent.GetEventType().Returns(EventType.STATE_CHANGED);
+            mockSbEvent.IsProcessEvent.Returns(true);
 
             var mockSbListener = Substitute.For<SbListener>();
             mockSbListener.WaitForEvent(Arg.Any<uint>(), out var _).Returns(x => {

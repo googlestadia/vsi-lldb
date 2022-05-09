@@ -40,11 +40,12 @@ namespace YetiVSI.DebugEngine
             public virtual IEventManager Create(IDebugEngineHandler debugEngineHandler,
                                                 IBreakpointManager breakpointManager,
                                                 IGgpDebugProgram program, SbProcess process,
+                                                IDebugModuleCache moduleCache, RemoteTarget target,
                                                 LldbListenerSubscriber listenerSubscriber)
             {
                 return new LldbEventManager(debugEngineHandler, breakpointManager,
                                             _boundBreakpointEnumFactory, program, process,
-                                            listenerSubscriber, _taskContext);
+                                            moduleCache, target, listenerSubscriber, _taskContext);
             }
         }
 
@@ -53,6 +54,8 @@ namespace YetiVSI.DebugEngine
         readonly IGgpDebugProgram _program;
         readonly BoundBreakpointEnumFactory _boundBreakpointEnumFactory;
         readonly SbProcess _lldbProcess;
+        readonly IDebugModuleCache _moduleCache;
+        readonly RemoteTarget _target;
         readonly LldbListenerSubscriber _lldbListenerSubscriber;
         readonly JoinableTaskContext _taskContext;
 
@@ -68,14 +71,17 @@ namespace YetiVSI.DebugEngine
         LldbEventManager(IDebugEngineHandler debugEngineHandler,
                          IBreakpointManager breakpointManager,
                          BoundBreakpointEnumFactory boundBreakpointEnumFactory,
-                         IGgpDebugProgram program, SbProcess process,
-                         LldbListenerSubscriber listenerSubscriber, JoinableTaskContext taskContext)
+                         IGgpDebugProgram program, SbProcess process, IDebugModuleCache moduleCache,
+                         RemoteTarget target, LldbListenerSubscriber listenerSubscriber,
+                         JoinableTaskContext taskContext)
         {
             _debugEngineHandler = debugEngineHandler;
             _lldbBreakpointManager = breakpointManager;
             _boundBreakpointEnumFactory = boundBreakpointEnumFactory;
             _program = program;
             _lldbProcess = process;
+            _moduleCache = moduleCache;
+            _target = target;
             _lldbListenerSubscriber = listenerSubscriber;
             _taskContext = taskContext;
         }
@@ -109,6 +115,7 @@ namespace YetiVSI.DebugEngine
             {
                 _lldbListenerSubscriber.StateChanged += LldbListenerOnStateChanged;
                 _lldbListenerSubscriber.ExceptionOccured += LldbListenerOnExceptionOccured;
+                _lldbListenerSubscriber.ModulesChanged += LldbListenerOnModulesChanged;
                 _subscribedToEvents = true;
             }
         }
@@ -131,6 +138,7 @@ namespace YetiVSI.DebugEngine
             {
                 _lldbListenerSubscriber.StateChanged -= LldbListenerOnStateChanged;
                 _lldbListenerSubscriber.ExceptionOccured -= LldbListenerOnExceptionOccured;
+                _lldbListenerSubscriber.ModulesChanged -= LldbListenerOnModulesChanged;
                 _subscribedToEvents = false;
             }
         }
@@ -384,6 +392,30 @@ namespace YetiVSI.DebugEngine
             }
             return new ExceptionEvent(name, (uint)signalNumber, AD7Constants.VsExceptionStopState,
                                       description);
+        }
+
+        private void LldbListenerOnModulesChanged(object sender, ModulesChangedEventArgs e)
+        {
+            // TODO: Use the module information in the load/unload events to simplify
+            // which modules are changing.
+            int numModules = _target.GetNumModules();
+            List<SbModule> modules = new List<SbModule>();
+            for (int i = 0; i < numModules; ++i)
+            {
+                var module = _target.GetModuleAtIndex(i);
+                if (module == null)
+                {
+                    continue; // ignore and continue.
+                }
+
+                modules.Add(module);
+            }
+
+            // Remove unloaded modules from cache.
+            _moduleCache.RemoveAllExcept(modules);
+
+            // Add loaded modules to cache.
+            modules.ForEach(m => _moduleCache.GetOrCreate(m, _program));
         }
     }
 }

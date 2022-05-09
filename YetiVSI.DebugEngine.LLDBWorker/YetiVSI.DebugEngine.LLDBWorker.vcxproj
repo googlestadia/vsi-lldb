@@ -21,7 +21,9 @@
     <ClInclude Include="LLDBExpressionOptionsFactory.h" />
     <ClInclude Include="LLDBFileSpecFactory.h" />
     <ClInclude Include="LLDBMemoryRegionInfo.h" />
+    <ClInclude Include="LLDBProcessApi.h" />
     <ClInclude Include="LLDBSection.h" />
+    <ClInclude Include="LLDBTargetApi.h" />
     <ClInclude Include="LLDBType.h" />
     <ClInclude Include="LLDBAddress.h" />
     <ClInclude Include="LLDBBreakpoint.h" />
@@ -86,11 +88,13 @@
     <ClCompile Include="LLDBPlatformFactory.cc" />
     <ClCompile Include="LLDBPlatformShellCommand.cc" />
     <ClCompile Include="LLDBPlatformShellCommandFactory.cc" />
+    <ClCompile Include="LLDBProcessApi.cpp" />
     <ClCompile Include="LLDBSection.cc" />
     <ClCompile Include="LLDBStackFrame.cc" />
     <ClCompile Include="LLDBDebuggerFactory.cc" />
     <ClCompile Include="LLDBSymbol.cc" />
     <ClCompile Include="LLDBTarget.cc" />
+    <ClCompile Include="LLDBTargetApi.cpp" />
     <ClCompile Include="LLDBThread.cc" />
     <ClCompile Include="LLDBDebugger.cc" />
     <ClCompile Include="LLDBProcess.cc" />

@@ -29,6 +29,17 @@ namespace DebuggerApi
         PositionNotAvailable = 3,
     };
 
+    [Flags]
+    public enum TargetEventType
+    {
+        NONE = 0,
+        BREAKPOINT_CHANGED = (1 << 0),
+        MODULES_LOADED = (1 << 1),
+        MODULES_UNLOADED = (1 << 2),
+        WATCHPOINT_CHANGED = (1 << 3),
+        SYMBOLS_LOADED = (1 << 4)
+    }
+
     /// <summary>
     /// Interface based off SBTarget API.
     /// </summary>
@@ -140,7 +151,7 @@ namespace DebuggerApi
         /// event types the listener should listen to.</param>
         /// <returns>An event mask, which specifies an actual event set,
         /// to which the listener was subscribed.</returns>
-        EventType AddListener(SbListener listener, EventType eventMask);
+        EventType AddListener(SbListener listener, TargetEventType eventMask);
 
         /// <summary>
         /// Compiles |expression| in the context of the target and the |scope| type using

@@ -41,7 +41,7 @@ namespace YetiVSI.Test.DebugEngine
             _listener = Substitute.For<SbListener>();
             _listenerSubscriber = Substitute.For<LldbListenerSubscriber>(_listener);
             _eventManager = new LldbEventManager.Factory(new BoundBreakpointEnumFactory(), null)
-                                .Create(null, null, null, null, _listenerSubscriber);
+                                .Create(null, null, null, null, null, null, _listenerSubscriber);
         }
 
         [Test]
@@ -75,6 +75,8 @@ namespace YetiVSI.Test.DebugEngine
         SbListener _mockSbListener;
         LldbListenerSubscriber _mockListenerSubscriber;
         SbProcess _mockSbProcess;
+        IDebugModuleCache _mockModuleCache;
+        RemoteTarget _mockRemoteTarget;
         SbEvent _mockSbEvent;
         RemoteThread _mockRemoteThread;
         IBreakpointManager _mockBreakpointManager;
@@ -94,6 +96,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             _mockSbListener = Substitute.For<SbListener>();
             _mockSbProcess = Substitute.For<SbProcess>();
+            _mockModuleCache = Substitute.For<IDebugModuleCache>();
+            _mockRemoteTarget = Substitute.For<RemoteTarget>();
             _mockSbEvent = Substitute.For<SbEvent>();
             _mockRemoteThread = Substitute.For<RemoteThread>();
             _mockBreakpointManager = Substitute.For<IBreakpointManager>();
@@ -121,7 +125,8 @@ namespace YetiVSI.Test.DebugEngine
                 new LldbEventManager
                     .Factory(new BoundBreakpointEnumFactory(), _threadContext.JoinableTaskContext)
                     .Create(_mockDebugEngineHandler, _mockBreakpointManager, _mockProgram,
-                            _mockSbProcess, _mockListenerSubscriber);
+                            _mockSbProcess, _mockModuleCache, _mockRemoteTarget,
+                            _mockListenerSubscriber);
 
             var lldbEventManager = _eventManager as LldbEventManager;
             lldbEventManager?.SubscribeToChanges();
@@ -705,6 +710,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             _mockSbEvent.GetEventType().Returns(eventType);
             _mockSbEvent.GetStateType().Returns(stateType);
+            _mockSbEvent.IsBreakpointEvent.Returns(false);
+            _mockSbEvent.IsProcessEvent.Returns(true);
             _mockSbEvent.GetProcessRestarted().Returns(processResumed);
         }
 

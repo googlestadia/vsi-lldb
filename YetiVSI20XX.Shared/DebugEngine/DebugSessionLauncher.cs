@@ -228,7 +228,9 @@ namespace YetiVSI.DebugEngine
 
             var lldbListener = CreateListener(grpcConnection);
             // This is required to catch breakpoint change events.
-            stadiaDebugger.Target.AddListener(lldbListener, EventType.STATE_CHANGED);
+            stadiaDebugger.Target.AddListener(lldbListener, TargetEventType.BREAKPOINT_CHANGED |
+                                                                TargetEventType.MODULES_LOADED |
+                                                                TargetEventType.MODULES_UNLOADED);
             var listenerSubscriber = new LldbListenerSubscriber(lldbListener);
             LldbFileUpdateListener fileUpdateListener = new LldbFileUpdateListener(
                 listenerSubscriber, task);

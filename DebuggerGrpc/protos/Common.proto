@@ -248,6 +248,8 @@ message GrpcSbEvent {
   bool hasProcessResumed = 4;
   bool isBreakpointEvent = 5;
   GrpcEventBreakpointData breakpointData = 6;
+  bool isProcessEvent = 7;
+  bool isTargetEvent = 8;
 }
 
 message GrpcEventBreakpointData {

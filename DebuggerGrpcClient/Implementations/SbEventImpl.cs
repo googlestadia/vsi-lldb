@@ -83,7 +83,11 @@ namespace DebuggerGrpcClient
             ? new EventBreakpointData(grpcSbEvent.BreakpointData)
             : null;
 
-        #endregion
+        public bool IsProcessEvent => grpcSbEvent.IsProcessEvent;
+
+        public bool IsTargetEvent => grpcSbEvent.IsTargetEvent;
+
+#endregion
     }
 
     public class EventBreakpointData : IEventBreakpointData
