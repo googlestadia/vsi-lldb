@@ -97,7 +97,7 @@ namespace YetiVSI
         {
             var output = await _remoteCommand.RunWithSuccessCapturingOutputAsync(
                 target,
-                $"[ -f {ProcessUtil.QuoteAndEscapeArgumentForSsh(fullPath)} ] && echo 'Yeah'");
+                $"[ -f {ProcessUtil.QuoteAndEscapeArgumentForSsh(fullPath)} ] && echo 'Yeah' || echo 'No'");
             return output[0] == "Yeah";
         }
 
