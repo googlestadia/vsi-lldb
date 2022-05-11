@@ -16,11 +16,38 @@ using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.VCProjectEngine;
 using System.Collections.Generic;
 using System.Diagnostics;
+using YetiCommon;
 using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Util;
 
 namespace YetiVSI
 {
+    public static class ISolutionExplorerExtensions
+    {
+        public static HashSet<string> GetLLDBSearchPaths(this ISolutionExplorer se)
+        {
+            var libPaths = new HashSet<string>(SDKUtil.GetLibraryPaths());
+
+            // Add search paths for all open projects.
+            foreach (ISolutionExplorerProject project in se.EnumerateProjects())
+            {
+                string outputDirectory = project.OutputDirectory;
+                if (!string.IsNullOrEmpty(outputDirectory))
+                {
+                    libPaths.Add(outputDirectory);
+                }
+
+                string targetDirectory = project.TargetDirectory;
+                if (!string.IsNullOrEmpty(targetDirectory))
+                {
+                    libPaths.Add(targetDirectory);
+                }
+            }
+
+            return libPaths;
+        }
+    }
+
     public class SolutionExplorer : ISolutionExplorer
     {
         public class Factory

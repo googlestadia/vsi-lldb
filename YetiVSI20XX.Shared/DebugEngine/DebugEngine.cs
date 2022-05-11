@@ -1180,43 +1180,18 @@ namespace YetiVSI.DebugEngine
             return VSConstants.S_OK;
         }
 
-        HashSet<string> GetLLDBSearchPaths(string coreFilePath)
+        bool LaunchLldbDebuggerInBackground(string coreFilePath = "")
         {
-            var libPaths = new HashSet<string>(SDKUtil.GetLibraryPaths());
-
-            if (!string.IsNullOrEmpty(coreFilePath))
+            _libPaths = _solutionExplorer.GetLLDBSearchPaths();
+            bool isCoreDumpAttach = !string.IsNullOrEmpty(coreFilePath);
+            if (isCoreDumpAttach)
             {
-                libPaths.Add(Path.GetDirectoryName(coreFilePath));
+                _libPaths.Add(Path.GetDirectoryName(coreFilePath));
             }
-
-            // Add search paths for all open projects.
-            foreach (ISolutionExplorerProject project in _solutionExplorer.EnumerateProjects())
-            {
-                string outputDirectory = project.OutputDirectory;
-                if (!string.IsNullOrEmpty(outputDirectory))
-                {
-                    libPaths.Add(outputDirectory);
-                }
-
-                string targetDirectory = project.TargetDirectory;
-                if (!string.IsNullOrEmpty(targetDirectory))
-                {
-                    libPaths.Add(targetDirectory);
-                }
-            }
-
-            foreach (string path in libPaths)
+            foreach (string path in _libPaths)
             {
                 Trace.WriteLine($"Adding LLDB search path: {path}");
             }
-
-            return libPaths;
-        }
-
-        bool LaunchLldbDebuggerInBackground(string coreFilePath = "")
-        {
-            _libPaths = GetLLDBSearchPaths(coreFilePath);
-            bool isCoreDumpAttach = !string.IsNullOrEmpty(coreFilePath);
 
             // This should take less then 100ms.
             // However if GRPC server will be blocked during start this will give partners
