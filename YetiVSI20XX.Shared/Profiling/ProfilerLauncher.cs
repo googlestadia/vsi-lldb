@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using YetiCommon;
@@ -29,10 +30,14 @@ namespace YetiVSI.Profiling
 
         /// <param name="gameletExecutablePath">Full path to the game binary</param>
         /// <param name="gameletId">ID of the gamelet that runs the binary</param>
-        public OrbitArgs(string gameletExecutablePath, string gameletId)
+        /// <param name="additionalSymbolPaths">Set of additional paths to symbol locations</param>
+        public OrbitArgs(string gameletExecutablePath, string gameletId,
+                         HashSet<string> additionalSymbolPaths)
         {
+            var quotedSymbolPaths =
+                ProcessUtil.QuoteArgument(string.Join(",", additionalSymbolPaths));
             Args = $"--target_process={gameletExecutablePath} --target_instance={gameletId} " +
-                "--launched_from_vsi";
+                   $"--launched_from_vsi --additional_symbol_paths={quotedSymbolPaths}";
         }
     }
 

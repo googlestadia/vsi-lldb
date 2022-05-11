@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using EnvDTE;
+using EnvDTE80;
 using GgpGrpc.Cloud;
-using System.IO.Abstractions;
 using Metrics.Shared;
+using Microsoft.VisualStudio.Shell;
+using System.IO.Abstractions;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
@@ -100,6 +103,12 @@ namespace YetiVSI
                 ProfilerLauncher<DiveArgs>.CreateForDive(backgroundProcessFactory, fileSystem);
             var profilerSshTunnelManager = GetSshTunnelManager(managedProcessFactory);
 
+            var vcProjectInfoFactory = new VsProjectInfo.Factory();
+            var dte2 = Package.GetGlobalService(typeof(DTE)) as DTE2;
+            var envDteUtil = new EnvDteUtil(taskContext, dte2);
+            var solutionExplorer =
+                new SolutionExplorer(taskContext, vcProjectInfoFactory, envDteUtil);
+
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,
@@ -108,7 +117,7 @@ namespace YetiVSI
                                            launchCommandFormatter, yetiVsiService, gameLauncher,
                                            taskContext, new ProjectPropertiesMetricsParser(),
                                            identityClient, orbitLauncher, diveLauncher,
-                                           profilerSshTunnelManager);
+                                           profilerSshTunnelManager, solutionExplorer);
         }
 
         public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();

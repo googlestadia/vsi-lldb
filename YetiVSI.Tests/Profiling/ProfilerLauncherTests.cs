@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using NSubstitute;
@@ -51,7 +52,8 @@ namespace YetiVSI.Test.Profiling
             _processFactory.Create(_orbitLauncher.BinaryPath, argMatcher, SDKUtil.GetOrbitPath())
                 .Returns(orbitProcess);
 
-            _orbitLauncher.Launch(new OrbitArgs(gameletExecutablePath, gameletId));
+            _orbitLauncher.Launch(
+                new OrbitArgs(gameletExecutablePath, gameletId, new HashSet<string>()));
             orbitProcess.Received().Start();
         }
 
@@ -71,7 +73,7 @@ namespace YetiVSI.Test.Profiling
             _processFactory.Create(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns(orbitProcess);
 
-            _orbitLauncher.Launch(new OrbitArgs("", ""));
+            _orbitLauncher.Launch(new OrbitArgs("", "", new HashSet<string>()));
             orbitProcess.Received().Start();
             orbitProcess.DidNotReceive().Kill();
 
@@ -81,7 +83,7 @@ namespace YetiVSI.Test.Profiling
             var orbitLauncher2 =
                 ProfilerLauncher<OrbitArgs>.CreateForOrbit(_processFactory, _mockFileSystem);
 
-            orbitLauncher2.Launch(new OrbitArgs("", ""));
+            orbitLauncher2.Launch(new OrbitArgs("", "", new HashSet<string>()));
             orbitProcess.Received().Kill();
             orbitProcess2.Received().Start();
             orbitProcess2.DidNotReceive().Kill();

@@ -32,6 +32,9 @@ using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Profiling;
 using YetiVSI.ProjectSystem.Abstractions;
+using EnvDTE;
+using EnvDTE80;
+using Microsoft.VisualStudio.Shell;
 
 namespace YetiVSI
 {
@@ -66,8 +69,8 @@ namespace YetiVSI
         readonly IProfilerLauncher<OrbitArgs> _orbitLauncher;
         readonly IProfilerLauncher<DiveArgs> _diveLauncher;
         readonly ISshTunnelManager _profilerSshTunnelManager;
+        readonly ISolutionExplorer _solutionExplorer;
 
-        // Constructor for tests.
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
                                    IGameletClientFactory gameletClientFactory,
                                    IApplicationClientFactory applicationClientFactory,
@@ -85,7 +88,8 @@ namespace YetiVSI
                                    IIdentityClient identityClient,
                                    IProfilerLauncher<OrbitArgs> orbitLauncher,
                                    IProfilerLauncher<DiveArgs> diveLauncher,
-                                   ISshTunnelManager profilerSshTunnelManager)
+                                   ISshTunnelManager profilerSshTunnelManager,
+                                   ISolutionExplorer solutionExplorer)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -109,6 +113,7 @@ namespace YetiVSI
             _orbitLauncher = orbitLauncher;
             _diveLauncher = diveLauncher;
             _profilerSshTunnelManager = profilerSshTunnelManager;
+            _solutionExplorer = solutionExplorer;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -326,7 +331,9 @@ namespace YetiVSI
                         // Launch Orbit.
                         string gameletExecutablePath =
                             YetiConstants.RemoteGamePath + gameletExecutableRelPath;
-                        _orbitLauncher.Launch(new OrbitArgs(gameletExecutablePath, gamelet.Id));
+                        _orbitLauncher.Launch(
+                            new OrbitArgs(gameletExecutablePath, gamelet.Id,
+                                          _solutionExplorer.GetLLDBSearchPaths()));
                     }
 
                     if (launchWithDive)

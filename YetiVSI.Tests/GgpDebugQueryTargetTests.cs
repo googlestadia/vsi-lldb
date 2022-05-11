@@ -178,21 +178,15 @@ namespace YetiVSI.Test
             _orbitLauncher = Substitute.For<IProfilerLauncher<OrbitArgs>>();
             _diveLauncher = Substitute.For<IProfilerLauncher<DiveArgs>>();
             _profilerSshTunnelManager = Substitute.For<ISshTunnelManager>();
+            var solutionExplorer = Substitute.For<ISolutionExplorer>();
 
-            _ggpDebugQueryTarget = new GgpDebugQueryTarget(fileSystem, sdkConfigFactory,
-                                                           gameletClientFactory,
-                                                           applicationClientFactory,
-                                                           cancelableTaskFactory, _dialogUtil,
-                                                           _remoteDeploy, debugMetrics,
-                                                           credentialManager,
-                                                           _testAccountClientFactory,
-                                                           _gameletSelectorFactory, cloudRunner,
-                                                           _sdkVersion, _launchCommandFormatter,
-                                                           _yetiVsiService, _gameLauncher,
-                                                           taskContext, _projectPropertiesParser,
-                                                           _identityClient, _orbitLauncher,
-                                                           _diveLauncher,
-                                                           _profilerSshTunnelManager);
+            _ggpDebugQueryTarget = new GgpDebugQueryTarget(
+                fileSystem, sdkConfigFactory, gameletClientFactory, applicationClientFactory,
+                cancelableTaskFactory, _dialogUtil, _remoteDeploy, debugMetrics, credentialManager,
+                _testAccountClientFactory, _gameletSelectorFactory, cloudRunner, _sdkVersion,
+                _launchCommandFormatter, _yetiVsiService, _gameLauncher, taskContext,
+                _projectPropertiesParser, _identityClient, _orbitLauncher, _diveLauncher,
+                _profilerSshTunnelManager, solutionExplorer);
         }
 
         [Test]
