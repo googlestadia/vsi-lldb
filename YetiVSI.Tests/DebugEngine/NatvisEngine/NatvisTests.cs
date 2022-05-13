@@ -11696,6 +11696,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
             string log = writer.ToString();
             Assert.That(log, Does.Contain($"Total Visualizer Count = {totalCustomVisualizers}"));
             Assert.That(log, Does.Contain("vizCache.Count = 1"));
+            Assert.That(log, Does.Contain("customVisualizers.Count = 2"));
         }
 
         #endregion

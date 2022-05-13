@@ -58,6 +58,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         const int _maxInheritedTypes = 100;
 
         IDictionary<string, VisualizerInfo> _visualizerCache;
+        IDictionary<string, VisualizerInfo> _customVisualizers;
         IList<FileInfo> _typeVisualizers;
         bool _enableStringVisualizer = false;
 
@@ -97,7 +98,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             // Initialize structures and load built-in visualizers.
             InitDataStructures();
             // Load Natvis files (from registry root and project).
-            // TODO: Consider handling changes to this option in runtime.
             if (LoadEntireNatvis())
             {
                 _natvisLoader.Reload(_typeVisualizers);
@@ -138,10 +138,12 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         {
             const string lineBreak = "===========================================================";
 
-            int totalVizCount = _typeVisualizers.Sum(viz => viz.Visualizers.Count);
+            int totalVizCount =
+                _typeVisualizers.Sum(viz => viz.Visualizers.Count) + _customVisualizers.Count;
 
             writer.WriteLine();
             writer.WriteLine($"typeVisualizers.Count = {_typeVisualizers.Count}");
+            writer.WriteLine($"customVisualizers.Count = {_customVisualizers.Count}");
             writer.WriteLine($"vizCache.Count = {_visualizerCache.Count}");
 
             writer.WriteLine($"Total Visualizer Count = {totalVizCount}");
@@ -198,7 +200,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 string pseudoTypeName = "$" + variable.CustomVisualizer;
 
                 VisualizerInfo visualizer;
-                if (_visualizerCache.TryGetValue(pseudoTypeName, out visualizer))
+                if (_customVisualizers.TryGetValue(pseudoTypeName, out visualizer))
                 {
                     _logger.Verbose(() => $"Selected cached custom Natvis Visualizer " +
                                         $"'{visualizer?.Visualizer.Name ?? "null"} '" +
@@ -207,16 +209,11 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                     return visualizer;
                 }
 
-                visualizer = await ScanAsync(pseudoTypeName, TypeName.Parse(pseudoTypeName),
-                                             variable.GetRemoteValue().GetTypeInfo());
-                if (visualizer != null)
-                {
-                    _logger.Verbose(() => $"Selected Natvis Visualizer " +
-                                        $"'{visualizer.Visualizer.Name}'" +
-                                        $" for custom visualizer '{variable.CustomVisualizer}'");
+                // This isn't expected to happen. Custom visualizer should be loaded at this point.
+                _logger.Error($"Could not find custom Natvis visualizer '{pseudoTypeName}'");
 
-                    return visualizer;
-                }
+                // Users are not supposed to override custom visualizers, we can return.
+                return null;
             }
 
             string initialTypeName = variable.TypeName;
@@ -326,7 +323,9 @@ namespace YetiVSI.DebugEngine.NatvisEngine
         {
             _typeVisualizers = new List<FileInfo>();
             _visualizerCache = new Dictionary<string, VisualizerInfo>();
+            _customVisualizers = new Dictionary<string, VisualizerInfo>();
             CreateCustomVisualizers();
+            CreateDefaultVisualizers();
         }
 
         public void InvalidateCache()
@@ -479,8 +478,32 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             <Item Name=""xmm14f"">xmm14,vf32</Item>
             <Item Name=""xmm15f"">xmm15,vf32</Item>
         </Expand>
-    </Type>";
+    </Type>
+</AutoVisualizer>";
 
+            // TODO: Consider refactoring NatvisLoader and NatvisVisualizerScanner in
+            // a way that NatvisLoader loads and returns the result in appropriate form and
+            // NatvisVisualizerScanner takes care of adding visualizers to a list.
+            // For example, "var fileInfo = _natvisLoader.LoadFromString(...)" is cleaner.
+            var sseFileList = new List<FileInfo>();
+            _natvisLoader.LoadFromString(xml, sseFileList);
+            foreach (var fileInfo in sseFileList)
+            {
+                foreach (var typeInfo in fileInfo.Visualizers)
+                {
+                    var pseudoTypeName = typeInfo.Visualizer.Name;
+                    var vizInfo = new VisualizerInfo(typeInfo, TypeName.Parse(pseudoTypeName));
+                    _customVisualizers.Add(pseudoTypeName, vizInfo);
+                }
+            }
+
+            // Make sure we loaded SSE visualizers correctly.
+            Debug.Assert(_customVisualizers.ContainsKey("$SSE"));
+            Debug.Assert(_customVisualizers.ContainsKey("$SSE2"));
+        }
+
+        void CreateDefaultVisualizers()
+        {
             if (_enableStringVisualizer)
             {
                 // Debugging std::strings requires -fstandalone-debug when compiled with Clang
@@ -488,17 +511,16 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 // This is a work-around that just calls c_str() on the string.
                 // TODO: It doesn't fix containers of std::strings, which still freak
                 // out for the earlier Clang versions.
-                xml += @"
-<Type Name=""std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;"">
-    <DisplayString>{this->c_str(),s}</DisplayString>
-    <StringView>this->c_str()</StringView>
-</Type>";
+                var xml = @"
+<AutoVisualizer xmlns=""http://schemas.microsoft.com/vstudio/debugger/natvis/2010"">
+    <Type Name=""std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;"">
+        <DisplayString>{this->c_str(),s}</DisplayString>
+        <StringView>this->c_str()</StringView>
+    </Type>
+</AutoVisualizer>";
+
+                LoadFromString(xml);
             }
-
-            // Don't forget to close the starting XML tag.
-            xml += "</AutoVisualizer>";
-
-            LoadFromString(xml);
         }
     }
 }
