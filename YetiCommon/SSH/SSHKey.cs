@@ -73,7 +73,7 @@ namespace YetiCommon.SSH
                 {
                     FileName = Path.Combine(SDKUtil.GetSshPath(),
                         YetiConstants.SshKeygenWinExecutable),
-                    Arguments = "-f \"" + keyPath + "\" -t rsa -N \"\"",
+                    Arguments = "-f \"" + keyPath + "\" -t ed25519 -N \"\"",
                 };
                 using (var process = managedProcessFactory.Create(startInfo))
                 {
