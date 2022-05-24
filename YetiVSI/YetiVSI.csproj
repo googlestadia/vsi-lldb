@@ -112,7 +112,7 @@
     <When Condition="'$(DownloadPython)' == 'true'">
       <ItemGroup>
         <PackageReference Include="python">
-          <Version>3.8.5</Version>
+          <Version>3.6.8</Version>
           <GeneratePathProperty>true</GeneratePathProperty>
         </PackageReference>
       </ItemGroup>

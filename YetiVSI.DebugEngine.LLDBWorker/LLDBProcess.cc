@@ -17,8 +17,13 @@
 #include "LLDBProcess.h"
 
 #include <msclr/marshal_cppstd.h>
-
 #include <vector>
+
+#include "lldb/API/SBError.h"
+#include "lldb/API/SBEvent.h"
+#include "lldb/API/SBMemoryRegionInfoList.h"
+#include "lldb/API/SBStream.h"
+#include "lldb/API/SBUnixSignals.h"
 
 #include "LLDBBreakpoint.h"
 #include "LLDBError.h"
@@ -27,13 +32,8 @@
 #include "LLDBTarget.h"
 #include "LLDBThread.h"
 #include "LLDBUnixSignals.h"
-#include "lldb/API/SBError.h"
-#include "lldb/API/SBEvent.h"
-#include "lldb/API/SBMemoryRegionInfoList.h"
-#include "lldb/API/SBStream.h"
-#include "lldb/API/SBUnixSignals.h"
 
-#using < system.dll>
+#using < system.dll >
 
 namespace YetiVSI {
 namespace DebugEngine {
@@ -143,10 +143,9 @@ SbUnixSignals ^ LLDBProcess::GetUnixSignals() {
   return nullptr;
 }
 
-size_t LLDBProcess::ReadMemory(uint64_t address, array<unsigned char> ^ buffer,
-                               size_t size,
-                               [System::Runtime::InteropServices::Out] SbError ^
-                                   % out_error) {
+size_t LLDBProcess::ReadMemory(uint64_t address,
+    array<unsigned char> ^ buffer, size_t size,
+    [System::Runtime::InteropServices::Out] SbError ^ % out_error) {
   pin_ptr<byte> pinnedBytes = &buffer[0];
   lldb::SBError error;
   auto bytesRead = process_->ReadMemory(address, pinnedBytes, size, error);
@@ -154,9 +153,9 @@ size_t LLDBProcess::ReadMemory(uint64_t address, array<unsigned char> ^ buffer,
   return bytesRead;
 }
 
-size_t LLDBProcess::WriteMemory(
-    uint64_t address, array<unsigned char> ^ buffer, size_t size,
-    [System::Runtime::InteropServices::Out] SbError ^ % out_error) {
+size_t LLDBProcess::WriteMemory(uint64_t address,
+  array<unsigned char> ^ buffer, size_t size,
+  [System::Runtime::InteropServices::Out] SbError ^ % out_error) {
   pin_ptr<byte> pinnedBytes = &buffer[0];
   lldb::SBError error;
   auto bytesWrote = process_->WriteMemory(address, pinnedBytes, size, error);
@@ -164,21 +163,17 @@ size_t LLDBProcess::WriteMemory(
   return bytesWrote;
 }
 
-SbError ^ LLDBProcess::GetMemoryRegionInfo(
-              uint64_t address,
-              [System::Runtime::InteropServices::Out] SbMemoryRegionInfo ^
-                  % memory_region) {
+SbError ^ LLDBProcess::GetMemoryRegionInfo(uint64_t address,
+  [System::Runtime::InteropServices::Out] SbMemoryRegionInfo ^ % memory_region) {
   lldb::SBMemoryRegionInfo sb_memory_region;
-  lldb::SBError error =
-      process_->GetMemoryRegionInfo(address, sb_memory_region);
+  lldb::SBError error = process_->GetMemoryRegionInfo(address, sb_memory_region);
   memory_region = gcnew LLDBMemoryRegionInfo(sb_memory_region);
   return gcnew LLDBError(error);
 }
 
 SbError ^ LLDBProcess::SaveCore(System::String ^ dumpPath) {
   std::string file_name = msclr::interop::marshal_as<std::string>(dumpPath);
-  lldb::SBError error = process_->SaveCore(
-      file_name.c_str(), "minidump", lldb::SaveCoreStyle::eSaveCoreStackOnly);
+  lldb::SBError error = process_->SaveCore(file_name.c_str());
   return gcnew LLDBError(error);
 }
 
