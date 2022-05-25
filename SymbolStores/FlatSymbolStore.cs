@@ -60,35 +60,34 @@ namespace SymbolStores
 
         #region SymbolStoreBase functions
 
-        public override Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
-                                                           bool isDebugInfoFile,
-                                                           TextWriter log,
-                                                           bool forceLoad)
+        public override Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
+                                                           TextWriter log)
         {
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(searchQuery.FileName))
             {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty, nameof(filename));
+                throw new ArgumentException(Strings.FilenameNullOrEmpty,
+                                            nameof(searchQuery.FileName));
             }
 
             string filepath;
             try
             {
-                filepath = Path.Combine(_path, filename);
+                filepath = Path.Combine(_path, searchQuery.FileName);
             }
             catch (ArgumentException e)
             {
                 log.WriteLineAndTrace(
-                    Strings.FailedToSearchFlatStore(_path, filename, e.Message));
+                    Strings.FailedToSearchFlatStore(_path, searchQuery.FileName, e.Message));
                 return Task.FromResult<IFileReference>(null);
             }
 
             if (!_fileSystem.File.Exists(filepath))
             {
                 log.WriteLineAndTrace(Strings.FileNotFound(filepath));
-                return Task.FromResult<IFileReference>(null); 
+                return Task.FromResult<IFileReference>(null);
             }
 
-            if (buildId != BuildId.Empty)
+            if (searchQuery.BuildId != BuildId.Empty)
             {
                 // TODO: pass correct isElf value
                 BuildIdInfo actualBuildId = _moduleParser.ParseBuildIdInfo(filepath, true);
@@ -99,10 +98,10 @@ namespace SymbolStores
                     return Task.FromResult<IFileReference>(null);
                 }
 
-                if (actualBuildId.Data != buildId)
+                if (actualBuildId.Data != searchQuery.BuildId)
                 {
                     log.WriteLineAndTrace(
-                        Strings.BuildIdMismatch(filepath, buildId, actualBuildId.Data));
+                        Strings.BuildIdMismatch(filepath, searchQuery.BuildId, actualBuildId.Data));
                     return Task.FromResult<IFileReference>(null);
                 }
             }

@@ -19,8 +19,10 @@ using YetiCommon;
 
 namespace SymbolStores
 {
-    // A SymbolStore which implements FindFile as a noop.
-    // Intended to act as a placeholder when an actual symbol store has not been provided.
+    /// <summary>
+    /// A SymbolStore which implements FindFile as a noop.
+    /// Intended to act as a placeholder when an actual symbol store has not been provided. 
+    /// </summary>
     public class NullSymbolStore : SymbolStoreBase
     {
         public NullSymbolStore() : base(false, false)
@@ -38,10 +40,8 @@ namespace SymbolStores
             return other is NullSymbolStore;
         }
 
-        public override Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
-                                                           bool isDebugInfoFile,
-                                                           TextWriter logWriter,
-                                                           bool forceLoad)
+        public override Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
+                                                           TextWriter searchLog)
         {
             return Task.FromResult<IFileReference>(null);
         }

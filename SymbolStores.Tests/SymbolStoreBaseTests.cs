@@ -30,14 +30,19 @@ namespace SymbolStores.Tests
         protected const string _missingFilepath = @"C:\missing\" + _filename;
         protected const string _destFilepath = @"C:\dest\" + _filename;
         protected const string _invalidPath = @"C:\invalid|";
-        protected static readonly BuildId _buildId = new BuildId("1234");
+        protected static BuildId _buildId = new BuildId("1234");
 
         protected MockFileSystem _fakeFileSystem;
         protected IModuleParser _moduleParser;
         protected FakeBuildIdWriter _fakeBuildIdWriter;
         protected FileReference _sourceSymbolFile;
         protected StringWriter _log;
-        protected bool _forceLoad = true;
+        protected TextWriter _nullLog = TextWriter.Null;
+        protected ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_filename, _buildId)
+        {
+            ForceLoad = true,
+            RequireDebugInfo = true
+        };
 
         [SetUp]
         public virtual void SetUp()
@@ -59,8 +64,7 @@ namespace SymbolStores.Tests
         public async Task FindFile_ExistsAsync()
         {
             var store = await GetStoreWithFileAsync();
-            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
-                                                          _log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_searchQuery, _log);
             await fileReference.CopyToAsync(_destFilepath);
 
             StringAssert.Contains(Strings.FileFound(""), _log.ToString());
@@ -88,8 +92,7 @@ namespace SymbolStores.Tests
         {
             var store = GetEmptyStore();
 
-            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
-                                                          _log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_searchQuery, _log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FileNotFound(""), _log.ToString());

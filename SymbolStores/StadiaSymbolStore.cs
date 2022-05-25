@@ -58,31 +58,28 @@ namespace SymbolStores
             _missingSymbolsCache =  MemoryCache.Default;
         }
 
-#region SymbolStoreBase functions
-
-        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
-                                                                 bool isDebugInfoFile,
-                                                                 TextWriter log,
-                                                                 bool forceLoad)
+        public override async Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
+                                                                 TextWriter log)
         {
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(searchQuery.FileName))
             {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty, nameof(filename));
+                throw new ArgumentException(Strings.FilenameNullOrEmpty,
+                                            nameof(searchQuery.FileName));
             }
 
-            if (buildId == BuildId.Empty)
+            if (searchQuery.BuildId == BuildId.Empty)
             {
                 log.WriteLineAndTrace(
-                    Strings.FailedToSearchStadiaStore(filename, Strings.EmptyBuildId));
+                    Strings.FailedToSearchStadiaStore(searchQuery.FileName, Strings.EmptyBuildId));
                 return null;
             }
 
-            var buildIdHex = buildId.ToHexString();
-            string symbolStoreKey = $"{filename};{buildIdHex}";
-            if (DoesNotExistInSymbolStore(symbolStoreKey, forceLoad))
+            string buildIdHex = searchQuery.BuildId.ToHexString();
+            string symbolStoreKey = $"{searchQuery.FileName};{buildIdHex}";
+            if (DoesNotExistInSymbolStore(symbolStoreKey, searchQuery.ForceLoad))
             {
                 log.WriteLineAndTrace(
-                    Strings.DoesNotExistInStadiaStore(filename, buildIdHex));
+                    Strings.DoesNotExistInStadiaStore(searchQuery.FileName, buildIdHex));
                 return null;
             }
 
@@ -93,7 +90,7 @@ namespace SymbolStores
                 // URL that does not exist. The second case is handled later.
                 // TODO: figure out how to intercept these calls to record in metrics.
                 fileUrl = await _crashReportClient.GenerateSymbolFileDownloadUrlAsync(
-                    buildIdHex, filename);
+                    buildIdHex, searchQuery.FileName);
             }
             catch (CloudException e)
             {
@@ -101,12 +98,12 @@ namespace SymbolStores
                     inner.StatusCode == StatusCode.NotFound)
                 {
                     log.WriteLineAndTrace(
-                        Strings.FileNotFoundInStadiaStore(buildIdHex, filename));
+                        Strings.FileNotFoundInStadiaStore(buildIdHex, searchQuery.FileName));
                 }
                 else
                 {
                     log.WriteLineAndTrace(
-                        Strings.FailedToSearchStadiaStore(filename, e.Message));
+                        Strings.FailedToSearchStadiaStore(searchQuery.FileName, e.Message));
                 }
 
                 AddAsNonExisting(symbolStoreKey);
@@ -126,7 +123,7 @@ namespace SymbolStores
             {
                 AddAsNonExisting(symbolStoreKey);
                 log.WriteLineAndTrace(
-                    Strings.FailedToSearchStadiaStore(filename, e.Message));
+                    Strings.FailedToSearchStadiaStore(searchQuery.FileName, e.Message));
                 return null;
             }
 
@@ -137,7 +134,7 @@ namespace SymbolStores
                 {
                     AddAsNonExisting(symbolStoreKey);
                     log.WriteLineAndTrace(
-                        Strings.FileNotFoundInStadiaStore(buildIdHex, filename));
+                        Strings.FileNotFoundInStadiaStore(buildIdHex, searchQuery.FileName));
                     return null;
                 }
 
@@ -145,12 +142,13 @@ namespace SymbolStores
                 {
                     AddAsNonExisting(symbolStoreKey);
                     log.WriteLineAndTrace(
-                        Strings.FileNotFoundInHttpStore(filename,(int)response.StatusCode,
-                                                        response.ReasonPhrase));
+                        Strings.FileNotFoundInHttpStore(
+                            searchQuery.FileName, (int)response.StatusCode,
+                            response.ReasonPhrase));
                     return null;
                 }
 
-                log.WriteLineAndTrace(Strings.FileFound(filename));
+                log.WriteLineAndTrace(Strings.FileFound(searchQuery.FileName));
 
                 return new HttpFileReference(_fileSystem, _httpClient, fileUrl);
             }
@@ -162,17 +160,15 @@ namespace SymbolStores
 
         public override bool DeepEquals(ISymbolStore otherStore) => otherStore is StadiaSymbolStore;
 
-#endregion
-
         bool DoesNotExistInSymbolStore(string symbolStoreKey, bool force)
         {
-            if (force)
+            if (!force)
             {
-                _missingSymbolsCache.Remove(symbolStoreKey);
-                return false;
+                return _missingSymbolsCache.Contains(symbolStoreKey);
             }
 
-            return _missingSymbolsCache.Contains(symbolStoreKey);
+            _missingSymbolsCache.Remove(symbolStoreKey);
+            return false;
         }
 
         void AddAsNonExisting(string symbolStoreKey)

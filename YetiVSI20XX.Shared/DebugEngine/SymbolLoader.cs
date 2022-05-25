@@ -109,9 +109,14 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
+            var searchQuery = new ModuleSearchQuery(symbolFileLocation.Filename, uuid)
+            {
+                ForceLoad = forceLoad,
+                RequireDebugInfo = true
+            };
+
             string filepath = useSymbolStores
-                ? await _moduleFileFinder.FindFileAsync(
-                    symbolFileLocation.Filename, uuid, true, searchLog, forceLoad)
+                ? await _moduleFileFinder.FindFileAsync(searchQuery, searchLog)
                 : null;
 
             if (filepath == null) { return false; }

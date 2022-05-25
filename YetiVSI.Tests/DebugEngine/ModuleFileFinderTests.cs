@@ -32,6 +32,11 @@ namespace YetiVSI.Test.DebugEngine
         static BuildId _uuid = new BuildId("0123");
         const string _pathInStore = @"path\foo";
 
+        readonly ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_filename, _uuid)
+        {
+            RequireDebugInfo = true
+        };
+
         StringWriter _searchLog;
         IFileReference _fileReference;
         ISymbolStore _mockSymbolStore;
@@ -48,7 +53,7 @@ namespace YetiVSI.Test.DebugEngine
             _fileReference.Location.Returns(_pathInStore);
 
             _mockSymbolStore = Substitute.For<ISymbolStore>();
-            _mockSymbolStore.FindFileAsync(_filename, _uuid, true, Arg.Any<TextWriter>(), false)
+            _mockSymbolStore.FindFileAsync(_searchQuery, Arg.Any<TextWriter>())
                 .Returns(Task.FromResult(_fileReference));
 
             _mockSymbolPathParser = Substitute.For<SymbolPathParser>();
@@ -62,7 +67,7 @@ namespace YetiVSI.Test.DebugEngine
             _moduleFileFinder.SetSearchPaths(_searchPaths);
             Assert.AreEqual(
                 _pathInStore,
-                await _moduleFileFinder.FindFileAsync(_filename, _uuid, true, _searchLog, false));
+                await _moduleFileFinder.FindFileAsync(_searchQuery, _searchLog));
 
             StringAssert.Contains("Searching for", _searchLog.ToString());
         }
@@ -71,22 +76,25 @@ namespace YetiVSI.Test.DebugEngine
         public void FindFile_NullFilename()
         {
             _moduleFileFinder.SetSearchPaths(_searchPaths);
+            var query = new ModuleSearchQuery(null, BuildId.Empty);
             Assert.ThrowsAsync<ArgumentNullException>(
-                () => _moduleFileFinder.FindFileAsync(null, _uuid, true, _searchLog, false));
+                () => _moduleFileFinder.FindFileAsync(query, _searchLog));
         }
 
         [Test]
         public async Task FindFile_EmptyBuildIdAsync()
         {
-            _mockSymbolStore.FindFileAsync(_filename, BuildId.Empty, true,
-                                          Arg.Any<TextWriter>(), false)
+            var query = new ModuleSearchQuery(_filename, BuildId.Empty)
+            {
+                RequireDebugInfo = true
+            };
+            _mockSymbolStore.FindFileAsync(query, Arg.Any<TextWriter>())
                 .Returns(Task.FromResult(_fileReference));
 
             _moduleFileFinder.SetSearchPaths(_searchPaths);
             Assert.AreEqual(
                 _pathInStore,
-                await _moduleFileFinder.FindFileAsync(_filename, BuildId.Empty, true,
-                                                     _searchLog, false));
+                await _moduleFileFinder.FindFileAsync(query, _searchLog));
 
             StringAssert.Contains(ErrorStrings.ModuleBuildIdUnknown(_filename),
                                   _searchLog.ToString());
@@ -99,8 +107,7 @@ namespace YetiVSI.Test.DebugEngine
             // unnecessary assumptions about the order visual studio calls SetSearchPaths and
             // LoadSymbols.
 
-            Assert.IsNull(await _moduleFileFinder.FindFileAsync(_filename, _uuid, true,
-                                                               _searchLog, false));
+            Assert.IsNull(await _moduleFileFinder.FindFileAsync(_searchQuery, _searchLog));
 
             StringAssert.Contains("Failed to find file", _searchLog.ToString());
         }
@@ -108,12 +115,11 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task FindFile_SearchFailedAsync()
         {
-            _mockSymbolStore.FindFileAsync(_filename, _uuid, true, Arg.Any<TextWriter>(), false)
+            _mockSymbolStore.FindFileAsync(_searchQuery, _searchLog)
                 .Returns(Task.FromResult((IFileReference)null));
 
             _moduleFileFinder.SetSearchPaths(_searchPaths);
-            Assert.IsNull(await _moduleFileFinder.FindFileAsync(_filename, _uuid, true,
-                                                               _searchLog, false));
+            Assert.IsNull(await _moduleFileFinder.FindFileAsync(_searchQuery, _searchLog));
 
             StringAssert.Contains("Failed to find file", _searchLog.ToString());
         }
@@ -125,7 +131,7 @@ namespace YetiVSI.Test.DebugEngine
 
             _moduleFileFinder.SetSearchPaths(_searchPaths);
             Assert.IsNull(
-                await _moduleFileFinder.FindFileAsync(_filename, _uuid, true, _searchLog, false));
+                await _moduleFileFinder.FindFileAsync(_searchQuery, _searchLog));
 
             StringAssert.Contains("Unable to load file", _searchLog.ToString());
         }

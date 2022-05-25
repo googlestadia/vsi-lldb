@@ -155,7 +155,8 @@ namespace SymbolStores.Tests
         {
             await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
             var unsupportedCache = Substitute.For<ISymbolStore>();
-            unsupportedCache.FindFileAsync("", BuildId.Empty, true, null, false)
+            var query = new ModuleSearchQuery("",  BuildId.Empty);
+            unsupportedCache.FindFileAsync(query, _log)
                 .ReturnsForAnyArgs((IFileReference)null);
             unsupportedCache.AddFileAsync(null, "", BuildId.Empty, null)
                 .Throws(new NotSupportedException());
@@ -188,13 +189,10 @@ namespace SymbolStores.Tests
             _storeSequence.AddStore(_cacheA);
             _storeSequence.AddStore(_storeA);
 
-            var logWriter = new StringWriter();
-
-            var fileReference = await _storeSequence.FindFileAsync(
-                _filename, _buildId, true, logWriter, false);
+            var fileReference = await _storeSequence.FindFileAsync(_searchQuery, _log);
 
             Assert.That(fileReference, Is.Null);
-            Assert.IsEmpty(_log.ToString());
+            Assert.That(_log.ToString().Contains("Symbol verification error"));
         }
 
         [Test]
@@ -213,6 +211,7 @@ namespace SymbolStores.Tests
                                              _filename);
             _fakeBuildIdWriter.WriteBuildId(cacheAPath, badBuildId);
             _sourceSymbolFile = new FileReference(_fakeFileSystem, cacheAPath);
+            string customErrorMessage = "Symbol verification error";
             _moduleParser
                 .IsValidElf(
                 cacheAPath,
@@ -220,11 +219,11 @@ namespace SymbolStores.Tests
                 out string _)
                 .Returns(x =>
                 {
-                    BuildId buildId = new BuildId(
+                    var buildId = new BuildId(
                         _fakeFileSystem.File.ReadAllText(x[0].ToString()));
                     if (buildId == badBuildId)
                     {
-                        x[2] = "Symbol verification error";
+                        x[2] = customErrorMessage;
                         return false;
                     }
 
@@ -235,14 +234,13 @@ namespace SymbolStores.Tests
             _storeSequence.AddStore(_cacheA);
             _storeSequence.AddStore(_storeA);
 
-            var logWriter = new StringWriter();
-
-            var fileReference =
-                await _storeSequence.FindFileAsync(_filename, _buildId, true, logWriter, false);
+            IFileReference fileReference =
+                await _storeSequence.FindFileAsync(_searchQuery, _log);
 
             Assert.That(fileReference.Location,
                         Is.EqualTo((await _cacheA.FindFileAsync(_filename, _buildId)).Location));
-            Assert.IsEmpty(_log.ToString());
+            // Error message returned by IsValidElf check should be present in the log.
+            Assert.That(_log.ToString().Contains(customErrorMessage));
         }
 
         [Test]

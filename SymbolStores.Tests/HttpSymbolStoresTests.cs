@@ -14,7 +14,6 @@
 
 using NUnit.Framework;
 using System;
-using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -56,10 +55,10 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_EmptyBuildIdAsync()
         {
-            var store = GetEmptyStore();
+            ISymbolStore store = GetEmptyStore();
+            var query = new ModuleSearchQuery(_filename, BuildId.Empty);
 
-            var fileReference = await store.FindFileAsync(_filename, BuildId.Empty, true, _log,
-                                                          _forceLoad);
+            IFileReference fileReference = await store.FindFileAsync(query, _log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(
@@ -70,12 +69,11 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_HttpRequestExceptionAsync()
         {
-            var store = GetEmptyStore();
+            ISymbolStore store = GetEmptyStore();
             _fakeHttpMessageHandler.ExceptionMap[new Uri(_urlInStore)] =
                 new HttpRequestException("message");
 
-            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
-                                                          _log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_searchQuery, _log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FailedToSearchHttpStore(_storeUrl, _filename, "message"),
@@ -85,14 +83,18 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_WontSearchAgainAfterHttpRequestExceptionAsync()
         {
-            var store = GetEmptyStore();
+            ISymbolStore store = GetEmptyStore();
             _fakeHttpMessageHandler.ExceptionMap[new Uri(_urlInStore)] =
                 new HttpRequestException("message");
 
-            await store.FindFileAsync(_filename, _buildId, true, TextWriter.Null,
-                                      _forceLoad);
-            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
-                                                          _log, false);
+            await store.FindFileAsync(_searchQuery, _nullLog);
+            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.FileName,
+                                                                _searchQuery.BuildId)
+            {
+                ForceLoad = false
+            };
+
+            var fileReference = await store.FindFileAsync(queryWithForceReloadOff, _log);
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.DoesNotExistInHttpStore(_filename, _storeUrl),
                                   _log.ToString());
@@ -101,11 +103,10 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_HeadRequestsNotSupportedAsync()
         {
-            var store = await GetStoreWithFileAsync();
+            ISymbolStore store = await GetStoreWithFileAsync();
             _fakeHttpMessageHandler.SupportsHeadRequests = false;
 
-            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
-                                                          _log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_searchQuery, _log);
 
             Assert.AreEqual(_urlInStore, fileReference.Location);
             StringAssert.Contains(Strings.FileFound(_urlInStore), _log.ToString());
@@ -116,7 +117,7 @@ namespace SymbolStores.Tests
         {
             var store = new HttpSymbolStore(_fakeFileSystem, _httpClient, "http://example.com/");
 
-            await store.FindFileAsync(_filename, _buildId, true, _log, false);
+            await store.FindFileAsync(_searchQuery, _log);
 
             StringAssert.Contains(Strings.ConnectionIsUnencrypted("example.com"), _log.ToString());
         }
@@ -126,10 +127,14 @@ namespace SymbolStores.Tests
         {
             var store = new HttpSymbolStore(_fakeFileSystem, _httpClient, "http://example.com/");
 
-            await store.FindFileAsync(_filename, _buildId, true, TextWriter.Null,
-                                      _forceLoad);
-            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
-                                                          _log, false);
+            await store.FindFileAsync(_searchQuery, _nullLog);
+            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.FileName,
+                                                                _searchQuery.BuildId)
+            {
+                ForceLoad = false
+            };
+            IFileReference fileReference =
+                await store.FindFileAsync(queryWithForceReloadOff, _log);
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.DoesNotExistInHttpStore(_filename, "http://example.com/"),
                                   _log.ToString());

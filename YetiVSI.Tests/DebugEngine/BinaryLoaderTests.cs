@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using DebuggerApi;
-using NSubstitute;
-using NUnit.Framework;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using DebuggerApi;
+using NSubstitute;
+using NUnit.Framework;
 using YetiCommon;
 using YetiVSI.DebugEngine;
 
@@ -30,6 +30,11 @@ namespace YetiVSI.Test.DebugEngine
         const string _pathInStore = @"C:\store\" + _binaryFilename;
         static BuildId _uuid = new BuildId("1234");
         const string _triple = "msp430--";
+        readonly ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_binaryFilename, _uuid)
+        {
+            RequireDebugInfo = false,
+            ForceLoad = false
+        };
 
         StringWriter _searchLog;
         RemoteTarget _mockTarget;
@@ -47,7 +52,7 @@ namespace YetiVSI.Test.DebugEngine
             _moduleReplacedHandler = Substitute.For<EventHandler<LldbModuleReplacedEventArgs>>();
 
             _mockModuleFileFinder = Substitute.For<IModuleFileFinder>();
-            _mockModuleFileFinder.FindFileAsync(_binaryFilename, _uuid, false, _searchLog, false)
+            _mockModuleFileFinder.FindFileAsync(Arg.Any<ModuleSearchQuery>(), _searchLog)
                 .Returns(Task.FromResult(_pathInStore));
 
             _placeholderModule = Substitute.For<SbModule>();
@@ -65,7 +70,8 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task LoadBinary_FileNotFoundAsync()
         {
-            _mockModuleFileFinder.FindFileAsync(_binaryFilename, _uuid, false, _searchLog, false)
+
+            _mockModuleFileFinder.FindFileAsync(_searchQuery, _searchLog)
                 .Returns(Task.FromResult<string>(null));
 
             (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(

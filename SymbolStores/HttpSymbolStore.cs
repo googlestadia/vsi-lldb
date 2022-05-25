@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.IO.Abstractions;
@@ -20,6 +19,7 @@ using System.Net;
 using System.Net.Http;
 using System.Runtime.Caching;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using YetiCommon;
 using YetiCommon.Logging;
 
@@ -64,29 +64,28 @@ namespace SymbolStores
             _missingSymbolsCache = MemoryCache.Default;
         }
 
-        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
-                                                                 bool isDebugInfoFile,
-                                                                 TextWriter log,
-                                                                 bool forceLoad)
+        public override async Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
+                                                                 TextWriter log)
         {
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(searchQuery.FileName))
             {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty, nameof(filename));
+                throw new ArgumentException(Strings.FilenameNullOrEmpty,
+                                            nameof(searchQuery.FileName));
             }
 
-            if (buildId == BuildId.Empty)
+            if (searchQuery.BuildId == BuildId.Empty)
             {
-                log.WriteLineAndTrace(
-                    Strings.FailedToSearchHttpStore(_url, filename, Strings.EmptyBuildId));
+                log.WriteLineAndTrace(Strings.FailedToSearchHttpStore(
+                                          _url, searchQuery.FileName, Strings.EmptyBuildId));
                 return null;
             }
 
-            string encodedFilename = Uri.EscapeDataString(filename);
+            string encodedFilename = Uri.EscapeDataString(searchQuery.FileName);
             string fileUrl = string.Join("/", _url.TrimEnd('/'), encodedFilename,
-                                      buildId.ToString(), encodedFilename);
-            if (DoesNotExistInSymbolStore(fileUrl, forceLoad))
+                                      searchQuery.BuildId.ToString(), encodedFilename);
+            if (DoesNotExistInSymbolStore(fileUrl, searchQuery.ForceLoad))
             {
-                log.WriteLineAndTrace(Strings.DoesNotExistInHttpStore(filename, _url));
+                log.WriteLineAndTrace(Strings.DoesNotExistInHttpStore(searchQuery.FileName, _url));
                 return null;
             }
 
@@ -133,7 +132,7 @@ namespace SymbolStores
             catch (HttpRequestException e)
             {
                 log.WriteLineAndTrace(
-                    Strings.FailedToSearchHttpStore(_url, filename, e.Message));
+                    Strings.FailedToSearchHttpStore(_url, searchQuery.FileName, e.Message));
                 AddAsNonExisting(fileUrl);
                 return null;
             }

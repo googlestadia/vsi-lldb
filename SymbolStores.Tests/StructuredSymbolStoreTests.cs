@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using NUnit.Framework;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using NUnit.Framework;
 using YetiCommon;
 
 namespace SymbolStores.Tests
@@ -45,9 +45,8 @@ namespace SymbolStores.Tests
         public async Task FindFile_EmptyBuildIdAsync()
         {
             var store = GetEmptyStore();
-
-            var fileReference = await store.FindFileAsync(_filename, BuildId.Empty, true,
-                                                          _log, _forceLoad);
+            var queryWithEmptyBuildId = new ModuleSearchQuery(_filename, BuildId.Empty);
+            var fileReference = await store.FindFileAsync(queryWithEmptyBuildId, _log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(

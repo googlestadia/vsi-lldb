@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO;
+using System.Threading.Tasks;
 using DebuggerApi;
 using NSubstitute;
 using NUnit.Framework;
 using SymbolStores;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using TestsCommon.TestSupport;
 using YetiCommon;
 using YetiVSI.DebugEngine;
@@ -240,8 +239,11 @@ namespace YetiVSI.Test.DebugEngine
             _mockModuleParser.ParseBuildIdInfo(Path.Combine(customFileDir, customFileName), true)
                 .Returns(new BuildIdInfo() { Data = new BuildId("4321") });
 
-            _mockModuleFileFinder.FindFileAsync(customFileName, _uuid, true, _searchLog,
-                                                false)
+            var searchQuery = new ModuleSearchQuery(customFileName, _uuid)
+            {
+                RequireDebugInfo = true
+            };
+            _mockModuleFileFinder.FindFileAsync(searchQuery, _searchLog)
                 .Returns(symbolStorePath);
 
             SetHandleCommandReturnValue(_mockCommandInterpreter, expectedCommand,
@@ -270,9 +272,12 @@ namespace YetiVSI.Test.DebugEngine
 
             Assert.IsFalse(await _symbolLoader.LoadSymbolsAsync(mockModule, _searchLog,
                                                                 false, false));
-
-            await _mockModuleFileFinder.DidNotReceiveWithAnyArgs().FindFileAsync(null, _uuid, true,
-                                                                                null, false);
+            var searchQuery = new ModuleSearchQuery(null, _uuid)
+            {
+                RequireDebugInfo = true
+            };
+            await _mockModuleFileFinder.DidNotReceiveWithAnyArgs().FindFileAsync(searchQuery,
+                                                                                TextWriter.Null);
         }
 
         [Test]
@@ -293,8 +298,11 @@ namespace YetiVSI.Test.DebugEngine
                         Filename = customFileName,
                     }
                 });
-
-            _mockModuleFileFinder.FindFileAsync(customFileName, _uuid, true, _searchLog, false)
+            var searchQuery = new ModuleSearchQuery(customFileName, _uuid)
+            {
+                RequireDebugInfo = true
+            };
+            _mockModuleFileFinder.FindFileAsync(searchQuery, _searchLog)
                 .Returns(symbolStorePath);
 
             SetHandleCommandReturnValue(_mockCommandInterpreter, expectedCommand,
@@ -394,7 +402,7 @@ namespace YetiVSI.Test.DebugEngine
 
         void SetFindFileReturnValue(string path)
         {
-            _mockModuleFileFinder.FindFileAsync(_symbolFileName, _uuid, true, _searchLog, false)
+            _mockModuleFileFinder.FindFileAsync(Arg.Any<ModuleSearchQuery>(), _searchLog)
                 .Returns(path);
         }
     }

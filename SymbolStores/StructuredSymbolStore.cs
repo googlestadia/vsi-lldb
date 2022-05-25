@@ -64,22 +64,20 @@ namespace SymbolStores
             _path = fileSystem.Path.GetFullPath(path);
         }
 
-#region SymbolStoreBase functions
-
-        public override Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
-                                                           bool isDebugInfoFile,
-                                                           TextWriter log,
-                                                           bool forceLoad)
+        public override Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
+                                                           TextWriter log)
         {
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(searchQuery.FileName))
             {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty, nameof(filename));
+                throw new ArgumentException(Strings.FilenameNullOrEmpty,
+                                            nameof(searchQuery.FileName));
             }
 
-            if (buildId == BuildId.Empty)
+            if (searchQuery.BuildId == BuildId.Empty)
             {
                 log.WriteLineAndTrace(
-                    Strings.FailedToSearchStructuredStore(_path, filename, Strings.EmptyBuildId));
+                    Strings.FailedToSearchStructuredStore(
+                        _path, searchQuery.FileName, Strings.EmptyBuildId));
                 return Task.FromResult<IFileReference>(null);
             }
 
@@ -87,12 +85,15 @@ namespace SymbolStores
 
             try
             {
-                filepath = Path.Combine(_path, filename, buildId.ToString(), filename);
+                filepath = Path.Combine(_path,
+                                        searchQuery.FileName,
+                                        searchQuery.BuildId.ToString(),
+                                        searchQuery.FileName);
             }
             catch (ArgumentException e)
             {
                 log.WriteLineAndTrace(
-                    Strings.FailedToSearchStructuredStore(_path, filename, e.Message));
+                    Strings.FailedToSearchStructuredStore(_path, searchQuery.FileName, e.Message));
                 return Task.FromResult<IFileReference>(null);
             }
 
@@ -152,8 +153,6 @@ namespace SymbolStores
         public override bool DeepEquals(ISymbolStore otherStore) =>
             otherStore is StructuredSymbolStore other && IsCache == other.IsCache
             && _path == other._path;
-
-#endregion
 
         public void AddMarkerFileIfNeeded()
         {

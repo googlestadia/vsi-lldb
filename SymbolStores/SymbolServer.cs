@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using YetiCommon;
 using YetiCommon.Logging;
 
@@ -48,25 +48,24 @@ namespace SymbolStores
 
         public override IEnumerable<ISymbolStore> Substores => _stores;
 
-        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
-                                                                 bool isDebugInfoFile,
-                                                                 TextWriter log,
-                                                                 bool forceLoad)
+        public override async Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
+                                                                 TextWriter log)
         {
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(searchQuery.FileName))
             {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty, nameof(filename));
+                throw new ArgumentException(Strings.FilenameNullOrEmpty,
+                                            nameof(searchQuery.FileName));
             }
 
             for (int i = 0; i < _stores.Count; ++i)
             {
                 var fileReference =
-                    await _stores[i].FindFileAsync(filename, buildId, isDebugInfoFile,
-                                                   log, forceLoad);
+                    await _stores[i].FindFileAsync(searchQuery, log);
                 if (fileReference != null)
                 {
                     var cascadeFileRef =
-                        await CascadeAsync(fileReference, filename, buildId, i - 1, log);
+                        await CascadeAsync(fileReference, searchQuery.FileName,
+                                           searchQuery.BuildId, i - 1, log);
                     return cascadeFileRef ?? fileReference;
                 }
             }

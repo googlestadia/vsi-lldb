@@ -48,18 +48,16 @@ namespace SymbolStores
             _stores.Add(store);
         }
 
-        #region SymbolStoreBase functions
 
         public override IEnumerable<ISymbolStore> Substores => _stores;
 
-        public override async Task<IFileReference> FindFileAsync(string filename, BuildId buildId,
-                                                                 bool isDebugInfoFile,
-                                                                 TextWriter log,
-                                                                 bool forceLoad)
+        public override async Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
+                                                                 TextWriter log)
         {
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(searchQuery.FileName))
             {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty, nameof(filename));
+                throw new ArgumentException(Strings.FilenameNullOrEmpty,
+                                            nameof(searchQuery.FileName));
             }
 
             ISymbolStore currentCache = null;
@@ -67,7 +65,7 @@ namespace SymbolStores
             foreach (var store in _stores)
             {
                 IFileReference fileReference =
-                    await store.FindFileAsync(filename, buildId, false, log, forceLoad);
+                    await store.FindFileAsync(searchQuery, log);
 
                 if (fileReference != null)
                 {
@@ -76,8 +74,10 @@ namespace SymbolStores
                     {
                         try
                         {
-                            fileReference = await currentCache.AddFileAsync(fileReference, filename,
-                                                                            buildId, log);
+                            fileReference = await currentCache.AddFileAsync(
+                                fileReference,
+                                searchQuery.FileName,
+                                searchQuery.BuildId, log);
                         }
                         catch (Exception e)
                             when (e is NotSupportedException || e is SymbolStoreException ||
@@ -88,8 +88,8 @@ namespace SymbolStores
                     }
 
                     if (!fileReference.IsFilesystemLocation ||
-                        VerifySymbolFile(fileReference.Location, buildId,
-                                         isDebugInfoFile, log))
+                        VerifySymbolFile(fileReference.Location, searchQuery.BuildId,
+                                         searchQuery.RequireDebugInfo, log))
                     {
                         return fileReference;
                     }
@@ -116,7 +116,6 @@ namespace SymbolStores
                 && _stores.Zip(other._stores, Tuple.Create)
                     .All(x => x.Item1.DeepEquals(x.Item2));
         }
-        #endregion
 
         bool VerifySymbolFile(string filepath, BuildId buildId, bool isDebugInfoFile,
                               TextWriter log)

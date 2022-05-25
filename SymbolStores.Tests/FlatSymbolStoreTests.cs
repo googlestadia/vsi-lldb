@@ -48,8 +48,7 @@ namespace SymbolStores.Tests
         {
             var store = await GetStoreWithFileAsync();
 
-            var fileReference = await store.FindFileAsync(_filename, BuildId.Empty, true,
-                                                          _log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_searchQuery, _log);
 
             Assert.AreEqual(Path.Combine(_storePath, _filename), fileReference.Location);
             StringAssert.Contains(Strings.FileFound(Path.Combine(_storePath, _filename)),
@@ -60,14 +59,13 @@ namespace SymbolStores.Tests
         public async Task FindFile_BuildIdMismatchAsync()
         {
             var mismatchedBuildId = new BuildId("4321");
-            
+            var query = new ModuleSearchQuery(_filename, mismatchedBuildId);
             var store = await GetStoreWithFileAsync();
             string pathInStore = Path.Combine(_storePath, _filename);
             _moduleParser.ParseBuildIdInfo(pathInStore, true)
                 .Returns(new BuildIdInfo() { Data = _buildId });
 
-            var fileReference = await store.FindFileAsync(_filename, mismatchedBuildId, true,
-                                                          _log, _forceLoad);
+            var fileReference = await store.FindFileAsync(query, _log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.BuildIdMismatch(pathInStore,
@@ -75,22 +73,18 @@ namespace SymbolStores.Tests
                                   _log.ToString());
         }
 
-
-
         [Test]
         public async Task FindFile_ReadBuildIdFailureAsync()
         {
-            var errorMessage = "test exception"; 
+            var errorMessage = "test exception";
             BuildIdInfo failedBuildId = new BuildIdInfo();
             failedBuildId.AddError(errorMessage);
-            
             var moduleParser = Substitute.For<IModuleParser>();
             moduleParser.ParseBuildIdInfo(Arg.Any<string>(), true).Returns(failedBuildId);
             var store = new FlatSymbolStore(_fakeFileSystem, moduleParser, _storePath);
             _fakeBuildIdWriter.WriteBuildId(Path.Combine(_storePath, _filename), _buildId);
 
-            var fileReference = await store.FindFileAsync(_filename, _buildId, true,
-                                                          _log, _forceLoad);
+            var fileReference = await store.FindFileAsync(_searchQuery, _log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(errorMessage, _log.ToString());

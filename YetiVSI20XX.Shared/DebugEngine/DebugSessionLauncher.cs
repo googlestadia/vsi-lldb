@@ -673,10 +673,20 @@ namespace YetiVSI.DebugEngine
         {
             string moduleOriginPath = Path.GetDirectoryName(module.Path);
             string moduleName = Path.GetFileName(module.Path);
+            if (string.IsNullOrWhiteSpace(moduleName))
+            {
+                return false;
+            }
+
+            var searchQuery = new ModuleSearchQuery(moduleName, module.Id)
+            {
+                ForceLoad = false,
+                RequireDebugInfo = false
+            };
+
             string modulePath = _taskContext.Factory.Run(() =>
             {
-                return _moduleFileFinder.FindFileAsync(moduleName, module.Id, false, searchLog,
-                                                       false);
+                return _moduleFileFinder.FindFileAsync(searchQuery, searchLog);
             });
 
             if (!string.IsNullOrWhiteSpace(modulePath))

@@ -89,9 +89,15 @@ namespace YetiVSI.DebugEngine
         public virtual async Task<(SbModule, bool)> LoadBinaryAsync(
             SbModule lldbModule, TextWriter searchLog)
         {
-            string binaryName = lldbModule.GetPlatformFileSpec()?.GetFilename();
-            string binaryPath = await _moduleFileFinder.FindFileAsync(
-                binaryName, new BuildId(lldbModule.GetUUIDString()), false, searchLog, false);
+            string binaryName = lldbModule.GetPlatformFileSpec().GetFilename();
+            var searchQuery = new ModuleSearchQuery(binaryName,
+                                                    new BuildId(lldbModule.GetUUIDString()))
+            {
+                ForceLoad = false,
+                RequireDebugInfo = false
+            };
+
+            string binaryPath = await _moduleFileFinder.FindFileAsync(searchQuery, searchLog);
 
             if (binaryPath == null)
             {
