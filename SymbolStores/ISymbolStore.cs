@@ -53,9 +53,6 @@ namespace SymbolStores
         /// <exception cref="ArgumentNullException">If `filename` is null.</exception>
         Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                            TextWriter log);
-
-        Task<IFileReference> FindFileAsync(string filename, BuildId buildId);
-
         /// <summary>
         /// Copies the file represented by `source` into the store. The file in the store will be
         /// given the filename `filename`, and may potentially be indexed by the given build ID.
@@ -71,8 +68,6 @@ namespace SymbolStores
         /// </exception>
         Task<IFileReference> AddFileAsync(IFileReference source, string filename, BuildId buildId,
                                           TextWriter log);
-        Task<IFileReference> AddFileAsync(IFileReference source, string filename, BuildId buildId);
-
         /// <summary>
         /// Deep value equality
         /// </summary>

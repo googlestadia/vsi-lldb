@@ -71,20 +71,11 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_NoLogAsync()
-        {
-            var store = await GetStoreWithFileAsync();
-            var fileReference = await store.FindFileAsync(_filename, _buildId);
-            await fileReference.CopyToAsync(_destFilepath);
-            Assert.IsEmpty(_log.ToString());
-        }
-
-        [Test]
         public void FindFile_NullFilename()
         {
             var store = GetEmptyStore();
-
-            Assert.ThrowsAsync<ArgumentException>(() => store.FindFileAsync(null, _buildId));
+            var queryEmptyName = new ModuleSearchQuery(null, _buildId);
+            Assert.ThrowsAsync<ArgumentException>(() => store.FindFileAsync(queryEmptyName, _log));
         }
 
         [Test]
@@ -124,7 +115,7 @@ namespace SymbolStores.Tests
             }
 
             Assert.ThrowsAsync<NotSupportedException>(
-                () => store.AddFileAsync(_sourceSymbolFile, _filename, _buildId));
+                () => store.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log));
         }
 
         [Test]
@@ -136,7 +127,8 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            var fileReference = await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
+            var fileReference = await store.AddFileAsync(_sourceSymbolFile, _filename,
+                                                         _buildId, _log);
             await fileReference.CopyToAsync(_destFilepath);
         }
 
@@ -149,7 +141,7 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
+            await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
         }
 
         [Test]
@@ -163,7 +155,7 @@ namespace SymbolStores.Tests
 
             Assert.ThrowsAsync<SymbolStoreException>(
                 () => store.AddFileAsync(new FileReference(_fakeFileSystem, _missingFilepath),
-                                         _filename, _buildId));
+                                         _filename, _buildId, _log));
         }
 
         [Test]
@@ -178,7 +170,7 @@ namespace SymbolStores.Tests
             Assert.ThrowsAsync<SymbolStoreException>(
                 () => store.AddFileAsync(new FileReference(_fakeFileSystem, _invalidPath),
                                          _filename,
-                                         _buildId));
+                                         _buildId, _log));
         }
 
         [Test]
@@ -191,7 +183,7 @@ namespace SymbolStores.Tests
             }
 
             Assert.ThrowsAsync<ArgumentException>(
-                () => store.AddFileAsync(null, _filename, _buildId));
+                () => store.AddFileAsync(null, _filename, _buildId, _log));
         }
 
         [TestCase(null, "1234")]
@@ -206,7 +198,7 @@ namespace SymbolStores.Tests
             }
 
             Assert.ThrowsAsync<ArgumentException>(
-                () => store.AddFileAsync(_sourceSymbolFile, filename, buildId));
+                () => store.AddFileAsync(_sourceSymbolFile, filename, buildId, _log));
         }
 
         /// <summary>

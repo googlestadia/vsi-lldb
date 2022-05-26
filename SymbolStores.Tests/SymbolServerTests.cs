@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO;
 using NUnit.Framework;
 using System.Threading.Tasks;
 
@@ -50,49 +51,49 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_SingleStoreAsync()
         {
-            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
+            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
             _symbolServer.AddStore(_storeA);
 
-            var fileReference = await _symbolServer.FindFileAsync(_filename, _buildId);
+            var fileReference = await _symbolServer.FindFileAsync(_searchQuery, _log);
 
-            Assert.AreEqual((await _storeA.FindFileAsync(_filename, _buildId)).Location,
+            Assert.AreEqual((await _storeA.FindFileAsync(_searchQuery, _log)).Location,
                             fileReference.Location);
         }
 
         [Test]
         public async Task FindFile_FirstStoreAsync()
         {
-            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
+            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
             _symbolServer.AddStore(_storeA);
             _symbolServer.AddStore(_storeB);
             _symbolServer.AddStore(_storeC);
 
-            var fileReference = await _symbolServer.FindFileAsync(_filename, _buildId);
+            var fileReference = await _symbolServer.FindFileAsync(_searchQuery, _log);
 
-            Assert.AreEqual((await _storeA.FindFileAsync(_filename, _buildId)).Location,
+            Assert.AreEqual((await _storeA.FindFileAsync(_searchQuery, _log)).Location,
                             fileReference.Location);
         }
 
         [Test]
         public async Task FindFile_CascadeAsync()
         {
-            await _storeC.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
+            await _storeC.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
             _symbolServer.AddStore(_storeA);
             _symbolServer.AddStore(_storeB);
             _symbolServer.AddStore(_storeC);
 
-            var fileReference = await _symbolServer.FindFileAsync(_filename, _buildId);
+            var fileReference = await _symbolServer.FindFileAsync(_searchQuery, _log);
 
-            Assert.NotNull(await _storeA.FindFileAsync(_filename, _buildId));
-            Assert.NotNull(await _storeB.FindFileAsync(_filename, _buildId));
-            Assert.AreEqual((await _storeA.FindFileAsync(_filename, _buildId)).Location,
+            Assert.NotNull(await _storeA.FindFileAsync(_searchQuery, _log));
+            Assert.NotNull(await _storeB.FindFileAsync(_searchQuery, _log));
+            Assert.AreEqual((await _storeA.FindFileAsync(_searchQuery, _log)).Location,
                             fileReference.Location);
         }
 
         [Test]
         public async Task FindFile_NoStoresAsync()
         {
-            var fileReference = await _symbolServer.FindFileAsync(_filename, _buildId);
+            var fileReference = await _symbolServer.FindFileAsync(_searchQuery, _log);
 
             Assert.Null(fileReference);
         }
@@ -104,7 +105,7 @@ namespace SymbolStores.Tests
             _symbolServer.AddStore(_storeB);
             _symbolServer.AddStore(_storeC);
 
-            var fileReference = await _symbolServer.FindFileAsync(_filename, _buildId);
+            var fileReference = await _symbolServer.FindFileAsync(_searchQuery, _log);
 
             Assert.Null(fileReference);
         }
@@ -115,10 +116,10 @@ namespace SymbolStores.Tests
             _symbolServer.AddStore(_storeA);
 
             var fileReference =
-                await _symbolServer.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
+                await _symbolServer.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
 
-            Assert.NotNull(await _storeA.FindFileAsync(_filename, _buildId));
-            Assert.AreEqual((await _storeA.FindFileAsync(_filename, _buildId)).Location,
+            Assert.NotNull(await _storeA.FindFileAsync(_searchQuery, _log));
+            Assert.AreEqual((await _storeA.FindFileAsync(_searchQuery, _log)).Location,
                             fileReference.Location);
         }
 
@@ -130,12 +131,12 @@ namespace SymbolStores.Tests
             _symbolServer.AddStore(_storeC);
 
             var fileReference =
-                await _symbolServer.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
+                await _symbolServer.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
 
-            Assert.NotNull(await _storeA.FindFileAsync(_filename, _buildId));
-            Assert.NotNull(await _storeB.FindFileAsync(_filename, _buildId));
-            Assert.NotNull(await _storeC.FindFileAsync(_filename, _buildId));
-            Assert.AreEqual((await _storeA.FindFileAsync(_filename, _buildId)).Location,
+            Assert.NotNull(await _storeA.FindFileAsync(_searchQuery, _log));
+            Assert.NotNull(await _storeB.FindFileAsync(_searchQuery, _log));
+            Assert.NotNull(await _storeC.FindFileAsync(_searchQuery, _log));
+            Assert.AreEqual((await _storeA.FindFileAsync(_searchQuery, _log)).Location,
                             fileReference.Location);
         }
 
@@ -143,7 +144,7 @@ namespace SymbolStores.Tests
         public void AddFile_NoStores()
         {
             Assert.ThrowsAsync<SymbolStoreException>(
-                () => _symbolServer.AddFileAsync(_sourceSymbolFile, _filename, _buildId));
+                () => _symbolServer.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log));
         }
 
         [Test]
@@ -242,7 +243,7 @@ namespace SymbolStores.Tests
         protected override async Task<ISymbolStore> GetStoreWithFileAsync()
         {
             _symbolServer.AddStore(_storeA);
-            await _symbolServer.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
+            await _symbolServer.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
             return _symbolServer;
         }
 

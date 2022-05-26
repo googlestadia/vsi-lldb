@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -33,7 +33,7 @@ namespace SymbolStores
         /// </summary>
         public virtual IEnumerable<ISymbolStore> Substores => Enumerable.Empty<ISymbolStore>();
 
-        public SymbolStoreBase(bool supportsAddingFiles, bool isCache)
+        protected SymbolStoreBase(bool supportsAddingFiles, bool isCache)
         {
             SupportsAddingFiles = supportsAddingFiles;
             IsCache = isCache;
@@ -42,31 +42,8 @@ namespace SymbolStores
         public abstract Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                                            TextWriter logWriter);
 
-        /// <summary>
-        ///  Default implementation that delegates to FindFileAsync(ModuleSearchQuery,
-        ///     TextWriter).
-        /// </summary>
-        public Task<IFileReference> FindFileAsync(string filename, BuildId buildId)
-        {
-            var searchQuery = new ModuleSearchQuery(filename, buildId)
-            {
-                ForceLoad = true
-            };
-            
-            return FindFileAsync(searchQuery, TextWriter.Null);
-        }
-
         public abstract Task<IFileReference> AddFileAsync(IFileReference source, string filename,
                                                           BuildId buildId, TextWriter logWriter);
-
-        /// <summary>
-        ///  Default implementation that delegates to AddFileAsync(string, BuildId, TextWriter).
-        /// </summary>
-        public Task<IFileReference> AddFileAsync(IFileReference source, string filename,
-                                                 BuildId buildId)
-        {
-            return AddFileAsync(source, filename, buildId, TextWriter.Null);
-        }
 
         public abstract bool DeepEquals(ISymbolStore other);
     }

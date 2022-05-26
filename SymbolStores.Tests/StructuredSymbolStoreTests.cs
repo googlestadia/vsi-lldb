@@ -72,7 +72,7 @@ namespace SymbolStores.Tests
             var store = GetEmptyStore();
 
             var exception = Assert.ThrowsAsync<ArgumentException>(
-                () => store.AddFileAsync(_sourceSymbolFile, _filename, BuildId.Empty));
+                () => store.AddFileAsync(_sourceSymbolFile, _filename, BuildId.Empty, _nullLog));
 
             StringAssert.Contains(
                 Strings.FailedToCopyToStructuredStore(_storePath, _filename, Strings.EmptyBuildId),
@@ -109,7 +109,7 @@ namespace SymbolStores.Tests
         protected override async Task<ISymbolStore> GetStoreWithFileAsync()
         {
             var store = new StructuredSymbolStore(_fakeFileSystem, _storePath);
-            await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId);
+            await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
             return store;
         }
 
