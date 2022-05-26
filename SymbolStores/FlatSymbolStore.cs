@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
@@ -63,11 +64,7 @@ namespace SymbolStores
         public override Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                                            TextWriter log)
         {
-            if (string.IsNullOrEmpty(searchQuery.FileName))
-            {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty,
-                                            nameof(searchQuery.FileName));
-            }
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
 
             string filepath;
             try
@@ -85,25 +82,6 @@ namespace SymbolStores
             {
                 log.WriteLineAndTrace(Strings.FileNotFound(filepath));
                 return Task.FromResult<IFileReference>(null);
-            }
-
-            if (searchQuery.BuildId != BuildId.Empty)
-            {
-                // TODO: pass correct isElf value
-                BuildIdInfo actualBuildId = _moduleParser.ParseBuildIdInfo(filepath, true);
-
-                if (actualBuildId.HasError)
-                {
-                    log.WriteLineAndTrace(actualBuildId.Error);
-                    return Task.FromResult<IFileReference>(null);
-                }
-
-                if (actualBuildId.Data != searchQuery.BuildId)
-                {
-                    log.WriteLineAndTrace(
-                        Strings.BuildIdMismatch(filepath, searchQuery.BuildId, actualBuildId.Data));
-                    return Task.FromResult<IFileReference>(null);
-                }
             }
 
             log.WriteLineAndTrace(Strings.FileFound(filepath));

@@ -51,21 +51,6 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_EmptyBuildIdAsync()
-        {
-            ISymbolStore store =
-                new StadiaSymbolStore(_fakeFileSystem, _httpClient, _crashReportClient);
-            var query = new ModuleSearchQuery(_filename, BuildId.Empty);
-            IFileReference fileReference =
-                await store.FindFileAsync(query, _log);
-
-            Assert.Null(fileReference);
-            StringAssert.Contains(
-                Strings.FailedToSearchStadiaStore(_filename, Strings.EmptyBuildId),
-                _log.ToString());
-        }
-
-        [Test]
         public async Task FindFile_APINotFoundAsync()
         {
             CloudException ex = GenerateException("Failed to generate download URL: not found",

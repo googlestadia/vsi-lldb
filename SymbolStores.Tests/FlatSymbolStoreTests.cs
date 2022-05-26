@@ -56,41 +56,6 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_BuildIdMismatchAsync()
-        {
-            var mismatchedBuildId = new BuildId("4321");
-            var query = new ModuleSearchQuery(_filename, mismatchedBuildId);
-            var store = await GetStoreWithFileAsync();
-            string pathInStore = Path.Combine(_storePath, _filename);
-            _moduleParser.ParseBuildIdInfo(pathInStore, true)
-                .Returns(new BuildIdInfo() { Data = _buildId });
-
-            var fileReference = await store.FindFileAsync(query, _log);
-
-            Assert.Null(fileReference);
-            StringAssert.Contains(Strings.BuildIdMismatch(pathInStore,
-                                                          mismatchedBuildId, _buildId),
-                                  _log.ToString());
-        }
-
-        [Test]
-        public async Task FindFile_ReadBuildIdFailureAsync()
-        {
-            var errorMessage = "test exception";
-            BuildIdInfo failedBuildId = new BuildIdInfo();
-            failedBuildId.AddError(errorMessage);
-            var moduleParser = Substitute.For<IModuleParser>();
-            moduleParser.ParseBuildIdInfo(Arg.Any<string>(), true).Returns(failedBuildId);
-            var store = new FlatSymbolStore(_fakeFileSystem, moduleParser, _storePath);
-            _fakeBuildIdWriter.WriteBuildId(Path.Combine(_storePath, _filename), _buildId);
-
-            var fileReference = await store.FindFileAsync(_searchQuery, _log);
-
-            Assert.Null(fileReference);
-            StringAssert.Contains(errorMessage, _log.ToString());
-        }
-
-        [Test]
         public void DeepEquals()
         {
             var storeA = new FlatSymbolStore(_fakeFileSystem, _moduleParser, _storePath);

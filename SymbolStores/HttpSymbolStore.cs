@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
 using System.Net;
@@ -67,18 +68,8 @@ namespace SymbolStores
         public override async Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                                                  TextWriter log)
         {
-            if (string.IsNullOrEmpty(searchQuery.FileName))
-            {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty,
-                                            nameof(searchQuery.FileName));
-            }
-
-            if (searchQuery.BuildId == BuildId.Empty)
-            {
-                log.WriteLineAndTrace(Strings.FailedToSearchHttpStore(
-                                          _url, searchQuery.FileName, Strings.EmptyBuildId));
-                return null;
-            }
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
+            Debug.Assert(searchQuery.BuildId != BuildId.Empty);
 
             string encodedFilename = Uri.EscapeDataString(searchQuery.FileName);
             string fileUrl = string.Join("/", _url.TrimEnd('/'), encodedFilename,

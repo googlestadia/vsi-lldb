@@ -26,9 +26,6 @@ namespace YetiVSI
         public const string StadiaSupport = "stadia.dev/partnersupport";
         public const string AutoAttachNotSupported = "Auto attach is not supported.";
 
-        public const string BinaryFileNameUnknown =
-            "Unable to search for binary. Binary file name is unknown.";
-
         public const string CoreAttachBuildIdMissingWarningTitle = "Executable build id missing.";
 
         public const string CoreAttachBuildIdMissingWarningMessage =
@@ -280,11 +277,6 @@ namespace YetiVSI
 
         public static string FailedToRetrieveGamelets(string message) =>
             $"Failed to retrieve your reserved instances.{Environment.NewLine}{message}";
-
-        public static string FileNotOnFilesystem(string fileUrl) =>
-            $"Unable to load file. '{fileUrl}' must be cached in a filesystem " +
-            "location. Ensure that a valid cache directory is set in 'Tools -> Options -> " +
-            "Debugging -> Symbols'.";
 
         public static string GameletInUnexpectedState(Gamelet gamelet) =>
             $"Game cannot be launched as instance '{gamelet.DisplayName}' with ID '{gamelet.Id}' " +

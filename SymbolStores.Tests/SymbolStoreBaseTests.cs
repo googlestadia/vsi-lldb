@@ -63,27 +63,18 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_ExistsAsync()
         {
-            var store = await GetStoreWithFileAsync();
-            var fileReference = await store.FindFileAsync(_searchQuery, _log);
+            ISymbolStore store = await GetStoreWithFileAsync();
+            IFileReference fileReference = await store.FindFileAsync(_searchQuery, _log);
             await fileReference.CopyToAsync(_destFilepath);
 
             StringAssert.Contains(Strings.FileFound(""), _log.ToString());
         }
 
         [Test]
-        public void FindFile_NullFilename()
-        {
-            var store = GetEmptyStore();
-            var queryEmptyName = new ModuleSearchQuery(null, _buildId);
-            Assert.ThrowsAsync<ArgumentException>(() => store.FindFileAsync(queryEmptyName, _log));
-        }
-
-        [Test]
         public async Task FindFile_DoesNotExistAsync()
         {
-            var store = GetEmptyStore();
-
-            var fileReference = await store.FindFileAsync(_searchQuery, _log);
+            ISymbolStore store = GetEmptyStore();
+            IFileReference fileReference = await store.FindFileAsync(_searchQuery, _log);
 
             Assert.Null(fileReference);
             StringAssert.Contains(Strings.FileNotFound(""), _log.ToString());

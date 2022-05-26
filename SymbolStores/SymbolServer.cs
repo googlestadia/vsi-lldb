@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -51,19 +52,16 @@ namespace SymbolStores
         public override async Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                                                  TextWriter log)
         {
-            if (string.IsNullOrEmpty(searchQuery.FileName))
-            {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty,
-                                            nameof(searchQuery.FileName));
-            }
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
+            Debug.Assert(searchQuery.BuildId != BuildId.Empty);
 
             for (int i = 0; i < _stores.Count; ++i)
             {
-                var fileReference =
+                IFileReference fileReference =
                     await _stores[i].FindFileAsync(searchQuery, log);
                 if (fileReference != null)
                 {
-                    var cascadeFileRef =
+                    IFileReference cascadeFileRef =
                         await CascadeAsync(fileReference, searchQuery.FileName,
                                            searchQuery.BuildId, i - 1, log);
                     return cascadeFileRef ?? fileReference;

@@ -53,20 +53,6 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_EmptyBuildIdAsync()
-        {
-            ISymbolStore store = GetEmptyStore();
-            var query = new ModuleSearchQuery(_filename, BuildId.Empty);
-
-            IFileReference fileReference = await store.FindFileAsync(query, _log);
-
-            Assert.Null(fileReference);
-            StringAssert.Contains(
-                Strings.FailedToSearchHttpStore(_storeUrl, _filename, Strings.EmptyBuildId),
-                _log.ToString());
-        }
-
-        [Test]
         public async Task FindFile_HttpRequestExceptionAsync()
         {
             ISymbolStore store = GetEmptyStore();

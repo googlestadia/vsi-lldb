@@ -42,19 +42,6 @@ namespace SymbolStores.Tests
         }
 
         [Test]
-        public async Task FindFile_EmptyBuildIdAsync()
-        {
-            var store = GetEmptyStore();
-            var queryWithEmptyBuildId = new ModuleSearchQuery(_filename, BuildId.Empty);
-            var fileReference = await store.FindFileAsync(queryWithEmptyBuildId, _log);
-
-            Assert.Null(fileReference);
-            StringAssert.Contains(
-                Strings.FailedToSearchStructuredStore(_storePath, _filename, Strings.EmptyBuildId),
-                _log.ToString());
-        }
-
-        [Test]
         public async Task AddFile_VerifyPathStructureAsync()
         {
             var store = GetEmptyStore();

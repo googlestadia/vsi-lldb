@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,7 +37,6 @@ namespace YetiVSI.DebugEngine
         /// The paths to search, in the format used by Visual Studio and _NT_SYMBOL_PATH.
         /// </param>
         void SetSearchPaths(string searchPaths);
-
 
         /// <summary>
         /// Returns if search paths contains stadia symbol store placeholder path and server
@@ -87,16 +87,9 @@ namespace YetiVSI.DebugEngine
         public async Task<string> FindFileAsync(ModuleSearchQuery searchQuery,
                                                 TextWriter searchLog)
         {
-            if (string.IsNullOrEmpty(searchQuery.FileName))
-            {
-                throw new ArgumentNullException(Strings.FilenameNullOrEmpty,
-                                                nameof(searchQuery.FileName));
-            }
-
-            searchLog = searchLog ?? TextWriter.Null;
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
 
             searchLog.WriteLineAndTrace($"Searching for '{searchQuery.FileName}'");
-
             if (searchQuery.BuildId == BuildId.Empty)
             {
                 searchLog.WriteLineAndTrace(
@@ -108,13 +101,6 @@ namespace YetiVSI.DebugEngine
             if (fileReference == null)
             {
                 searchLog.WriteLineAndTrace(ErrorStrings.FailedToFindFile(searchQuery.FileName));
-                return null;
-            }
-
-            if (!fileReference.IsFilesystemLocation)
-            {
-                searchLog.WriteLineAndTrace(
-                    ErrorStrings.FileNotOnFilesystem(fileReference.Location));
                 return null;
             }
 

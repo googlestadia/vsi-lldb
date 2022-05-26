@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.IO;
+using System.IO.Abstractions.TestingHelpers;
+using System.Threading.Tasks;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using YetiCommon;
 
 namespace SymbolStores.Tests
@@ -30,10 +31,15 @@ namespace SymbolStores.Tests
         const string _storeAPath = @"C:\storeA";
         const string _storeBPath = @"C:\storeB";
 
+        const string _flatStoreAPath = @"C:\flatStoreA";
+        const string _flatStoreBPath = @"C:\flatStoreB";
+
         ISymbolStore _cacheA;
         ISymbolStore _cacheB;
         ISymbolStore _storeA;
         ISymbolStore _storeB;
+        ISymbolStore _flatStoreA;
+        ISymbolStore _flatStoreB;
         SymbolStoreSequence _storeSequence;
 
         public override void SetUp()
@@ -46,6 +52,9 @@ namespace SymbolStores.Tests
             _cacheB = new StructuredSymbolStore(_fakeFileSystem, _cacheBPath, isCache: true);
             _storeA = new StructuredSymbolStore(_fakeFileSystem, _storeAPath);
             _storeB = new StructuredSymbolStore(_fakeFileSystem, _storeBPath);
+
+            _flatStoreA = new FlatSymbolStore(_fakeFileSystem, _moduleParser, _flatStoreAPath);
+            _flatStoreB = new FlatSymbolStore(_fakeFileSystem, _moduleParser, _flatStoreBPath);
         }
 
         [Test]
@@ -58,6 +67,49 @@ namespace SymbolStores.Tests
 
             Assert.AreEqual((await _storeA.FindFileAsync(_searchQuery, _log)).Location,
                             fileReference.Location);
+        }
+
+        [Test]
+        public async Task FindFile_WhenBuildIdUnknown_SearchesOnlyFlatStoresAsync()
+        {
+            _fakeFileSystem.AddFile($"{_flatStoreAPath}\\symbolA", new MockFileData(""));
+            _fakeFileSystem.AddFile($"{_flatStoreBPath}\\symbolB", new MockFileData(""));
+            _fakeFileSystem.AddFile($"{_storeAPath}\\symbolB", new MockFileData(""));
+
+            _storeSequence.AddStore(_storeA);
+            _storeSequence.AddStore(_flatStoreA);
+            _storeSequence.AddStore(_flatStoreB);
+
+            var query = new ModuleSearchQuery( "symbolB", BuildId.Empty);
+            await _storeSequence.FindFileAsync(query, _log);
+            string output = _log.ToString();
+            Assert.AreEqual(output,
+                            @"C:\flatStoreA\symbolB... File not found." + Environment.NewLine +
+                            @"C:\flatStoreB\symbolB... File found." + Environment.NewLine);
+        }
+
+
+        [Test]
+        public async Task FindFile_WhenBuildIdKnown_SearchesAllStoresAsync()
+        {
+            _fakeFileSystem.AddFile($"{_flatStoreAPath}/symbolA", new MockFileData(""));
+            _fakeFileSystem.AddFile($"{_flatStoreBPath}/symbolB", new MockFileData(""));
+            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+
+            _storeSequence.AddStore(_flatStoreA);
+            _storeSequence.AddStore(_flatStoreB);
+            _storeSequence.AddStore(_storeA);
+            _storeSequence.AddStore(_cacheA);
+
+            await _storeSequence.FindFileAsync(_searchQuery, _log);
+            string output = _log.ToString();
+            Assert.AreEqual(output,
+                            @"Copied 'test.debug' to 'C:\storeA\test.debug\1234\test.debug'." +
+                            Environment.NewLine +
+                            @"C:\flatStoreA\test.debug... File not found." + Environment.NewLine +
+                            @"C:\flatStoreB\test.debug... File not found." + Environment.NewLine +
+                            @"C:\storeA\test.debug\1234\test.debug... File found." +
+                            Environment.NewLine);
         }
 
         [Test]

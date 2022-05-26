@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
@@ -67,22 +68,10 @@ namespace SymbolStores
         public override Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                                            TextWriter log)
         {
-            if (string.IsNullOrEmpty(searchQuery.FileName))
-            {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty,
-                                            nameof(searchQuery.FileName));
-            }
-
-            if (searchQuery.BuildId == BuildId.Empty)
-            {
-                log.WriteLineAndTrace(
-                    Strings.FailedToSearchStructuredStore(
-                        _path, searchQuery.FileName, Strings.EmptyBuildId));
-                return Task.FromResult<IFileReference>(null);
-            }
-
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
+            Debug.Assert(searchQuery.BuildId != BuildId.Empty);
+            
             string filepath;
-
             try
             {
                 filepath = Path.Combine(_path,

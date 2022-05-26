@@ -42,7 +42,8 @@ namespace SymbolStores
         IEnumerable<ISymbolStore> Substores { get; }
 
         /// <summary>
-        /// Searches for a symbol file with the filename `filename` and build ID `buildId`.
+        /// Searches for a symbol file with the filename `searchQuery.FileName` and build ID
+        /// `searchQuery.BuildId`.
         /// Returns an IFileReference representing the matching file, or null if no such file
         /// exists.
         /// If `buildId` is empty, implementors may return a file without checking the file's build
@@ -50,7 +51,6 @@ namespace SymbolStores
         /// </summary>
         /// <param name="log">Entity for storing module's logs.</param>
         /// <param name="searchQuery">Settings for a search in a SymbolStore.</param>
-        /// <exception cref="ArgumentNullException">If `filename` is null.</exception>
         Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                            TextWriter log);
         /// <summary>

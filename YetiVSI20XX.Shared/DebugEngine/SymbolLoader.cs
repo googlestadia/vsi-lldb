@@ -109,6 +109,11 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
+            if (string.IsNullOrWhiteSpace(symbolFileLocation.Filename))
+            {
+                return false;
+            }
+
             var searchQuery = new ModuleSearchQuery(symbolFileLocation.Filename, uuid)
             {
                 ForceLoad = forceLoad,

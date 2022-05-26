@@ -43,6 +43,11 @@ namespace YetiCommon
         public static string FailedToCreateSshKeysDirectory(string message) =>
             $"Failed to create SSH keys directory. {message}";
 
+        public static string FileNotOnFilesystem(string path) =>
+            $"Unable to load file. '{path}' must be cached in a filesystem " +
+            "location. Ensure that a valid cache directory is set in 'Tools -> Options -> " +
+            "Debugging -> Symbols'.";
+
         public static string FailedToLaunchProcess(string fileName, string message) =>
             $"Failed to launch {fileName}. {message}";
 

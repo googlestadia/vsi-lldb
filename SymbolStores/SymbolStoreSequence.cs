@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -37,6 +38,8 @@ namespace SymbolStores
         [JsonProperty("Stores")]
         readonly IList<ISymbolStore> _stores;
 
+        readonly IList<ISymbolStore> _flatSymbolStores = new List<ISymbolStore>();
+
         public SymbolStoreSequence(IModuleParser moduleParser) : base(false, false)
         {
             _moduleParser = moduleParser;
@@ -46,30 +49,35 @@ namespace SymbolStores
         public void AddStore(ISymbolStore store)
         {
             _stores.Add(store);
+            if (store is FlatSymbolStore)
+            {
+                _flatSymbolStores.Add(store);
+            }
         }
-
 
         public override IEnumerable<ISymbolStore> Substores => _stores;
 
-        public override async Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
+        public override Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                                                  TextWriter log)
         {
-            if (string.IsNullOrEmpty(searchQuery.FileName))
-            {
-                throw new ArgumentException(Strings.FilenameNullOrEmpty,
-                                            nameof(searchQuery.FileName));
-            }
+            return searchQuery.BuildId == BuildId.Empty
+                ? SearchFlatSymbolStoresAsync(searchQuery, log)
+                : SearchAllSymbolStoresAsync(searchQuery, log);
+        }
+
+        async Task<IFileReference> SearchAllSymbolStoresAsync(ModuleSearchQuery searchQuery,
+                                                              TextWriter log)
+        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
 
             ISymbolStore currentCache = null;
-
-            foreach (var store in _stores)
+            foreach (ISymbolStore store in _stores)
             {
                 IFileReference fileReference =
                     await store.FindFileAsync(searchQuery, log);
 
                 if (fileReference != null)
                 {
-
                     if (!store.IsCache && currentCache != null)
                     {
                         try
@@ -81,14 +89,13 @@ namespace SymbolStores
                         }
                         catch (Exception e)
                             when (e is NotSupportedException || e is SymbolStoreException ||
-                                  e is ArgumentException)
+                                e is ArgumentException)
                         {
                             log.WriteLineAndTrace(e.Message);
                         }
                     }
 
-                    if (!fileReference.IsFilesystemLocation ||
-                        VerifySymbolFile(fileReference.Location, searchQuery.BuildId,
+                    if (VerifySymbolFile(fileReference, searchQuery.BuildId,
                                          searchQuery.RequireDebugInfo, log))
                     {
                         return fileReference;
@@ -98,6 +105,23 @@ namespace SymbolStores
                 if (store.IsCache)
                 {
                     currentCache = store;
+                }
+            }
+
+            return null;
+        }
+
+        async Task<IFileReference> SearchFlatSymbolStoresAsync(ModuleSearchQuery searchQuery,
+                                                               TextWriter log)
+        {
+            foreach (ISymbolStore store in _flatSymbolStores)
+            {
+                IFileReference fileReference = await store.FindFileAsync(searchQuery, log);
+
+                if (VerifySymbolFile(fileReference, searchQuery.BuildId,
+                                     searchQuery.RequireDebugInfo, log))
+                {
+                    return fileReference;
                 }
             }
 
@@ -117,9 +141,21 @@ namespace SymbolStores
                     .All(x => x.Item1.DeepEquals(x.Item2));
         }
 
-        bool VerifySymbolFile(string filepath, BuildId buildId, bool isDebugInfoFile,
+        bool VerifySymbolFile(IFileReference fileReference, BuildId buildId, bool isDebugInfoFile,
                               TextWriter log)
         {
+            if (fileReference == null)
+            {
+                return false;
+            }
+
+            string filepath = fileReference.Location;
+            if (!fileReference.IsFilesystemLocation)
+            {
+                log.WriteLineAndTrace(ErrorStrings.FileNotOnFilesystem(filepath));
+                return false;
+            }
+
             if (!_moduleParser.IsValidElf(filepath, isDebugInfoFile, out string errorMessage))
             {
                 log.WriteLineAndTrace(errorMessage);

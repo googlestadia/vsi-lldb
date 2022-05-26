@@ -243,6 +243,7 @@ namespace YetiVSI.Test.DebugEngine
             {
                 RequireDebugInfo = true
             };
+
             _mockModuleFileFinder.FindFileAsync(searchQuery, _searchLog)
                 .Returns(symbolStorePath);
 
