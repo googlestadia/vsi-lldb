@@ -17,11 +17,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ELFSharp.ELF;
 using ELFSharp.ELF.Sections;
+using SharpPdb.Managed;
 using YetiCommon.SSH;
 
 namespace YetiCommon
@@ -46,7 +48,7 @@ namespace YetiCommon
 
             if (!ELFReader.TryLoad(filepath, out IELF elfReader))
             {
-                output.AddError(ErrorStrings.InvalidSymbolFileFormat(filepath));
+                output.AddError(ErrorStrings.InvalidSymbolFileFormat(filepath, ModuleFormat.Elf));
                 return output;
             }
 
@@ -78,7 +80,7 @@ namespace YetiCommon
             return output;
         }
 
-        public BuildIdInfo ParseBuildIdInfo(string filepath, bool isElf)
+        public BuildIdInfo ParseBuildIdInfo(string filepath, ModuleFormat format)
         {
             var output = new BuildIdInfo();
             if (!File.Exists(filepath))
@@ -87,25 +89,27 @@ namespace YetiCommon
                 return output;
             }
 
-            if (isElf)
+            switch (format)
             {
-                ParseBuildIdFromElf(filepath, ref output);
+                case ModuleFormat.Elf:
+                    return ParseBuildIdFromElf(filepath);
+                case ModuleFormat.Pdb:
+                    return ParseBuildIdFromPdb(filepath);
+                case ModuleFormat.Pe:
+                    return ParseBuildIdFromPe(filepath);
+                default:
+                    output.AddError($"Unknown format {format}");
+                    return output;
             }
-            else
-            {
-                // TODO: add PE-modules processing
-                output.AddError("Cannot read BuildId from PE module");
-            }
-
-            return output;
         }
 
-        void ParseBuildIdFromElf(string filepath, ref BuildIdInfo output)
+        BuildIdInfo ParseBuildIdFromElf(string filepath)
         {
+            var output = new BuildIdInfo();
             if (!ELFReader.TryLoad(filepath, out IELF elfReader))
             {
-                output.AddError(ErrorStrings.InvalidSymbolFileFormat(filepath));
-                return;
+                output.AddError(ErrorStrings.InvalidSymbolFileFormat(filepath, ModuleFormat.Elf));
+                return output;
             }
 
             using (elfReader)
@@ -114,7 +118,7 @@ namespace YetiCommon
                 {
                     output.AddError(
                         ErrorStrings.FailedToReadBuildId(filepath, ErrorStrings.EmptyBuildId));
-                    return;
+                    return output;
                 }
 
                 if (buildIdSection is INoteSection buildIdNoteSection)
@@ -128,7 +132,81 @@ namespace YetiCommon
                         ErrorStrings.FailedToReadBuildId(filepath, ErrorStrings.EmptyBuildId));
                 }
             }
+
+            return output;
         }
+
+        BuildIdInfo ParseBuildIdFromPdb(string filepath)
+        {
+            var output = new BuildIdInfo();
+            using (IPdbFile pdb = PdbFileReader.OpenPdb(filepath))
+            {
+                if (pdb == null)
+                {
+                    output.AddError(
+                        ErrorStrings.InvalidSymbolFileFormat(filepath, ModuleFormat.Pdb));
+                    return output;
+                }
+
+                output.Data = GetBuildId(pdb.Guid, pdb.Age);
+            }
+
+            return output;
+        }
+
+        BuildIdInfo ParseBuildIdFromPe(string filepath)
+        {
+            var output = new BuildIdInfo();
+            try
+            {
+                using (FileStream fileStream = File.OpenRead(filepath))
+                {
+                    using (var reader = new PEReader(fileStream))
+                    {
+                        try
+                        {
+                            // When accessing PEHeaders a BadImageFormatException might be thrown
+                            // if the file 'filepath' is malformed (PEHeaders is lazily initialized).
+                            if (reader.PEHeaders.PEHeader == null)
+                            {
+                                output.AddError(ErrorStrings.InvalidSymbolFileFormat(
+                                                    filepath, ModuleFormat.Pe));
+                                return output;
+                            }
+                        }
+                        catch (BadImageFormatException)
+                        {
+                            output.AddError(ErrorStrings.InvalidSymbolFileFormat(
+                                                filepath, ModuleFormat.Pe));
+                            return output;
+                        }
+
+                        foreach (DebugDirectoryEntry entry in reader.ReadDebugDirectory())
+                        {
+                            if (entry.Type != DebugDirectoryEntryType.CodeView)
+                            {
+                                continue;
+                            }
+
+                            CodeViewDebugDirectoryData
+                                cv = reader.ReadCodeViewDebugDirectoryData(entry);
+                            output.Data = GetBuildId(cv.Guid, cv.Age);
+                            return output;
+                        }
+                    }
+                }
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException ||
+                e is NotSupportedException || e is ArgumentException ||
+                e is ObjectDisposedException)
+            {
+                output.AddError($"Error opening {filepath}: {e.Message}");
+            }
+
+            return output;
+        }
+
+        BuildId GetBuildId(Guid guid, int age) => new BuildId($"{guid}-{age:X8}");
 
         public async Task<BuildId> ParseRemoteBuildIdInfoAsync(string filepath, SshTarget target)
         {

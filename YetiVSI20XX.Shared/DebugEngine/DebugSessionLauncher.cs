@@ -678,7 +678,9 @@ namespace YetiVSI.DebugEngine
                 return false;
             }
 
-            var searchQuery = new ModuleSearchQuery(moduleName, module.Id)
+            // The list of modules comes from a core file, only ELF modules are at the
+            // moment supported.
+            var searchQuery = new ModuleSearchQuery(moduleName, module.Id, ModuleFormat.Elf)
             {
                 ForceLoad = false,
                 RequireDebugInfo = false

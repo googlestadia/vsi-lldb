@@ -12,27 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.IO;
+using System.IO;
 using System.IO.Abstractions;
-using System.Linq;
 using YetiCommon;
 
 namespace SymbolStores.Tests
 {
     class FakeBuildIdWriter
     {
-        IFileSystem fileSystem;
+        readonly IFileSystem _fileSystem;
 
         public FakeBuildIdWriter(IFileSystem fileSystem)
         {
-            this.fileSystem = fileSystem;
+            _fileSystem = fileSystem;
         }
 
         // Just set the entire contents of the file to the bytes of the build ID
         public void WriteBuildId(string filepath, BuildId buildId)
         {
-            fileSystem.Directory.CreateDirectory(Path.GetDirectoryName(filepath));
-            fileSystem.File.WriteAllText(filepath, buildId.ToHexString());
+            _fileSystem.Directory.CreateDirectory(Path.GetDirectoryName(filepath));
+            _fileSystem.File.WriteAllText(filepath, buildId.ToHexString());
         }
     }
 }

@@ -156,7 +156,7 @@ namespace SymbolStores
                 else if (FlatSymbolStore.IsFlatStore(_fileSystem, pathElement))
                 {
                     storeSequence.AddStore(
-                        new FlatSymbolStore(_fileSystem, _moduleParser, pathElement));
+                        new FlatSymbolStore(_fileSystem, pathElement));
                 }
             }
 

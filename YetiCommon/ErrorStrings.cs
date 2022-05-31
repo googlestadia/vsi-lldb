@@ -64,8 +64,9 @@ namespace YetiCommon
         public static string FailedToReadBuildId(string filepath, string message) =>
             $"Failed to read build ID of '{filepath}'. {message}";
 
-        public static string InvalidSymbolFileFormat(string filepath) =>
-            $"Failed to load '{filepath}'. The file was not recognized as a valid ELF object file.";
+        public static string InvalidSymbolFileFormat(string filepath, ModuleFormat format) =>
+            $"Failed to load '{filepath}'. The file was not recognized as " +
+            $"a valid {format} object file.";
 
         public static string MissingDebugInfoInSymbolFile(string filepath) =>
             $"Failed to load '{filepath}'. " +

@@ -313,9 +313,9 @@ namespace YetiVSI.Test.DebugEngine
                     .LoadModuleFilesAsync(modules, _mockTask, _mockModuleFileLoadRecorder));
 
             await _mockBinaryLoader.Received().LoadBinaryAsync(
-                modules[0], Arg.Any<TextWriter>());
+                modules[0], Arg.Any<TextWriter>(), Arg.Any<bool>());
             await _mockBinaryLoader.DidNotReceive().LoadBinaryAsync(
-                modules[1], Arg.Any<TextWriter>());
+                modules[1], Arg.Any<TextWriter>(), Arg.Any<bool>());
         }
 
         [Test]
@@ -323,7 +323,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             SbModule module = CreateMockModule(isPlaceholder: true);
             _mockBinaryLoader
-                .LoadBinaryAsync(module, Arg.Any<TextWriter>())
+                .LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
                 .Returns((module, false));
             Assert.AreEqual(VSConstants.E_FAIL, (await _moduleFileLoader.LoadModuleFilesAsync(
                 new[] { module }, _mockTask, _mockModuleFileLoadRecorder)).ResultCode);
@@ -338,7 +338,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             SbModule placeholderModule = CreateMockModule(isPlaceholder:true);
             SbModule realModule = CreateMockModule(isPlaceholder: false, loadSymbolsSucceeds: true);
-            _mockBinaryLoader.LoadBinaryAsync(placeholderModule, Arg.Any<TextWriter>())
+            _mockBinaryLoader.LoadBinaryAsync(placeholderModule, Arg.Any<TextWriter>(),
+                                              Arg.Any<bool>())
                 .Returns(x => (realModule, true));
             _mockSymbolLoader.LoadSymbolsAsync(realModule, Arg.Any<TextWriter>(),
                                               Arg.Any<bool>(), Arg.Any<bool>())
@@ -358,7 +359,7 @@ namespace YetiVSI.Test.DebugEngine
             SbModule module = CreateMockModule(
                 isPlaceholder: true, loadSymbolsSucceeds: true, name: _importantModules.First());
             _mockBinaryLoader
-                .LoadBinaryAsync(module, Arg.Any<TextWriter>())
+                .LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
                 .Returns((module, false));
             LoadModuleFilesResult result = await _moduleFileLoader.LoadModuleFilesAsync(
                 new[] { module }, null, true, true, _mockTask, _mockModuleFileLoadRecorder);
@@ -375,7 +376,7 @@ namespace YetiVSI.Test.DebugEngine
                 SbModule module = CreateMockModule(
                     isPlaceholder: true, loadSymbolsSucceeds: true, name: moduleName);
                 _mockBinaryLoader
-                    .LoadBinaryAsync(module, Arg.Any<TextWriter>())
+                    .LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
                     .Returns((module, false));
                 var dumpModuleFileLoader = new ModuleFileLoader(
                     _mockSymbolLoader, _mockBinaryLoader, true, _moduleSearchLogHolder);
@@ -392,7 +393,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             SbModule module = CreateMockModule( true, loadSymbolsSucceeds: true);
             _mockBinaryLoader
-                .LoadBinaryAsync(module, Arg.Any<TextWriter>())
+                .LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
                 .Returns((module, false));
             var dumpModuleFileLoader = new ModuleFileLoader(_mockSymbolLoader, _mockBinaryLoader,
                                                             true, _moduleSearchLogHolder);
@@ -408,7 +409,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             SbModule module = CreateMockModule(isPlaceholder: true, loadSymbolsSucceeds: true);
             _mockBinaryLoader
-                .LoadBinaryAsync(module, Arg.Any<TextWriter>())
+                .LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
                 .Returns((module, false));
             var dumpModuleFileLoader = new ModuleFileLoader(_mockSymbolLoader, _mockBinaryLoader,
                                                             true,
@@ -425,7 +426,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             SbModule module = CreateMockModule(isPlaceholder: true, loadSymbolsSucceeds: true);
             module.GetPlatformFileSpec().Returns(_mockPlatformFileSpec);
-            _mockBinaryLoader.LoadBinaryAsync(module, Arg.Any<TextWriter>()).Returns(x =>
+            _mockBinaryLoader.LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
+                .Returns(x =>
             {
                 x.Arg<TextWriter>().WriteLine(_loadOutput);
                 // When the LoadBinaryAsync fails it returns the input module.
@@ -446,7 +448,8 @@ namespace YetiVSI.Test.DebugEngine
             SbModule loadedModule = CreateMockModule(false);
             loadedModule.GetId().Returns(5);
 
-            _mockBinaryLoader.LoadBinaryAsync(module, Arg.Any<TextWriter>()).Returns(x =>
+            _mockBinaryLoader.LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
+                .Returns(x =>
             {
                 x.Arg<TextWriter>().WriteLine(_loadOutput);
                 // When the LoadBinaryAsync succeeds it returns the new module.
@@ -480,7 +483,8 @@ namespace YetiVSI.Test.DebugEngine
 
         async Task AssertLoadBinaryReceivedAsync(SbModule module)
         {
-            await _mockBinaryLoader.Received().LoadBinaryAsync(module, Arg.Any<TextWriter>());
+            await _mockBinaryLoader.Received()
+                .LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>());
         }
 
         async Task AssertLoadSymbolsReceivedAsync(SbModule module)
@@ -491,7 +495,8 @@ namespace YetiVSI.Test.DebugEngine
 
         async Task AssertLoadBinaryNotReceivedAsync(SbModule module)
         {
-            await _mockBinaryLoader.DidNotReceive().LoadBinaryAsync(module, Arg.Any<TextWriter>());
+            await _mockBinaryLoader.DidNotReceive()
+                .LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>());
         }
 
         async Task AssertLoadSymbolsNotReceivedAsync(SbModule module)
@@ -516,7 +521,7 @@ namespace YetiVSI.Test.DebugEngine
             {
                 module.GetNumSections().Returns(1ul);
                 module.FindSection(".module_image").Returns(Substitute.For<SbSection>());
-                _mockBinaryLoader.LoadBinaryAsync(module, Arg.Any<TextWriter>())
+                _mockBinaryLoader.LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
                     .Returns(Task.FromResult((module, loadBinarySucceeds)));
             }
             _mockSymbolLoader

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using DebuggerApi;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using DebuggerApi;
 using JetBrains.Annotations;
 using YetiCommon;
 using YetiCommon.CastleAspects;
@@ -42,7 +42,8 @@ namespace YetiVSI.DebugEngine
         /// and <c>true</c> if the binary was loaded successfully, <c>false</c> otherwise.
         /// </returns>
         Task<(SbModule, bool)> LoadBinaryAsync([NotNull] SbModule lldbModule,
-                                               [NotNull] TextWriter searchLog);
+                                               [NotNull] TextWriter searchLog,
+                                               bool forceLoad);
     }
 
     public class LldbModuleReplacedEventArgs : EventArgs
@@ -87,7 +88,7 @@ namespace YetiVSI.DebugEngine
         }
 
         public virtual async Task<(SbModule, bool)> LoadBinaryAsync(
-            SbModule lldbModule, TextWriter searchLog)
+            SbModule lldbModule, TextWriter searchLog, bool forceLoad)
         {
             string binaryName = lldbModule.GetPlatformFileSpec()?.GetFilename();
             if (string.IsNullOrWhiteSpace(binaryName))
@@ -95,10 +96,11 @@ namespace YetiVSI.DebugEngine
                 return (lldbModule, false);
             }
 
-            ModuleSearchQuery searchQuery = new ModuleSearchQuery(
-                binaryName, new BuildId(lldbModule.GetUUIDString()))
+            var searchQuery = new ModuleSearchQuery(binaryName,
+                                                    new BuildId(lldbModule.GetUUIDString()),
+                                                    lldbModule.GetModuleFormat())
             {
-                ForceLoad = false,
+                ForceLoad = forceLoad,
                 RequireDebugInfo = false
             };
 

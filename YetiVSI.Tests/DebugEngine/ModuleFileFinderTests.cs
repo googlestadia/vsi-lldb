@@ -31,7 +31,8 @@ namespace YetiVSI.Test.DebugEngine
         static readonly BuildId _uuid = new BuildId("0123");
         const string _pathInStore = @"path\foo";
 
-        readonly ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_filename, _uuid)
+        readonly ModuleSearchQuery _searchQuery =
+            new ModuleSearchQuery(_filename, _uuid, ModuleFormat.Elf)
         {
             RequireDebugInfo = true
         };
@@ -74,7 +75,7 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task FindFile_EmptyBuildIdAsync()
         {
-            var query = new ModuleSearchQuery(_filename, BuildId.Empty)
+            var query = new ModuleSearchQuery(_filename, BuildId.Empty, ModuleFormat.Elf)
             {
                 RequireDebugInfo = true
             };
@@ -164,7 +165,7 @@ namespace YetiVSI.Test.DebugEngine
             var moduleParser = Substitute.For<IModuleParser>();
             moduleParser.IsValidElf(_path2, Arg.Any<bool>(), out _)
                 .Returns(true);
-            moduleParser.ParseBuildIdInfo(_path2, true)
+            moduleParser.ParseBuildIdInfo(_path2, ModuleFormat.Elf)
                 .Returns(new BuildIdInfo() {Data = _uuid});
             var sequence = new SymbolStoreSequence(moduleParser);
             var flatStore1 = Substitute.For<ISymbolStore>();

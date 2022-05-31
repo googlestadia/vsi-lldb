@@ -38,7 +38,7 @@ namespace SymbolStores
         [JsonProperty("Stores")]
         readonly IList<ISymbolStore> _stores;
 
-        readonly IList<ISymbolStore> _flatSymbolStores = new List<ISymbolStore>();
+        readonly IList<FlatSymbolStore> _flatSymbolStores = new List<FlatSymbolStore>();
 
         public SymbolStoreSequence(IModuleParser moduleParser) : base(false, false)
         {
@@ -49,16 +49,16 @@ namespace SymbolStores
         public void AddStore(ISymbolStore store)
         {
             _stores.Add(store);
-            if (store is FlatSymbolStore)
+            if (store is FlatSymbolStore flatStore)
             {
-                _flatSymbolStores.Add(store);
+                _flatSymbolStores.Add(flatStore);
             }
         }
 
         public override IEnumerable<ISymbolStore> Substores => _stores;
 
         public override Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
-                                                                 TextWriter log)
+                                                           TextWriter log)
         {
             return searchQuery.BuildId == BuildId.Empty
                 ? SearchFlatSymbolStoresAsync(searchQuery, log)
@@ -95,8 +95,7 @@ namespace SymbolStores
                         }
                     }
 
-                    if (VerifySymbolFile(fileReference, searchQuery.BuildId,
-                                         searchQuery.RequireDebugInfo, log))
+                    if (VerifySymbolFile(fileReference, searchQuery, log))
                     {
                         return fileReference;
                     }
@@ -114,12 +113,11 @@ namespace SymbolStores
         async Task<IFileReference> SearchFlatSymbolStoresAsync(ModuleSearchQuery searchQuery,
                                                                TextWriter log)
         {
-            foreach (ISymbolStore store in _flatSymbolStores)
+            foreach (FlatSymbolStore store in _flatSymbolStores)
             {
                 IFileReference fileReference = await store.FindFileAsync(searchQuery, log);
 
-                if (VerifySymbolFile(fileReference, searchQuery.BuildId,
-                                     searchQuery.RequireDebugInfo, log))
+                if (VerifySymbolFile(fileReference, searchQuery, log))
                 {
                     return fileReference;
                 }
@@ -141,7 +139,7 @@ namespace SymbolStores
                     .All(x => x.Item1.DeepEquals(x.Item2));
         }
 
-        bool VerifySymbolFile(IFileReference fileReference, BuildId buildId, bool isDebugInfoFile,
+        bool VerifySymbolFile(IFileReference fileReference, ModuleSearchQuery query,
                               TextWriter log)
         {
             if (fileReference == null)
@@ -156,31 +154,34 @@ namespace SymbolStores
                 return false;
             }
 
-            if (!_moduleParser.IsValidElf(filepath, isDebugInfoFile, out string errorMessage))
+            if (query.ModuleFormat == ModuleFormat.Elf
+                && !_moduleParser.IsValidElf(filepath, query.RequireDebugInfo,
+                                             out string errorMessage))
             {
                 log.WriteLineAndTrace(errorMessage);
                 return false;
             }
 
-            if (buildId == BuildId.Empty)
+            if (query.BuildId == BuildId.Empty)
             {
                 return true;
             }
 
-            BuildIdInfo actualBuildId = _moduleParser.ParseBuildIdInfo(filepath, true);
+            BuildIdInfo actualBuildId = _moduleParser.ParseBuildIdInfo(filepath,
+                                                                       query.ModuleFormat);
             if (actualBuildId.HasError)
             {
                 log.WriteLineAndTrace(actualBuildId.Error);
                 return false;
             }
 
-            if (actualBuildId.Data == buildId)
+            if (actualBuildId.Data == query.BuildId)
             {
                 return true;
             }
 
             string buildIdMismatch =
-                Strings.BuildIdMismatch(filepath, buildId, actualBuildId.Data);
+                Strings.BuildIdMismatch(filepath, query.BuildId, actualBuildId.Data);
             log.WriteLineAndTrace(buildIdMismatch);
             return false;
         }

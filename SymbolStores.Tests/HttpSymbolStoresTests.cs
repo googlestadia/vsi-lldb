@@ -75,10 +75,8 @@ namespace SymbolStores.Tests
 
             await store.FindFileAsync(_searchQuery, _nullLog);
             var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.FileName,
-                                                                _searchQuery.BuildId)
-            {
-                ForceLoad = false
-            };
+                                                                _searchQuery.BuildId,
+                                                                _elfFormat);
 
             var fileReference = await store.FindFileAsync(queryWithForceReloadOff, _log);
             Assert.Null(fileReference);
@@ -115,10 +113,8 @@ namespace SymbolStores.Tests
 
             await store.FindFileAsync(_searchQuery, _nullLog);
             var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.FileName,
-                                                                _searchQuery.BuildId)
-            {
-                ForceLoad = false
-            };
+                                                                _searchQuery.BuildId,
+                                                                _searchQuery.ModuleFormat);
             IFileReference fileReference =
                 await store.FindFileAsync(queryWithForceReloadOff, _log);
             Assert.Null(fileReference);

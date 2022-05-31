@@ -35,10 +35,9 @@ namespace YetiCommon
         /// throw, all errors will be returned in the Error property.
         /// </summary>
         /// <param name="filepath">Full path to the file to parse.</param>
-        /// <param name="isElf"><value>true</value> for ELF-modules (linux), <value>false</value>
-        /// for PE (windows).</param>
+        /// <param name="format">Expected format of the file to parse.</param>
         /// <returns>Build ID info instance, optionally containing BuildId, and Error.</returns>
-        BuildIdInfo ParseBuildIdInfo(string filepath, bool isElf);
+        BuildIdInfo ParseBuildIdInfo(string filepath, ModuleFormat format);
 
         /// <summary>
         /// Parses a binary or symbol file on a gamelet and returns the build ID encoded in the

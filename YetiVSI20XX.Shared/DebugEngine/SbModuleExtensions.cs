@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using DebuggerApi;
 using System;
 using System.Diagnostics;
+using DebuggerApi;
+using YetiCommon;
 
 namespace YetiVSI.DebugEngine
 {
@@ -36,6 +37,7 @@ namespace YetiVSI.DebugEngine
 
     public static class SbModuleExtensions
     {
+        readonly static string _moduleImage = ".module_image";
         /// <summary>Whether the module has symbols loaded.</summary>
         public static bool HasSymbolsLoaded(this SbModule module) => module.HasCompileUnits();
 
@@ -45,10 +47,22 @@ namespace YetiVSI.DebugEngine
         /// </summary>
         public static bool IsPlaceholderModule(this SbModule module) =>
             module.GetNumSections() == 1
-            && module.FindSection(".module_image") != null;
+            && module.FindSection(_moduleImage) != null;
 
         /// <summary>Whether the module's binary is loaded.</summary>
         public static bool HasBinaryLoaded(this SbModule module) => !IsPlaceholderModule(module);
+
+        public static ModuleFormat GetModuleFormat(this SbModule module)
+        {
+            if (module.GetTriple().IndexOf("-windows-", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return ModuleFormat.Elf;
+            }
+
+            return module.GetPlatformFileSpec().GetFilename().ToLower().EndsWith(".pdb")
+                ? ModuleFormat.Pdb
+                : ModuleFormat.Pe;
+        }
 
         /// <summary>
         /// Returns the properties of the supplied placeholder module (file and load address)
@@ -61,7 +75,7 @@ namespace YetiVSI.DebugEngine
             this SbModule placeholderModule,
             RemoteTarget lldbTarget)
         {
-            SbSection placeholderSection = placeholderModule.FindSection(".module_image");
+            SbSection placeholderSection = placeholderModule.FindSection(_moduleImage);
             if (placeholderSection == null)
             {
                 // Could be either an RPC error or a usage error. Hmm...

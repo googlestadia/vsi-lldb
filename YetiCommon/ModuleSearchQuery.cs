@@ -12,15 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Diagnostics;
+
 namespace YetiCommon
 {
+    public enum ModuleFormat
+    {
+        Elf,
+        Pe,
+        Pdb
+    }
+
     public class ModuleSearchQuery
     {
-        public ModuleSearchQuery(string filename, BuildId buildId)
+        public ModuleSearchQuery(string filename, BuildId buildId,
+                                 ModuleFormat format)
         {
+            Debug.Assert(!string.IsNullOrWhiteSpace(filename));
             FileName = filename;
             BuildId = buildId;
+            ModuleFormat = format;
         }
+
         /// <summary>
         /// Module filename (we are looking for exact match).
         /// </summary>
@@ -42,5 +55,10 @@ namespace YetiCommon
         /// NOT_FOUND result.
         /// </summary>
         public bool ForceLoad { get; set; }
+
+        /// <summary>
+        /// Specifies in which format the file is stored (ELF/PE/PDB).
+        /// </summary>
+        public ModuleFormat ModuleFormat { get; }
     }
 }

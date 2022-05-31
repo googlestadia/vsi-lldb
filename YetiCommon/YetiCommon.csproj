@@ -58,9 +58,11 @@
     <PackageReference Include="NLog">
       <Version>4.5.6</Version>
     </PackageReference>
+    <PackageReference Include="SharpPdb" Version="1.0.4" />
     <PackageReference Include="System.IO.Abstractions">
       <Version>2.1.0.247</Version>
     </PackageReference>
+    <PackageReference Include="System.Reflection.Metadata" Version="5.0.0" />
   </ItemGroup>
   <!--
     If DeployPythonAndToolchainDependencies is off, the code references local paths.

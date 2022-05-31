@@ -166,7 +166,7 @@ namespace YetiVSI.DebugEngine
             // TODO: re-write this using LINQ and Optional<T, TException>
             foreach (string path in localCandidatePaths)
             {
-                BuildIdInfo localBuildId = _moduleParser.ParseBuildIdInfo(path, true);
+                BuildIdInfo localBuildId = _moduleParser.ParseBuildIdInfo(path, ModuleFormat.Elf);
                 if (localBuildId.HasError)
                 {
                     Trace.WriteLine(

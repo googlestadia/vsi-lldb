@@ -75,49 +75,62 @@ namespace YetiVSI.DebugEngine
         public virtual async Task<bool> LoadSymbolsAsync(
             SbModule lldbModule, TextWriter searchLog, bool useSymbolStores, bool forceLoad)
         {
-            // PE file doesn't contain symbol path.
-            if (lldbModule.GetTriple() == "x86_64-pc-windows-msvc")
+            ModuleFormat format = lldbModule.GetModuleFormat();
+            var buildId = new BuildId(lldbModule.GetUUIDString());
+            string symbolFileName = lldbModule.GetSymbolFileSpec()?.GetFilename();
+            if (format == ModuleFormat.Elf)
             {
-                return false;
-            }
-
-            DebugLinkLocation symbolFileLocation =
-                GetSymbolFileDirAndName(lldbModule, searchLog);
-
-            // Symbol filename should be set in order to search it locally.
-            if (string.IsNullOrWhiteSpace(symbolFileLocation.Filename))
-            {
-                searchLog.WriteLineAndTrace(ErrorStrings.SymbolFileNameUnknown);
-                return false;
-            }
-
-            var uuid = new BuildId(lldbModule.GetUUIDString());
-            if (symbolFileLocation.TryGetFullPath(out string fullPath))
-            {
-                BuildIdInfo buildIdInfo = _moduleParser.ParseBuildIdInfo(fullPath, isElf: true);
-                if (buildIdInfo.HasError)
+                DebugLinkLocation symbolFileLocation =
+                    GetSymbolFileDirAndName(lldbModule, searchLog);
+                if (string.IsNullOrWhiteSpace(symbolFileLocation.Filename))
                 {
-                    string moduleName = lldbModule.GetFileSpec().GetFilename();
-                    searchLog.WriteLineAndTrace(
-                        $"Could not read build Id from {fullPath} for module " +
-                        $"{moduleName} (Message: {buildIdInfo.Error}).");
+                    searchLog.WriteLineAndTrace(ErrorStrings.SymbolFileNameUnknown);
+                    return false;
                 }
 
-                if (uuid == buildIdInfo.Data)
+                if (symbolFileLocation.TryGetFullPath(out string fullPath))
                 {
-                    return AddSymbolFile(fullPath, lldbModule, searchLog);
+                    BuildIdInfo buildIdInfo = _moduleParser.ParseBuildIdInfo(fullPath, format);
+                    if (buildIdInfo.HasError)
+                    {
+                        string moduleName = lldbModule.GetFileSpec().GetFilename();
+                        searchLog.WriteLineAndTrace(
+                            $"Could not read build Id from {fullPath} for module " +
+                            $"{moduleName} (Message: {buildIdInfo.Error}).");
+                    }
+
+                    if (buildId == buildIdInfo.Data)
+                    {
+                        return AddSymbolFile(fullPath, lldbModule, searchLog);
+                    }
+                }
+
+                symbolFileName = symbolFileLocation.Filename;
+            }
+            else
+            // PE or PDB symbol format.
+            {
+                string binaryName = lldbModule.GetPlatformFileSpec().GetFilename();
+                // If symbol filename is not set or it's the same as the binary filename,
+                // we'll try to change the extension of the binary filename to .pdb and we'll
+                // search for it in the SymbolStores configured for the current debug session.
+                if (string.IsNullOrWhiteSpace(symbolFileName) ||
+                    binaryName.Equals(symbolFileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    symbolFileName = Path.ChangeExtension(binaryName, ".pdb");
+                    format = ModuleFormat.Pdb;
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(symbolFileLocation.Filename))
+            if (string.IsNullOrWhiteSpace(symbolFileName))
             {
                 return false;
             }
 
-            var searchQuery = new ModuleSearchQuery(symbolFileLocation.Filename, uuid)
+            var searchQuery = new ModuleSearchQuery(symbolFileName, buildId, format)
             {
-                ForceLoad = forceLoad,
-                RequireDebugInfo = true
+                RequireDebugInfo = true,
+                ForceLoad = forceLoad
             };
 
             string filepath = useSymbolStores

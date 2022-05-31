@@ -31,6 +31,7 @@ namespace SymbolStores.Tests
         protected const string _destFilepath = @"C:\dest\" + _filename;
         protected const string _invalidPath = @"C:\invalid|";
         protected static BuildId _buildId = new BuildId("1234");
+        protected const ModuleFormat _elfFormat = ModuleFormat.Elf;
 
         protected MockFileSystem _fakeFileSystem;
         protected IModuleParser _moduleParser;
@@ -38,7 +39,9 @@ namespace SymbolStores.Tests
         protected FileReference _sourceSymbolFile;
         protected StringWriter _log;
         protected TextWriter _nullLog = TextWriter.Null;
-        protected ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_filename, _buildId)
+
+        protected ModuleSearchQuery _searchQuery =
+            new ModuleSearchQuery(_filename, _buildId, _elfFormat)
         {
             ForceLoad = true,
             RequireDebugInfo = true
@@ -49,7 +52,7 @@ namespace SymbolStores.Tests
         {
             _fakeFileSystem = new MockFileSystem();
             _moduleParser = Substitute.For<IModuleParser>();
-            _moduleParser.ParseBuildIdInfo(Arg.Is<string>(x => x.EndsWith(_filename)), true)
+            _moduleParser.ParseBuildIdInfo(Arg.Is<string>(x => x.EndsWith(_filename)), _elfFormat)
                 .Returns(new BuildIdInfo() { Data = _buildId });
             _moduleParser.IsValidElf(Arg.Any<string>(), Arg.Any<bool>(), out string _)
                 .Returns(true);

@@ -17,7 +17,7 @@ using NUnit.Framework;
 namespace YetiCommon.Tests
 {
     [TestFixture]
-    public class ModuleParserTests
+    public partial class ModuleParserTests
     {
         [TestCase(new byte[] { 225, 222, 208, 173, 67, 130, 145, 107 },
                   "E1DED0AD-4382-916B")]

@@ -41,6 +41,7 @@ namespace YetiVSI.Test.DebugEngine
         const string _lldbOutput = "Test LLDB output";
         const string _lldbError = "Test LLDB error";
         static BuildId _uuid = new BuildId("1234");
+        static ModuleFormat _elfFormat = ModuleFormat.Elf;
 
         StringWriter _searchLog;
         IModuleParser _mockModuleParser;
@@ -202,7 +203,8 @@ namespace YetiVSI.Test.DebugEngine
                     }
                 });
 
-            _mockModuleParser.ParseBuildIdInfo(Path.Combine(customFileDir, customFileName), true)
+            _mockModuleParser
+                .ParseBuildIdInfo(Path.Combine(customFileDir, customFileName), _elfFormat)
                 .Returns(new BuildIdInfo() { Data = _uuid });
 
             SetHandleCommandReturnValue(_mockCommandInterpreter, expectedCommand,
@@ -236,10 +238,11 @@ namespace YetiVSI.Test.DebugEngine
                     }
                 });
 
-            _mockModuleParser.ParseBuildIdInfo(Path.Combine(customFileDir, customFileName), true)
+            _mockModuleParser
+                .ParseBuildIdInfo(Path.Combine(customFileDir, customFileName), _elfFormat)
                 .Returns(new BuildIdInfo() { Data = new BuildId("4321") });
 
-            var searchQuery = new ModuleSearchQuery(customFileName, _uuid)
+            var searchQuery = new ModuleSearchQuery(customFileName, _uuid, _elfFormat)
             {
                 RequireDebugInfo = true
             };
@@ -273,12 +276,9 @@ namespace YetiVSI.Test.DebugEngine
 
             Assert.IsFalse(await _symbolLoader.LoadSymbolsAsync(mockModule, _searchLog,
                                                                 false, false));
-            var searchQuery = new ModuleSearchQuery(null, _uuid)
-            {
-                RequireDebugInfo = true
-            };
-            await _mockModuleFileFinder.DidNotReceiveWithAnyArgs().FindFileAsync(searchQuery,
-                                                                                TextWriter.Null);
+
+            await _mockModuleFileFinder.DidNotReceiveWithAnyArgs()
+                .FindFileAsync(Arg.Any<ModuleSearchQuery>(), Arg.Any<TextWriter>());
         }
 
         [Test]
@@ -299,7 +299,7 @@ namespace YetiVSI.Test.DebugEngine
                         Filename = customFileName,
                     }
                 });
-            var searchQuery = new ModuleSearchQuery(customFileName, _uuid)
+            var searchQuery = new ModuleSearchQuery(customFileName, _uuid, _elfFormat)
             {
                 RequireDebugInfo = true
             };
@@ -312,6 +312,16 @@ namespace YetiVSI.Test.DebugEngine
 
             Assert.IsTrue(await _symbolLoader.LoadSymbolsAsync(mockModule, _searchLog,
                                                                true, false));
+        }
+
+        [Test]
+        public async Task LoadSymbols_SymbolLocationIsEmptyAsync()
+        {
+            var mockModule = Substitute.For<SbModule>();
+
+            bool found = await _symbolLoader.LoadSymbolsAsync(mockModule, _searchLog, true, true);
+            Assert.That(_searchLog.ToString().Contains(ErrorStrings.SymbolFileNameUnknown));
+            Assert.IsFalse(found);
         }
 
         [Test]

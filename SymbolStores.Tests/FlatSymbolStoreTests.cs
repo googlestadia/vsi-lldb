@@ -32,7 +32,7 @@ namespace SymbolStores.Tests
         {
             Assert.IsFalse(FlatSymbolStore.IsFlatStore(_fakeFileSystem, _invalidPath));
             Assert.Throws<ArgumentException>(
-                () => new FlatSymbolStore(_fakeFileSystem, _moduleParser, ""));
+                () => new FlatSymbolStore(_fakeFileSystem, ""));
         }
 
         [Test]
@@ -40,7 +40,7 @@ namespace SymbolStores.Tests
         {
             Assert.IsFalse(FlatSymbolStore.IsFlatStore(_fakeFileSystem, _invalidPath));
             Assert.Throws<ArgumentException>(
-                () => new FlatSymbolStore(_fakeFileSystem, _moduleParser, _invalidPath));
+                () => new FlatSymbolStore(_fakeFileSystem, _invalidPath));
         }
 
         [Test]
@@ -58,8 +58,8 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals()
         {
-            var storeA = new FlatSymbolStore(_fakeFileSystem, _moduleParser, _storePath);
-            var storeB = new FlatSymbolStore(_fakeFileSystem, _moduleParser, _storePath);
+            var storeA = new FlatSymbolStore(_fakeFileSystem, _storePath);
+            var storeB = new FlatSymbolStore(_fakeFileSystem, _storePath);
 
             Assert.True(storeA.DeepEquals(storeB));
             Assert.True(storeB.DeepEquals(storeA));
@@ -68,8 +68,8 @@ namespace SymbolStores.Tests
         [Test]
         public void DeepEquals_NotEqual()
         {
-            var storeA = new FlatSymbolStore(_fakeFileSystem, _moduleParser, _storePath);
-            var storeB = new FlatSymbolStore(_fakeFileSystem, _moduleParser, _storePathB);
+            var storeA = new FlatSymbolStore(_fakeFileSystem, _storePath);
+            var storeB = new FlatSymbolStore(_fakeFileSystem, _storePathB);
 
             Assert.False(storeA.DeepEquals(storeB));
             Assert.False(storeB.DeepEquals(storeA));
@@ -77,14 +77,14 @@ namespace SymbolStores.Tests
 
         protected override ISymbolStore GetEmptyStore()
         {
-            return new FlatSymbolStore(_fakeFileSystem, _moduleParser, _storePath);
+            return new FlatSymbolStore(_fakeFileSystem, _storePath);
         }
 
         protected override Task<ISymbolStore> GetStoreWithFileAsync()
         {
             _fakeBuildIdWriter.WriteBuildId(Path.Combine(_storePath, _filename), _buildId);
             return Task.FromResult<ISymbolStore>(
-                new FlatSymbolStore(_fakeFileSystem, _moduleParser, _storePath));
+                new FlatSymbolStore(_fakeFileSystem, _storePath));
         }
     }
 }

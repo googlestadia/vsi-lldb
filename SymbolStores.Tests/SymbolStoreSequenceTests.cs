@@ -53,8 +53,8 @@ namespace SymbolStores.Tests
             _storeA = new StructuredSymbolStore(_fakeFileSystem, _storeAPath);
             _storeB = new StructuredSymbolStore(_fakeFileSystem, _storeBPath);
 
-            _flatStoreA = new FlatSymbolStore(_fakeFileSystem, _moduleParser, _flatStoreAPath);
-            _flatStoreB = new FlatSymbolStore(_fakeFileSystem, _moduleParser, _flatStoreBPath);
+            _flatStoreA = new FlatSymbolStore(_fakeFileSystem, _flatStoreAPath);
+            _flatStoreB = new FlatSymbolStore(_fakeFileSystem, _flatStoreBPath);
         }
 
         [Test]
@@ -80,7 +80,7 @@ namespace SymbolStores.Tests
             _storeSequence.AddStore(_flatStoreA);
             _storeSequence.AddStore(_flatStoreB);
 
-            var query = new ModuleSearchQuery( "symbolB", BuildId.Empty);
+            var query = new ModuleSearchQuery( "symbolB", BuildId.Empty, _elfFormat);
             await _storeSequence.FindFileAsync(query, _log);
             string output = _log.ToString();
             Assert.AreEqual(output,
@@ -207,7 +207,7 @@ namespace SymbolStores.Tests
         {
             await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
             var unsupportedCache = Substitute.For<ISymbolStore>();
-            var query = new ModuleSearchQuery("",  BuildId.Empty);
+            var query = new ModuleSearchQuery("",  BuildId.Empty, _elfFormat);
             unsupportedCache.FindFileAsync(query, _log)
                 .ReturnsForAnyArgs((IFileReference)null);
             unsupportedCache.AddFileAsync(null, "", BuildId.Empty, null)

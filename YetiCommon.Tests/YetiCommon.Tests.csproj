@@ -6,6 +6,14 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="binaries\hello" />
+    <None Remove="binaries\hello_cpp.exe" />
+    <None Remove="binaries\hello_cpp.pdb" />
+    <None Remove="binaries\hello_dotnet.dll" />
+    <None Remove="binaries\hello_dotnet.exe" />
+    <None Remove="binaries\hello_dotnet.pdb" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System.Web" />
   </ItemGroup>
   <Choose>
@@ -65,5 +73,25 @@
       <Link>TestData\source.extension.vsixmanifest</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="binaries\hello_cpp.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="binaries\hello_cpp.pdb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="binaries\hello">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="binaries\hello_dotnet.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="binaries\hello_dotnet.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="binaries\hello_dotnet.pdb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

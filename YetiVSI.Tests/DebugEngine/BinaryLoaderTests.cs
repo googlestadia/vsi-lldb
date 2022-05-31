@@ -30,7 +30,8 @@ namespace YetiVSI.Test.DebugEngine
         const string _pathInStore = @"C:\store\" + _binaryFilename;
         static BuildId _uuid = new BuildId("1234");
         const string _triple = "msp430--";
-        readonly ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_binaryFilename, _uuid)
+        readonly ModuleSearchQuery _searchQuery =
+            new ModuleSearchQuery(_binaryFilename, _uuid, ModuleFormat.Elf)
         {
             RequireDebugInfo = false,
             ForceLoad = false
@@ -70,22 +71,52 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task LoadBinary_FileNotFoundAsync()
         {
-
             _mockModuleFileFinder.FindFileAsync(_searchQuery, _searchLog)
                 .Returns(Task.FromResult<string>(null));
 
             (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
-                _placeholderModule, _searchLog);
+                _placeholderModule, _searchLog, false);
             Assert.False(ok);
 
             Assert.AreSame(module, _placeholderModule);
         }
 
         [Test]
+        public async Task LoadBinary_WhenBinaryNameIsEmptyAsync()
+        {
+            var module = Substitute.For<SbModule>();
+
+            (SbModule found, bool ok) = await _binaryLoader.LoadBinaryAsync(module, _searchLog,
+                false);
+
+            Assert.False(ok);
+            Assert.AreSame(module, found);
+            Assert.IsEmpty(_searchLog.ToString());
+        }
+
+        [Test]
+        public async Task LoadBinary_WhenBinaryNotFoundByModuleFileFinderAsync()
+        {
+            var module = Substitute.For<SbModule>();
+            string filename = "file_doesn't_exist.txt";
+            module.GetPlatformFileSpec().GetFilename().Returns(filename);
+            _mockModuleFileFinder
+                .FindFileAsync(Arg.Is<ModuleSearchQuery>(q => q.FileName == filename), _searchLog)
+                .Returns((string)null);
+
+            (SbModule found, bool ok) = await _binaryLoader.LoadBinaryAsync(module, _searchLog,
+                false);
+
+            Assert.False(ok);
+            Assert.AreSame(module, found);
+            Assert.IsEmpty(_searchLog.ToString());
+        }
+
+        [Test]
         public async Task LoadBinary_FailedToAddModuleAsync()
         {
             (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
-                _placeholderModule, _searchLog);
+                _placeholderModule, _searchLog, false);
             Assert.False(ok);
 
             Assert.AreSame(module, _placeholderModule);
@@ -102,7 +133,7 @@ namespace YetiVSI.Test.DebugEngine
             newModule.SetPlatformFileSpec(Arg.Any<SbFileSpec>()).Returns(true);
 
             (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
-                _placeholderModule, _searchLog);
+                _placeholderModule, _searchLog, false);
             Assert.True(ok);
 
             _mockTarget.Received().RemoveModule(_placeholderModule);

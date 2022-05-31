@@ -273,7 +273,8 @@ namespace YetiVSI.DebugEngine
                 PrefilterModulesByName(modules, symbolSettings).ToList();
 
             List<SbModule> modulesWithBinariesLoaded = await ProcessModulePlaceholdersAsync(
-                preFilteredModules, task, isStadiaSymbolsServerUsed, loadSymbolData, result);
+                preFilteredModules, task, isStadiaSymbolsServerUsed, forceLoad, loadSymbolData,
+                result);
 
             await ProcessModulesWithoutSymbolsAsync(
                 modulesWithBinariesLoaded, task, useSymbolStores, forceLoad, loadSymbolData,
@@ -353,6 +354,7 @@ namespace YetiVSI.DebugEngine
             IReadOnlyList<SbModule> preFilteredModules,
             ICancelable task,
             bool isStadiaSymbolsServerUsed,
+            bool forceLoad,
             DeveloperLogEvent.Types.LoadSymbolData loadSymbolData,
             LoadModuleFilesResult result)
         {
@@ -373,7 +375,7 @@ namespace YetiVSI.DebugEngine
                 task.Progress.Report($"Loading binary for {name}" +
                                      $"({index}/{preFilteredModules.Count})");
                 (SbModule outputModule, bool ok) =
-                    await _binaryLoader.LoadBinaryAsync(sbModule, searchLog);
+                    await _binaryLoader.LoadBinaryAsync(sbModule, searchLog, forceLoad);
                 if (ok)
                 {
                     modulesWithBinary.Add(outputModule);

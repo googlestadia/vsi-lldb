@@ -37,7 +37,6 @@ namespace SymbolStores
     public class FlatSymbolStore : SymbolStoreBase, IFlatSymbolStore
     {
         readonly IFileSystem _fileSystem;
-        readonly IModuleParser _moduleParser;
         [JsonProperty("Path")]
         readonly string _path;
 
@@ -45,7 +44,7 @@ namespace SymbolStores
             !string.IsNullOrWhiteSpace(path)
             && !fileSystem.Path.GetInvalidPathChars().Any(x => path.Contains(x));
 
-        public FlatSymbolStore(IFileSystem fileSystem, IModuleParser moduleParser, string path)
+        public FlatSymbolStore(IFileSystem fileSystem, string path)
             : base(false, false)
         {
             if (string.IsNullOrEmpty(path))
@@ -55,7 +54,6 @@ namespace SymbolStores
             }
 
             _fileSystem = fileSystem;
-            _moduleParser = moduleParser;
             _path = fileSystem.Path.GetFullPath(path);
         }
 

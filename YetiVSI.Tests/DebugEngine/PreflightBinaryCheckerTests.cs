@@ -162,10 +162,10 @@ namespace YetiVSI.Test.DebugEngine
             _moduleParser.ParseRemoteBuildIdInfoAsync(_remoteTargetPath, _target)
                 .Returns(Task.FromResult(_validBuildId));
 
-            _moduleParser.ParseBuildIdInfo(_localPaths[0], true)
+            _moduleParser.ParseBuildIdInfo(_localPaths[0], ModuleFormat.Elf)
                 .Returns(new BuildIdInfo() { Data = _validBuildId2 });
 
-            _moduleParser.ParseBuildIdInfo(_localPaths[1], true)
+            _moduleParser.ParseBuildIdInfo(_localPaths[1], ModuleFormat.Elf)
                 .Returns(new BuildIdInfo() { Data = _validBuildId });
 
             await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
@@ -239,7 +239,7 @@ namespace YetiVSI.Test.DebugEngine
 
             var buildIdInfoInvalid = new BuildIdInfo() {Data = new BuildId("BAAD")};
             _moduleParser
-                .ParseBuildIdInfo(Arg.Any<string>(), true)
+                .ParseBuildIdInfo(Arg.Any<string>(), ModuleFormat.Elf)
                 .Returns(buildIdInfoInvalid);
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
@@ -274,7 +274,7 @@ namespace YetiVSI.Test.DebugEngine
             var buildIdInfoInvalid = new BuildIdInfo();
             buildIdInfoInvalid.AddError("Not ELF");
             _moduleParser
-                .ParseBuildIdInfo(Arg.Any<string>(), true)
+                .ParseBuildIdInfo(Arg.Any<string>(), ModuleFormat.Elf)
                 .Returns(buildIdInfoInvalid);
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
