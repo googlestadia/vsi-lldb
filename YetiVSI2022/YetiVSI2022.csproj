@@ -44,7 +44,7 @@
     <InternalToolchainDir>$(OutputBaseDir)Dependencies\internal_toolchain\</InternalToolchainDir>
     <LlvmWinDir>$(InternalToolchainDir)windows\</LlvmWinDir>
     <PythonDir>$(Pkgpython)\tools\</PythonDir>
-    <PythonVersion>36</PythonVersion>
+    <PythonVersion>38</PythonVersion>
     <LldbEvalDir>$(SolutionDir)..\..\third_party\lldb-eval\</LldbEvalDir>
     <DownloadPython>true</DownloadPython>
   </PropertyGroup>
@@ -115,7 +115,7 @@
     <When Condition="'$(DownloadPython)' == 'true'">
       <ItemGroup>
         <PackageReference Include="python">
-          <Version>3.6.8</Version>
+          <Version>3.8.5</Version>
           <GeneratePathProperty>true</GeneratePathProperty>
         </PackageReference>
       </ItemGroup>
