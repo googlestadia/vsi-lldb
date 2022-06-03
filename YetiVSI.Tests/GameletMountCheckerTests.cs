@@ -40,11 +40,16 @@ namespace YetiVSI.Test
 
         ActionRecorder _actionRecorder;
 
+        // To update these:
+        // - For each of them (except the corrupted ones), reproduce mount setup and
+        // - run `cat /proc/mounts | grep -eassets -edeveloper -etmpfs -epackage` in a GGP shell.
+        // Then copy the appropriate lines.
+
         // ggp instance unmount
         readonly List<string> _unmounted = new List<string>
         {
-            "/dev/sde6 /srv/game/assets ext4 ro,relatime 0 0",
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/localssd/var/empty 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
@@ -58,43 +63,43 @@ namespace YetiVSI.Test
         // ggp instance mount --package
         readonly List<string> _mountedPackage = new List<string>
         {
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /srv/game/assets ext4 ro,relatime,norecovery 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/mapper/cryptfs-content-asset-1-0-0-96394ebed9b4 /mnt/assets-content-asset-1-0-0-96394ebed9b4 ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/assets-content-asset-1-0-0-0cd87f2db855:/mnt/localssd/var/empty 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
         // ggp instance mount --package --overlay-instance-storage
         readonly List<string> _mountedPackageWithOverlay = new List<string>
         {
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
-            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/package 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/mapper/cryptfs-content-asset-1-0-0-96394ebed9b4 /mnt/assets-content-asset-1-0-0-96394ebed9b4 ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/assets-content-asset-1-0-0-48f27cee9049 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
         // ggp instance mount --local-dir with Asset Streaming 2.0
         readonly List<string> _mountedLocalDirAS20 = new List<string>
         {
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
             "machine@localhost:/ /mnt/workstation fuse.sshfs rw,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
-            "machine@localhost:/ /srv/game/assets fuse.sshfs ro,relatime,user_id=1000,group_id=1000,allow_other 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/localssd/var/empty:/mnt/workstation 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
         // ggp instance mount --local-dir with Asset Streaming 3.0
         readonly List<string> _mountedLocalDirAS30 = new List<string>
         {
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
             "cdc_fuse_fs /mnt/workstation fuse.cdc_fuse_fs ro,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
-            "cdc_fuse_fs /srv/game/assets fuse.cdc_fuse_fs ro,relatime,user_id=1000,group_id=1000,allow_other 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/localssd/var/empty:/mnt/workstation 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
         // ggp instance mount --local-dir --overlay-instance-storage
         readonly List<string> _mountedLocalDirWithOverlay = new List<string>
         {
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
             "cdc_fuse_fs /mnt/workstation fuse.cdc_fuse_fs ro,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
             "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/workstation 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
@@ -103,28 +108,29 @@ namespace YetiVSI.Test
         // ggp instance mount --package --local-dir
         readonly List<string> _mountedPackageAndLocalDir = new List<string>
         {
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
             "cdc_fuse_fs /mnt/workstation fuse.cdc_fuse_fs ro,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
-            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/home/cloudcast/.overlayfs_workaround_layer:/mnt/workstation:/mnt/package 0 0",
+            "/dev/mapper/cryptfs-content-asset-1-0-0-96394ebed9b4 /mnt/assets-content-asset-1-0-0-96394ebed9b4 ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/localssd/var/empty:/mnt/workstation:/mnt/assets-content-asset-1-0-0-96394ebed9b4 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
         // ggp instance mount --package --local-dir --instance-storage-overlay
         readonly List<string> _mountedPackageAndLocalDirWithOverlay = new List<string>
         {
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
             "cdc_fuse_fs /mnt/workstation fuse.cdc_fuse_fs ro,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
-            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/workstation:/mnt/package 0 0",
+            "/dev/mapper/cryptfs-content-asset-1-0-0-28451a7d9fe2 /mnt/assets-content-asset-1-0-0-28451a7d9fe2 ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/workstation:/mnt/assets-content-asset-1-0-0-28451a7d9fe2 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
         // ggp run --package
         readonly List<string> _runFromPackage = new List<string>
         {
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
-            "/dev/mapper/cryptfs-content-asset-1-ad29163532d94905 /srv/game/assets ext4 ro,relatime,norecovery 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/mapper/cryptfs-content-asset-1-0-0-e7e0db12d6f1 /mnt/assets-content-asset-1-0-0-e7e0db12d6f1 ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/assets-content-asset-1-0-0-e7e0db12d6f1:/mnt/localssd/var/empty 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
@@ -132,8 +138,9 @@ namespace YetiVSI.Test
         readonly List<string> _runFromPackageWithLeftOverFuse = new List<string>
         {
             "cdc_fuse_fs /mnt/workstation fuse.cdc_fuse_fs ro,nosuid,nodev,relatime,user_id=1000,group_id=1000,allow_other 0 0",
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
-            "/dev/mapper/cryptfs-content-asset-1-ad29163532d94905 /srv/game/assets ext4 ro,relatime,norecovery 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/mapper/cryptfs-content-asset-1-0-0-e7e0db12d6f1 /mnt/assets-content-asset-1-0-0-e7e0db12d6f1 ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/assets-content-asset-1-0-0-e7e0db12d6f1:/mnt/localssd/var/empty 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
@@ -159,7 +166,7 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public void GetConfigurationForUnmountedGameletReturnsNone()
+        public void GetConfigurationForUnmountedGameletReturnsOverlay()
         {
             GameletMountChecker mountChecker =
                 CreateMountCheckerWithSpecifiedProcMountsInfo(_unmounted);
@@ -167,7 +174,7 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.None));
+            Assert.That(configuration, Is.EqualTo(MountConfiguration.InstanceStorageOverlay));
         }
 
         [Test]
@@ -273,7 +280,7 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.RunFromPackage));
+            Assert.That(configuration, Is.EqualTo(MountConfiguration.PackageMounted));
         }
 
         [Test]
@@ -287,7 +294,7 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.RunFromPackage));
+            Assert.That(configuration, Is.EqualTo(MountConfiguration.PackageMounted));
         }
 
         [Test]

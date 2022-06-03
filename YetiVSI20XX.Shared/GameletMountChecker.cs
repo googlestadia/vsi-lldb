@@ -16,6 +16,7 @@ using GgpGrpc.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
@@ -31,15 +32,13 @@ namespace YetiVSI
         // /mnt/developer is mounted as top-level overlay to /srv/game/assets.
         InstanceStorageOverlay = 1 << 0,
 
-        // A package is mounted to /mnt/package.
+        // A package is mounted, e.g. with ggp instance mount --package, or
+        // a game was run directly, e.g. with ggp run --package.
         PackageMounted = 1 << 1,
-
-        // A game was run directly, e.g. with ggp run --package.
-        RunFromPackage = 1 << 2,
 
         // A local workstation directory is mounted to /mnt/workstation and
         // visible in /srv/game/assets, i.e. asset streaming is active.
-        LocalDirMounted = 1 << 3,
+        LocalDirMounted = 1 << 2,
     }
 
     /// <summary>
@@ -57,7 +56,7 @@ namespace YetiVSI
         readonly HashSet<string> _keys = new HashSet<string>
         {
             YetiConstants.GameAssetsMountingPoint,
-            YetiConstants.PackageMountingPoint,
+            YetiConstants.PackageMountingPointPrefix,
             YetiConstants.DeveloperMountingPoint,
             YetiConstants.WorkstationMountingPoint
         };
@@ -88,62 +87,30 @@ namespace YetiVSI
             Dictionary<string, Device> devices = GetDevices(mountsInfo);
             Device gameAssetsDevice = devices[YetiConstants.GameAssetsMountingPoint];
             Device workstationDevice = devices[YetiConstants.WorkstationMountingPoint];
-            Device packageDevice = devices[YetiConstants.PackageMountingPoint];
-            Device developerDevice = devices[YetiConstants.DeveloperMountingPoint];
-
-            bool gameAssetsIsOverlay =
-                gameAssetsDevice?.FileSystemType.Equals(_overlayFileSystem, _comparisonType) ??
-                false;
+            Device packageDevice = devices[YetiConstants.PackageMountingPointPrefix];
 
             // Check whether /srv/game/assets is mounted as overlayfs with /mnt/developer as
             // mount dir. gameAssetsDevice.Parameters lists the overlay layers, e.g.
-            // lowerdir=/home/cloudcast/.overlayfs_workaround_layer:/mnt/workstation:/mnt/package.
-            if (gameAssetsIsOverlay &&
-                gameAssetsDevice.Parameters.Contains(YetiConstants.DeveloperMountingPoint))
+            // lowerdir=/mnt/localssd/var/empty:/mnt/workstation.
+            if (gameAssetsDevice != null && gameAssetsDevice.Parameters.Contains(
+                YetiConstants.DeveloperMountingPoint))
             {
                 mountConfiguration |= MountConfiguration.InstanceStorageOverlay;
             }
 
-            if (workstationDevice?.FileSystemType.StartsWith(_fuseFileSystem, _comparisonType) ??
-                false)
+            if (workstationDevice != null && gameAssetsDevice != null &&
+                workstationDevice.FileSystemType.StartsWith(_fuseFileSystem, _comparisonType) &&
+                gameAssetsDevice.Parameters.Contains(YetiConstants.WorkstationMountingPoint))
             {
-                if (gameAssetsIsOverlay &&
-                    gameAssetsDevice.Parameters.Contains(YetiConstants.WorkstationMountingPoint))
-                {
-                    // Mounted as overlay, e.g. 'ggp instance mount --local-dir --package'.
-                    mountConfiguration |= MountConfiguration.LocalDirMounted;
-                }
-                else if (gameAssetsDevice?.FileSystemType.StartsWith(
-                    _fuseFileSystem, _comparisonType) ?? false)
-                {
-                    // Mounted as bind-mount, e.g. 'ggp instance mount --local-dir'.
-                    mountConfiguration |= MountConfiguration.LocalDirMounted;
-                }
+                // Workstation directory mounted, e.g. 'ggp instance mount --local-dir --package'.
+                mountConfiguration |= MountConfiguration.LocalDirMounted;
             }
 
-            if (!string.IsNullOrWhiteSpace(packageDevice?.Address))
+            if (!string.IsNullOrWhiteSpace(packageDevice?.Address) && gameAssetsDevice != null &&
+                gameAssetsDevice.Parameters.Contains(YetiConstants.PackageMountingPointPrefix))
             {
-                if (gameAssetsIsOverlay &&
-                    gameAssetsDevice.Parameters.Contains(YetiConstants.PackageMountingPoint))
-                {
-                    // Mounted as overlay, e.g. 'ggp instance mount --local-dir --package'.
-                    mountConfiguration |= MountConfiguration.PackageMounted;
-                }
-                else if (packageDevice.Address.Equals(gameAssetsDevice?.Address, _comparisonType))
-                {
-                    // Mounted as bind-mount, e.g. 'ggp instance mount --package'.
-                    mountConfiguration |= MountConfiguration.PackageMounted;
-                }
-            }
-
-            if (gameAssetsDevice != null &&
-                !gameAssetsDevice.Address.Equals(developerDevice?.Address, _comparisonType) &&
-                !gameAssetsDevice.Address.Equals(workstationDevice?.Address, _comparisonType) &&
-                !gameAssetsDevice.Address.Equals(packageDevice?.Address, _comparisonType) &&
-                !gameAssetsIsOverlay)
-            {
-                // Game was run from package, e.g. 'ggp run --package'.
-                mountConfiguration |= MountConfiguration.RunFromPackage;
+                // Package mounted, e.g. 'ggp instance mount --local-dir --package'.
+                mountConfiguration |= MountConfiguration.PackageMounted;
             }
 
             return mountConfiguration;
@@ -204,8 +171,8 @@ namespace YetiVSI
         }
 
         /// <summary>
-        /// Returns dictionary of the mounting points of interest (/srv/game/assets, /mnt/package,
-        /// /mnt/developer) to the devices they are currently mounted to.
+        /// Returns dictionary of the mounting points of interest (/srv/game/assets, /mnt/developer
+        /// etc.) to the devices they are currently mounted to.
         /// Format of /proc/mounts is:
         /// 1st column - device that is mounted;
         /// 2nd column - the mount point;
@@ -233,12 +200,15 @@ namespace YetiVSI
                     continue;
                 }
 
-                // Read mounting point of this line.
+                // Read mounting point of this line. Note that most keys match the mounting points,
+                // with the exception of YetiConstants.PackageMountingPointPrefix, where the
+                // mounting point is e.g. /mnt/assets-content-asset-1-0-0-96394ebed9b4.
                 string mountingPoint = items[1];
-                if (_keys.Contains(mountingPoint))
+                string key = _keys.FirstOrDefault(k => mountingPoint.StartsWith(k));
+                if (key != null)
                 {
                     // Get device from the line and add it to the resulting dictionary.
-                    mountingPointToDevice[mountingPoint] = new Device(items[0], items[2], items[3]);
+                    mountingPointToDevice[key] = new Device(items[0], items[2], items[3]);
                 }
             }
 

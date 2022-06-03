@@ -42,18 +42,18 @@ namespace YetiVSI.Test.GameLaunch
         // /proc/mounts result after 'ggp instance mount --package'.
         readonly List<string> _mountedPackage = new List<string>
         {
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /srv/game/assets ext4 ro,relatime,norecovery 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/mapper/cryptfs-content-asset-1-0-0-96394ebed9b4 /mnt/assets-content-asset-1-0-0-96394ebed9b4 ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/assets-content-asset-1-0-0-0cd87f2db855:/mnt/localssd/var/empty 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
         // /proc/mounts result after 'ggp instance mount --package <id> --overlay-instance-storage'
         readonly List<string> _mountedPackageWithOverlay = new List<string>
         {
-            "/dev/sde6 /mnt/developer ext4 rw,relatime 0 0",
-            "/dev/mapper/cryptfs-disk-0129389243020 /mnt/package ext4 ro,relatime,norecovery 0 0",
-            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/package 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
+            "/dev/mapper/cryptfs-content-asset-1-0-0-96394ebed9b4 /mnt/assets-content-asset-1-0-0-96394ebed9b4 ext4 ro,relatime,norecovery 0 0",
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/assets-content-asset-1-0-0-48f27cee9049 0 0",
             "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
         };
 
