@@ -37,7 +37,6 @@ using static YetiVSI.DebugEngine.DebugEngine;
 
 namespace YetiVSI.DebugEngine
 {
-
     public interface IDebugSessionLauncherFactory
     {
         IDebugSessionLauncher Create(IDebugEngine3 debugEngine, string coreFilePath,
@@ -55,7 +54,6 @@ namespace YetiVSI.DebugEngine
                                                IDebugEventCallback2 callback,
                                                StadiaLldbDebugger stadiaDebugger);
     }
-
 
 
     /// <summary>
@@ -160,20 +158,24 @@ namespace YetiVSI.DebugEngine
         readonly IVsiGameLaunch _gameLaunch;
         readonly NatvisVisualizerScanner _natvisVisualizerScanner;
 
-        public DebugSessionLauncher(
-            JoinableTaskContext taskContext, GrpcListenerFactory lldbListenerFactory,
-            GrpcPlatformConnectOptionsFactory lldbPlatformConnectOptionsFactory,
-            GrpcPlatformShellCommandFactory lldbPlatformShellCommandFactory,
-            ILldbAttachedProgramFactory attachedProgramFactory, IDebugEngine3 debugEngine,
-            ActionRecorder actionRecorder,
-            ModuleFileLoadMetricsRecorder.Factory moduleFileLoadRecorderFactory,
-            string coreFilePath, string executableFileName,
-            LldbExceptionManager.Factory exceptionManagerFactory,
-            IModuleFileFinder moduleFileFinder, IDumpModulesProvider dumpModulesProvider,
-            IModuleSearchLogHolder moduleSearchLogHolder,
-            ISymbolSettingsProvider symbolSettingsProvider,
-            CoreAttachWarningDialogUtil warningDialog, IVsiGameLaunch gameLaunch,
-            NatvisVisualizerScanner natvisVisualizerScanner)
+        public DebugSessionLauncher(JoinableTaskContext taskContext,
+                                    GrpcListenerFactory lldbListenerFactory,
+                                    GrpcPlatformConnectOptionsFactory
+                                        lldbPlatformConnectOptionsFactory,
+                                    GrpcPlatformShellCommandFactory lldbPlatformShellCommandFactory,
+                                    ILldbAttachedProgramFactory attachedProgramFactory,
+                                    IDebugEngine3 debugEngine, ActionRecorder actionRecorder,
+                                    ModuleFileLoadMetricsRecorder.Factory
+                                        moduleFileLoadRecorderFactory, string coreFilePath,
+                                    string executableFileName,
+                                    LldbExceptionManager.Factory exceptionManagerFactory,
+                                    IModuleFileFinder moduleFileFinder,
+                                    IDumpModulesProvider dumpModulesProvider,
+                                    IModuleSearchLogHolder moduleSearchLogHolder,
+                                    ISymbolSettingsProvider symbolSettingsProvider,
+                                    CoreAttachWarningDialogUtil warningDialog,
+                                    IVsiGameLaunch gameLaunch,
+                                    NatvisVisualizerScanner natvisVisualizerScanner)
         {
             _taskContext = taskContext;
             _lldbListenerFactory = lldbListenerFactory;
@@ -211,8 +213,9 @@ namespace YetiVSI.DebugEngine
 
             if (launchOption == LaunchOption.Invalid)
             {
-                throw new AttachException(VSConstants.E_ABORT, ErrorStrings.InvalidLaunchOption(
-                                                                   launchOption.ToString()));
+                throw new AttachException(VSConstants.E_ABORT,
+                                          ErrorStrings.InvalidLaunchOption(
+                                              launchOption.ToString()));
             }
 
             task.Progress.Report(TaskMessages.DebuggerAttaching);
@@ -228,12 +231,13 @@ namespace YetiVSI.DebugEngine
 
             var lldbListener = CreateListener(grpcConnection);
             // This is required to catch breakpoint change events.
-            stadiaDebugger.Target.AddListener(lldbListener, TargetEventType.BREAKPOINT_CHANGED |
-                                                                TargetEventType.MODULES_LOADED |
-                                                                TargetEventType.MODULES_UNLOADED);
+            stadiaDebugger.Target.AddListener(lldbListener,
+                                              TargetEventType.BREAKPOINT_CHANGED |
+                                              TargetEventType.MODULES_LOADED |
+                                              TargetEventType.MODULES_UNLOADED);
             var listenerSubscriber = new LldbListenerSubscriber(lldbListener);
-            LldbFileUpdateListener fileUpdateListener = new LldbFileUpdateListener(
-                listenerSubscriber, task);
+            LldbFileUpdateListener fileUpdateListener =
+                new LldbFileUpdateListener(listenerSubscriber, task);
             listenerSubscriber.Start();
             fileUpdateListener.Subscribe();
 
@@ -319,9 +323,9 @@ namespace YetiVSI.DebugEngine
 
                     if (lldbError.Fail())
                     {
-                        throw new AttachException(
-                            VSConstants.E_ABORT,
-                            GetLldbAttachErrorDetails(lldbError, lldbPlatform, processId));
+                        throw new AttachException(VSConstants.E_ABORT,
+                                                  GetLldbAttachErrorDetails(
+                                                      lldbError, lldbPlatform, processId));
                     }
                 }
 
@@ -333,23 +337,22 @@ namespace YetiVSI.DebugEngine
         uint GetProcessIdFromGamelet(ICancelable task, Stopwatch launchTimer,
                                      SbPlatform lldbPlatform, uint processId)
         {
-            IAction debugWaitAction =
-                _actionRecorder.CreateToolAction(ActionType.DebugWaitProcess);
+            IAction debugWaitAction = _actionRecorder.CreateToolAction(ActionType.DebugWaitProcess);
 
             try
             {
                 // Since we have no way of knowing when the remote process actually
                 // starts, try a few times to get the pid.
-                debugWaitAction.Record(
-                    () => RetryWithTimeout(task, () => TryGetRemoteProcessId(lldbPlatform,
-                                                                             ref processId,
-                                                                             debugWaitAction),
+                debugWaitAction.Record(() => RetryWithTimeout(
+                                           task,
+                                           () => TryGetRemoteProcessId(
+                                               lldbPlatform, ref processId, debugWaitAction),
                                            _launchRetryDelay, _launchTimeout, launchTimer));
             }
             catch (TimeoutException e)
             {
                 throw new AttachException(VSConstants.E_ABORT,
-                                            ErrorStrings.FailedToRetrieveProcessId, e);
+                                          ErrorStrings.FailedToRetrieveProcessId, e);
             }
 
             return processId;
@@ -378,25 +381,27 @@ namespace YetiVSI.DebugEngine
             return attachPid.Value;
         }
 
-        async Task<ILldbAttachedProgram> AttachToCoreAsync(
-            IDebugProcess2 process, Guid programId, IDebugEventCallback2 callback,
-            StadiaLldbDebugger stadiaDebugger, LldbListenerSubscriber listenerSubscriber)
+        async Task<ILldbAttachedProgram> AttachToCoreAsync(IDebugProcess2 process, Guid programId,
+                                                           IDebugEventCallback2 callback,
+                                                           StadiaLldbDebugger stadiaDebugger,
+                                                           LldbListenerSubscriber
+                                                               listenerSubscriber)
         {
             var loadCoreAction = _actionRecorder.CreateToolAction(ActionType.DebugLoadCore);
             SbProcess lldbDebuggerProcess = null;
-            loadCoreAction.Record(() =>
-                lldbDebuggerProcess = LoadCore(stadiaDebugger.Target, loadCoreAction));
+            loadCoreAction.Record(() => lldbDebuggerProcess =
+                                      LoadCore(stadiaDebugger.Target, loadCoreAction));
 
             await _taskContext.Factory.SwitchToMainThreadAsync();
 
             // Load custom visualizers after successful attach.
             _natvisVisualizerScanner.Reload();
 
-            return _attachedProgramFactory.Create(
-                process, programId, _debugEngine, callback, stadiaDebugger.Debugger,
-                stadiaDebugger.Target, listenerSubscriber, lldbDebuggerProcess,
-                stadiaDebugger.Debugger.GetCommandInterpreter(), true,
-                null, _moduleSearchLogHolder, remotePid: 0);
+            return _attachedProgramFactory.Create(process, programId, _debugEngine, callback,
+                                                  stadiaDebugger.Debugger, stadiaDebugger.Target,
+                                                  listenerSubscriber, lldbDebuggerProcess,
+                                                  stadiaDebugger.Debugger.GetCommandInterpreter(),
+                                                  true, null, _moduleSearchLogHolder, remotePid: 0);
         }
 
         void ConnectToRemoteProcess(ICancelable task, int localDebuggerPort, string targetIpAddress,
@@ -415,17 +420,19 @@ namespace YetiVSI.DebugEngine
             try
             {
                 debuggerWaitAction.Record(() => RetryWithTimeout(
-                                             task, () => TryConnectRemote(lldbPlatform,
-                                                                          lldbConnectOptions,
-                                                                          debuggerWaitAction),
-                                             _launchRetryDelay, _launchTimeout, launchTimer));
+                                              task,
+                                              () => TryConnectRemote(
+                                                  lldbPlatform, lldbConnectOptions,
+                                                  debuggerWaitAction), _launchRetryDelay,
+                                              _launchTimeout, launchTimer));
             }
             catch (TimeoutException e)
             {
-                throw new AttachException(
-                    VSConstants.E_ABORT,
-                    ErrorStrings.FailedToConnectDebugger(lldbConnectOptions.GetUrl()), e);
+                throw new AttachException(VSConstants.E_ABORT,
+                                          ErrorStrings.FailedToConnectDebugger(
+                                              lldbConnectOptions.GetUrl()), e);
             }
+
             Trace.WriteLine("LLDB successfully connected");
         }
 
@@ -442,13 +449,13 @@ namespace YetiVSI.DebugEngine
         }
 
         SbPlatformConnectOptions CreatePlatformConnectionOptions(
-            int localDebuggerPort,string targetIpAddress, int targetPort,
+            int localDebuggerPort, string targetIpAddress, int targetPort,
             StadiaLldbDebugger stadiaDebugger)
         {
             string connectRemoteUrl = $"{_lldbConnectUrl}:{localDebuggerPort}";
-            string connectRemoteArgument =
-                CreateConnectRemoteArgument(connectRemoteUrl, targetIpAddress, targetPort,
-                                            stadiaDebugger.IsStadiaPlatformAvailable());
+            string connectRemoteArgument = CreateConnectRemoteArgument(
+                connectRemoteUrl, targetIpAddress, targetPort,
+                stadiaDebugger.IsStadiaPlatformAvailable());
 
             SbPlatformConnectOptions lldbConnectOptions =
                 _lldbPlatformConnectOptionsFactory.Create(connectRemoteArgument);
@@ -481,7 +488,7 @@ namespace YetiVSI.DebugEngine
                     string error = ErrorStrings.GameNotRunningDuringAttach;
                     if (state.GameLaunchEnded != null)
                     {
-                        devEvent.GameLaunchData.EndReason = (int)state.GameLaunchEnded.EndReason;
+                        devEvent.GameLaunchData.EndReason = (int) state.GameLaunchEnded.EndReason;
                         error = LaunchUtils.GetEndReason(state.GameLaunchEnded, state.GameletName);
                     }
 
@@ -546,6 +553,7 @@ namespace YetiVSI.DebugEngine
             {
                 return errorString;
             }
+
             string parentPid = parentMatch.Groups[1].Value;
             string tracerPid = tracerMatch.Groups[1].Value;
 
@@ -570,7 +578,9 @@ namespace YetiVSI.DebugEngine
 
             // Get the first line as the process name.
             Match commMatch = firstLineRE.Match(commOutput);
-            string tracerName = commMatch.Success ? commMatch.Groups[1].Value : "<unkown>";
+            string tracerName = commMatch.Success
+                ? commMatch.Groups[1].Value
+                : "<unkown>";
 
             return ErrorStrings.FailedToAttachToProcessOtherTracer(tracerName, tracerPid);
         }
@@ -583,8 +593,12 @@ namespace YetiVSI.DebugEngine
         /// <param name="debuggerUrl">Url for ConnectRemote.</param>
         /// <param name="targetIpAddress">Gamelet ip address.</param>
         /// <param name="targetPort">Gamelet port./</param>
-        /// <returns>ConnectRemote url enriched with a
-        /// configuration for scp.exe if applicable.</returns>
+        /// <param name="stadiaPlatformAvailable">
+        /// Whether the Stadia platform is available in LLDB.
+        /// </param>
+        /// <returns>
+        /// ConnectRemote url enriched with a configuration for scp.exe if applicable.
+        /// </returns>
         string CreateConnectRemoteArgument(string debuggerUrl, string targetIpAddress,
                                            int targetPort, bool stadiaPlatformAvailable)
         {
@@ -594,13 +608,13 @@ namespace YetiVSI.DebugEngine
             }
 
             string executable = Path.Combine(SDKUtil.GetSshPath(), YetiConstants.ScpWinExecutable);
-            string sshKeyFilePath = SDKUtil.GetSshKeyFilePath();
-            string sshKnownHostFilePath = SDKUtil.GetSshKnownHostsFilePath();
 
             return
-                $"{debuggerUrl};\"{executable}\" -v -T -i \"{sshKeyFilePath}\" -F NUL -P " +
-                $"{targetPort} -oStrictHostKeyChecking=yes " +
-                $"-oUserKnownHostsFile=\"{sshKnownHostFilePath}\" cloudcast@{targetIpAddress}:";
+                $"{debuggerUrl};\"{executable}\" -v -T " + 
+                $"-i \"{SDKUtil.GetSshKeyFilePath()}\" " + 
+                $"-F \"{SDKUtil.GetSshConfigFilePath()}\" -oStrictHostKeyChecking=yes " +
+                $" -oUserKnownHostsFile=\"{SDKUtil.GetSshKnownHostsFilePath()}\" " +
+                $"-P {targetPort} cloudcast@{targetIpAddress}:";
         }
 
         SbProcess LoadCore(RemoteTarget lldbTarget, IAction loadCoreAction)
@@ -633,8 +647,8 @@ namespace YetiVSI.DebugEngine
                 // attachment to the core dump and will try to resolve the executable on the
                 // developer machine. See (internal)
                 if (executableModules.Any() &&
-                    executableModules.All(module =>
-                                              TryPreloadModule(lldbTarget, searchLog, module)))
+                    executableModules.All(module => TryPreloadModule(lldbTarget, searchLog, module))
+                )
                 {
                     foreach (DumpModule module in nonExecutableModules)
                     {
@@ -646,11 +660,13 @@ namespace YetiVSI.DebugEngine
                 {
                     dump.Warning = DumpReadWarning.ExecutableBuildIdMissing;
                 }
+
                 if (dump.Warning != DumpReadWarning.None)
                 {
                     var shouldAttach = _taskContext.Factory.Run(
-                        async () => await _warningDialog.ShouldAttachToIncosistentCoreFileAsync(
-                            dump.Warning));
+                        async () =>
+                            await _warningDialog.ShouldAttachToIncosistentCoreFileAsync(
+                                dump.Warning));
                     if (!shouldAttach)
                     {
                         throw new CoreAttachStoppedException();
@@ -714,9 +730,7 @@ namespace YetiVSI.DebugEngine
                                   IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
         {
             var modules = Enumerable.Range(0, lldbTarget.GetNumModules())
-                              .Select(lldbTarget.GetModuleAtIndex)
-                              .Where(m => m != null)
-                              .ToList();
+                .Select(lldbTarget.GetModuleAtIndex).Where(m => m != null).ToList();
             moduleFileLoadRecorder.RecordAfterLoad(modules);
         }
 
@@ -731,18 +745,21 @@ namespace YetiVSI.DebugEngine
                 Trace.WriteLine("Unable to find process, no platform selected");
                 return false;
             }
+
             var error = platform.Run(shellCommand);
             if (error.Fail())
             {
                 Trace.WriteLine($"Unable to find process: {error.GetCString()}");
                 return false;
             }
+
             string output = shellCommand.GetOutput();
             if (string.IsNullOrEmpty(output))
             {
                 Trace.WriteLine($"Unable to find process '{executable}'");
                 return false;
             }
+
             string[] pids = output.Split(' ');
             if (pids.Length > 1)
             {
@@ -750,11 +767,13 @@ namespace YetiVSI.DebugEngine
                     $"Unable to select process, multiple instances of '{executable}' are running");
                 return false;
             }
+
             if (!uint.TryParse(pids[0], out pid))
             {
                 Trace.WriteLine($"Unable to convert pid '{pids[0]}' to int");
                 return false;
             }
+
             return true;
         }
 
@@ -838,8 +857,9 @@ namespace YetiVSI.DebugEngine
                 {
                     throw new TimeoutException($"Timeout exceeded: {timeout.TotalMilliseconds}ms");
                 }
+
                 Trace.WriteLine($"Retrying in {retryDelay.TotalMilliseconds}ms");
-                Thread.Sleep((int)retryDelay.TotalMilliseconds);
+                Thread.Sleep((int) retryDelay.TotalMilliseconds);
                 task.ThrowIfCancellationRequested();
             }
         }

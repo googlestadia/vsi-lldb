@@ -18,6 +18,7 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.InteropServices;
 using GgpGrpc.Models;
@@ -54,7 +55,7 @@ namespace YetiVSI.PortSupplier
             var jsonUtil = new JsonUtil();
             var sdkConfigFactory = new SdkConfig.Factory(jsonUtil);
             var credentialConfigFactory = new CredentialConfig.Factory(jsonUtil);
-            var vsiService = (YetiVSIService)Package.GetGlobalService(typeof(YetiVSIService));
+            var vsiService = (YetiVSIService) Package.GetGlobalService(typeof(YetiVSIService));
             var accountOptionLoader = new VsiAccountOptionLoader(vsiService.Options);
             var credentialManager =
                 new CredentialManager(credentialConfigFactory, accountOptionLoader);
@@ -69,15 +70,16 @@ namespace YetiVSI.PortSupplier
                                            new GgpSDKUtil());
             var sshKeyLoader = new SshKeyLoader(managedProcessFactory);
             var sshKnownHostsWriter = new SshKnownHostsWriter();
+            var fileSystem = new FileSystem();
             _gameletClientFactory = new GameletClient.Factory();
-            var sshManager =
-                new SshManager(_gameletClientFactory, _cloudRunner, sshKeyLoader,
-                               sshKnownHostsWriter, new RemoteCommand(managedProcessFactory));
+            var sshManager = new SshManager(_gameletClientFactory, _cloudRunner, sshKeyLoader,
+                                            sshKnownHostsWriter,
+                                            new RemoteCommand(managedProcessFactory), fileSystem);
 
-            _metrics = (IVsiMetrics)Package.GetGlobalService(typeof(SMetrics));
-            _debugPortFactory = new DebugPort.Factory(
-                processListRequestFactory, _cancelableTaskFactory, _dialogUtil,
-                sshManager, _metrics, _developerAccount);
+            _metrics = (IVsiMetrics) Package.GetGlobalService(typeof(SMetrics));
+            _debugPortFactory = new DebugPort.Factory(processListRequestFactory,
+                                                      _cancelableTaskFactory, _dialogUtil,
+                                                      sshManager, _metrics, _developerAccount);
         }
 
         // Creates a DebugPortSupplier with specific factories.  Used by tests.
@@ -165,10 +167,10 @@ namespace YetiVSI.PortSupplier
 
                     return g1.ReserverEmail == _developerAccount ? 1 : -1;
                 });
-                _ports = gamelets
-                             .Select(gamelet => _debugPortFactory.Create(
-                                         gamelet, this, debugSessionMetrics.DebugSessionId))
-                             .ToList();
+                _ports = gamelets.Select(gamelet =>
+                                             _debugPortFactory.Create(
+                                                 gamelet, this, debugSessionMetrics.DebugSessionId))
+                    .ToList();
             }
             catch (CloudException e)
             {
@@ -213,7 +215,7 @@ namespace YetiVSI.PortSupplier
         public int GetDescription(enum_PORT_SUPPLIER_DESCRIPTION_FLAGS[] flags, out string text)
         {
             text = "The Stadia transport lets you select an instance from the Qualifier " +
-                   "drop-down menu and remotely attach to an existing process on that instance";
+                "drop-down menu and remotely attach to an existing process on that instance";
             return VSConstants.S_OK;
         }
     }

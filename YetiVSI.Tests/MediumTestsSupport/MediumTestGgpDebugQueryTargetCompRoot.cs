@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO.Abstractions;
 using GgpGrpc.Cloud;
 using NSubstitute;
 using YetiCommon;
@@ -61,14 +62,15 @@ namespace YetiVSI.Test.MediumTestsSupport
             return _gameletClientFactory;
         }
 
-        public override IRemoteCommand
-        GetRemoteCommand(ManagedProcess.Factory managedProcessFactory) => _remoteCommand;
+        public override IRemoteCommand GetRemoteCommand(
+            ManagedProcess.Factory managedProcessFactory) => _remoteCommand;
 
         public override Versions.SdkVersion GetSdkVersion() =>
             Versions.SdkVersion.Create("1.60");
 
         public override ISshManager GetSshManager(ManagedProcess.Factory managedProcessFactory,
-                                                  ICloudRunner cloudRunner) =>
+                                                  ICloudRunner cloudRunner,
+                                                  IFileSystem fileSystem) =>
             Substitute.For<ISshManager>();
 
         public override ISshTunnelManager GetSshTunnelManager(

@@ -207,7 +207,7 @@ namespace SymbolStores.Tests
         {
             await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
             var unsupportedCache = Substitute.For<ISymbolStore>();
-            var query = new ModuleSearchQuery("",  BuildId.Empty, _elfFormat);
+            var query = new ModuleSearchQuery("foo",  BuildId.Empty, _elfFormat);
             unsupportedCache.FindFileAsync(query, _log)
                 .ReturnsForAnyArgs((IFileReference)null);
             unsupportedCache.AddFileAsync(null, "", BuildId.Empty, null)

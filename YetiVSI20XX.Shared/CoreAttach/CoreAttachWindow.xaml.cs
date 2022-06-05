@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -87,8 +88,9 @@ namespace YetiVSI.CoreAttach
                 _gameletClientFactory = new GameletClient.Factory();
                 var sshKeyLoader = new SshKeyLoader(managedProcessFactory);
                 var sshKnownHostsWriter = new SshKnownHostsWriter();
+                var fileSystem = new FileSystem();
                 _sshManager = new SshManager(_gameletClientFactory, _cloudRunner, sshKeyLoader,
-                                             sshKnownHostsWriter, remoteCommand);
+                                             sshKnownHostsWriter, remoteCommand, fileSystem);
                 _debugSessionMetrics = new DebugSessionMetrics(
                     serviceProvider.GetService(typeof(SMetrics)) as IVsiMetrics);
                 _debugSessionMetrics.UseNewDebugSessionId();

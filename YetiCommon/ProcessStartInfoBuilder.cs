@@ -35,21 +35,18 @@ namespace YetiCommon
         /// <summary>
         /// Returns ProcessStartInfo for running a command on a remote gamelet using SSH.
         /// </summary>
-        public static ProcessStartInfo BuildForSsh(
-            string command, IEnumerable<string> environment, SshTarget target)
+        public static ProcessStartInfo BuildForSsh(string command, IEnumerable<string> environment,
+                                                   SshTarget target)
         {
             string envArgs = environment.Aggregate("", (acc, entry) => acc + entry + " ");
             return new ProcessStartInfo()
             {
-                FileName = Path.Combine(
-                    SDKUtil.GetSshPath(), YetiConstants.SshWinExecutable),
+                FileName = Path.Combine(SDKUtil.GetSshPath(), YetiConstants.SshWinExecutable),
                 // (internal): Without -tt, GGP processes leak if ssh.exe is killed.
-                Arguments = string.Format(
-                    "-tt -i \"{0}\" -F NUL " +
-                    "-oStrictHostKeyChecking=yes -oUserKnownHostsFile=\"\"\"{1}\"\"\" " +
-                    "cloudcast@{2} -p {3} -- \"{4}{5}\"",
-                    SDKUtil.GetSshKeyFilePath(), SDKUtil.GetSshKnownHostsFilePath(),
-                    target.IpAddress, target.Port, envArgs, command),
+                Arguments = $"-tt -i \"{SDKUtil.GetSshKeyFilePath()}\" " +
+                    $"-F \"{SDKUtil.GetSshConfigFilePath()}\" -oStrictHostKeyChecking=yes " +
+                    $"-oUserKnownHostsFile=\"\"\"{SDKUtil.GetSshKnownHostsFilePath()}\"\"\" " +
+                    $"cloudcast@{target.IpAddress} -p {target.Port} -- \"{envArgs}{command}\""
             };
         }
 
@@ -59,25 +56,23 @@ namespace YetiCommon
         public static ProcessStartInfo BuildForSshPortForward(
             IEnumerable<PortForwardEntry> ports, SshTarget target)
         {
-            var portsArgument = string.Join(" ",
-                ports.Select(e => $"-L{e.LocalPort}:localhost:{e.RemotePort}"));
+            var portsArgument =
+                string.Join(" ", ports.Select(e => $"-L{e.LocalPort}:localhost:{e.RemotePort}"));
             return new ProcessStartInfo()
             {
                 FileName = Path.Combine(SDKUtil.GetSshPath(), YetiConstants.SshWinExecutable),
-                Arguments = string.Format(
-                    "-nNT -i \"{0}\" -F NUL " +
-                    "-oStrictHostKeyChecking=yes -oUserKnownHostsFile=\"\"\"{1}\"\"\" " +
-                    "{2} cloudcast@{3} -p {4}",
-                    SDKUtil.GetSshKeyFilePath(), SDKUtil.GetSshKnownHostsFilePath(), portsArgument,
-                    target.IpAddress, target.Port),
+                Arguments = $"-nNT -i \"{SDKUtil.GetSshKeyFilePath()}\" " +
+                    $"-F \"{SDKUtil.GetSshConfigFilePath()}\" -oStrictHostKeyChecking=yes " +
+                    $"-oUserKnownHostsFile=\"\"\"{SDKUtil.GetSshKnownHostsFilePath()}\"\"\" " +
+                    $"{portsArgument} cloudcast@{target.IpAddress} -p {target.Port}"
             };
         }
 
         /// <summary>
         /// Returns ProcessStartInfo for transferring a file from a remote gamelet using scp.
         /// </summary>
-        public static ProcessStartInfo BuildForScpGet(
-            string file, SshTarget target, string destination)
+        public static ProcessStartInfo BuildForScpGet(string file, SshTarget target,
+                                                      string destination)
         {
             return new ProcessStartInfo
             {
@@ -86,15 +81,13 @@ namespace YetiCommon
                 // parsing and once for remote shell parsing. Linux file systems also allow double
                 // quotes in file names, so those params must be escaped, where as the Windows
                 // paths can simply be quoted.
-                Arguments = string.Format(
-                    "-T -i \"{0}\" -F NUL -P {1} " +
-                    "-oStrictHostKeyChecking=yes -oUserKnownHostsFile=\"\"\"{2}\"\"\" " +
-                    "cloudcast@{3}:{4} {5}",
-                    SDKUtil.GetSshKeyFilePath(), target.Port, SDKUtil.GetSshKnownHostsFilePath(),
-                    target.IpAddress, ProcessUtil.QuoteArgument($"'{file}'"),
-                    ProcessUtil.QuoteArgument(destination)),
+                Arguments = $"-T -i \"{SDKUtil.GetSshKeyFilePath()}\" " +
+                    $"-F \"{SDKUtil.GetSshConfigFilePath()}\" -oStrictHostKeyChecking=yes " +
+                    $"-oUserKnownHostsFile=\"\"\"{SDKUtil.GetSshKnownHostsFilePath()}\"\"\" " +
+                    $"-P {target.Port} cloudcast@{target.IpAddress}:" +
+                    $"{ProcessUtil.QuoteArgument($"'{file}'")} " +
+                    $"{ProcessUtil.QuoteArgument(destination)}"
             };
         }
-
     }
 }

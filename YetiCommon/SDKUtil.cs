@@ -30,19 +30,11 @@ namespace YetiCommon
         }
 
         /// <summary>
-        /// Returns a path to the SSH configuration directory of the Yeti SDK. 
-        /// </summary>
-        public static string GetSshConfigPath()
-        {
-            return Path.Combine(GetUserConfigPath(), "ssh");
-        }
-
-        /// <summary>
         /// Returns a path to the dev tools ssh key file.
         /// </summary>
         public static string GetSshKeyFilePath()
         {
-            return Path.Combine(GetSshConfigPath(), "id_rsa");
+            return Path.Combine(GetUserConfigPath(), "ssh", "id_rsa");
         }
 
         /// <summary>
@@ -50,7 +42,15 @@ namespace YetiCommon
         /// </summary>
         public static string GetSshKnownHostsFilePath()
         {
-            return Path.Combine(GetSshConfigPath(), "known_hosts");
+            return Path.Combine(GetUserConfigPath(), "ssh", "known_hosts");
+        }
+
+        /// <summary>
+        /// Returns a path to the dev tools ssh known_hosts file.
+        /// </summary>
+        public static string GetSshConfigFilePath()
+        {
+            return Path.Combine(GetUserConfigPath(), "ssh", "config");
         }
 
         /// <summary>

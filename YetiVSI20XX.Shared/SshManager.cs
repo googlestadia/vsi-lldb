@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO;
+using System.IO.Abstractions;
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using System.Threading.Tasks;
@@ -33,25 +35,35 @@ namespace YetiVSI
 
     public class SshManager : SshManagerBase, ISshManager
     {
-        readonly IGameletClientFactory gameletClientFactory;
-        readonly ICloudRunner cloudRunner;
+        readonly IGameletClientFactory _gameletClientFactory;
+        readonly ICloudRunner _cloudRunner;
+        readonly IFileSystem _fileSystem;
 
         public SshManager(IGameletClientFactory gameletClientFactory, ICloudRunner cloudRunner,
                           ISshKeyLoader sshKeyLoader, ISshKnownHostsWriter sshKnownHostsWriter,
-                          IRemoteCommand remoteCommand)
+                          IRemoteCommand remoteCommand, IFileSystem fileSystem)
             : base(sshKeyLoader, sshKnownHostsWriter, remoteCommand)
         {
-            this.gameletClientFactory = gameletClientFactory;
-            this.cloudRunner = cloudRunner;
+            _gameletClientFactory = gameletClientFactory;
+            _cloudRunner = cloudRunner;
+            _fileSystem = fileSystem;
         }
 
         public async Task EnableSshAsync(Gamelet gamelet, Metrics.IAction action)
         {
+            // Create empty ssh config if it does not exist.
+            string configPath = SDKUtil.GetSshConfigFilePath();
+            if (!_fileSystem.File.Exists(configPath))
+            {
+                _fileSystem.Directory.CreateDirectory(Path.GetDirectoryName(configPath));
+                _fileSystem.File.Create(configPath).Close();
+            }
+
             action.UpdateEvent(new DeveloperLogEvent
             {
                 GameletData = GameletData.FromGamelet(gamelet)
             });
-            var gameletClient = gameletClientFactory.Create(cloudRunner.Intercept(action));
+            var gameletClient = _gameletClientFactory.Create(_cloudRunner.Intercept(action));
             await EnableSshForGameletAsync(gamelet, gameletClient);
         }
     }

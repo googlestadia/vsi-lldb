@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO.Abstractions.TestingHelpers;
 using GgpGrpc.Models;
 using NSubstitute;
 using NUnit.Framework;
@@ -28,14 +29,17 @@ namespace YetiVSI.Test
     class SshManagerTests
     {
         SshKey fakeKey = new SshKey { PublicKey = "12345" };
-        Gamelet fakeGamelet = new Gamelet {
+
+        Gamelet fakeGamelet = new Gamelet
+        {
             Id = "abc",
             IpAddr = "127.0.0.1",
             State = GameletState.Reserved
         };
-        IAction fakeAction = new Action(
-            DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
-            Substitute.For<Timer.Factory>(), Substitute.For<IVsiMetrics>());
+
+        IAction fakeAction = new Action(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
+                                        Substitute.For<Timer.Factory>(),
+                                        Substitute.For<IVsiMetrics>());
 
         IGameletClient gameletClient;
         GameletClient.Factory gameletClientFactory;
@@ -43,6 +47,7 @@ namespace YetiVSI.Test
         ISshKeyLoader sshKeyLoader;
         ISshKnownHostsWriter sshKnownHostsWriter;
         IRemoteCommand remoteCommand;
+        MockFileSystem _fakeFileSystem;
 
         SshManager sshManager;
 
@@ -57,9 +62,10 @@ namespace YetiVSI.Test
             sshKeyLoader = Substitute.For<ISshKeyLoader>();
             sshKnownHostsWriter = Substitute.For<ISshKnownHostsWriter>();
             remoteCommand = Substitute.For<IRemoteCommand>();
+            _fakeFileSystem = new MockFileSystem();
 
             sshManager = new SshManager(gameletClientFactory, cloudRunner, sshKeyLoader,
-                sshKnownHostsWriter, remoteCommand);
+                                        sshKnownHostsWriter, remoteCommand, _fakeFileSystem);
         }
 
         [Test]
@@ -119,6 +125,15 @@ namespace YetiVSI.Test
 
             Assert.ThrowsAsync<CloudException>(
                 () => sshManager.EnableSshAsync(fakeGamelet, fakeAction));
+        }
+
+        [Test]
+        public async Task EnableSshCreatesConfigAsync()
+        {
+            Assert.False(_fakeFileSystem.File.Exists(SDKUtil.GetSshConfigFilePath()));
+            sshKeyLoader.LoadOrCreateAsync().Returns(fakeKey);
+            await sshManager.EnableSshAsync(fakeGamelet, fakeAction);
+            Assert.True(_fakeFileSystem.File.Exists(SDKUtil.GetSshConfigFilePath()));
         }
     }
 }

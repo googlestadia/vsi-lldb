@@ -437,8 +437,8 @@ namespace YetiVSI.Test.DebugEngine
             Assert.That(connectRemoteUrl, Does.StartWith("connect://localhost:10200;"));
             // path to the scp.exe should be quoted, to check this we add \" to the assertion.
             Assert.That(connectRemoteUrl, Does.Contain("scp.exe\""));
-            Assert.That(connectRemoteUrl,
-                        Does.Contain("-oStrictHostKeyChecking=yes -oUserKnownHostsFile"));
+            Assert.That(connectRemoteUrl, Does.Contain("-oStrictHostKeyChecking=yes "));
+            Assert.That(connectRemoteUrl, Does.Contain("-oUserKnownHostsFile"));
             Assert.That(program, Is.Not.Null);
             program.Stop();
         }

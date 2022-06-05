@@ -77,7 +77,7 @@ namespace YetiVSI
                                                 fileSystem);
             var metrics = _serviceManager.GetGlobalService(typeof(SMetrics)) as IVsiMetrics;
             var sdkVersion = GetSdkVersion();
-            var sshManager = GetSshManager(managedProcessFactory, cloudRunner);
+            var sshManager = GetSshManager(managedProcessFactory, cloudRunner, fileSystem);
             var launchParamsConverter = new LaunchGameParamsConverter(new QueryParametersParser());
             var debugSessionMetrics = new DebugSessionMetrics(metrics);
             var actionRecorder = new ActionRecorder(debugSessionMetrics);
@@ -123,7 +123,7 @@ namespace YetiVSI
         public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();
 
         public virtual ISshManager GetSshManager(ManagedProcess.Factory managedProcessFactory,
-                                                 ICloudRunner cloudRunner)
+                                                 ICloudRunner cloudRunner, IFileSystem fileSystem)
         {
             if (_sshManager == null)
             {
@@ -131,7 +131,7 @@ namespace YetiVSI
                 var sshKnownHostsWriter = new SshKnownHostsWriter();
                 _sshManager = new SshManager(GetGameletClientFactory(), cloudRunner, sshKeyLoader,
                                              sshKnownHostsWriter,
-                                             GetRemoteCommand(managedProcessFactory));
+                                             GetRemoteCommand(managedProcessFactory), fileSystem);
             }
 
             return _sshManager;
