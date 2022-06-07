@@ -132,6 +132,12 @@ namespace YetiVSI.DebugEngine.Variables
         static async Task<string> UnwrapPointerValueAsync(IVariableInformation varInfo,
                                                           int charactersLeft)
         {
+            if (varInfo.IsReference)
+            {
+                // Calling "varInfo.ValueAsync()" on references will result in the address string.
+                // In order to display references as objects, dereference them first.
+                varInfo = varInfo.Dereference();
+            }
             string value = await varInfo.ValueAsync();
             if (!varInfo.IsPointer)
             {
