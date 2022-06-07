@@ -25,7 +25,7 @@
     <ProjectGuid>{605626AA-8D18-459D-9495-735AEC76C87F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>YetiVSI2022</RootNamespace>
+    <RootNamespace>YetiVSI</RootNamespace>
     <AssemblyName>GgpVsi</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
@@ -38,9 +38,9 @@
   <PropertyGroup>
     <OutputBaseDir Condition="'$(JenkinsBuildRoot)' == ''">$(SolutionDir)</OutputBaseDir>
     <OutputBaseDir Condition="'$(JenkinsBuildRoot)' != ''">$(JenkinsBuildRoot)\</OutputBaseDir>
-    <OutDir>$(OutputBaseDir)bin\$(Configuration)\YetiVSI2022\</OutDir>
-    <OutputPath>$(OutputBaseDir)bin\$(Configuration)\YetiVSI2022\</OutputPath>
-    <TargetDir>$(OutputBaseDir)bin\$(Configuration)\YetiVSI2022\</TargetDir>
+    <OutDir>$(OutputBaseDir)bin\$(Configuration)\YetiVSI.2022\</OutDir>
+    <OutputPath>$(OutputBaseDir)bin\$(Configuration)\YetiVSI.2022\</OutputPath>
+    <TargetDir>$(OutputBaseDir)bin\$(Configuration)\YetiVSI.2022\</TargetDir>
     <InternalToolchainDir>$(OutputBaseDir)Dependencies\internal_toolchain\</InternalToolchainDir>
     <LlvmWinDir>$(InternalToolchainDir)windows\</LlvmWinDir>
     <PythonDir>$(Pkgpython)\tools\</PythonDir>
