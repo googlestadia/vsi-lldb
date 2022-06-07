@@ -25,6 +25,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using GgpGrpc.Models;
 using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.SSH;
@@ -243,8 +244,8 @@ namespace YetiVSI.DebugEngine
 
                 var vsiService =
                     (YetiVSIService) _serviceManager.RequireGlobalService(typeof(YetiVSIService));
-                var extensionOptions = vsiService.Options;
-                var debuggerOptions = vsiService.DebuggerOptions;
+                IExtensionOptions extensionOptions = vsiService.Options;
+                DebuggerOptions.DebuggerOptions debuggerOptions = vsiService.DebuggerOptions;
                 var sessionNotifier =
                     _serviceManager.GetGlobalService(typeof(SSessionNotifier)) as ISessionNotifier;
 
@@ -467,7 +468,7 @@ namespace YetiVSI.DebugEngine
                                    enum_ATTACH_REASON reason)
         {
             _taskContext.ThrowIfNotOnMainThread();
-            var result = AttachInternal(programs, numPrograms, callback, reason,
+            int result = AttachInternal(programs, numPrograms, callback, reason,
                                         out ExitInfo exitInfo);
 
             if (result != VSConstants.S_OK)
@@ -525,7 +526,7 @@ namespace YetiVSI.DebugEngine
 
             IAction lldbDeployAction =
                 _actionRecorder.CreateToolAction(ActionType.LldbServerDeploy);
-            JoinableTask lldbDeployTask = DeployLLDBServerInBackgroundIfNeeded(lldbDeployAction);
+            JoinableTask lldbDeployTask = DeployLldbServerInBackgroundIfNeeded(lldbDeployAction);
 
             uint? attachPid = null;
             try
@@ -554,7 +555,7 @@ namespace YetiVSI.DebugEngine
             return WaitForAttach(startAction, out exitInfo);
         }
 
-        JoinableTask DeployLLDBServerInBackgroundIfNeeded(IAction lldbDeployAction)
+        JoinableTask DeployLldbServerInBackgroundIfNeeded(IAction lldbDeployAction)
         {
             JoinableTask lldbDeployTask = null;
             if (_deployLldbServer && _launchOption != LaunchOption.AttachToCore)
@@ -574,7 +575,7 @@ namespace YetiVSI.DebugEngine
             _taskContext.ThrowIfNotOnMainThread();
             process.GetPort(out IDebugPort2 port);
             var debugPort = port as PortSupplier.DebugPort;
-            var gamelet = debugPort?.Gamelet;
+            Gamelet gamelet = debugPort?.Gamelet;
             if (gamelet == null || string.IsNullOrEmpty(gamelet.IpAddr))
             {
                 Trace.WriteLine("Unable to find Stadia instance.");
@@ -662,7 +663,7 @@ namespace YetiVSI.DebugEngine
 
         void CheckIfLocalAndRemoteExecutableBinariesAreSame()
         {
-            var preflightCheckAction = _actionRecorder.CreateToolAction(
+            IAction preflightCheckAction = _actionRecorder.CreateToolAction(
                 ActionType.DebugPreflightBinaryChecks);
 
             string cmd = _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s)) ??
@@ -770,9 +771,9 @@ namespace YetiVSI.DebugEngine
             {
                 if (_attachOperation.RunAndRecord(startAction))
                 {
+                    _attachedTimer = _actionRecorder.CreateStartedTimer();
                     _attachedProgram = _attachOperation.Result;
                     _attachedProgram.Start(Self);
-                    _attachedTimer = _actionRecorder.CreateStartedTimer();
                     _sessionNotifier.NotifySessionLaunched(
                         new SessionLaunchedEventArgs(_launchOption, _attachedProgram));
                     exitInfo = ExitInfo.Normal(ExitReason.Unknown);
@@ -869,11 +870,12 @@ namespace YetiVSI.DebugEngine
                     NumPendingBreakpoints = (int) numPending,
                     NumBoundBreakpoints = (int) numBound
                 };
+
                 SafeErrorUtil.SafelyLogError(
-                    () => _actionRecorder.RecordToolAction(ActionType.DebugContinueAfterAttach,
-                                                           _attachedTimer,
-                                                           new DeveloperLogEvent
-                                                               { BoundBreakpointsData = bpData }),
+                    () => _actionRecorder.RecordToolAction(
+                        ActionType.DebugContinueAfterAttach,
+                        _attachedTimer,
+                        new DeveloperLogEvent { BoundBreakpointsData = bpData }),
                     "Recording attach-to-continue time");
                 return VSConstants.S_OK;
             }
