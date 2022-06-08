@@ -16,11 +16,11 @@ using Microsoft.VisualStudio.Shell;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("YetiVSI")]
+[assembly: AssemblyTitle("YetiVSI.2019")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("YetiVSI")]
+[assembly: AssemblyProduct("YetiVSI.2019")]
 [assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

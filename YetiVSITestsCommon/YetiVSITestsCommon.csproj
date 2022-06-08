@@ -32,7 +32,7 @@
     <ProjectReference Include="..\YetiCommon\YetiCommon.csproj" />
     <ProjectReference Include="..\YetiVSI.ProjectSystem.Abstractions\YetiVSI.ProjectSystem.Abstractions.csproj" />
     <ProjectReference Include="..\Metrics.Shared\Metrics.Shared.csproj" />
-    <ProjectReference Include="..\YetiVSI\YetiVSI.csproj" />
+    <ProjectReference Include="..\YetiVSI.2019\YetiVSI.2019.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Debugger.Interop.14.0">

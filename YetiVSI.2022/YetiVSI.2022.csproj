@@ -211,18 +211,18 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="..\YetiVSI\AdditionalFiles\vs-threading.MainThreadAssertingMethods.txt">
+    <Content Include="..\YetiVSI.2019\AdditionalFiles\vs-threading.MainThreadAssertingMethods.txt">
       <Link>AdditionalFiles\vs-threading.MainThreadAssertingMethods.txt</Link>
     </Content>
-    <Content Include="..\YetiVSI\AdditionalFiles\vs-threading.MembersRequiringMainThread.txt">
+    <Content Include="..\YetiVSI.2019\AdditionalFiles\vs-threading.MembersRequiringMainThread.txt">
       <Link>AdditionalFiles\vs-threading.MembersRequiringMainThread.txt</Link>
     </Content>
-    <Content Include="..\YetiVSI\GgpVsi.DebugEngine.pkgdef">
+    <Content Include="..\YetiVSI.2019\GgpVsi.DebugEngine.pkgdef">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
       <Link>GgpVsi.DebugEngine.pkgdef</Link>
     </Content>
-    <Content Include="..\YetiVSI\GgpVsi.PortSupplier.pkgdef">
+    <Content Include="..\YetiVSI.2019\GgpVsi.PortSupplier.pkgdef">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
       <Link>GgpVsi.PortSupplier.pkgdef</Link>
@@ -240,12 +240,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="..\YetiVSI\Resources\YetiIcons.png">
+    <Content Include="..\YetiVSI.2019\Resources\YetiIcons.png">
       <Link>Resources\YetiIcons.png</Link>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <VSCTCompile Include="..\YetiVSI\YetiVSI.vsct">
+    <VSCTCompile Include="..\YetiVSI.2019\YetiVSI.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
       <SubType>Designer</SubType>
     </VSCTCompile>
@@ -477,5 +477,5 @@
       </EmbeddedResource>
     </ItemGroup>
   </Target>
-  <Import Project="..\YetiVSI\AdditionalLibSuppression.targets" />
+  <Import Project="..\YetiVSI.2019\AdditionalLibSuppression.targets" />
 </Project>
