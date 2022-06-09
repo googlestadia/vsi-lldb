@@ -16,6 +16,13 @@
 
 #include "LLDBDebugger.h"
 
+#include <msclr\marshal_cppstd.h>
+
+#include <mutex>
+
+#include "LLDBCommandInterpreter.h"
+#include "LLDBPlatform.h"
+#include "LLDBTarget.h"
 #include "lldb/API/SBEvent.h"
 #include "lldb/API/SBListener.h"
 #include "lldb/API/SBProcess.h"
@@ -23,17 +30,16 @@
 #include "lldb/API/SBStructuredData.h"
 #include "lldb/API/SBTarget.h"
 
-#include <msclr\marshal_cppstd.h>
-
-#include "LLDBCommandInterpreter.h"
-#include "LLDBPlatform.h"
-#include "LLDBTarget.h"
-
-#using < system.dll >
-
 namespace YetiVSI {
 namespace DebugEngine {
 namespace {
+
+std::once_flag debugger_init_flag;
+
+void SbDebuggerInit() {
+  lldb::SBDebugger::Initialize();
+  lldb::SBDebugger::PrintStackTraceOnError();
+}
 
 void Log(System::String ^ message) {
   System::String ^ tagged_message =
@@ -48,8 +54,7 @@ void LoggingCallback(const char* message, void*) {
 
 LLDBDebugger::LLDBDebugger(bool sourceInitFiles) {
   // Make sure LLDB is initialized before creating the debugger.
-  // Calling initialize multiple times has no side effects.
-  lldb::SBDebugger::Initialize();
+  std::call_once(debugger_init_flag, SbDebuggerInit);
 
   // We can't store a non-managed class (aka LLDB objects) as members of a
   // managed class, and LLDB only provides a way to create an SBDebugger
