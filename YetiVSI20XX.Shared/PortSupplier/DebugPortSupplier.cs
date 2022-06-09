@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc.Cloud;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using Metrics.Shared;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Shell;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
 using YetiVSI.Metrics;
-using Microsoft.VisualStudio.Shell;
 
 namespace YetiVSI.PortSupplier
 {
@@ -85,9 +86,11 @@ namespace YetiVSI.PortSupplier
         // Creates a DebugPortSupplier with specific factories.  Used by tests.
         public DebugPortSupplier(DebugPort.Factory debugPortFactory,
                                  GameletClient.Factory gameletClientFactory,
-                                 IExtensionOptions options, IDialogUtil dialogUtil,
-                                 CancelableTask.Factory cancelableTaskFactory, IVsiMetrics metrics,
-                                 ICloudRunner cloudRunner, string developerAccount)
+                                 IDialogUtil dialogUtil,
+                                 CancelableTask.Factory cancelableTaskFactory,
+                                 IVsiMetrics metrics,
+                                 ICloudRunner cloudRunner,
+                                 string developerAccount)
         {
             _debugPortFactory = debugPortFactory;
             _gameletClientFactory = gameletClientFactory;
@@ -106,10 +109,11 @@ namespace YetiVSI.PortSupplier
 
             port = null;
 
-            if (request.GetPortName(out string gameletIdOrName) != VSConstants.S_OK)
+            if (request.GetPortName(out string portName) != VSConstants.S_OK)
             {
                 return VSConstants.E_FAIL;
             }
+            var gameletIdOrName = GetGameletIdOrNameFromPortName(portName);
 
             var action = actionRecorder.CreateToolAction(ActionType.GameletGet);
             var gameletClient = _gameletClientFactory.Create(_cloudRunner.Intercept(action));
@@ -132,6 +136,32 @@ namespace YetiVSI.PortSupplier
             _ports.Add(debugPort);
             port = debugPort;
             return VSConstants.S_OK;
+        }
+
+        private string GetGameletIdOrNameFromPortName(string portName)
+        {
+            // Reverse parsing logic from `DebugPort.GetPortName()`.
+            //
+            // Possible formats:
+            //  * "Reserver: {reserver}; Instance: {gamelet_id_or_name}"
+            //  * "{gamelet_name} [{gamelet_id}]"
+            //  * "{gamelet_id}"
+            Match m;
+
+            m = Regex.Match(portName, @"^.*Instance: (?<id_or_name>.*)$");
+            if (m.Success)
+            {
+                return m.Groups["id_or_name"].Value;
+            }
+
+            m = Regex.Match(portName, @"^.*\[(?<id>.*)\]$");
+            if (m.Success)
+            {
+                return m.Groups["id"].Value;
+            }
+
+            // Third option -- the port name is the gamelet ID.
+            return portName;
         }
 
         public int CanAddPort() => VSConstants.S_OK;

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc;
 using GgpGrpc.Cloud;
 using GgpGrpc.Models;
 using Microsoft.VisualStudio;
@@ -39,7 +38,6 @@ namespace YetiVSI.Test.PortSupplier
         DebugPort.Factory _debugPortFactory;
         IGameletClient _gameletClient;
         IDialogUtil _dialogUtil;
-        IExtensionOptions _options;
 
         DebugPortSupplier _portSupplier;
         const string _reserver = "reserver@test.com";
@@ -52,7 +50,6 @@ namespace YetiVSI.Test.PortSupplier
             var gameletClientFactory = Substitute.For<GameletClient.Factory>();
             gameletClientFactory.Create(Arg.Any<ICloudRunner>()).Returns(_gameletClient);
             _dialogUtil = Substitute.For<IDialogUtil>();
-            _options = Substitute.For<IExtensionOptions>();
 
             var cancelableTaskRunnerFactory =
 #pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
@@ -63,7 +60,7 @@ namespace YetiVSI.Test.PortSupplier
 
             var cloudRunner = Substitute.For<ICloudRunner>();
 
-            _portSupplier = new DebugPortSupplier(_debugPortFactory, gameletClientFactory, _options,
+            _portSupplier = new DebugPortSupplier(_debugPortFactory, gameletClientFactory,
                                                   _dialogUtil, cancelableTaskRunnerFactory,
                                                   _metrics, cloudRunner, _reserver);
         }
@@ -72,15 +69,15 @@ namespace YetiVSI.Test.PortSupplier
         public void AddPort()
         {
             var request = Substitute.For<IDebugPortRequest2>();
-            string portName = "test port";
+            string portName = "Reserver: reserver-1; Instance: gamelet-1";
             request.GetPortName(out string _).Returns(x =>
             {
                 x[0] = portName;
                 return VSConstants.S_OK;
             });
 
-            var gamelet = new Gamelet { Id = "test id" };
-            _gameletClient.LoadByNameOrIdAsync(portName).Returns(gamelet);
+            var gamelet = new Gamelet { Name = "gamelet-1" };
+            _gameletClient.LoadByNameOrIdAsync(gamelet.Name).Returns(gamelet);
 
             var port = Substitute.For<IDebugPort2>();
             _debugPortFactory.Create(gamelet, _portSupplier, _testDebugSessionId).Returns(port);
@@ -100,15 +97,15 @@ namespace YetiVSI.Test.PortSupplier
             _metrics.NewDebugSessionId().Returns(debugSessionIds[0], debugSessionIds[1]);
 
             var request = Substitute.For<IDebugPortRequest2>();
-            string portName = "test port";
+            string portName = "gamelet-1 [edge/123455]";
             request.GetPortName(out string _).Returns(x =>
             {
                 x[0] = portName;
                 return VSConstants.S_OK;
             });
 
-            var gamelet = new Gamelet { Id = "test id" };
-            _gameletClient.LoadByNameOrIdAsync(portName).Returns(gamelet);
+            var gamelet = new Gamelet { Id = "edge/123455" };
+            _gameletClient.LoadByNameOrIdAsync(gamelet.Id).Returns(gamelet);
 
             foreach (string sessionId in debugSessionIds)
             {
