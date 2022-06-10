@@ -6,7 +6,7 @@
     <SharedGUID>c1c1b655-9998-4acd-99b4-91b39225b59e</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>YetiVSI20XX.Shared</Import_RootNamespace>
+    <Import_RootNamespace>YetiVSI.Shared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)DebugEngine\CoreDumpViewer\Resources\" />
@@ -320,13 +320,5 @@
     <None Include="$(MSBuildThisFileDirectory)DebugEngine\NatvisEngine\VS2017\natvis-2017-original.xsd">
       <SubType>Designer</SubType>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)Resources\YetiIcons.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="$(MSBuildThisFileDirectory)VSPackage.resx">
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
   </ItemGroup>
 </Project>

@@ -75,7 +75,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <VSCTCompile Include="YetiVSI.vsct">
+    <VSCTCompile Include="..\YetiVSI.Shared\YetiVSI.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
       <SubType>Designer</SubType>
     </VSCTCompile>
@@ -216,18 +216,18 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="GgpVsi.DebugEngine.pkgdef">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <IncludeInVSIX>true</IncludeInVSIX>
+    <Content Include="..\YetiVSI.Shared\Resources\YetiIcons.png">
+      <Link>Resources\YetiIcons.png</Link>
     </Content>
-    <Content Include="Resources\YetiIcons.png" />
-    <Content Include="GgpVsi.PortSupplier.pkgdef">
+    <Content Include="..\YetiVSI.Shared\GgpVsi.DebugEngine.pkgdef">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <Link>GgpVsi.DebugEngine.pkgdef</Link>
     </Content>
-    <Content Include="GgpVsi.PortSupplier.pkgdef">
+    <Content Include="..\YetiVSI.Shared\GgpVsi.PortSupplier.pkgdef">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <Link>GgpVsi.PortSupplier.pkgdef</Link>
     </Content>
     <Content Include="$(OutputBaseDir)bin\$(Configuration)\GgpVsi.DebugEngine.LLDBEval.dll">
       <!-- LLDBEval is an unmanaged DLL. Alternative solutions to include it caused issues, cf. (internal). -->
@@ -242,7 +242,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <AdditionalFiles Include="AdditionalFiles\*" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(ThirdPartyRootDir)ChromeClientLauncher\ChromeClientLauncher.csproj">
@@ -450,7 +449,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <Import Project="..\YetiVSI20XX.Shared\YetiVSI20XX.Shared.projitems" Label="Shared" />
+  <Import Project="..\YetiVSI.Shared\YetiVSI.Shared.projitems" Label="Shared" />
   <Target Name="BuildProjectSystemAdapterAssemblies" AfterTargets="MainResourcesGeneration">
     <ItemGroup>
       <ProjectToBuild Include="..\YetiVSI.ProjectSystem.v15\YetiVSI.ProjectSystem.v15.csproj" />
@@ -465,5 +464,5 @@
       </EmbeddedResource>
     </ItemGroup>
   </Target>
-  <Import Project="AdditionalLibSuppression.targets" />
+  <Import Project="..\YetiVSI.Shared\AdditionalLibSuppression.targets" />
 </Project>
