@@ -183,7 +183,7 @@ namespace YetiVSI.DebugEngine
                 }
 
                 Trace.WriteLine(
-                    $"Mismatched build ID {localBuildId} " +
+                    $"Mismatched build ID {localBuildId.Data} " +
                     $"for local binary '{path}' " +
                     $"and build ID {remoteBuildId} " +
                     $"for remote binary {remoteTargetPath}");
