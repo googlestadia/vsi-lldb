@@ -68,7 +68,7 @@
     <ProjectReference Include="$(ThirdPartyRootDir)YetiCommon\YetiCommon.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)Metrics.Shared\Metrics.Shared.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)YetiVSITestsCommon\YetiVSITestsCommon.csproj" />
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.2019\YetiVSI.2019.csproj" />
+    <ProjectReference Include="$(ThirdPartyRootDir)DebuggerGrpcServer\DebuggerGrpcServer.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
