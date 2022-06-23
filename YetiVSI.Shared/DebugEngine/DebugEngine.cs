@@ -162,7 +162,7 @@ namespace YetiVSI.DebugEngine
             readonly NatvisExpander _natvisExpander;
             readonly NatvisDiagnosticLogger _natvisLogger;
             readonly ExitDialogUtil _exitDialogUtil;
-            readonly PreflightBinaryChecker _preflightBinaryChecker;
+            readonly IPreflightBinaryChecker _preflightBinaryChecker;
             readonly IDebugSessionLauncherFactory _debugSessionLauncherFactory;
             readonly IRemoteDeploy _remoteDeploy;
             readonly CancelableTask.Factory _cancelableTaskFactory;
@@ -189,7 +189,7 @@ namespace YetiVSI.DebugEngine
                            ChromeClientsLauncher.Factory testClientLauncherFactory,
                            NatvisExpander natvisExpander, NatvisDiagnosticLogger natvisLogger,
                            ExitDialogUtil exitDialogUtil,
-                           PreflightBinaryChecker preflightBinaryChecker,
+                           IPreflightBinaryChecker preflightBinaryChecker,
                            IDebugSessionLauncherFactory debugSessionLauncherFactory,
                            IRemoteDeploy remoteDeploy, CancelableTask.Factory cancelableTaskFactory,
                            IDialogUtil dialogUtil, IYetiVSIService vsiService,
@@ -310,7 +310,7 @@ namespace YetiVSI.DebugEngine
         readonly NatvisExpander _natvisExpander;
         readonly NatvisDiagnosticLogger _natvisLogger;
         readonly ExitDialogUtil _exitDialogUtil;
-        readonly PreflightBinaryChecker _preflightBinaryChecker;
+        readonly IPreflightBinaryChecker _preflightBinaryChecker;
         readonly IDebugSessionLauncherFactory _debugSessionLauncherFactory;
         readonly IRemoteDeploy _remoteDeploy;
         readonly IDebugEngineCommands _debugEngineCommands;
@@ -362,7 +362,7 @@ namespace YetiVSI.DebugEngine
                            ChromeClientsLauncher.Factory testClientLauncherFactory,
                            NatvisExpander natvisExpander, NatvisDiagnosticLogger natvisLogger,
                            ExitDialogUtil exitDialogUtil,
-                           PreflightBinaryChecker preflightBinaryChecker,
+                           IPreflightBinaryChecker preflightBinaryChecker,
                            IDebugSessionLauncherFactory debugSessionLauncherFactory,
                            IRemoteDeploy remoteDeploy, IDebugEngineCommands debugEngineCommands,
                            DebugEventCallbackTransform debugEventCallbackDecorator,
@@ -529,21 +529,18 @@ namespace YetiVSI.DebugEngine
             JoinableTask lldbDeployTask = DeployLldbServerInBackgroundIfNeeded(lldbDeployAction);
 
             uint? attachPid = null;
-            try
+            if (_launchOption == LaunchOption.AttachToGame)
             {
-                if (_launchOption == LaunchOption.LaunchGame)
+                // Note that LaunchOption.LaunchGame is handled in GgpDebugQueryTarget.
+                attachPid = GetProcessId(process);
+                try
                 {
-                    CheckIfLocalAndRemoteExecutableBinariesAreSame();
-                }
-                else if (_launchOption == LaunchOption.AttachToGame)
-                {
-                    attachPid = GetProcessId(process);
                     CheckExecutable(attachPid);
                 }
-            }
-            catch (PreflightBinaryCheckerException e)
-            {
-                _dialogUtil.ShowWarning(e.Message, e);
+                catch (PreflightBinaryCheckerException e)
+                {
+                    _dialogUtil.ShowWarning(e.Message, e);
+                }
             }
 
             // Attaching the debugger is a synchronous operation that runs on a background thread.
@@ -659,33 +656,6 @@ namespace YetiVSI.DebugEngine
             {
                 Trace.WriteLine("Failed to get target process ID; skipping remote build id check");
             }
-        }
-
-        void CheckIfLocalAndRemoteExecutableBinariesAreSame()
-        {
-            IAction preflightCheckAction = _actionRecorder.CreateToolAction(
-                ActionType.DebugPreflightBinaryChecks);
-
-            string cmd = _launchParams?.Cmd?.Split(' ').First(s => !string.IsNullOrEmpty(s)) ??
-                _executableFileName;
-
-            // Note that Path.Combine works for both relative and full paths.
-            // It returns cmd if cmd starts with '/' or '\'.
-            string remoteTargetPath = Path.Combine(YetiConstants.RemoteGamePath, cmd);
-
-            // This field should be initialized in LaunchLldbDebuggerInBackground
-            if (_libPaths == null)
-            {
-                throw new ArgumentNullException(nameof(_libPaths));
-            }
-
-            _cancelableTaskFactory.Create(TaskMessages.CheckingBinaries,
-                                          async _ =>
-                                              await _preflightBinaryChecker
-                                                  .CheckLocalAndRemoteBinaryOnLaunchAsync(
-                                                      _libPaths, _executableFileName, _target,
-                                                      remoteTargetPath, preflightCheckAction))
-                .RunAndRecord(preflightCheckAction);
         }
 
         IAction CreateDebugStartAction()

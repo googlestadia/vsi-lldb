@@ -162,7 +162,7 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.None));
+            Assert.That(configuration.Flags, Is.EqualTo(MountFlags.None));
         }
 
         [Test]
@@ -174,7 +174,7 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.InstanceStorageOverlay));
+            Assert.That(configuration.Flags, Is.EqualTo(MountFlags.InstanceStorageOverlay));
         }
 
         [Test]
@@ -186,7 +186,7 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.PackageMounted));
+            Assert.That(configuration.Flags, Is.EqualTo(MountFlags.PackageMounted));
         }
 
         [Test]
@@ -198,9 +198,8 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration,
-                        Is.EqualTo(MountConfiguration.PackageMounted |
-                                   MountConfiguration.InstanceStorageOverlay));
+            Assert.That(configuration.Flags,
+                        Is.EqualTo(MountFlags.PackageMounted | MountFlags.InstanceStorageOverlay));
         }
 
         [Test]
@@ -212,7 +211,7 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.LocalDirMounted));
+            Assert.That(configuration.Flags, Is.EqualTo(MountFlags.LocalDirMounted));
         }
 
         [Test]
@@ -224,7 +223,7 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.LocalDirMounted));
+            Assert.That(configuration.Flags, Is.EqualTo(MountFlags.LocalDirMounted));
         }
 
         [Test]
@@ -236,9 +235,8 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration,
-                        Is.EqualTo(MountConfiguration.InstanceStorageOverlay |
-                                   MountConfiguration.LocalDirMounted));
+            Assert.That(configuration.Flags,
+                        Is.EqualTo(MountFlags.InstanceStorageOverlay | MountFlags.LocalDirMounted));
         }
 
         [Test]
@@ -250,9 +248,8 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration,
-                        Is.EqualTo(MountConfiguration.PackageMounted |
-                                   MountConfiguration.LocalDirMounted));
+            Assert.That(configuration.Flags,
+                        Is.EqualTo(MountFlags.PackageMounted | MountFlags.LocalDirMounted));
         }
 
         [Test]
@@ -265,10 +262,9 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration,
-                        Is.EqualTo(MountConfiguration.InstanceStorageOverlay |
-                                   MountConfiguration.PackageMounted |
-                                   MountConfiguration.LocalDirMounted));
+            Assert.That(configuration.Flags,
+                        Is.EqualTo(MountFlags.InstanceStorageOverlay | MountFlags.PackageMounted |
+                                   MountFlags.LocalDirMounted));
         }
 
         [Test]
@@ -280,7 +276,7 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.PackageMounted));
+            Assert.That(configuration.Flags, Is.EqualTo(MountFlags.PackageMounted));
         }
 
         [Test]
@@ -294,7 +290,7 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.PackageMounted));
+            Assert.That(configuration.Flags, Is.EqualTo(MountFlags.PackageMounted));
         }
 
         [Test]
@@ -306,7 +302,8 @@ namespace YetiVSI.Test
             MountConfiguration configuration =
                 mountChecker.GetConfiguration(_gamelet, _actionRecorder);
 
-            Assert.That(configuration, Is.EqualTo(MountConfiguration.None));
+            Assert.That(configuration.Flags, Is.EqualTo(MountFlags.None));
+            Assert.That(configuration.OverlayDirs.Count, Is.EqualTo(0));
         }
 
         [Test]
@@ -454,6 +451,32 @@ namespace YetiVSI.Test
                                                     GameletMountChecker.ReadMountsCmd)
                 .Returns(Task.FromResult(procMountsContent));
             return new GameletMountChecker(_remoteCommand, _dialogUtil, _cancelableTaskFactory);
+        }
+
+        [Test]
+        public void GetConfigurationParsesOverlayDirs()
+        {
+            string[] overlayDirs =
+            {
+                YetiConstants.DeveloperMountingPoint, YetiConstants.EmptyMountingPoint,
+                YetiConstants.PackageMountingPointPrefix
+            };
+            var overlayDirsMounts = new List<string>
+            {
+                "overlay /srv/game/assets overlay ro,relatime,lowerdir=" +
+                string.Join(":", overlayDirs) + " 0 0"
+            };
+
+            GameletMountChecker mountChecker =
+                CreateMountCheckerWithSpecifiedProcMountsInfo(overlayDirsMounts);
+
+            MountConfiguration configuration =
+                mountChecker.GetConfiguration(_gamelet, _actionRecorder);
+
+            Assert.That(configuration.OverlayDirs.Count, Is.EqualTo(2));
+            Assert.That(configuration.OverlayDirs[0], Is.EqualTo(overlayDirs[0]));
+            // YetiConstants.EmptyMountingPoint should be skipped
+            Assert.That(configuration.OverlayDirs[1], Is.EqualTo(overlayDirs[2]));
         }
     }
 }

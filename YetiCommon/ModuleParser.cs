@@ -34,6 +34,7 @@ namespace YetiCommon
         readonly string _debugDirName = ".note.debug_info_dir";
         readonly string _buildIdName = ".note.gnu.build-id";
         readonly string _debugInfoName = ".debug_info";
+
         static readonly Regex _hexDumpRegex =
             new Regex(@"^\s*[0-9a-fA-F]+(?:\s([0-9a-fA-F]+)){1,4}");
 
@@ -188,8 +189,8 @@ namespace YetiCommon
                                 continue;
                             }
 
-                            CodeViewDebugDirectoryData
-                                cv = reader.ReadCodeViewDebugDirectoryData(entry);
+                            CodeViewDebugDirectoryData cv =
+                                reader.ReadCodeViewDebugDirectoryData(entry);
                             output.Data = GetBuildId(cv.Guid, cv.Age);
                             return output;
                         }
@@ -212,15 +213,14 @@ namespace YetiCommon
         {
             if (target == null)
             {
-                throw new BinaryFileUtilException(ErrorStrings.FailedToReadBuildId(filepath,
-                                                      "Remote target was not provided"));
+                throw new BinaryFileUtilException(
+                    ErrorStrings.FailedToReadBuildId(filepath, "Remote target was not provided"));
             }
 
             string objDumpArgs =
                 $"-s --section={_buildIdName} {ProcessUtil.QuoteArgument(filepath)}";
             ProcessStartInfo startInfo = ProcessStartInfoBuilder.BuildForSsh(
-                $"{YetiConstants.ObjDumpLinuxExecutable} {objDumpArgs}",
-                new List<string>(),
+                $"{YetiConstants.ObjDumpLinuxExecutable} {objDumpArgs}", new List<string>(),
                 target);
             var processFactory = new ManagedProcess.Factory();
             try
@@ -239,18 +239,26 @@ namespace YetiCommon
             {
                 LogObjdumpOutput(e);
 
-                // objdump returned an error code, possibly because the file being parsed is not
-                // actually an elf file. With an SSH target, exit code 255 means SSH failed
-                // before it had a chance to execute the remote command.
+                // objdump returned an error code, possibly because the file being parsed does not
+                // exist or is not actually an elf file. With an SSH target, exit code 255 means SSH
+                // failed before it had a chance to execute the remote command.
                 if (e.ExitCode < 255)
                 {
+                    // E.g. objdump: '/mnt/developer/foo': No such file
+                    if (e.OutputLines.Any(l => l.Contains(filepath) && l.Contains("No such file")))
+                    {
+                        // Wrap into a FileNotFoundException inner exception if file was not found.
+                        throw new BinaryFileUtilException($"Remote file {filepath} not found",
+                                                          new FileNotFoundException());
+                    }
+
                     // The remote command failed, so we need to fix the exception message.
                     // TODO: ManagedProcess should report the remote filename.
                     throw new BinaryFileUtilException(
                         ErrorStrings.FailedToReadBuildId(
-                            filepath, ErrorStrings.ProcessExitedWithErrorCode(
-                                YetiConstants.ObjDumpLinuxExecutable, e.ExitCode)),
-                        e);
+                            filepath,
+                            ErrorStrings.ProcessExitedWithErrorCode(
+                                YetiConstants.ObjDumpLinuxExecutable, e.ExitCode)), e);
                 }
 
                 throw new BinaryFileUtilException(
@@ -268,16 +276,13 @@ namespace YetiCommon
             {
                 // Indicates the build ID section is malformed.
                 throw new InvalidBuildIdException(
-                    ErrorStrings.FailedToReadBuildId(
-                        filepath, ErrorStrings.MalformedBuildId),
-                    e);
+                    ErrorStrings.FailedToReadBuildId(filepath, ErrorStrings.MalformedBuildId), e);
             }
 
             void LogObjdumpOutput(ProcessExecutionException e)
             {
                 Trace.WriteLine("objdump invocation failed \nstdout: \n" +
-                                string.Join("\n", e.OutputLines) +
-                                "\nstderr: \n" +
+                                string.Join("\n", e.OutputLines) + "\nstderr: \n" +
                                 string.Join("\n", e.ErrorLines));
             }
         }
@@ -298,6 +303,7 @@ namespace YetiCommon
                     hexString.Append(capture.Value);
                 }
             }
+
             return hexString.ToString();
         }
 
@@ -320,9 +326,8 @@ namespace YetiCommon
             // want to skip.
             if (hexString.Length < 32)
             {
-                throw new FormatException(
-                    $"Got {hexString.Length} hex digits, " +
-                    "but wanted at least 32 leading digits");
+                throw new FormatException($"Got {hexString.Length} hex digits, " +
+                                          "but wanted at least 32 leading digits");
             }
 
             var buildId = new BuildId(hexString.Substring(32));

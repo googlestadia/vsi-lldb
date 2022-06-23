@@ -18,12 +18,15 @@ using GgpGrpc.Cloud;
 using Metrics.Shared;
 using Microsoft.VisualStudio.Shell;
 using System.IO.Abstractions;
+using Microsoft.VisualStudio.Threading;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
+using YetiVSI.DebugEngine;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Profiling;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSI.Util;
 
 namespace YetiVSI
@@ -40,6 +43,8 @@ namespace YetiVSI
         RemoteCommand _remoteCommand;
         SshManager _sshManager;
         SshTunnelManager _sshTunnelManager;
+        ISolutionExplorer _solutionExplorer;
+        IPreflightBinaryChecker _preflightBinaryChecker;
         TestAccountClient.Factory _testAccountClientFactory;
 
         public GgpDebugQueryTargetCompRoot(ServiceManager serviceManager, IDialogUtil dialogUtil)
@@ -103,12 +108,6 @@ namespace YetiVSI
                 ProfilerLauncher<DiveArgs>.CreateForDive(backgroundProcessFactory, fileSystem);
             var profilerSshTunnelManager = GetSshTunnelManager(managedProcessFactory);
 
-            var vcProjectInfoFactory = new VsProjectInfo.Factory();
-            var dte2 = Package.GetGlobalService(typeof(DTE)) as DTE2;
-            var envDteUtil = new EnvDteUtil(taskContext, dte2);
-            var solutionExplorer =
-                new SolutionExplorer(taskContext, vcProjectInfoFactory, envDteUtil);
-
             return new GgpDebugQueryTarget(fileSystem, sdkConfigFactory, gameletClientFactory,
                                            applicationClientFactory, GetCancelableTaskFactory(),
                                            _dialogUtil, remoteDeploy, debugSessionMetrics,
@@ -117,7 +116,9 @@ namespace YetiVSI
                                            launchCommandFormatter, yetiVsiService, gameLauncher,
                                            taskContext, new ProjectPropertiesMetricsParser(),
                                            identityClient, orbitLauncher, diveLauncher,
-                                           profilerSshTunnelManager, solutionExplorer);
+                                           profilerSshTunnelManager,
+                                           GetSolutionExplorer(taskContext),
+                                           GetPreflightBinaryChecker(fileSystem));
         }
 
         public virtual Versions.SdkVersion GetSdkVersion() => Versions.GetSdkVersion();
@@ -209,6 +210,31 @@ namespace YetiVSI
             }
 
             return _sshTunnelManager;
+        }
+
+        public virtual ISolutionExplorer GetSolutionExplorer(JoinableTaskContext taskContext)
+        {
+            if (_solutionExplorer == null)
+            {
+                var vcProjectInfoFactory = new VsProjectInfo.Factory();
+                var dte2 = Package.GetGlobalService(typeof(DTE)) as DTE2;
+                var envDteUtil = new EnvDteUtil(taskContext, dte2);
+                _solutionExplorer =
+                    new SolutionExplorer(taskContext, vcProjectInfoFactory, envDteUtil);
+            }
+
+            return _solutionExplorer;
+        }
+
+        public virtual IPreflightBinaryChecker GetPreflightBinaryChecker(IFileSystem fileSystem)
+        {
+            if (_preflightBinaryChecker == null)
+            {
+                var moduleParser = new ModuleParser();
+                _preflightBinaryChecker = new PreflightBinaryChecker(fileSystem, moduleParser);
+            }
+
+            return _preflightBinaryChecker;
         }
     }
 }

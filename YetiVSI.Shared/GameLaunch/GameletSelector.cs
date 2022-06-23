@@ -41,7 +41,8 @@ namespace YetiVSI.GameLaunch
         /// <returns>True if the gamelet was prepared successfully, false otherwise.</returns>
         bool TrySelectAndPrepareGamelet(DeployOnLaunchSetting deployOnLaunchSetting,
                                         List<Gamelet> gamelets, TestAccount testAccount,
-                                        string devAccount, out Gamelet gamelet);
+                                        string devAccount, out Gamelet gamelet,
+                                        out MountConfiguration mountConfig);
     }
 
     /// <summary>
@@ -96,8 +97,10 @@ namespace YetiVSI.GameLaunch
         /// <returns>True if the gamelet was prepared successfully, false otherwise.</returns>
         public bool TrySelectAndPrepareGamelet(DeployOnLaunchSetting deployOnLaunchSetting,
                                                List<Gamelet> gamelets, TestAccount testAccount,
-                                               string devAccount, out Gamelet gamelet)
+                                               string devAccount, out Gamelet gamelet,
+                                               out MountConfiguration mountConfig)
         {
+            mountConfig = null;
             if (!TrySelectGamelet(gamelets, out gamelet))
             {
                 return false;
@@ -121,7 +124,8 @@ namespace YetiVSI.GameLaunch
                 return false;
             }
 
-            if (!ValidateMountConfiguration(deployOnLaunchSetting, gamelet))
+            mountConfig = _mountChecker.GetConfiguration(gamelet, _actionRecorder);
+            if (!ValidateMountConfiguration(deployOnLaunchSetting, gamelet, mountConfig))
             {
                 return false;
             }
@@ -345,11 +349,8 @@ namespace YetiVSI.GameLaunch
         /// <param name="gamelet">Gamelet to connect to.</param>
         /// <returns>True if no issues found or the user decided to proceed.</returns>
         bool ValidateMountConfiguration(DeployOnLaunchSetting deployOnLaunchSetting,
-                                        Gamelet gamelet)
+                                        Gamelet gamelet, MountConfiguration configuration)
         {
-            MountConfiguration configuration =
-                _mountChecker.GetConfiguration(gamelet, _actionRecorder);
-
             // If VS copies binaries to /mnt/developer, but the /srv/game/assets folder is detached
             // from /mnt/developer, then binaries won't be used during the run/debug process.
             // Notify the user and let them decide whether this is expected behaviour or not.
@@ -367,7 +368,7 @@ namespace YetiVSI.GameLaunch
             // streaming is not active, then binaries won't be used during the run/debug process.
             // Notify the user and let them decide whether this is expected behaviour or not.
             if (_mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration) &&
-                !configuration.HasFlag(MountConfiguration.LocalDirMounted))
+                !configuration.Flags.HasFlag(MountFlags.LocalDirMounted))
             {
                 // 'Yes' - continue; 'No' - interrupt (gamelet validation fails).
                 return _dialogUtil.ShowYesNo(
@@ -376,22 +377,6 @@ namespace YetiVSI.GameLaunch
             }
 
             return true;
-        }
-
-        string GgpDeployOnLaunchToDisplayName(DeployOnLaunchSetting enumValue)
-        {
-            // These values are copied from DisplayNames in debugger_ggp.xml.
-            switch (enumValue)
-            {
-                case DeployOnLaunchSetting.FALSE:
-                    return "No";
-                case DeployOnLaunchSetting.DELTA:
-                    return "Yes - incremental";
-                case DeployOnLaunchSetting.ALWAYS:
-                    return "Yes - always";
-            }
-
-            return "";
         }
 
         /// <summary>

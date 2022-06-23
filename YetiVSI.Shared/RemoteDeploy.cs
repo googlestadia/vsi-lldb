@@ -37,14 +37,6 @@ namespace YetiVSI
     public interface IRemoteDeploy
     {
         /// <summary>
-        /// Verifies that the provided file is present on the target.
-        /// </summary>
-        /// <param name="target">SSH target.</param>
-        /// <param name="fullPath">An absolute path to the file.</param>
-        /// <returns>True, if the file is present.</returns>
-        Task<Boolean> FileExistsAsync(SshTarget target, string fullPath);
-
-        /// <summary>
         /// Copies the target executable from the specified project to the specified gamelet. SSH
         /// keys must already have been set up with the gamelet. On an error, DeployException will
         /// be thrown. Records metrics about  in the given action.
@@ -91,14 +83,6 @@ namespace YetiVSI
             _remoteFile = remoteFile;
             _managedProcessFactory = managedProcessFactory;
             _fileSystem = fileSystem;
-        }
-
-        public async Task<bool> FileExistsAsync(SshTarget target, string fullPath)
-        {
-            var output = await _remoteCommand.RunWithSuccessCapturingOutputAsync(
-                target,
-                $"[ -f {ProcessUtil.QuoteAndEscapeArgumentForSsh(fullPath)} ] && echo 'Yeah' || echo 'No'");
-            return output[0] == "Yeah";
         }
 
         public async Task DeployGameExecutableAsync(IAsyncProject project, SshTarget target,

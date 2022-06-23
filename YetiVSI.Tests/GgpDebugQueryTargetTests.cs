@@ -24,11 +24,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
+using System.Linq;
 using System.Threading.Tasks;
 using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.Cloud;
 using YetiCommon.SSH;
+using YetiVSI.DebugEngine;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Profiling;
@@ -56,7 +58,11 @@ namespace YetiVSI.Test
         const string _externalAccountId = "12345";
         const string _sdkVersionString = "1.22.1.7456";
         const string _customQueryParams = "test1=5&test2=10";
-        readonly Versions.SdkVersion _sdkVersion = Versions.SdkVersion.Create("7456.1.22.1");
+
+        static readonly List<string> _overlayDirs = new List<string>
+            { YetiConstants.DeveloperMountingPoint, YetiConstants.WorkstationMountingPoint };
+
+        static readonly Versions.SdkVersion _sdkVersion = Versions.SdkVersion.Create("7456.1.22.1");
 
         IGameletClient _gameletClient;
         IDialogUtil _dialogUtil;
@@ -69,7 +75,8 @@ namespace YetiVSI.Test
         IGameletSelector _gameletSelector;
         IGameletSelectorFactory _gameletSelectorFactory;
         ChromeClientLaunchCommandFormatter _launchCommandFormatter;
-        readonly int _outVariableIndex = 4;
+        readonly int _outIndexGamelet = 4;
+        readonly int _outIndexMountConfig = 5;
         IAsyncProject _project;
         string _targetPath;
         string _outputDirectory;
@@ -80,6 +87,7 @@ namespace YetiVSI.Test
         IProfilerLauncher<OrbitArgs> _orbitLauncher;
         IProfilerLauncher<DiveArgs> _diveLauncher;
         ISshTunnelManager _profilerSshTunnelManager;
+        IPreflightBinaryChecker _preflightBinaryChecker;
 
         [SetUp]
         public void SetUp()
@@ -113,7 +121,6 @@ namespace YetiVSI.Test
             _identityClient = Substitute.For<IIdentityClient>();
 
             _remoteDeploy = Substitute.For<IRemoteDeploy>();
-            _remoteDeploy.FileExistsAsync(default, default).ReturnsForAnyArgs(true);
             _dialogUtil = Substitute.For<IDialogUtil>();
 
             var credentialManager = Substitute.For<YetiCommon.ICredentialManager>();
@@ -179,14 +186,23 @@ namespace YetiVSI.Test
             _diveLauncher = Substitute.For<IProfilerLauncher<DiveArgs>>();
             _profilerSshTunnelManager = Substitute.For<ISshTunnelManager>();
             var solutionExplorer = Substitute.For<ISolutionExplorer>();
+            _preflightBinaryChecker = Substitute.For<IPreflightBinaryChecker>();
 
-            _ggpDebugQueryTarget = new GgpDebugQueryTarget(
-                fileSystem, sdkConfigFactory, gameletClientFactory, applicationClientFactory,
-                cancelableTaskFactory, _dialogUtil, _remoteDeploy, debugMetrics, credentialManager,
-                _testAccountClientFactory, _gameletSelectorFactory, cloudRunner, _sdkVersion,
-                _launchCommandFormatter, _yetiVsiService, _gameLauncher, taskContext,
-                _projectPropertiesParser, _identityClient, _orbitLauncher, _diveLauncher,
-                _profilerSshTunnelManager, solutionExplorer);
+            _ggpDebugQueryTarget = new GgpDebugQueryTarget(fileSystem, sdkConfigFactory,
+                                                           gameletClientFactory,
+                                                           applicationClientFactory,
+                                                           cancelableTaskFactory, _dialogUtil,
+                                                           _remoteDeploy, debugMetrics,
+                                                           credentialManager,
+                                                           _testAccountClientFactory,
+                                                           _gameletSelectorFactory, cloudRunner,
+                                                           _sdkVersion, _launchCommandFormatter,
+                                                           _yetiVsiService, _gameLauncher,
+                                                           taskContext, _projectPropertiesParser,
+                                                           _identityClient, _orbitLauncher,
+                                                           _diveLauncher, _profilerSshTunnelManager,
+                                                           solutionExplorer,
+                                                           _preflightBinaryChecker);
         }
 
         [Test]
@@ -280,13 +296,70 @@ namespace YetiVSI.Test
         [Test]
         public async Task LaunchNoDebugDeploySucceedsButNoExecutableAsync()
         {
-            Gamelet gamelet = SetupReservedGamelet();
-
-            _remoteDeploy.FileExistsAsync(default, default).ReturnsForAnyArgs(false);
+            SetupReservedGamelet();
+            string msg = "game binary was not found";
+            _preflightBinaryChecker
+                .When(g => g.CheckLocalAndRemoteBinaryOnLaunchAsync(
+                          Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
+                          Arg.Any<List<string>>(), Arg.Any<IAction>())).Throw(
+                    new PreflightBinaryCheckerException(
+                        ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(msg), null));
 
             await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
             _dialogUtil.Received().ShowError(
-                Arg.Is<string>(x => x.Contains("game binary was not found")), Arg.Any<Exception>());
+                Arg.Is<string>(x => x.Contains(msg)), Arg.Any<Exception>());
+        }
+
+        [Test]
+        public async Task LaunchWithAbsoluteGameLaunchExecutablePathAsync()
+        {
+            SetupReservedGamelet();
+            string remotePath = "/absolute/path";
+            _project.GetGameletLaunchExecutableAsync().Returns(remotePath);
+
+            await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
+
+            // The game won't launch the absolute path, but instead /srv/game/assets/absolute/path.
+            List<string> expectedPaths =
+                _overlayDirs.Select(d => d.TrimEnd('/') + remotePath).ToList();
+            await _preflightBinaryChecker.Received().CheckLocalAndRemoteBinaryOnLaunchAsync(
+                Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
+                Arg.Is<List<string>>(paths => paths.SequenceEqual(expectedPaths)),
+                Arg.Any<IAction>());
+        }
+
+        [Test]
+        public async Task LaunchWithRelativeSrvGameAssetsGameLaunchExecutablePathAsync()
+        {
+            SetupReservedGamelet();
+            string relPath = "//relative/path";
+            string srvGameAssetsPath = YetiConstants.RemoteGamePath + relPath;
+            _project.GetGameletLaunchExecutableAsync().Returns(srvGameAssetsPath);
+
+            await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
+
+            List<string> expectedPaths =
+                _overlayDirs.Select(d => d.TrimEnd('/') + "/" + relPath.TrimStart('/')).ToList();
+            await _preflightBinaryChecker.Received().CheckLocalAndRemoteBinaryOnLaunchAsync(
+                Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
+                Arg.Is<List<string>>(paths => paths.SequenceEqual(expectedPaths)),
+                Arg.Any<IAction>());
+        }
+
+        [Test]
+        public async Task LaunchWithRelativeGameLaunchExecutablePathAsync()
+        {
+            SetupReservedGamelet();
+            string relPath = "relative/path";
+            _project.GetGameletLaunchExecutableAsync().Returns(relPath);
+            await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
+
+            List<string> expectedPaths =
+                _overlayDirs.Select(d => d.TrimEnd('/') + "/" + relPath).ToList();
+            await _preflightBinaryChecker.Received().CheckLocalAndRemoteBinaryOnLaunchAsync(
+                Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
+                Arg.Is<List<string>>(paths => paths.SequenceEqual(expectedPaths)),
+                Arg.Any<IAction>());
         }
 
         [Test]
@@ -622,10 +695,9 @@ namespace YetiVSI.Test
             };
             _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
 
-            Gamelet gamelet;
-            _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<DeployOnLaunchSetting>(), gamelets,
-                                                        Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                        out gamelet).Returns(false);
+            _gameletSelector.TrySelectAndPrepareGamelet(
+                Arg.Any<DeployOnLaunchSetting>(), gamelets, Arg.Any<TestAccount>(),
+                Arg.Any<string>(), out Gamelet _, out MountConfiguration _).Returns(false);
 
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);
 
@@ -649,11 +721,10 @@ namespace YetiVSI.Test
             };
             _gameletClient.ListGameletsAsync().Returns(Task.FromResult(gamelets));
 
-            Gamelet gamelet;
             _gameletSelector.When(g => g.TrySelectAndPrepareGamelet(
                                       Arg.Any<DeployOnLaunchSetting>(), gamelets,
-                                      Arg.Any<TestAccount>(), Arg.Any<string>(), out gamelet))
-                .Throw(c => new Exception("Oops!"));
+                                      Arg.Any<TestAccount>(), Arg.Any<string>(), out Gamelet _,
+                                      out MountConfiguration _)).Throw(c => new Exception("Oops!"));
 
             var result = await QueryDebugTargetsAsync(debugLaunchOptions);
             _dialogUtil.Received().ShowError("Oops!", Arg.Any<Exception>());
@@ -782,11 +853,13 @@ namespace YetiVSI.Test
             _gameletSelector.TrySelectAndPrepareGamelet(Arg.Any<DeployOnLaunchSetting>(),
                                                         Arg.Any<List<Gamelet>>(),
                                                         Arg.Any<TestAccount>(), Arg.Any<string>(),
-                                                        out Gamelet _).Returns(x =>
-            {
-                x[_outVariableIndex] = gamelet;
-                return true;
-            });
+                                                        out Gamelet _, out MountConfiguration _)
+                .Returns(x =>
+                {
+                    x[_outIndexGamelet] = gamelet;
+                    x[_outIndexMountConfig] = new MountConfiguration(MountFlags.None, _overlayDirs);
+                    return true;
+                });
             return gamelet;
         }
     }

@@ -151,9 +151,9 @@ namespace YetiVSI.Test.GameLaunch
             _instanceSelectionWindow.Run().Returns(_gamelet2);
             SetupGameletClientApi(_gamelet2);
 
-            var result = _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null,
-                                                                     _devAccount,
-                                                                     out Gamelet gamelet);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, gamelets, null, _devAccount, out Gamelet gamelet,
+                out MountConfiguration _);
 
             Assert.That(result, Is.True);
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
@@ -169,9 +169,9 @@ namespace YetiVSI.Test.GameLaunch
             var gamelets = new List<Gamelet> { _gamelet1 };
             SetupGameletClientApi(_gamelet1);
 
-            var result = _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null,
-                                                                     _devAccount,
-                                                                     out Gamelet gamelet);
+            var result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, gamelets, null, _devAccount, out Gamelet gamelet,
+                out MountConfiguration _);
 
             Assert.That(result, Is.True);
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet1.Id));
@@ -186,7 +186,8 @@ namespace YetiVSI.Test.GameLaunch
         {
             var result = Assert.Throws<ConfigurationException>(
                 () => _gameletSelector.TrySelectAndPrepareGamelet(
-                    _deploy, new List<Gamelet>(), null, _devAccount, out Gamelet _));
+                    _deploy, new List<Gamelet>(), null, _devAccount, out Gamelet _,
+                    out MountConfiguration _));
 
             Assert.That(result.Message, Does.Contain(ErrorStrings.NoGameletsFound));
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsSelect,
@@ -200,7 +201,8 @@ namespace YetiVSI.Test.GameLaunch
 
             var result = Assert.Throws<InvalidStateException>(
                 () => _gameletSelector.TrySelectAndPrepareGamelet(
-                    _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _));
+                    _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _,
+                    out MountConfiguration _));
 
             Assert.That(result.Message,
                         Is.EqualTo(ErrorStrings.GameletInUnexpectedState(_gamelet1)));
@@ -218,7 +220,8 @@ namespace YetiVSI.Test.GameLaunch
             SetupGameletClientApi(_gamelet1);
 
             var result = _gameletSelector.TrySelectAndPrepareGamelet(
-                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _);
+                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _,
+                out MountConfiguration _);
 
             Assert.That(result, Is.False);
             _dialogUtil.Received(1).ShowError(Arg.Any<string>(), Arg.Any<CloudException>());
@@ -235,7 +238,8 @@ namespace YetiVSI.Test.GameLaunch
             SetupNoInstanceStorageOverlayDialog(confirmStop);
 
             var result = _gameletSelector.TrySelectAndPrepareGamelet(
-                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _);
+                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _,
+                out MountConfiguration _);
 
             Assert.That(result, Is.EqualTo(confirmStop));
         }
@@ -250,7 +254,7 @@ namespace YetiVSI.Test.GameLaunch
 
             var result = _gameletSelector.TrySelectAndPrepareGamelet(
                 DeployOnLaunchSetting.FALSE, new List<Gamelet> { _gamelet1 }, null, _devAccount,
-                out Gamelet _);
+                out Gamelet _, out MountConfiguration _);
 
             Assert.That(result, Is.EqualTo(confirmStop));
         }
@@ -262,8 +266,8 @@ namespace YetiVSI.Test.GameLaunch
             SetupProcMountsContent(_gamelet1, _mountedPackageWithOverlay);
 
             var result = _gameletSelector.TrySelectAndPrepareGamelet(
-                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount,
-                out Gamelet _);
+                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _,
+                out MountConfiguration _);
 
             Assert.That(result, Is.True);
         }
@@ -278,7 +282,8 @@ namespace YetiVSI.Test.GameLaunch
             SetupGameletClientApi(_gamelet1);
 
             var result = _gameletSelector.TrySelectAndPrepareGamelet(
-                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _);
+                _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _,
+                out MountConfiguration _);
 
             Assert.That(result, Is.False);
             _dialogUtil.ShowError(Arg.Any<string>(), Arg.Any<ProcessException>());
@@ -298,9 +303,9 @@ namespace YetiVSI.Test.GameLaunch
             SetupStopGameLaunchDialog(confirmStop);
             SetupDeleteGameLaunch(_gamelet1.Name, GameLaunchState.GameLaunchEnded, true);
 
-            bool result =
-                _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null, _devAccount,
-                                                            out Gamelet gamelet);
+            bool result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, gamelets, null, _devAccount, out Gamelet gamelet,
+                out MountConfiguration _);
 
             Assert.That(result, Is.EqualTo(confirmStop));
             if (confirmStop)
@@ -328,9 +333,9 @@ namespace YetiVSI.Test.GameLaunch
             SetupStopGameLaunchDialog(true);
             SetupDeleteGameLaunch(_gamelet1.Name, GameLaunchState.GameLaunchEnded, true);
 
-            bool result =
-                _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null, _devAccount,
-                                                            out Gamelet gamelet);
+            bool result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, gamelets, null, _devAccount, out Gamelet gamelet,
+                out MountConfiguration _);
 
             Assert.That(result, Is.EqualTo(true));
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
@@ -355,9 +360,9 @@ namespace YetiVSI.Test.GameLaunch
             SetupGetCurrentGameLaunch(_testAccount, _gamelet1.Name);
             SetupStopGameletDialog(confirmStop);
 
-            bool result =
-                _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null, _devAccount,
-                                                            out Gamelet gamelet);
+            bool result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, gamelets, null, _devAccount, out Gamelet gamelet,
+                out MountConfiguration _);
 
             Assert.That(result, Is.EqualTo(confirmStop));
             if (confirmStop)
@@ -384,9 +389,9 @@ namespace YetiVSI.Test.GameLaunch
             SetupGetCurrentGameLaunch(_testAccount, _gamelet1.Name);
             SetupDeleteGameLaunch(_gamelet1.Name, GameLaunchState.GameLaunchEnded, true);
 
-            bool result =
-                _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null, _devAccount,
-                                                            out Gamelet gamelet);
+            bool result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, gamelets, null, _devAccount, out Gamelet gamelet,
+                out MountConfiguration _);
 
             Assert.That(result, Is.EqualTo(true));
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet2.Id));
@@ -409,9 +414,9 @@ namespace YetiVSI.Test.GameLaunch
             SetupStopGameletDialog(true);
             SetupStopGameLaunchDialog(true);
 
-            bool result =
-                _gameletSelector.TrySelectAndPrepareGamelet(_deploy, gamelets, null, _devAccount,
-                                                            out Gamelet gamelet);
+            bool result = _gameletSelector.TrySelectAndPrepareGamelet(
+                _deploy, gamelets, null, _devAccount, out Gamelet gamelet,
+                out MountConfiguration _);
 
             Assert.That(result, Is.True);
             Assert.That(gamelet.Id, Is.EqualTo(_gamelet1.Id));

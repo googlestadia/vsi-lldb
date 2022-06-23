@@ -14,9 +14,12 @@
 
 using System.IO.Abstractions;
 using GgpGrpc.Cloud;
+using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using YetiCommon;
+using YetiVSI.DebugEngine;
 using YetiVSI.Profiling;
+using YetiVSI.ProjectSystem.Abstractions;
 using YetiVSITestsCommon;
 
 namespace YetiVSI.Test.MediumTestsSupport
@@ -75,5 +78,11 @@ namespace YetiVSI.Test.MediumTestsSupport
 
         public override ISshTunnelManager GetSshTunnelManager(
             ManagedProcess.Factory managedProcessFactory) => Substitute.For<ISshTunnelManager>();
+
+        public override ISolutionExplorer GetSolutionExplorer(JoinableTaskContext taskContext) =>
+            Substitute.For<ISolutionExplorer>();
+
+        public override IPreflightBinaryChecker GetPreflightBinaryChecker(IFileSystem fileSystem) =>
+            Substitute.For<IPreflightBinaryChecker>();
     }
 }

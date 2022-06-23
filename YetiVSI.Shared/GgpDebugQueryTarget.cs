@@ -23,28 +23,21 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
+using System.Linq;
 using System.Threading.Tasks;
 using Metrics.Shared;
 using YetiCommon;
 using YetiCommon.SSH;
+using YetiVSI.DebugEngine;
 using YetiVSI.DebuggerOptions;
 using YetiVSI.GameLaunch;
 using YetiVSI.Metrics;
 using YetiVSI.Profiling;
 using YetiVSI.ProjectSystem.Abstractions;
-using EnvDTE;
-using EnvDTE80;
-using Microsoft.VisualStudio.Shell;
+using Task = System.Threading.Tasks.Task;
 
 namespace YetiVSI
 {
-    public class ExecutableNotFoundException : Exception,IUserVisibleError
-    {
-        public ExecutableNotFoundException(string message) : base(message)
-        {
-        }
-    }
-
     public class GgpDebugQueryTarget
     {
         readonly IFileSystem _fileSystem;
@@ -70,6 +63,7 @@ namespace YetiVSI
         readonly IProfilerLauncher<DiveArgs> _diveLauncher;
         readonly ISshTunnelManager _profilerSshTunnelManager;
         readonly ISolutionExplorer _solutionExplorer;
+        readonly IPreflightBinaryChecker _preflightBinaryChecker;
 
         public GgpDebugQueryTarget(IFileSystem fileSystem, SdkConfig.Factory sdkConfigFactory,
                                    IGameletClientFactory gameletClientFactory,
@@ -89,7 +83,8 @@ namespace YetiVSI
                                    IProfilerLauncher<OrbitArgs> orbitLauncher,
                                    IProfilerLauncher<DiveArgs> diveLauncher,
                                    ISshTunnelManager profilerSshTunnelManager,
-                                   ISolutionExplorer solutionExplorer)
+                                   ISolutionExplorer solutionExplorer,
+                                   IPreflightBinaryChecker preflightBinaryChecker)
         {
             _fileSystem = fileSystem;
             _sdkConfigFactory = sdkConfigFactory;
@@ -114,6 +109,7 @@ namespace YetiVSI
             _diveLauncher = diveLauncher;
             _profilerSshTunnelManager = profilerSshTunnelManager;
             _solutionExplorer = solutionExplorer;
+            _preflightBinaryChecker = preflightBinaryChecker;
         }
 
         public async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(
@@ -207,11 +203,12 @@ namespace YetiVSI
                 launchParams.Account = _credentialManager.LoadAccount();
                 IGameletSelector gameletSelector = _gameletSelectorFactory.Create(actionRecorder);
                 Gamelet gamelet;
+                MountConfiguration mountConfig;
                 using (new TestBenchmark("SelectAndPrepareGamelet", TestBenchmarkScope.Recorder))
                 {
                     if (!gameletSelector.TrySelectAndPrepareGamelet(
                         deployOnLaunch, setupQueriesResult.Gamelets, setupQueriesResult.TestAccount,
-                        launchParams.Account, out gamelet))
+                        launchParams.Account, out gamelet, out mountConfig))
                     {
                         return new IDebugLaunchSettings[] { };
                     }
@@ -248,6 +245,8 @@ namespace YetiVSI
                     }
                 }
 
+                HashSet<string> lldbSearchPaths = _solutionExplorer.GetLLDBSearchPaths();
+
                 IAction action = actionRecorder.CreateToolAction(ActionType.RemoteDeploy);
                 bool isDeployed = _cancelableTaskFactory.Create(
                     TaskMessages.DeployingExecutable, async task =>
@@ -265,17 +264,25 @@ namespace YetiVSI
                         {
                             await _remoteDeploy.ExecuteCustomCommandAsync(project, gamelet, action);
                         }
+                    }).RunAndRecord(action);
+                if (!isDeployed)
+                {
+                    return new IDebugLaunchSettings[] { };
+                }
 
-                        if (!await _remoteDeploy.FileExistsAsync(
-                                sshTarget, Path.Combine(YetiConstants.RemoteGamePath,
-                                                        gameletExecutableRelPath)))
+                action = actionRecorder.CreateToolAction(ActionType.DebugPreflightBinaryChecks);
+                bool isChecked = _cancelableTaskFactory.Create(
+                    TaskMessages.DeployingExecutable, async task =>
+                    {
+                        using (new TestBenchmark("CheckIfLocalAndRemoteBinariesMatch",
+                                                 TestBenchmarkScope.Recorder))
                         {
-                            throw new ExecutableNotFoundException(
-                                ErrorStrings.LaunchEndedGameBinaryNotFound);
+                            await CheckIfLocalAndRemoteBinariesMatchAsync(
+                                gameletExecutableRelPath, mountConfig.OverlayDirs, lldbSearchPaths,
+                                sshTarget, action);
                         }
                     }).RunAndRecord(action);
-
-                if (!isDeployed)
+                if (!isChecked)
                 {
                     return new IDebugLaunchSettings[] { };
                 }
@@ -331,9 +338,8 @@ namespace YetiVSI
                         // Launch Orbit.
                         string gameletExecutablePath =
                             YetiConstants.RemoteGamePath + gameletExecutableRelPath;
-                        _orbitLauncher.Launch(
-                            new OrbitArgs(gameletExecutablePath, gamelet.Id,
-                                          _solutionExplorer.GetLLDBSearchPaths()));
+                        _orbitLauncher.Launch(new OrbitArgs(gameletExecutablePath, gamelet.Id,
+                                                            lldbSearchPaths));
                     }
 
                     if (launchWithDive)
@@ -553,6 +559,35 @@ namespace YetiVSI
             }
 
             return externalAccounts[0];
+        }
+
+        /// <summary>
+        /// Checks that the remote binary exists and its build id matches the local binary.
+        /// </summary>
+        async Task CheckIfLocalAndRemoteBinariesMatchAsync(string executableRelPath,
+                                                           List<string> overlayDirs,
+                                                           HashSet<string> lldbSearchPaths,
+                                                           SshTarget sshTarget,
+                                                           IAction preflightCheckAction)
+        {
+            // At this point, the overlays on srv/game/assets may not be properly set up yet, so
+            // we cannot check the binary there, but instead we have to check the individual overlay
+            // directories. Exception: |executableRelPath| is already an absolute path, in which
+            // case we only check that.
+            List<string> remoteTargetPaths = new List<string>();
+            if (executableRelPath.StartsWith(YetiConstants.RemoteGamePath))
+            {
+                executableRelPath =
+                    executableRelPath.Substring(YetiConstants.RemoteGamePath.Length);
+            }
+
+            remoteTargetPaths.AddRange(
+                overlayDirs.Select(d => d.TrimEnd('/') + "/" + executableRelPath.TrimStart('/')));
+
+            string executableFileName = Path.GetFileName(executableRelPath);
+            await _preflightBinaryChecker.CheckLocalAndRemoteBinaryOnLaunchAsync(
+                lldbSearchPaths, executableFileName, sshTarget, remoteTargetPaths,
+                preflightCheckAction);
         }
 
         class SetupQueriesResult

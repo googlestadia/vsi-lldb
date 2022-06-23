@@ -24,21 +24,55 @@ using YetiVSI.Metrics;
 namespace YetiVSI
 {
     [Flags]
-    public enum MountConfiguration
+    public enum MountFlags
     {
-        // Default configuration, /mnt/developer is bind-mounted to /srv/game/assets.
+        /// <summary>
+        /// Default configuration, /mnt/developer routes to /srv/game/assets.
+        /// </summary>
         None = 0,
 
-        // /mnt/developer is mounted as top-level overlay to /srv/game/assets.
+        /// <summary>
+        /// /mnt/developer is mounted as top-level overlay to /srv/game/assets.
+        /// </summary>
         InstanceStorageOverlay = 1 << 0,
 
-        // A package is mounted, e.g. with ggp instance mount --package, or
-        // a game was run directly, e.g. with ggp run --package.
+        /// <summary>
+        /// A package is mounted, e.g. with ggp instance mount --package, or
+        /// a game was run directly, e.g. with ggp run --package. 
+        /// </summary>
         PackageMounted = 1 << 1,
 
-        // A local workstation directory is mounted to /mnt/workstation and
-        // visible in /srv/game/assets, i.e. asset streaming is active.
+        /// <summary>
+        /// A local workstation directory is mounted to /mnt/workstation and
+        /// visible in /srv/game/assets, i.e. asset streaming is active.
+        /// </summary>
         LocalDirMounted = 1 << 2,
+    }
+
+    public class MountConfiguration
+    {
+        /// <summary>
+        /// Flags describing the current mount setup.
+        /// </summary>
+        public MountFlags Flags { get; private set; }
+
+        /// <summary>
+        /// List of directries that are overlaid on /srv/game/assets.
+        /// Topmost directories first.
+        /// </summary>
+        public List<string> OverlayDirs { get; private set; }
+
+        public MountConfiguration()
+        {
+            Flags = MountFlags.None;
+            OverlayDirs = new List<string>();
+        }
+
+        public MountConfiguration(MountFlags flags, List<String> overlayDirs)
+        {
+            Flags = flags;
+            OverlayDirs = overlayDirs;
+        }
     }
 
     /// <summary>
@@ -77,11 +111,10 @@ namespace YetiVSI
 
         public MountConfiguration GetConfiguration(Gamelet gamelet, ActionRecorder actionRecorder)
         {
-            MountConfiguration mountConfiguration = MountConfiguration.None;
             List<string> mountsInfo = ReadMountsContentOrDefault(gamelet, actionRecorder);
             if (mountsInfo.Count == 0)
             {
-                return mountConfiguration;
+                return new MountConfiguration();
             }
 
             Dictionary<string, Device> devices = GetDevices(mountsInfo);
@@ -92,10 +125,11 @@ namespace YetiVSI
             // Check whether /srv/game/assets is mounted as overlayfs with /mnt/developer as
             // mount dir. gameAssetsDevice.Parameters lists the overlay layers, e.g.
             // lowerdir=/mnt/localssd/var/empty:/mnt/workstation.
-            if (gameAssetsDevice != null && gameAssetsDevice.Parameters.Contains(
-                YetiConstants.DeveloperMountingPoint))
+            MountFlags flags = MountFlags.None;
+            if (gameAssetsDevice != null &&
+                gameAssetsDevice.Parameters.Contains(YetiConstants.DeveloperMountingPoint))
             {
-                mountConfiguration |= MountConfiguration.InstanceStorageOverlay;
+                flags |= MountFlags.InstanceStorageOverlay;
             }
 
             if (workstationDevice != null && gameAssetsDevice != null &&
@@ -103,29 +137,26 @@ namespace YetiVSI
                 gameAssetsDevice.Parameters.Contains(YetiConstants.WorkstationMountingPoint))
             {
                 // Workstation directory mounted, e.g. 'ggp instance mount --local-dir --package'.
-                mountConfiguration |= MountConfiguration.LocalDirMounted;
+                flags |= MountFlags.LocalDirMounted;
             }
 
             if (!string.IsNullOrWhiteSpace(packageDevice?.Address) && gameAssetsDevice != null &&
                 gameAssetsDevice.Parameters.Contains(YetiConstants.PackageMountingPointPrefix))
             {
                 // Package mounted, e.g. 'ggp instance mount --local-dir --package'.
-                mountConfiguration |= MountConfiguration.PackageMounted;
+                flags |= MountFlags.PackageMounted;
             }
 
-            return mountConfiguration;
+            return new MountConfiguration(flags, ParseOverlayDirs(gameAssetsDevice?.Parameters));
         }
 
         /// <summary>
         /// Returns true iff writes to /mnt/developer are not visible in /srv/game/assets.
         /// </summary>
-        /// <param name="currentMountConfiguration">
-        /// Mount configuration as returned by GetConfiguration()
-        /// </param>
-        public bool IsGameAssetsDetachedFromDeveloperFolder(
-            MountConfiguration currentMountConfiguration) =>
-            currentMountConfiguration != MountConfiguration.None &&
-            !currentMountConfiguration.HasFlag(MountConfiguration.InstanceStorageOverlay);
+        /// <param name="config">Mount configuration as returned by GetConfiguration()</param>
+        public bool IsGameAssetsDetachedFromDeveloperFolder(MountConfiguration config) =>
+            config.Flags != MountFlags.None &&
+            !config.Flags.HasFlag(MountFlags.InstanceStorageOverlay);
 
         List<string> ReadMountsContentOrDefault(Gamelet gamelet, ActionRecorder actionRecorder)
         {
@@ -168,6 +199,12 @@ namespace YetiVSI
             public string Address { get; }
             public string FileSystemType { get; }
             public string Parameters { get; }
+        }
+
+        bool DevicesMatch(Device a, Device b)
+        {
+            return a != null && b != null && a.Address == b.Address &&
+                a.FileSystemType == b.FileSystemType && a.Parameters == b.Parameters;
         }
 
         /// <summary>
@@ -213,6 +250,40 @@ namespace YetiVSI
             }
 
             return mountingPointToDevice;
+        }
+
+        /// <summary>
+        /// Parses the list of overlay directories from device parameters, see GetDevices.
+        /// /mnt/localssd/var/empty is ignored.
+        /// </summary>
+        /// <param name="deviceParams">
+        /// Device parameters as returned by GetDevices, e.g.
+        /// ro,relatime,lowerdir=/mnt/assets-content-asset-1-0-0-0cd87f2db855:/mnt/localssd/var/empty
+        /// </param>
+        /// <returns>
+        /// On success, returns list of directories, topmost first, i.e. [A,B,C] for lowerdir=A:B:C.
+        /// On failure, returns an empty list.
+        /// </returns>
+        List<string> ParseOverlayDirs(string deviceParams)
+        {
+            string[] parts =
+                deviceParams?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts == null || parts.Length == 0)
+            {
+                return new List<string>();
+            }
+
+            string key = "lowerdir=";
+            foreach (string part in parts)
+            {
+                if (part.StartsWith(key))
+                {
+                    return part.Substring(key.Length).Split(':')
+                        .Where(d => d != YetiConstants.EmptyMountingPoint).ToList();
+                }
+            }
+
+            return new List<string>();
         }
     }
 }
