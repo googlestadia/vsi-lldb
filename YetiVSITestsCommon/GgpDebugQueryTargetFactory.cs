@@ -34,16 +34,16 @@ namespace YetiVSITestsCommon
         /// </summary>
         class GgpDebugQueryTargetWrapper : Google.VisualStudioFake.API.IDebugQueryTarget
         {
-            readonly GgpDebugQueryTarget ggpDebugQueryTarget;
-            readonly JoinableTaskContext taskContext;
-            readonly ManagedProcess.Factory processFactory;
+            readonly GgpDebugQueryTarget _ggpDebugQueryTarget;
+            readonly JoinableTaskContext _taskContext;
+            readonly ManagedProcess.Factory _processFactory;
 
             internal GgpDebugQueryTargetWrapper(GgpDebugQueryTarget ggpDebugQueryTarget,
                 JoinableTaskContext taskContext, ManagedProcess.Factory processFactory)
             {
-                this.ggpDebugQueryTarget = ggpDebugQueryTarget;
-                this.taskContext = taskContext;
-                this.processFactory = processFactory;
+                _ggpDebugQueryTarget = ggpDebugQueryTarget;
+                _taskContext = taskContext;
+                _processFactory = processFactory;
             }
 
             #region Google.VisualStudioFake.API.IDebugQueryTarget
@@ -52,10 +52,10 @@ namespace YetiVSITestsCommon
                 IAsyncProject project, DebugLaunchOptions launchOptions)
             {
                 IReadOnlyList<IDebugLaunchSettings> settings = null;
-                taskContext.Factory.Run(async () =>
+                _taskContext.Factory.Run(async () =>
                 {
-                    await taskContext.Factory.SwitchToMainThreadAsync();
-                    settings = await ggpDebugQueryTarget.QueryDebugTargetsAsync(
+                    await _taskContext.Factory.SwitchToMainThreadAsync();
+                    settings = await _ggpDebugQueryTarget.QueryDebugTargetsAsync(
                         project, launchOptions);
                 });
                 if (!settings.Any())
@@ -71,7 +71,7 @@ namespace YetiVSITestsCommon
 
             string GetInstanceListOutput()
             {
-                var process = processFactory.Create(new System.Diagnostics.ProcessStartInfo
+                var process = _processFactory.Create(new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "ggp",
                     Arguments = "instance list"
@@ -79,7 +79,7 @@ namespace YetiVSITestsCommon
                 List<string> output = null;
                 try
                 {
-                    taskContext.Factory.Run(async () =>
+                    _taskContext.Factory.Run(async () =>
                     {
                         output = await process.RunToExitWithSuccessCapturingOutputAsync();
                     });
@@ -96,19 +96,19 @@ namespace YetiVSITestsCommon
             }
         }
 
-        readonly GgpDebugQueryTarget ggpDebugQueryTarget;
-        readonly JoinableTaskContext taskContext;
-        readonly ManagedProcess.Factory processFactory;
+        readonly GgpDebugQueryTarget _ggpDebugQueryTarget;
+        readonly JoinableTaskContext _taskContext;
+        readonly ManagedProcess.Factory _processFactory;
 
         public GgpDebugQueryTargetWrapperFactory(GgpDebugQueryTarget ggpDebugQueryTarget,
             JoinableTaskContext taskContext, ManagedProcess.Factory processFactory)
         {
-            this.ggpDebugQueryTarget = ggpDebugQueryTarget;
-            this.taskContext = taskContext;
-            this.processFactory = processFactory;
+            _ggpDebugQueryTarget = ggpDebugQueryTarget;
+            _taskContext = taskContext;
+            _processFactory = processFactory;
         }
 
         public Google.VisualStudioFake.API.IDebugQueryTarget Create() =>
-            new GgpDebugQueryTargetWrapper(ggpDebugQueryTarget, taskContext, processFactory);
+            new GgpDebugQueryTargetWrapper(_ggpDebugQueryTarget, _taskContext, _processFactory);
     }
 }

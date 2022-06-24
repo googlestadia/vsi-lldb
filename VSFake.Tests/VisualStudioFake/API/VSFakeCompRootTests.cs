@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using Google.VisualStudioFake.API;
+using Google.VisualStudioFake.API;
+using Google.VisualStudioFake.Internal;
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
@@ -28,13 +29,15 @@ namespace Google.Tests.VisualStudioFake
         [SetUp]
         public void SetUp()
         {
-            var config = new VSFakeCompRoot.Config {  SamplesRoot = @""  };
+            var config = new VSFakeCompRoot.Config { SamplesRoot = @"" };
             var dgtFactoty = Substitute.For<IDebugQueryTargetFactory>();
 #pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
             var taskContext = new JoinableTaskContext();
 #pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
             var logger = Substitute.For<NLog.Logger>();
-            compRoot = new VSFakeCompRoot(config, dgtFactoty, taskContext, logger);
+            var solutionExplorer = new SolutionExplorerFake();
+            compRoot =
+                new VSFakeCompRoot(config, dgtFactoty, taskContext, logger, solutionExplorer);
         }
 
         [Test]

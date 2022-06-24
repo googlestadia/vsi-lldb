@@ -341,7 +341,8 @@ namespace YetiVSI.Test.GameLaunch
                 var debugTargetWrapperFactory = new GgpDebugQueryTargetWrapperFactory(
                     debugTargetCompRoot.Create(), _taskContext, new ManagedProcess.Factory());
                 _vsFakeCompRoot = new VSFakeCompRoot(config, debugTargetWrapperFactory,
-                                                     _taskContext, _nLogSpy.GetLogger());
+                                                     _taskContext, _nLogSpy.GetLogger(),
+                                                     new SolutionExplorerFake());
             });
         }
 

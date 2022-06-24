@@ -23,6 +23,7 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Threading;
 using System;
 using YetiCommon.CastleAspects;
+using YetiVSI.ProjectSystem.Abstractions;
 
 namespace Google.VisualStudioFake.API
 {
@@ -50,6 +51,7 @@ namespace Google.VisualStudioFake.API
         readonly IDebugQueryTargetFactory debugQueryTargetFactory;
         readonly JoinableTaskContext taskContext;
         readonly NLog.ILogger logger;
+        readonly SolutionExplorerFake solutionExplorer;
 
         JobQueue jobQueue;
         IProjectAdapter projectAdapter;
@@ -67,7 +69,8 @@ namespace Google.VisualStudioFake.API
         Func<IDebugEngine2> createDebugEngine;
 
         public VSFakeCompRoot(Config config, IDebugQueryTargetFactory debugQueryTargetFactory,
-                              JoinableTaskContext taskContext, NLog.ILogger logger)
+                              JoinableTaskContext taskContext, NLog.ILogger logger,
+                              SolutionExplorerFake solutionExplorer)
         {
             if (config.SamplesRoot == null)
             {
@@ -78,13 +81,13 @@ namespace Google.VisualStudioFake.API
             this.debugQueryTargetFactory = debugQueryTargetFactory;
             this.taskContext = taskContext;
             this.logger = logger;
+            this.solutionExplorer = solutionExplorer;
         }
 
         public IVSFake Create(Func<IDebugEngine2> createDebugEngine)
         {
             this.createDebugEngine = createDebugEngine;
 
-            var solutionExplorer = new SolutionExplorerFake();
             GetProjectAdapter().ProjectLoaded += solutionExplorer.HandleProjectLoaded;
 
             GetJobOrchestrator().DebugEvent += breakpointsWindowInternal.HandleBindResultEvent;
