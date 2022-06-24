@@ -270,21 +270,28 @@ namespace YetiVSI
                     return new IDebugLaunchSettings[] { };
                 }
 
-                action = actionRecorder.CreateToolAction(ActionType.DebugPreflightBinaryChecks);
-                bool isChecked = _cancelableTaskFactory.Create(
-                    TaskMessages.DeployingExecutable, async task =>
-                    {
-                        using (new TestBenchmark("CheckIfLocalAndRemoteBinariesMatch",
-                                                 TestBenchmarkScope.Recorder))
-                        {
-                            await CheckIfLocalAndRemoteBinariesMatchAsync(
-                                gameletExecutableRelPath, mountConfig.OverlayDirs, lldbSearchPaths,
-                                sshTarget, action);
-                        }
-                    }).RunAndRecord(action);
-                if (!isChecked)
+                try
                 {
-                    return new IDebugLaunchSettings[] { };
+                    action = actionRecorder.CreateToolAction(ActionType.DebugPreflightBinaryChecks);
+                    bool isChecked = _cancelableTaskFactory.Create(
+                        TaskMessages.DeployingExecutable, async task =>
+                        {
+                            using (new TestBenchmark("CheckIfLocalAndRemoteBinariesMatch",
+                                                     TestBenchmarkScope.Recorder))
+                            {
+                                await CheckIfLocalAndRemoteBinariesMatchAsync(
+                                    gameletExecutableRelPath, mountConfig.OverlayDirs,
+                                    lldbSearchPaths, sshTarget, action);
+                            }
+                        }).RunAndRecord(action);
+                    if (!isChecked)
+                    {
+                        return new IDebugLaunchSettings[] { };
+                    }
+                }
+                catch (PreflightBinaryCheckerException e)
+                {
+                    _dialogUtil.ShowWarning(e.Message, e);
                 }
 
                 // Launch SSH tunnels for the profilers, if any.

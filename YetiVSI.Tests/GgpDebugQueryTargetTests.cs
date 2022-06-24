@@ -306,7 +306,7 @@ namespace YetiVSI.Test
                         ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(msg), null));
 
             await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
-            _dialogUtil.Received().ShowError(
+            _dialogUtil.Received().ShowWarning(
                 Arg.Is<string>(x => x.Contains(msg)), Arg.Any<Exception>());
         }
 
