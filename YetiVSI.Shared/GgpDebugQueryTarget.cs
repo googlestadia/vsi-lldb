@@ -583,6 +583,15 @@ namespace YetiVSI
                                                            SshTarget sshTarget,
                                                            IAction preflightCheckAction)
         {
+            if (overlayDirs.Count == 0)
+            {
+                Trace.WriteLine(
+                    $"No overlays on '{YetiConstants.GameAssetsMountingPoint}' detected. Falling " +
+                    $"back to checking the game binary at {YetiConstants.GameAssetsMountingPoint}" +
+                    " directly, assuming a bind-mount.");
+                overlayDirs.Add(YetiConstants.GameAssetsMountingPoint);
+            }
+
             // At this point, the overlays on srv/game/assets may not be properly set up yet, so
             // we cannot check the binary there, but instead we have to check the individual overlay
             // directories. Exception: |executableRelPath| is already an absolute path, in which

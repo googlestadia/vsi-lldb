@@ -59,7 +59,7 @@ namespace YetiVSI.Test
         const string _sdkVersionString = "1.22.1.7456";
         const string _customQueryParams = "test1=5&test2=10";
 
-        static readonly List<string> _overlayDirs = new List<string>
+        List<string> _overlayDirs = new List<string>
             { YetiConstants.DeveloperMountingPoint, YetiConstants.WorkstationMountingPoint };
 
         static readonly Versions.SdkVersion _sdkVersion = Versions.SdkVersion.Create("7456.1.22.1");
@@ -373,6 +373,22 @@ namespace YetiVSI.Test
 
             List<string> expectedPaths =
                 _overlayDirs.Select(d => d.TrimEnd('/') + "/" + relPath).ToList();
+            await _preflightBinaryChecker.Received().CheckLocalAndRemoteBinaryOnLaunchAsync(
+                Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
+                Arg.Is<List<string>>(paths => paths.SequenceEqual(expectedPaths)),
+                Arg.Any<IAction>());
+        }
+
+        [Test]
+        public async Task LaunchWithEmptyOverlayDirsAsync()
+        {
+            _overlayDirs.Clear();
+            SetupReservedGamelet();
+            await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
+
+            string path = await _project.GetGameletLaunchExecutableAsync();
+            List<string> expectedPaths = new List<string>()
+                { YetiConstants.GameAssetsMountingPoint.TrimEnd('/') + "/" + path.TrimStart('/') };
             await _preflightBinaryChecker.Received().CheckLocalAndRemoteBinaryOnLaunchAsync(
                 Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
                 Arg.Is<List<string>>(paths => paths.SequenceEqual(expectedPaths)),
