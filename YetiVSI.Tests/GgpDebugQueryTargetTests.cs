@@ -294,7 +294,7 @@ namespace YetiVSI.Test
         }
 
         [Test]
-        public async Task LaunchNoDebugDeploySucceedsButNoExecutableAsync()
+        public async Task LaunchWithoutGameBinaryFoundAsync()
         {
             SetupReservedGamelet();
             string msg = "game binary was not found";
@@ -302,10 +302,27 @@ namespace YetiVSI.Test
                 .When(g => g.CheckLocalAndRemoteBinaryOnLaunchAsync(
                           Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
                           Arg.Any<List<string>>(), Arg.Any<IAction>())).Throw(
-                    new PreflightBinaryCheckerException(
-                        ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(msg), null));
+                    new PreflightBinaryCheckerException(msg, null, isCritical: true));
 
-            await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
+            var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
+            Assert.AreEqual(0, launchSettings.Count);
+            _dialogUtil.Received().ShowError(
+                Arg.Is<string>(x => x.Contains(msg)), Arg.Any<Exception>());
+        }
+
+        [Test]
+        public async Task LaunchWithBuildIdMismatchAsync()
+        {
+            SetupReservedGamelet();
+            string msg = "build id mismatch";
+            _preflightBinaryChecker
+                .When(g => g.CheckLocalAndRemoteBinaryOnLaunchAsync(
+                          Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
+                          Arg.Any<List<string>>(), Arg.Any<IAction>())).Throw(
+                    new PreflightBinaryCheckerException(msg, null, isCritical: false));
+
+            var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
+            Assert.AreEqual(1, launchSettings.Count);
             _dialogUtil.Received().ShowWarning(
                 Arg.Is<string>(x => x.Contains(msg)), Arg.Any<Exception>());
         }
@@ -338,8 +355,8 @@ namespace YetiVSI.Test
 
             await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
 
-            List<string> expectedPaths =
-                _overlayDirs.Select(d => d.TrimEnd('/') + "/" + relPath.TrimStart('/')).ToList();
+            List<string> expectedPaths = _overlayDirs
+                .Select(d => d.TrimEnd('/') + "/" + relPath.TrimStart('/')).ToList();
             await _preflightBinaryChecker.Received().CheckLocalAndRemoteBinaryOnLaunchAsync(
                 Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
                 Arg.Is<List<string>>(paths => paths.SequenceEqual(expectedPaths)),

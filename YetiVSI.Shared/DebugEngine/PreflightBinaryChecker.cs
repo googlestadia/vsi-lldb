@@ -28,17 +28,25 @@ namespace YetiVSI.DebugEngine
 {
     public class PreflightBinaryCheckerException : Exception, IUserVisibleError
     {
-        public PreflightBinaryCheckerException(string msg, Exception inEx) : base(msg, inEx)
+        public PreflightBinaryCheckerException(string msg, Exception inEx, bool isCritical) : base(
+            msg, inEx)
         {
+            IsCritical = isCritical;
         }
 
-        public PreflightBinaryCheckerException(string msg, string userDetails, Exception inEx) :
-            base(msg, inEx)
+        public PreflightBinaryCheckerException(string msg, string userDetails, Exception inEx,
+                                               bool isCritical) : base(msg, inEx)
         {
             UserDetails = userDetails;
+            IsCritical = isCritical;
         }
 
         public string UserDetails { get; }
+
+        /// <summary>
+        /// If true, the exception is treated as a critical error that stops the launch/attach flow.
+        /// </summary>
+        public bool IsCritical { get; }
     }
 
     /// <summary>
@@ -116,7 +124,8 @@ namespace YetiVSI.DebugEngine
                     Trace.WriteLine($"Failed to read build ID for '{pathCandidate}' " +
                                     $"on '{target.GetString()}': {e.Demystify()}");
                     throw new PreflightBinaryCheckerException(
-                        ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(e.Message), e);
+                        ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(e.Message), e,
+                        isCritical: false);
                 }
             }
 
@@ -127,7 +136,8 @@ namespace YetiVSI.DebugEngine
                 Trace.WriteLine("Failed to find remote binary in any of " +
                                 $"'{string.Join("', '", remoteTargetPaths)}' ");
                 throw new PreflightBinaryCheckerException(
-                    ErrorStrings.LaunchEndedGameBinaryNotFound, new NoRemoteBinaryException());
+                    ErrorStrings.LaunchEndedGameBinaryNotFound, new NoRemoteBinaryException(),
+                    isCritical: true);
             }
 
             // Log the remote Build ID for debugging purposes.
@@ -143,8 +153,8 @@ namespace YetiVSI.DebugEngine
                 Trace.WriteLine($"Unable to find executable '{executable}' on LLDB search paths.");
                 throw new PreflightBinaryCheckerException(
                     ErrorStrings.UnableToFindExecutable(executable),
-                    ErrorStrings.ExecutableCheckDetails(libPaths),
-                    new NoLocalCandidatesException());
+                    ErrorStrings.ExecutableCheckDetails(libPaths), new NoLocalCandidatesException(),
+                    isCritical: false);
             }
 
             // Check local candidates to find one matching the remote build id.
@@ -165,7 +175,7 @@ namespace YetiVSI.DebugEngine
                     ErrorStrings.UnableToFindExecutableMatchingRemoteBinary(executable,
                                                                             remoteTargetPath),
                     ErrorStrings.BuildIdCheckDetails(localCandidatePaths, libPaths),
-                    new NoMatchingLocalCandidatesException());
+                    new NoMatchingLocalCandidatesException(), isCritical: false);
             }
         }
 
@@ -189,7 +199,8 @@ namespace YetiVSI.DebugEngine
                                 $"on '{target.GetString()}': {e.Demystify()}");
 
                 throw new PreflightBinaryCheckerException(
-                    ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(e.Message), e);
+                    ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(e.Message), e,
+                    isCritical: false);
             }
         }
 

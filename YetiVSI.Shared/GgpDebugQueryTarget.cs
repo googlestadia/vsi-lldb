@@ -291,6 +291,12 @@ namespace YetiVSI
                 }
                 catch (PreflightBinaryCheckerException e)
                 {
+                    if (e.IsCritical)
+                    {
+                        _dialogUtil.ShowError(e.Message, e);
+                        return new IDebugLaunchSettings[] { };
+                    }
+
                     _dialogUtil.ShowWarning(e.Message, e);
                 }
 

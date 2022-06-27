@@ -539,6 +539,9 @@ namespace YetiVSI.DebugEngine
                 }
                 catch (PreflightBinaryCheckerException e)
                 {
+                    // Only failed-to-find-binary errors should be critical, and this shouldn't
+                    // happen in this code path.
+                    Debug.Assert(!e.IsCritical);
                     _dialogUtil.ShowWarning(e.Message, e);
                 }
             }
