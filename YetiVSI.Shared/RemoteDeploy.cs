@@ -49,6 +49,7 @@ namespace YetiVSI
         /// wrapped into DeployException</exception>
         Task DeployGameExecutableAsync(IAsyncProject project, SshTarget target, ICancelable task,
                                        Metrics.IAction action);
+
         /// <summary>
         /// Executes custom commands provided to the project.
         /// </summary>
@@ -76,8 +77,7 @@ namespace YetiVSI
         readonly IFileSystem _fileSystem;
 
         public RemoteDeploy(IRemoteCommand remoteCommand, IRemoteFile remoteFile,
-                            ManagedProcess.Factory managedProcessFactory,
-                            IFileSystem fileSystem)
+                            ManagedProcess.Factory managedProcessFactory, IFileSystem fileSystem)
         {
             _remoteCommand = remoteCommand;
             _remoteFile = remoteFile;
@@ -96,10 +96,6 @@ namespace YetiVSI
                 bool force = (deploySetting == DeployOnLaunchSetting.ALWAYS);
                 await DeployToTargetAsync(record, task, target, localPath,
                                           YetiConstants.RemoteDeployPath, force);
-
-                string targetName = Path.GetFileName(localPath);
-                string remotePath = Path.Combine(YetiConstants.RemoteDeployPath, targetName);
-                await SetRemoteExecutableBitAsync(target, remotePath, record);
             }
             else
             {
@@ -117,14 +113,8 @@ namespace YetiVSI
         {
             DataRecorder record = new DataRecorder(action, DataRecorder.File.LLDB_SERVER);
             record.SetCopyAttempted(true);
-
-            string localLldbServerPath = GetLldbServerPath();
-            string remotePath = Path.Combine(YetiConstants.LldbServerLinuxPath,
-                                             YetiConstants.LldbServerLinuxExecutable);
-
-            await DeployToTargetAsync(record, new NothingToCancel(), target, localLldbServerPath,
+            await DeployToTargetAsync(record, new NothingToCancel(), target, GetLldbServerPath(),
                                       YetiConstants.LldbServerLinuxPath);
-            await SetRemoteExecutableBitAsync(target, remotePath, record);
         }
 
         async Task DeployToTargetAsync(DataRecorder record, ICancelable task, SshTarget target,
@@ -145,13 +135,13 @@ namespace YetiVSI
                 await _remoteFile.SyncAsync(target, localPath, remotePath, task, force);
 
                 record.CopyBinary(stopwatch.ElapsedMilliseconds, DataRecorder.NoError);
+                record.Chmod(DataRecorder.NoError); // Sync sets the exec bit.
             }
             catch (ProcessException exception)
             {
                 record.CopyBinary(stopwatch.ElapsedMilliseconds, exception);
-                throw new DeployException(
-                    ErrorStrings.FailedToDeployExecutable(exception.Message),
-                    exception);
+                throw new DeployException(ErrorStrings.FailedToDeployExecutable(exception.Message),
+                                          exception);
             }
         }
 
@@ -198,23 +188,6 @@ namespace YetiVSI
             }
         }
 
-        async Task SetRemoteExecutableBitAsync(SshTarget target, string remoteTargetPath,
-                                               DataRecorder record)
-        {
-            try
-            {
-                await _remoteCommand.RunWithSuccessAsync(target, "chmod a+x " + remoteTargetPath);
-                record.Chmod(DataRecorder.NoError);
-            }
-            catch (ProcessException e)
-            {
-                Trace.WriteLine($"Error setting executable permissions: {e.Demystify()}");
-                record.Chmod(e);
-                throw new DeployException(ErrorStrings.FailedToSetExecutablePermissions(e.Message),
-                                          e);
-            }
-        }
-
         public string GetLldbServerPath()
         {
 #if USE_LOCAL_PYTHON_AND_TOOLCHAIN
@@ -250,6 +223,7 @@ namespace YetiVSI
             {
                 return;
             }
+
             string localOrbitCollectorPath =
                 Path.Combine(SDKUtil.GetSDKPath(), YetiConstants.OrbitCollectorDir);
             string localOrbitVulkanLayerManifestPath =
@@ -385,7 +359,9 @@ namespace YetiVSI
             {
                 // When recording the exit code, use 0 for success, process exit code for execution
                 // errors, or -1 for all other errors.
-                return e == null ? 0 : (e as ProcessExecutionException)?.ExitCode ?? -1;
+                return e == null
+                    ? 0
+                    : (e as ProcessExecutionException)?.ExitCode ?? -1;
             }
         }
     }
