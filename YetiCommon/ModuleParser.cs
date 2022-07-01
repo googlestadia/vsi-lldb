@@ -43,12 +43,14 @@ namespace YetiCommon
             var output = new DebugLinkLocationInfo();
             if (!File.Exists(filepath))
             {
+                output.Data = SymbolFileLocation.Empty;
                 output.AddError($"{filepath} not found");
                 return output;
             }
 
             if (!ELFReader.TryLoad(filepath, out IELF elfReader))
             {
+                output.Data = SymbolFileLocation.Empty;
                 output.AddError(ErrorStrings.InvalidSymbolFileFormat(filepath, ModuleFormat.Elf));
                 return output;
             }
@@ -73,6 +75,7 @@ namespace YetiCommon
                 }
                 else
                 {
+                    output.Data = SymbolFileLocation.Empty;
                     output.AddError(ErrorStrings.FailedToReadSymbolFileName(
                                         filepath, ErrorStrings.NoDebugLink));
                 }

@@ -74,7 +74,7 @@ namespace SymbolStores.Tests
                 new HttpRequestException("message");
 
             await store.FindFileAsync(_searchQuery, _nullLog);
-            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.FileName,
+            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
                                                                 _searchQuery.BuildId,
                                                                 _elfFormat);
 
@@ -112,7 +112,7 @@ namespace SymbolStores.Tests
             var store = new HttpSymbolStore(_fakeFileSystem, _httpClient, "http://example.com/");
 
             await store.FindFileAsync(_searchQuery, _nullLog);
-            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.FileName,
+            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
                                                                 _searchQuery.BuildId,
                                                                 _searchQuery.ModuleFormat);
             IFileReference fileReference =

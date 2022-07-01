@@ -68,7 +68,7 @@ namespace SymbolStores
         async Task<IFileReference> SearchAllSymbolStoresAsync(ModuleSearchQuery searchQuery,
                                                               TextWriter log)
         {
-            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
 
             ISymbolStore currentCache = null;
             foreach (ISymbolStore store in _stores)
@@ -84,7 +84,7 @@ namespace SymbolStores
                         {
                             fileReference = await currentCache.AddFileAsync(
                                 fileReference,
-                                searchQuery.FileName,
+                                searchQuery.Filename,
                                 searchQuery.BuildId, log);
                         }
                         catch (Exception e)

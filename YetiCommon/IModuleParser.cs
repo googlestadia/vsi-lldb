@@ -67,7 +67,7 @@ namespace YetiCommon
 
     public class DebugLinkLocationInfo
     {
-        public DebugLinkLocation Data { get; set; } = new DebugLinkLocation();
+        public SymbolFileLocation Data { get; set; } = new SymbolFileLocation("", "");
 
         public void SetFilename(string filename)
         {
@@ -94,10 +94,17 @@ namespace YetiCommon
         public bool HasError => !string.IsNullOrWhiteSpace(Error);
     }
 
-    public class DebugLinkLocation
-    {
-        public string Filename { get; set; } = "";
-        public string Directory { get; set; } = "";
+    
+    public class SymbolFileLocation
+    {        
+        public SymbolFileLocation(string directory, string filename)
+        {
+            Directory = directory;
+            Filename = filename;
+        }
+
+        public string Filename { get; set; }
+        public string Directory { get; set; }
 
         public bool TryGetFullPath(out string fullPath)
         {
@@ -110,6 +117,13 @@ namespace YetiCommon
             fullPath = "";
             return false;
         }
+
+        public static readonly SymbolFileLocation Empty = new SymbolFileLocation("", "");
+
+        /// <summary>
+        /// If Filename is not set we can't search for a symbol file.
+        /// </summary>
+        public bool IsInvalid => string.IsNullOrWhiteSpace(Filename);
     }
 
     public class BuildIdInfo

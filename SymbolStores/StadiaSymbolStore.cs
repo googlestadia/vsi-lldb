@@ -62,15 +62,15 @@ namespace SymbolStores
         public override async Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                                                  TextWriter log)
         {
-            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
             Debug.Assert(searchQuery.BuildId != BuildId.Empty);
 
             string buildIdHex = searchQuery.BuildId.ToHexString();
-            string symbolStoreKey = $"{searchQuery.FileName};{buildIdHex}";
+            string symbolStoreKey = $"{searchQuery.Filename};{buildIdHex}";
             if (DoesNotExistInSymbolStore(symbolStoreKey, searchQuery.ForceLoad))
             {
                 log.WriteLineAndTrace(
-                    Strings.DoesNotExistInStadiaStore(searchQuery.FileName, buildIdHex));
+                    Strings.DoesNotExistInStadiaStore(searchQuery.Filename, buildIdHex));
                 return null;
             }
 
@@ -81,7 +81,7 @@ namespace SymbolStores
                 // URL that does not exist. The second case is handled later.
                 // TODO: figure out how to intercept these calls to record in metrics.
                 fileUrl = await _crashReportClient.GenerateSymbolFileDownloadUrlAsync(
-                    buildIdHex, searchQuery.FileName);
+                    buildIdHex, searchQuery.Filename);
             }
             catch (CloudException e)
             {
@@ -89,12 +89,12 @@ namespace SymbolStores
                     inner.StatusCode == StatusCode.NotFound)
                 {
                     log.WriteLineAndTrace(
-                        Strings.FileNotFoundInStadiaStore(buildIdHex, searchQuery.FileName));
+                        Strings.FileNotFoundInStadiaStore(buildIdHex, searchQuery.Filename));
                 }
                 else
                 {
                     log.WriteLineAndTrace(
-                        Strings.FailedToSearchStadiaStore(searchQuery.FileName, e.Message));
+                        Strings.FailedToSearchStadiaStore(searchQuery.Filename, e.Message));
                 }
 
                 AddAsNonExisting(symbolStoreKey);
@@ -114,7 +114,7 @@ namespace SymbolStores
             {
                 AddAsNonExisting(symbolStoreKey);
                 log.WriteLineAndTrace(
-                    Strings.FailedToSearchStadiaStore(searchQuery.FileName, e.Message));
+                    Strings.FailedToSearchStadiaStore(searchQuery.Filename, e.Message));
                 return null;
             }
 
@@ -125,7 +125,7 @@ namespace SymbolStores
                 {
                     AddAsNonExisting(symbolStoreKey);
                     log.WriteLineAndTrace(
-                        Strings.FileNotFoundInStadiaStore(buildIdHex, searchQuery.FileName));
+                        Strings.FileNotFoundInStadiaStore(buildIdHex, searchQuery.Filename));
                     return null;
                 }
 
@@ -134,12 +134,12 @@ namespace SymbolStores
                     AddAsNonExisting(symbolStoreKey);
                     log.WriteLineAndTrace(
                         Strings.FileNotFoundInHttpStore(
-                            searchQuery.FileName, (int)response.StatusCode,
+                            searchQuery.Filename, (int)response.StatusCode,
                             response.ReasonPhrase));
                     return null;
                 }
 
-                log.WriteLineAndTrace(Strings.FileFound(searchQuery.FileName));
+                log.WriteLineAndTrace(Strings.FileFound(searchQuery.Filename));
 
                 return new HttpFileReference(_fileSystem, _httpClient, fileUrl);
             }

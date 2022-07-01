@@ -29,7 +29,7 @@ namespace YetiCommon
                                  ModuleFormat format)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(filename));
-            FileName = filename;
+            Filename = filename;
             BuildId = buildId;
             ModuleFormat = format;
         }
@@ -37,7 +37,17 @@ namespace YetiCommon
         /// <summary>
         /// Module filename (we are looking for exact match).
         /// </summary>
-        public string FileName { get; }
+        public string Filename
+        {
+            get => _filename;
+            set
+            {
+                Debug.Assert(!string.IsNullOrWhiteSpace(value));
+                _filename = value;
+            }
+        }
+
+        string _filename;
 
         /// <summary>
         /// Module BuildId.

@@ -101,7 +101,7 @@ namespace YetiVSI.Test.DebugEngine
             string filename = "file_doesn't_exist.txt";
             module.GetPlatformFileSpec().GetFilename().Returns(filename);
             _mockModuleFileFinder
-                .FindFileAsync(Arg.Is<ModuleSearchQuery>(q => q.FileName == filename), _searchLog)
+                .FindFileAsync(Arg.Is<ModuleSearchQuery>(q => q.Filename == filename), _searchLog)
                 .Returns((string)null);
 
             (SbModule found, bool ok) = await _binaryLoader.LoadBinaryAsync(module, _searchLog,

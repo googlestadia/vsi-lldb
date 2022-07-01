@@ -42,7 +42,7 @@ namespace SymbolStores
         IEnumerable<ISymbolStore> Substores { get; }
 
         /// <summary>
-        /// Searches for a symbol file with the filename `searchQuery.FileName` and build ID
+        /// Searches for a symbol file with the filename `searchQuery.Filename` and build ID
         /// `searchQuery.BuildId`.
         /// Returns an IFileReference representing the matching file, or null if no such file
         /// exists.

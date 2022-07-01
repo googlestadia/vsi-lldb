@@ -87,20 +87,20 @@ namespace YetiVSI.DebugEngine
         public async Task<string> FindFileAsync(ModuleSearchQuery searchQuery,
                                                 TextWriter searchLog)
         {
-            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
 
-            searchLog.WriteLineAndTrace($"Searching for '{searchQuery.FileName}'");
+            searchLog.WriteLineAndTrace($"Searching for '{searchQuery.Filename}'");
             if (searchQuery.BuildId == BuildId.Empty)
             {
                 searchLog.WriteLineAndTrace(
-                    ErrorStrings.ModuleBuildIdUnknown(searchQuery.FileName));
+                    ErrorStrings.ModuleBuildIdUnknown(searchQuery.Filename));
             }
 
             IFileReference fileReference =
                 await _symbolStore.FindFileAsync(searchQuery, searchLog);
             if (fileReference == null)
             {
-                searchLog.WriteLineAndTrace(ErrorStrings.FailedToFindFile(searchQuery.FileName));
+                searchLog.WriteLineAndTrace(ErrorStrings.FailedToFindFile(searchQuery.Filename));
                 return null;
             }
 

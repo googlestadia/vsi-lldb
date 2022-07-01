@@ -68,15 +68,15 @@ namespace SymbolStores
         public override async Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                                                  TextWriter log)
         {
-            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
             Debug.Assert(searchQuery.BuildId != BuildId.Empty);
 
-            string encodedFilename = Uri.EscapeDataString(searchQuery.FileName);
+            string encodedFilename = Uri.EscapeDataString(searchQuery.Filename);
             string fileUrl = string.Join("/", _url.TrimEnd('/'), encodedFilename,
                                       searchQuery.BuildId.ToString(), encodedFilename);
             if (DoesNotExistInSymbolStore(fileUrl, searchQuery.ForceLoad))
             {
-                log.WriteLineAndTrace(Strings.DoesNotExistInHttpStore(searchQuery.FileName, _url));
+                log.WriteLineAndTrace(Strings.DoesNotExistInHttpStore(searchQuery.Filename, _url));
                 return null;
             }
 
@@ -123,7 +123,7 @@ namespace SymbolStores
             catch (HttpRequestException e)
             {
                 log.WriteLineAndTrace(
-                    Strings.FailedToSearchHttpStore(_url, searchQuery.FileName, e.Message));
+                    Strings.FailedToSearchHttpStore(_url, searchQuery.Filename, e.Message));
                 AddAsNonExisting(fileUrl);
                 return null;
             }

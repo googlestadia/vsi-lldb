@@ -62,17 +62,17 @@ namespace SymbolStores
         public override Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                                            TextWriter log)
         {
-            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
 
             string filepath;
             try
             {
-                filepath = Path.Combine(_path, searchQuery.FileName);
+                filepath = Path.Combine(_path, searchQuery.Filename);
             }
             catch (ArgumentException e)
             {
                 log.WriteLineAndTrace(
-                    Strings.FailedToSearchFlatStore(_path, searchQuery.FileName, e.Message));
+                    Strings.FailedToSearchFlatStore(_path, searchQuery.Filename, e.Message));
                 return Task.FromResult<IFileReference>(null);
             }
 

@@ -52,7 +52,7 @@ namespace SymbolStores
         public override async Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
                                                                  TextWriter log)
         {
-            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.FileName));
+            Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
             Debug.Assert(searchQuery.BuildId != BuildId.Empty);
 
             for (int i = 0; i < _stores.Count; ++i)
@@ -62,7 +62,7 @@ namespace SymbolStores
                 if (fileReference != null)
                 {
                     IFileReference cascadeFileRef =
-                        await CascadeAsync(fileReference, searchQuery.FileName,
+                        await CascadeAsync(fileReference, searchQuery.Filename,
                                            searchQuery.BuildId, i - 1, log);
                     return cascadeFileRef ?? fileReference;
                 }

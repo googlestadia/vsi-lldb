@@ -79,7 +79,7 @@ namespace SymbolStores.Tests
                 new StadiaSymbolStore(_fakeFileSystem, _httpClient, _crashReportClient);
 
             await store.FindFileAsync(_searchQuery, _nullLog);
-            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.FileName,
+            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
                                                                 _searchQuery.BuildId,
                                                                 _searchQuery.ModuleFormat);
             IFileReference fileReference = await store.FindFileAsync(queryWithForceReloadOff, _log);
@@ -120,7 +120,7 @@ namespace SymbolStores.Tests
                 new StadiaSymbolStore(_fakeFileSystem, _httpClient, _crashReportClient);
 
             await store.FindFileAsync(_searchQuery, _nullLog);
-            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.FileName,
+            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
                                                                 _searchQuery.BuildId,
                                                                 _searchQuery.ModuleFormat);
             IFileReference fileReference = await store.FindFileAsync(queryWithForceReloadOff, _log);
@@ -158,7 +158,7 @@ namespace SymbolStores.Tests
                 new StadiaSymbolStore(_fakeFileSystem, _httpClient, _crashReportClient);
 
             await store.FindFileAsync(_searchQuery, _nullLog);
-            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.FileName,
+            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
                                                                 _searchQuery.BuildId,
                                                                 _searchQuery.ModuleFormat);
             IFileReference fileReference = await store.FindFileAsync(queryWithForceReloadOff, _log);
@@ -197,7 +197,7 @@ namespace SymbolStores.Tests
                 new StadiaSymbolStore(_fakeFileSystem, _httpClient, _crashReportClient);
 
             await store.FindFileAsync(_searchQuery, _nullLog);
-            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.FileName,
+            var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
                                                                 _searchQuery.BuildId,
                                                                 _searchQuery.ModuleFormat);
            
