@@ -125,9 +125,16 @@ namespace YetiVSI.GameLaunch
             }
 
             mountConfig = _mountChecker.GetConfiguration(gamelet, _actionRecorder);
-            if (!ValidateMountConfiguration(deployOnLaunchSetting, gamelet, mountConfig))
+            if (!ValidateMountConfiguration(deployOnLaunchSetting, mountConfig, out bool refresh))
             {
                 return false;
+            }
+
+            if (refresh)
+            {
+                // Refresh the mount configuration in case the user entered 'ggp instance unmount'
+                // while the dialog was up (which is what one would usually do).
+                mountConfig = _mountChecker.GetConfiguration(gamelet, _actionRecorder);
             }
 
             if (!ClearLogs(gamelet))
@@ -346,14 +353,19 @@ namespace YetiVSI.GameLaunch
         /// with the mount configuration of the gamelet.
         /// </summary>
         /// <param name="deployOnLaunchSetting">Project's "Deploy On Launch" value.</param>
-        /// <param name="gamelet">Gamelet to connect to.</param>
+        /// <param name="refresh">
+        /// Returns true if the mount configuration should be refreshed by the caller as it might be
+        /// stale. This happens when a dialog is shown, so that the user might change the mount
+        /// configuration.
+        /// </param>
         /// <returns>True if no issues found or the user decided to proceed.</returns>
         bool ValidateMountConfiguration(DeployOnLaunchSetting deployOnLaunchSetting,
-                                        Gamelet gamelet, MountConfiguration configuration)
+                                        MountConfiguration configuration, out bool refresh)
         {
             // If VS copies binaries to /mnt/developer, but the /srv/game/assets folder is detached
             // from /mnt/developer, then binaries won't be used during the run/debug process.
             // Notify the user and let them decide whether this is expected behaviour or not.
+            refresh = true;
             if (_mountChecker.IsGameAssetsDetachedFromDeveloperFolder(configuration) &&
                 deployOnLaunchSetting != DeployOnLaunchSetting.FALSE)
             {
@@ -372,10 +384,11 @@ namespace YetiVSI.GameLaunch
             {
                 // 'Yes' - continue; 'No' - interrupt (gamelet validation fails).
                 return _dialogUtil.ShowYesNo(
-                    ErrorStrings.NoAssetStreamingWarning(
-                        YetiConstants.GameAssetsMountingPoint), ErrorStrings.MountConfiguration);
+                    ErrorStrings.NoAssetStreamingWarning(YetiConstants.GameAssetsMountingPoint),
+                    ErrorStrings.MountConfiguration);
             }
 
+            refresh = false;
             return true;
         }
 

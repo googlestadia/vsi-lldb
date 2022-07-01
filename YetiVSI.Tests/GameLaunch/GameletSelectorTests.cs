@@ -39,6 +39,14 @@ namespace YetiVSI.Test.GameLaunch
         const string _devAccount = "dev_account";
         const string _launchName = "test/launch/name";
 
+        // /proc/mounts result after 'ggp instance unmount'.
+        readonly List<string> _unmounted = new List<string>
+        {
+            "overlay /srv/game/assets overlay ro,relatime,lowerdir=/mnt/developer:/mnt/localssd/var/empty 0 0",
+            "/dev/nvme0n1p6 /mnt/developer ext4 rw,relatime 0 0",
+            "tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime,size=1048576k,mode=700,uid=1000,gid=1000,inode64 0 0"
+        };
+
         // /proc/mounts result after 'ggp instance mount --package'.
         readonly List<string> _mountedPackage = new List<string>
         {
@@ -229,47 +237,63 @@ namespace YetiVSI.Test.GameLaunch
                                  DeveloperEventStatus.Types.Code.InternalError);
         }
 
-        [TestCase(true, TestName = "TestInvalidMountSetupDeployingButDetachedYesStop")]
-        [TestCase(false, TestName = "TestInvalidMountSetupDeployingButDetachedNoStop")]
-        public void TestInvalidMountSetupDeployingButDetached(bool confirmStop)
+        [TestCase(true, TestName = "TestInvalidMountSetupDeployingButDetachedYesContinue")]
+        [TestCase(false, TestName = "TestInvalidMountSetupDeployingButDetachedNoContinue")]
+        public void TestInvalidMountSetupDeployingButDetached(bool confirmContinue)
         {
             SetupGetGameletApi(_gamelet1, GameletState.Reserved);
-            SetupProcMountsContent(_gamelet1, _mountedPackage);
-            SetupNoInstanceStorageOverlayDialog(confirmStop);
+            SetupProcMountsContent(_gamelet1, _mountedPackage, _unmounted);
+            SetupNoInstanceStorageOverlayDialog(confirmContinue);
 
             var result = _gameletSelector.TrySelectAndPrepareGamelet(
                 _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _,
-                out MountConfiguration _);
+                out MountConfiguration config);
 
-            Assert.That(result, Is.EqualTo(confirmStop));
+            Assert.That(result, Is.EqualTo(confirmContinue));
+
+            // Check whether the mount config was refreshed.
+            MountFlags flags = confirmContinue
+                ? MountFlags.InstanceStorageOverlay
+                : MountFlags.PackageMounted;
+            Assert.That(config.Flags, Is.EqualTo(flags));
         }
 
-        [TestCase(true, TestName = "TestInvalidMountSetupNotStreamingButDetachedYesStop")]
-        [TestCase(false, TestName = "TestInvalidMountSetupNotStreamingButDetachedNoStop")]
-        public void TestInvalidMountSetupNotStreamingButDetached(bool confirmStop)
+        [TestCase(true, TestName = "TestInvalidMountSetupNotStreamingButDetachedYesContinue")]
+        [TestCase(false, TestName = "TestInvalidMountSetupNotStreamingButDetachedNoContinue")]
+        public void TestInvalidMountSetupNotStreamingButDetached(bool confirmContinue)
         {
             SetupGetGameletApi(_gamelet1, GameletState.Reserved);
-            SetupProcMountsContent(_gamelet1, _mountedPackage);
-            SetupNoAssetStreamingDialog(confirmStop);
+            SetupProcMountsContent(_gamelet1, _mountedPackage, _unmounted);
+            SetupNoAssetStreamingDialog(confirmContinue);
 
             var result = _gameletSelector.TrySelectAndPrepareGamelet(
                 DeployOnLaunchSetting.FALSE, new List<Gamelet> { _gamelet1 }, null, _devAccount,
-                out Gamelet _, out MountConfiguration _);
+                out Gamelet _, out MountConfiguration config);
 
-            Assert.That(result, Is.EqualTo(confirmStop));
+            Assert.That(result, Is.EqualTo(confirmContinue));
+
+            // Check whether the mount config was refreshed.
+            MountFlags flags = confirmContinue
+                ? MountFlags.InstanceStorageOverlay
+                : MountFlags.PackageMounted;
+            Assert.That(config.Flags, Is.EqualTo(flags));
         }
 
         [Test]
         public void TestValidMountSetup()
         {
             SetupGetGameletApi(_gamelet1, GameletState.Reserved);
-            SetupProcMountsContent(_gamelet1, _mountedPackageWithOverlay);
+            SetupProcMountsContent(_gamelet1, _mountedPackageWithOverlay, _unmounted);
 
             var result = _gameletSelector.TrySelectAndPrepareGamelet(
                 _deploy, new List<Gamelet> { _gamelet1 }, null, _devAccount, out Gamelet _,
-                out MountConfiguration _);
+                out MountConfiguration config);
 
             Assert.That(result, Is.True);
+
+            // Check whether the mount config was NOT refreshed.
+            MountFlags flags = MountFlags.InstanceStorageOverlay | MountFlags.PackageMounted;
+            Assert.That(config.Flags, Is.EqualTo(flags));
         }
 
         [Test]
@@ -513,12 +537,13 @@ namespace YetiVSI.Test.GameLaunch
                 .Returns(gameletCopies.First(), gameletCopies.Skip(1).ToArray());
         }
 
-        void SetupProcMountsContent(Gamelet gamelet, List<string> procMountsContent)
+        void SetupProcMountsContent(Gamelet gamelet, List<string> procMountsContent1,
+                                    List<string> procMountsContent2)
         {
             _remoteCommand
                 .RunWithSuccessCapturingOutputAsync(new SshTarget(gamelet),
                                                     GameletMountChecker.ReadMountsCmd)
-                .Returns(Task.FromResult(procMountsContent));
+                .Returns(Task.FromResult(procMountsContent1), Task.FromResult(procMountsContent2));
         }
 
         void AssertMetricRecorded(DeveloperEventType.Types.Type type,
