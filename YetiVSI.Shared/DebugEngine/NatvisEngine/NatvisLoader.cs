@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ using System.Xml;
 using System.Xml.Serialization;
 using Microsoft.VisualStudio.Threading;
 using YetiCommon.ExceptionRecorder;
-using YetiCommon.Util;
 using YetiVSI.DebugEngine.Interfaces;
 using YetiVSI.Util;
 
@@ -115,7 +114,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                            "Loading Natvis files found in the project...");
             var sw = new Stopwatch();
             sw.Start();
-            foreach (string path in _solutionNatvisFiles.GetFilePaths()) {
+            foreach (string path in _solutionNatvisFiles.GetFilePaths())
+            {
                 LoadFile(path, typeVisualizers);
             }
             sw.Stop();
@@ -171,9 +171,7 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             {
                 if (!_fileSystem.File.Exists(filePath))
                 {
-                    TraceWriteLine(NatvisLoggingLevel.ERROR,
-                                   "Unable to load Natvis file because it doesn't exist." +
-                                   $" '{filePath}'");
+                    TraceWriteLine(NatvisLoggingLevel.ERROR, $"Natvis file not found: {filePath}");
                     return;
                 }
 
@@ -201,16 +199,14 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 // Handles invalid XML errors.
                 // Don't allow natvis failures to stop debugging!
                 TraceWriteLine(NatvisLoggingLevel.ERROR,
-                               $"Failed to load Natvis file '{filePath}'." +
-                               $" Reason: {ex.Message}");
+                               $"Failed to load Natvis file '{filePath}'. Reason: {ex}");
             }
             catch (FileNotFoundException ex)
             {
                 // (internal): Also handle obscure FileNotFoundException.
                 // Don't allow natvis failures to stop debugging!
                 TraceWriteLine(NatvisLoggingLevel.ERROR,
-                               $"Failed to load Natvis file '{filePath}'." +
-                               $" Reason: {ex.Message}");
+                               $"Failed to load Natvis file '{filePath}'. Reason: {ex}");
 
                 _exceptionRecorder.Record(MethodBase.GetCurrentMethod(), ex);
             }
@@ -352,16 +348,15 @@ namespace YetiVSI.DebugEngine.NatvisEngine
                 var f = new NatvisVisualizerScanner.FileInfo(autoVis, filename);
                 foreach (object o in autoVis.Items)
                 {
-                    if (o is VisualizerType)
+                    if (o is VisualizerType v)
                     {
-                        var v = (VisualizerType) o;
-                        TypeName t = TypeName.Parse(v.Name);
+                        var t = TypeName.Parse(v.Name);
                         if (t != null)
                         {
                             f.Visualizers.Add(new NatvisVisualizerScanner.TypeInfo(t, v));
                         }
 
-                        // add an entry for each alternative name too
+                        // Add an entry for each alternative name too.
                         if (v.AlternativeType != null)
                         {
                             foreach (AlternativeTypeType a in v.AlternativeType)

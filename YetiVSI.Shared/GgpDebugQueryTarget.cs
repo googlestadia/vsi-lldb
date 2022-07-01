@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc.Cloud;
-using GgpGrpc.Models;
-using Microsoft.VisualStudio.ProjectSystem.Debug;
-using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
-using Microsoft.VisualStudio.Threading;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,7 +19,13 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
+using GgpGrpc.Cloud;
+using GgpGrpc.Models;
 using Metrics.Shared;
+using Microsoft.VisualStudio.ProjectSystem.Debug;
+using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
+using Microsoft.VisualStudio.Threading;
+using Newtonsoft.Json;
 using YetiCommon;
 using YetiCommon.SSH;
 using YetiVSI.DebugEngine;
@@ -422,7 +422,7 @@ namespace YetiVSI
                     await project.GetTestAccountAsync(), await project.GetEndpointAsync(),
                     await project.GetExternalIdAsync());
                 Task<Player> loadExternalAccountTask = LoadExternalAccountAsync(
-                    runner, loadApplicationTask, await project.GetExternalIdAsync(),
+                    loadApplicationTask, await project.GetExternalIdAsync(),
                     await project.GetEndpointAsync());
 
                 return new SetupQueriesResult
@@ -532,8 +532,7 @@ namespace YetiVSI
         /// <exception cref="ConfigurationException">Thrown if the given external account
         /// doesn't exist.
         /// </exception>
-        async Task<Player> LoadExternalAccountAsync(ICloudRunner runner,
-                                                    Task<Application> applicationTask,
+        async Task<Player> LoadExternalAccountAsync(Task<Application> applicationTask,
                                                     string externalAccount, StadiaEndpoint endpoint)
         {
             if (string.IsNullOrEmpty(externalAccount))

@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ using TestsCommon.TestSupport;
 using YetiVSI.DebugEngine.NatvisEngine;
 using YetiVSI.Test.MediumTestsSupport;
 using YetiVSI.Util;
-using Does = YetiVSI.Test.TestSupport.NUnitExtensions.Does;
 
 namespace YetiVSI.Test.DebugEngine.NatvisEngine
 {
@@ -255,8 +254,7 @@ namespace YetiVSI.Test.DebugEngine.NatvisEngine
         {
             _natvisLogger.SetLogLevel(NatvisLoggingLevel.OFF);
 
-            const string filePath = @"C:\dir\file.natvis";
-            _mockFileSystem.FileExists(filePath).Returns(false);
+            const string filePath = @"C:\doesnt\exist.natvis";
 
             // Exercise
             _natvisLoader.LoadFile(filePath, new List<NatvisVisualizerScanner.FileInfo>());
