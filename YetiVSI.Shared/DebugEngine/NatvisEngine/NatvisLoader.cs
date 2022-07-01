@@ -330,12 +330,6 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage(
-            "Microsoft.Security.Xml", "CA3053: UseSecureXmlResolver.",
-            Justification =
-                "Usage is secure -- XmlResolver property is set to 'null' in desktop " +
-                "CLR, and is always null in CoreCLR. But CodeAnalysis cannot understand the " +
-                "invocation since it happens through reflection.")]
         bool LoadFromStream(Stream stream, string filename,
                             ICollection<NatvisVisualizerScanner.FileInfo> typeVisualizers)
         {
@@ -344,16 +338,8 @@ namespace YetiVSI.DebugEngine.NatvisEngine
             {
                 IgnoreComments = true,
                 IgnoreProcessingInstructions = true,
-                IgnoreWhitespace = true
+                IgnoreWhitespace = true,
             };
-
-            // set XmlResolver via reflection, if it exists. This is required for desktop CLR, as
-            // otherwise the XML reader may attempt to hit untrusted external resources.
-            PropertyInfo xmlResolverProperty = settings.GetType().GetProperty("XmlResolver",
-                                                                              BindingFlags.Public |
-                                                                              BindingFlags
-                                                                                  .Instance);
-            xmlResolverProperty?.SetValue(settings, null);
 
             using (var reader = XmlReader.Create(stream, settings))
             {
