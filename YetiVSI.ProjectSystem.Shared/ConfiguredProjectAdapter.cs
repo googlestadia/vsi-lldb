@@ -24,13 +24,13 @@ namespace YetiVSI.ProjectSystem
 {
     public class ConfiguredProjectAdapter : IAsyncProject
     {
-        readonly ConfiguredProject configuredProject;
+        readonly UnconfiguredProject unconfiguredProject;
         readonly IProjectProperties projectProperties;
         readonly IProjectProperties userProperties;
 
         public ConfiguredProjectAdapter(ConfiguredProject configuredProject)
         {
-            this.configuredProject = configuredProject;
+            unconfiguredProject = configuredProject.UnconfiguredProject;
             userProperties =
                 configuredProject.Services.UserPropertiesProvider.GetCommonProperties();
             projectProperties =
@@ -39,7 +39,7 @@ namespace YetiVSI.ProjectSystem
 
         public Task<string> GetAbsoluteRootPathAsync()
         {
-            return Task.FromResult(configuredProject.UnconfiguredProject.MakeRooted(".").TrimEnd(
+            return Task.FromResult(unconfiguredProject.MakeRooted(".").TrimEnd(
                 Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         }
 

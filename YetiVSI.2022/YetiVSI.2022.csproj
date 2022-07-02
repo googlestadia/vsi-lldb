@@ -302,6 +302,10 @@
       <Project>{1731F5D3-FDF7-4D5B-99FE-910E0924173A}</Project>
       <Name>YetiVSI.ProjectSystem.Abstractions</Name>
     </ProjectReference>
+    <ProjectReference Include="..\YetiVSI.ProjectSystem.v17\YetiVSI.ProjectSystem.v17.csproj">
+      <Project>{590E755F-957E-4D6B-B427-9E37E8A65F01}</Project>
+      <Name>YetiVSI.ProjectSystem.v17</Name>
+    </ProjectReference>
   </ItemGroup>
   <!-- Shared references -->
   <ItemGroup>
@@ -328,7 +332,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.ProjectSystem">
-      <Version>15.8.243</Version>
+      <Version>17.0.1313-pre</Version>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.SDK">
@@ -457,19 +461,5 @@
     </Content>
   </ItemGroup>
   <Import Project="..\YetiVSI.Shared\YetiVSI.Shared.projitems" Label="Shared" />
-  <Target Name="BuildProjectSystemAdapterAssemblies" AfterTargets="MainResourcesGeneration">
-    <ItemGroup>
-      <ProjectToBuild Include="..\YetiVSI.ProjectSystem.v15\YetiVSI.ProjectSystem.v15.csproj" />
-      <ProjectToBuild Include="..\YetiVSI.ProjectSystem.v16\YetiVSI.ProjectSystem.v16.csproj" />
-    </ItemGroup>
-    <MSBuild Projects="@(ProjectToBuild)" Properties="Configuration=$(SharedConfiguration)">
-      <Output TaskParameter="TargetOutputs" ItemName="ProjectSystemAdapterAssemblies" />
-    </MSBuild>
-    <ItemGroup>
-      <EmbeddedResource Include="@(ProjectSystemAdapterAssemblies)">
-        <LogicalName>Embedded/%(Filename)%(Extension)</LogicalName>
-      </EmbeddedResource>
-    </ItemGroup>
-  </Target>
   <Import Project="..\YetiVSI.Shared\AdditionalLibSuppression.targets" />
 </Project>

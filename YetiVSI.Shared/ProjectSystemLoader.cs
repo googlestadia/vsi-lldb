@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+﻿// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft.VisualStudio.ProjectSystem;
-using Microsoft.VisualStudio.Threading;
+
+#if VS2019
+
 using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Microsoft.VisualStudio.ProjectSystem;
 using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI
@@ -41,20 +43,26 @@ namespace YetiVSI
             {
                 // Ignore missing resources.
                 if (args.Name.Contains(".resources"))
+                {
                     return null;
+                }
 
                 // Check for assemblies already loaded.
                 Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(
                     a => a.FullName == args.Name);
                 if (assembly != null)
+                {
                     return assembly;
+                }
 
                 // All dependencies should actually be already loaded, but just in case try loading
                 // from the extension directory.
                 var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 var path = Path.Combine(dir, args.Name);
                 if (File.Exists(path))
+                {
                     return Assembly.LoadFile(path);
+                }
 
                 // Otherwise just ignore it, maybe it's a dependency we don't actually need.
                 return null;
@@ -63,11 +71,19 @@ namespace YetiVSI
 
         private static readonly Version version_15 = new Version(15, 0);
         private static readonly Version version_16 = new Version(16, 0);
+        private static readonly Version version_17 = new Version(17, 0);
 
         private static Assembly LoadAssemblyFor(Version version)
         {
             string assemblyName;
-            if (version >= version_16)
+
+            if (version >= version_17)
+            {
+                throw new InvalidOperationException(
+                    "Visual Studio 2022 and higher should reference YetiVSI.ProjectSystem " +
+                    "directly and not rely on resolving/loading it in runtime.");
+            }
+            else if (version >= version_16)
             {
                 assemblyName = "Embedded/YetiVSI.ProjectSystem.v16.dll";
             }
@@ -121,3 +137,24 @@ namespace YetiVSI
         }
     }
 }
+
+#elif VS2022
+
+using Microsoft.VisualStudio.ProjectSystem;
+using YetiVSI.ProjectSystem;
+using YetiVSI.ProjectSystem.Abstractions;
+
+namespace YetiVSI
+{
+    public static class ProjectSystemLoader
+    {
+        public static IAsyncProject CreateAsyncProject(ConfiguredProject configuredProject)
+        {
+            return new ConfiguredProjectAdapter(configuredProject);
+        }
+    }
+}
+
+#else
+#error Unsupported Visual Studio version
+#endif

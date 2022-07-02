@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO;
+using System.Threading.Tasks;
 using GgpGrpc.Models;
 using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.ProjectSystem.Properties;
 using NSubstitute;
 using NUnit.Framework;
-using System.IO;
-using System.Threading.Tasks;
 using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.ProjectSystem.Tests
@@ -184,7 +184,7 @@ namespace YetiVSI.ProjectSystem.Tests
             Assert.AreEqual(projectValues.GgpCustomDeployOnLaunch,
                 await project.GetCustomDeployOnLaunchAsync());
         }
-        
+
         [TestCase("delta", DeployOnLaunchSetting.DELTA)]
         [TestCase("false", DeployOnLaunchSetting.FALSE)]
         [TestCase("always", DeployOnLaunchSetting.ALWAYS)]
@@ -354,7 +354,8 @@ namespace YetiVSI.ProjectSystem.Tests
         public async Task GetGgpLaunchDiveAsync()
         {
             var projectPath = @"C:\GGP_project_path\";
-            var projectValues = new ProjectValues {
+            var projectValues = new ProjectValues
+            {
                 GgpLaunchDive = "true",
             };
 
@@ -367,7 +368,8 @@ namespace YetiVSI.ProjectSystem.Tests
         public async Task GetGgpLaunchOrbitAsync()
         {
             var projectPath = @"C:\GGP_project_path\";
-            var projectValues = new ProjectValues {
+            var projectValues = new ProjectValues
+            {
                 GgpLaunchOrbit = "true",
             };
 
@@ -466,7 +468,8 @@ namespace YetiVSI.ProjectSystem.Tests
         public async Task CreateConfiguredProjectInvalidLaunchDiveAsync()
         {
             var projectPath = @"C:\Yeti_project_path\";
-            var projectValues = new ProjectValues {
+            var projectValues = new ProjectValues
+            {
                 GgpLaunchDive = "invalid_bool",
             };
             var configuredProject = CreateConfiguredProject(projectValues, projectPath);
@@ -479,7 +482,8 @@ namespace YetiVSI.ProjectSystem.Tests
         public async Task CreateConfiguredProjectInvalidLaunchOrbitAsync()
         {
             var projectPath = @"C:\Yeti_project_path\";
-            var projectValues = new ProjectValues {
+            var projectValues = new ProjectValues
+            {
                 GgpLaunchOrbit = "invalid_bool",
             };
             var configuredProject = CreateConfiguredProject(projectValues, projectPath);
