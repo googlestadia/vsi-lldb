@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+﻿// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -135,7 +135,7 @@ namespace YetiVSI.Test.GameLaunch
             IVSFake vsFake = CreateVsFakeAndLoadProject(gameletClientFactory);
 
             _taskContext.RunOnMainThread(() => vsFake.LaunchSuspended());
-            
+
             _compRoot.GetProfilerSshTunnelManager(null).Received()
                 .MonitorGameLifetime(Arg.Any<SshTarget>(), Arg.Any<IVsiGameLaunch>());
         }
@@ -170,7 +170,7 @@ namespace YetiVSI.Test.GameLaunch
             IVSFake vsFake = CreateVsFakeAndLoadProject(gameletClientFactory);
 
             (vsFake.ProjectAdapter as ProjectAdapter)?.SetSurfaceEnforcement(
-                SurfaceEnforcementSetting.Block);
+                GgpSurfaceEnforcementMode.Block);
 
             _taskContext.RunOnMainThread(() => vsFake.LaunchSuspended());
             Assert.That(launches.Count, Is.EqualTo(1));

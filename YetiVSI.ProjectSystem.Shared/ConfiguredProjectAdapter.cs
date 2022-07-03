@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc.Models;
-using Microsoft.VisualStudio.ProjectSystem;
-using Microsoft.VisualStudio.ProjectSystem.Properties;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.ProjectSystem;
+using Microsoft.VisualStudio.ProjectSystem.Properties;
 using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiVSI.ProjectSystem
@@ -74,15 +73,15 @@ namespace YetiVSI.ProjectSystem
             return true;
         }
 
-        public async Task<SurfaceEnforcementSetting> GetSurfaceEnforcementAsync()
+        public async Task<GgpSurfaceEnforcementMode> GetSurfaceEnforcementAsync()
         {
             string surfaceEnforcementString = await userProperties.GetEvaluatedPropertyValueAsync(
                 ProjectPropertyName.GgpSurfaceEnforcementMode);
 
             if (!Enum.TryParse(surfaceEnforcementString, true,
-                               out SurfaceEnforcementSetting surfaceEnforcement))
+                               out GgpSurfaceEnforcementMode surfaceEnforcement))
             {
-                return SurfaceEnforcementSetting.Off;
+                return GgpSurfaceEnforcementMode.Off;
             }
             return surfaceEnforcement;
         }

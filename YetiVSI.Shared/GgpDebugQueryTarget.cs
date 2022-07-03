@@ -163,7 +163,8 @@ namespace YetiVSI
                     // Orbit flag is optional and just turns on enhanced Orbit functionality.
                     Dive = launchWithDive || await project.GetLaunchDiveAsync(),
                     Orbit = await project.GetLaunchOrbitAsync(),
-                    SurfaceEnforcementMode = await project.GetSurfaceEnforcementAsync(),
+                    SurfaceEnforcementMode = ToGgpSurfaceEnforcementSetting(
+                        await project.GetSurfaceEnforcementAsync()),
                     VulkanDriverVariant = await project.GetVulkanDriverVariantAsync(),
                     QueryParams = await project.GetQueryParamsAsync(),
                     Endpoint = await project.GetEndpointAsync()
@@ -617,6 +618,22 @@ namespace YetiVSI
             public List<Gamelet> Gamelets { get; set; }
             public TestAccount TestAccount { get; set; }
             public Player ExternalAccount { get; set; }
+        }
+
+        public static SurfaceEnforcementSetting ToGgpSurfaceEnforcementSetting(
+            GgpSurfaceEnforcementMode mode)
+        {
+            switch (mode)
+            {
+                case GgpSurfaceEnforcementMode.Off:
+                    return SurfaceEnforcementSetting.Off;
+                case GgpSurfaceEnforcementMode.Warn:
+                    return SurfaceEnforcementSetting.Warn;
+                case GgpSurfaceEnforcementMode.Block:
+                    return SurfaceEnforcementSetting.Block;
+                default:
+                    throw new ArgumentException($"Unknown enum variant: {mode}");
+            }
         }
     }
 }

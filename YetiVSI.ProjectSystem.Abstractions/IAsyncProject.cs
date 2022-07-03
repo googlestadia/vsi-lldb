@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 // This file is defined in the YetiCommon assembly as a workaround while it needs to be referenced
 // by both YetiVSI and VSFake. It should be moved back to YetiVSI when possible (see (internal)).
-using GgpGrpc.Models;
+
 using System.Threading.Tasks;
 
 namespace YetiVSI.ProjectSystem.Abstractions
@@ -55,6 +55,25 @@ namespace YetiVSI.ProjectSystem.Abstractions
         /// The launch can be picked up on any endpoint.
         /// </summary>
         AnyEndpoint
+    }
+
+    public enum GgpSurfaceEnforcementMode
+    {
+        /// <summary>
+        /// Explicitly turn off the surface enforcement on this run of game.
+        /// Use for development.
+        /// </summary>
+        Off,
+        /// <summary>
+        /// Explicitly allow, but warn against surface violation to partners.
+        /// Use for development.
+        /// </summary>
+        Warn,
+        /// <summary>
+        /// Explicitly deny, and warn against surface violation to partners.
+        /// Use as a dry run for certification.
+        /// </summary>
+        Block
     }
 
     /// <summary>
@@ -120,7 +139,7 @@ namespace YetiVSI.ProjectSystem.Abstractions
         /// <summary>
         /// Get instance surface enforcement mode (off/warn/block).
         /// </summary>
-        Task<SurfaceEnforcementSetting> GetSurfaceEnforcementAsync();
+        Task<GgpSurfaceEnforcementMode> GetSurfaceEnforcementAsync();
 
         /// <summary>
         /// Get custom command to deploy on launch.

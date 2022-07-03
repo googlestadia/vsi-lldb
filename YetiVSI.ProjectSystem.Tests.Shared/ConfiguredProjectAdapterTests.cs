@@ -14,7 +14,6 @@
 
 using System.IO;
 using System.Threading.Tasks;
-using GgpGrpc.Models;
 using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.ProjectSystem.Properties;
 using NSubstitute;
@@ -202,11 +201,11 @@ namespace YetiVSI.ProjectSystem.Tests
             Assert.AreEqual(enumValue, await project.GetDeployOnLaunchAsync());
         }
 
-        [TestCase(SurfaceEnforcementSetting.Off)]
-        [TestCase(SurfaceEnforcementSetting.Warn)]
-        [TestCase(SurfaceEnforcementSetting.Block)]
+        [TestCase(GgpSurfaceEnforcementMode.Off)]
+        [TestCase(GgpSurfaceEnforcementMode.Warn)]
+        [TestCase(GgpSurfaceEnforcementMode.Block)]
         public async Task GetGgpSurfaceEnforcementModeAsync(
-            SurfaceEnforcementSetting surfaceEnforcement)
+            GgpSurfaceEnforcementMode surfaceEnforcement)
         {
             var projectPath = string.Empty;
             var projectValues = new ProjectValues
@@ -432,7 +431,8 @@ namespace YetiVSI.ProjectSystem.Tests
             var configuredProject = CreateConfiguredProject(projectValues, projectPath);
 
             var project = new ConfiguredProjectAdapter(configuredProject);
-            Assert.AreEqual(SurfaceEnforcementSetting.Off,
+            Assert.AreEqual(
+                GgpSurfaceEnforcementMode.Off,
                 await project.GetSurfaceEnforcementAsync());
         }
 

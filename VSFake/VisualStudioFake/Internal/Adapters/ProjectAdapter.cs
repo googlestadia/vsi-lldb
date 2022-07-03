@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc.Models;
-using Google.VisualStudioFake.API;
-using Microsoft.Build.Evaluation;
-using Microsoft.Build.Exceptions;
-using Microsoft.Build.Execution;
-using Microsoft.Build.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Google.VisualStudioFake.API;
+using Microsoft.Build.Evaluation;
+using Microsoft.Build.Exceptions;
+using Microsoft.Build.Execution;
+using Microsoft.Build.Framework;
 using YetiCommon;
 using YetiVSI.ProjectSystem.Abstractions;
 
@@ -182,21 +181,21 @@ namespace Google.VisualStudioFake.Internal
             return false;
         }
 
-        public Task<SurfaceEnforcementSetting> GetSurfaceEnforcementAsync()
+        public Task<GgpSurfaceEnforcementMode> GetSurfaceEnforcementAsync()
         {
             string surfaceEnforcementString =
                 _project.GetPropertyValue(ProjectPropertyName.GgpSurfaceEnforcementMode);
 
             if (!Enum.TryParse(surfaceEnforcementString, true,
-                               out SurfaceEnforcementSetting surfaceEnforcement))
+                               out GgpSurfaceEnforcementMode surfaceEnforcement))
             {
-                surfaceEnforcement = SurfaceEnforcementSetting.Off;
+                surfaceEnforcement = GgpSurfaceEnforcementMode.Off;
             }
 
             return Task.FromResult(surfaceEnforcement);
         }
 
-        public void SetSurfaceEnforcement(SurfaceEnforcementSetting setting) =>
+        public void SetSurfaceEnforcement(GgpSurfaceEnforcementMode setting) =>
             SetStringProperty(ProjectPropertyName.GgpSurfaceEnforcementMode, setting.ToString());
 
         public Task<bool> GetLaunchRenderDocAsync() =>

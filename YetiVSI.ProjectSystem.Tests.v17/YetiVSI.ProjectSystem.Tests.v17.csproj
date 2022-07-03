@@ -8,23 +8,6 @@
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
-  <Choose>
-    <When Condition="$(IsInternalBuild)">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);INTERNAL_BUILD</DefineConstants>
-      </PropertyGroup>
-      <ItemGroup>
-        <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
-        <Reference Include="GgpGrpc, PublicKeyToken=b60cba24c9ed26a2">
-          <HintPath>$(GGP_SDK_PATH)\dev\bin\GgpGrpc.dll</HintPath>
-        </Reference>
-      </ItemGroup>
-    </Otherwise>
-  </Choose>
   <ItemGroup>
     <ProjectReference Include="..\YetiVSI.ProjectSystem.v17\YetiVSI.ProjectSystem.v17.csproj" />
   </ItemGroup>

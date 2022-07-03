@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GgpGrpc;
-using GgpGrpc.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GgpGrpc.Models;
 using YetiVSI.ProjectSystem.Abstractions;
 
 namespace YetiCommon.Cloud
@@ -38,7 +37,6 @@ namespace YetiCommon.Cloud
     public class LaunchGameParamsConverter : ILaunchGameParamsConverter
     {
         const string _developerLaunchGameParent = "organizations/-/players/me";
-        const string _externalDecoder = "ExternalDecoder";
 
         readonly IQueryParametersParser _queryParametersParser;
 
