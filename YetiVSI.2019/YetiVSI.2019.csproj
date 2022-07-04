@@ -433,19 +433,5 @@
     </Content>
   </ItemGroup>
   <Import Project="..\YetiVSI.Shared\YetiVSI.Shared.projitems" Label="Shared" />
-  <Target Name="BuildProjectSystemAdapterAssemblies" AfterTargets="MainResourcesGeneration">
-    <ItemGroup>
-      <ProjectToBuild Include="..\YetiVSI.ProjectSystem.v15\YetiVSI.ProjectSystem.v15.csproj" />
-      <ProjectToBuild Include="..\YetiVSI.ProjectSystem.v16\YetiVSI.ProjectSystem.v16.csproj" />
-    </ItemGroup>
-    <MSBuild Projects="@(ProjectToBuild)" Properties="Configuration=$(SharedConfiguration)">
-      <Output TaskParameter="TargetOutputs" ItemName="ProjectSystemAdapterAssemblies" />
-    </MSBuild>
-    <ItemGroup>
-      <EmbeddedResource Include="@(ProjectSystemAdapterAssemblies)">
-        <LogicalName>Embedded/%(Filename)%(Extension)</LogicalName>
-      </EmbeddedResource>
-    </ItemGroup>
-  </Target>
   <Import Project="..\YetiVSI.Shared\AdditionalLibSuppression.targets" />
 </Project>

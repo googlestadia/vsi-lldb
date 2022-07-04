@@ -61,8 +61,8 @@ namespace YetiVSI
             var serviceManager = new ServiceManager();
             var dialogUtil = new DialogUtil();
             var compRoot = new GgpDebugQueryTargetCompRoot(serviceManager, dialogUtil);
-            project = ProjectSystemLoader.CreateAsyncProject(configuredProject);
             ggpDebugQueryTarget = compRoot.Create();
+            project = new ConfiguredProjectAdapter(configuredProject);
         }
 
         public override Task<bool> CanLaunchAsync(DebugLaunchOptions launchOptions)

@@ -285,10 +285,6 @@
       <Project>{1731F5D3-FDF7-4D5B-99FE-910E0924173A}</Project>
       <Name>YetiVSI.ProjectSystem.Abstractions</Name>
     </ProjectReference>
-    <ProjectReference Include="..\YetiVSI.ProjectSystem.v17\YetiVSI.ProjectSystem.v17.csproj">
-      <Project>{590E755F-957E-4D6B-B427-9E37E8A65F01}</Project>
-      <Name>YetiVSI.ProjectSystem.v17</Name>
-    </ProjectReference>
   </ItemGroup>
   <!-- Shared references -->
   <ItemGroup>

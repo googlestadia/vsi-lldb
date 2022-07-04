@@ -20,10 +20,10 @@ using NSubstitute;
 using NUnit.Framework;
 using YetiVSI.ProjectSystem.Abstractions;
 
-namespace YetiVSI.ProjectSystem.Tests
+namespace YetiVSI.Test
 {
     [TestFixture]
-    partial class ConfiguredProjectAdapterTests
+    class ConfiguredProjectAdapterTests
     {
         static ConfiguredProjectAdapterTests()
         {
@@ -31,6 +31,18 @@ namespace YetiVSI.ProjectSystem.Tests
             {
                 Microsoft.Build.Locator.MSBuildLocator.RegisterDefaults();
             }
+        }
+
+        ConfiguredProject CreateConfiguredProjectBase()
+        {
+            var services = Substitute.For<IConfiguredProjectServices>();
+            var unconfiguredProject = Substitute.For<UnconfiguredProject>();
+            var project = Substitute.For<ConfiguredProject>();
+
+            project.Services.Returns(services);
+            project.UnconfiguredProject.Returns(unconfiguredProject);
+
+            return project;
         }
 
         [Test]

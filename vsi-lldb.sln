@@ -70,35 +70,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{FBB34C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SymbolStores.Tests", "SymbolStores.Tests\SymbolStores.Tests.csproj", "{AB183C33-BC8F-4CB3-B957-DEC5CF7D9BCE}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "YetiVSI.ProjectSystem", "YetiVSI.ProjectSystem", "{DA178341-2EF6-41AC-BE08-989E092589CA}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetiVSI.ProjectSystem.Abstractions", "YetiVSI.ProjectSystem.Abstractions\YetiVSI.ProjectSystem.Abstractions.csproj", "{856895DD-76DA-4919-9C21-6458BA48DD66}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "YetiVSI.ProjectSystem.Shared", "YetiVSI.ProjectSystem.Shared\YetiVSI.ProjectSystem.Shared.shproj", "{BFA68605-328D-46D7-B912-DCFD6795A5DE}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "YetiVSI.ProjectSystem.Tests.Shared", "YetiVSI.ProjectSystem.Tests.Shared\YetiVSI.ProjectSystem.Tests.Shared.shproj", "{84CE4953-7653-49E8-8945-D36E6E357BAD}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetiVSI.ProjectSystem.Tests.v15", "YetiVSI.ProjectSystem.Tests.v15\YetiVSI.ProjectSystem.Tests.v15.csproj", "{6907E7A0-C126-4EB3-9191-8E926B439E95}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetiVSI.ProjectSystem.Tests.v16", "YetiVSI.ProjectSystem.Tests.v16\YetiVSI.ProjectSystem.Tests.v16.csproj", "{76991426-D2AD-4B58-A0FE-0559F1404A03}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetiVSI.ProjectSystem.v15", "YetiVSI.ProjectSystem.v15\YetiVSI.ProjectSystem.v15.csproj", "{CF48AE0F-A30C-4E12-81A6-ED10CA681B69}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetiVSI.ProjectSystem.v16", "YetiVSI.ProjectSystem.v16\YetiVSI.ProjectSystem.v16.csproj", "{85464BD6-D467-4290-BDBE-63DD5CC4B2B6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Metrics", "Metrics", "{BC286EC8-1FB5-47DE-836E-106DEE2D5C61}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Metrics.Shared.Tests", "Metrics.Shared.Tests\Metrics.Shared.Tests.csproj", "{94BB0937-A00A-4D3E-84D0-1BEF0CF24C8E}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		YetiVSI.ProjectSystem.Tests.Shared\YetiVSI.ProjectSystem.Tests.Shared.projitems*{6907e7a0-c126-4eb3-9191-8e926b439e95}*SharedItemsImports = 5
-		YetiVSI.ProjectSystem.Tests.Shared\YetiVSI.ProjectSystem.Tests.Shared.projitems*{76991426-d2ad-4b58-a0fe-0559f1404a03}*SharedItemsImports = 5
-		YetiVSI.ProjectSystem.Tests.Shared\YetiVSI.ProjectSystem.Tests.Shared.projitems*{84ce4953-7653-49e8-8945-d36e6e357bad}*SharedItemsImports = 13
-		YetiVSI.ProjectSystem.Shared\YetiVSI.ProjectSystem.Shared.projitems*{85464bd6-d467-4290-bdbe-63dd5cc4b2b6}*SharedItemsImports = 5
-		YetiVSI.ProjectSystem.Shared\YetiVSI.ProjectSystem.Shared.projitems*{bfa68605-328d-46d7-b912-dcfd6795a5de}*SharedItemsImports = 13
-		YetiVSI.ProjectSystem.Shared\YetiVSI.ProjectSystem.Shared.projitems*{cf48ae0f-a30c-4e12-81a6-ed10ca681b69}*SharedItemsImports = 5
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -208,22 +186,6 @@ Global
 		{856895DD-76DA-4919-9C21-6458BA48DD66}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{856895DD-76DA-4919-9C21-6458BA48DD66}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{856895DD-76DA-4919-9C21-6458BA48DD66}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6907E7A0-C126-4EB3-9191-8E926B439E95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6907E7A0-C126-4EB3-9191-8E926B439E95}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6907E7A0-C126-4EB3-9191-8E926B439E95}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6907E7A0-C126-4EB3-9191-8E926B439E95}.Release|Any CPU.Build.0 = Release|Any CPU
-		{76991426-D2AD-4B58-A0FE-0559F1404A03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{76991426-D2AD-4B58-A0FE-0559F1404A03}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{76991426-D2AD-4B58-A0FE-0559F1404A03}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{76991426-D2AD-4B58-A0FE-0559F1404A03}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CF48AE0F-A30C-4E12-81A6-ED10CA681B69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CF48AE0F-A30C-4E12-81A6-ED10CA681B69}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CF48AE0F-A30C-4E12-81A6-ED10CA681B69}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CF48AE0F-A30C-4E12-81A6-ED10CA681B69}.Release|Any CPU.Build.0 = Release|Any CPU
-		{85464BD6-D467-4290-BDBE-63DD5CC4B2B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{85464BD6-D467-4290-BDBE-63DD5CC4B2B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{85464BD6-D467-4290-BDBE-63DD5CC4B2B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{85464BD6-D467-4290-BDBE-63DD5CC4B2B6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{94BB0937-A00A-4D3E-84D0-1BEF0CF24C8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{94BB0937-A00A-4D3E-84D0-1BEF0CF24C8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{94BB0937-A00A-4D3E-84D0-1BEF0CF24C8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -258,17 +220,14 @@ Global
 		{5705C75B-5C0E-42E4-8414-FB9CF483DFF7} = {BC286EC8-1FB5-47DE-836E-106DEE2D5C61}
 		{03DCCE13-6B53-4E82-A984-295CFE71EAB4} = {FE6ADAAB-998A-4245-9AF4-B9F255B6456E}
 		{AB183C33-BC8F-4CB3-B957-DEC5CF7D9BCE} = {2CC655B7-DE39-4241-AF3A-B2FBB62A4974}
-		{DA178341-2EF6-41AC-BE08-989E092589CA} = {FE6ADAAB-998A-4245-9AF4-B9F255B6456E}
-		{856895DD-76DA-4919-9C21-6458BA48DD66} = {DA178341-2EF6-41AC-BE08-989E092589CA}
-		{BFA68605-328D-46D7-B912-DCFD6795A5DE} = {DA178341-2EF6-41AC-BE08-989E092589CA}
-		{84CE4953-7653-49E8-8945-D36E6E357BAD} = {DA178341-2EF6-41AC-BE08-989E092589CA}
-		{6907E7A0-C126-4EB3-9191-8E926B439E95} = {DA178341-2EF6-41AC-BE08-989E092589CA}
-		{76991426-D2AD-4B58-A0FE-0559F1404A03} = {DA178341-2EF6-41AC-BE08-989E092589CA}
-		{CF48AE0F-A30C-4E12-81A6-ED10CA681B69} = {DA178341-2EF6-41AC-BE08-989E092589CA}
-		{85464BD6-D467-4290-BDBE-63DD5CC4B2B6} = {DA178341-2EF6-41AC-BE08-989E092589CA}
+		{856895DD-76DA-4919-9C21-6458BA48DD66} = {FE6ADAAB-998A-4245-9AF4-B9F255B6456E}
 		{94BB0937-A00A-4D3E-84D0-1BEF0CF24C8E} = {BC286EC8-1FB5-47DE-836E-106DEE2D5C61}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D823DBBE-F9D0-44CC-B29C-59873E214DC7}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		YetiVSI.Shared\YetiVSI.Shared.projitems*{799d0160-8c0d-43f5-ab4c-249be64aaa4e}*SharedItemsImports = 4
+		YetiVSI.Shared\YetiVSI.Shared.projitems*{9bac7359-4a9f-41d4-918c-2a75066cc0d4}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

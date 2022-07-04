@@ -19,7 +19,7 @@ using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.ProjectSystem.Properties;
 using YetiVSI.ProjectSystem.Abstractions;
 
-namespace YetiVSI.ProjectSystem
+namespace YetiVSI
 {
     public class ConfiguredProjectAdapter : IAsyncProject
     {
@@ -29,11 +29,34 @@ namespace YetiVSI.ProjectSystem
 
         public ConfiguredProjectAdapter(ConfiguredProject configuredProject)
         {
+            // UnconfiguredProject is the same in VS2017 and VS2019.
             unconfiguredProject = configuredProject.UnconfiguredProject;
+
+#if VS2019
+            // Services is an interface in VS2017 and an abstract class in VS2019.
+            // Use reflection to bypass this difference, the rest of the fields are the same.
+            var servicesProperty = configuredProject.GetType().GetProperty("Services");
+            var services = servicesProperty.GetValue(configuredProject, null);
+
+            // Get to UserPropertiesProvider.GetCommonProperties().
+            var uppProperty = services.GetType().GetProperty("UserPropertiesProvider");
+            var upp = (IProjectPropertiesProvider)uppProperty.GetValue(services);
+            userProperties = upp.GetCommonProperties();
+
+            // Get to ProjectPropertiesProvider.GetCommonProperties().
+            var pppProperty = services.GetType().GetProperty("ProjectPropertiesProvider");
+            var ppp = (IProjectPropertiesProvider)pppProperty.GetValue(services);
+            projectProperties = ppp.GetCommonProperties();
+
+#elif VS2022
             userProperties =
                 configuredProject.Services.UserPropertiesProvider.GetCommonProperties();
             projectProperties =
                 configuredProject.Services.ProjectPropertiesProvider.GetCommonProperties();
+
+#else
+#error Unsupported Visual Studio version
+#endif
         }
 
         public Task<string> GetAbsoluteRootPathAsync()

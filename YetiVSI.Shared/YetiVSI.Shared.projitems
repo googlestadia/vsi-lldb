@@ -20,6 +20,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Attributes\ProvideStadiaExceptionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CancelableTask.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CommandWindowWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfiguredProjectAdapter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CoreAttach\CoreAttachCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CoreAttach\CoreAttachWindow.xaml.cs">
       <DependentUpon>CoreAttachWindow.xaml</DependentUpon>
@@ -260,7 +261,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)ProjectInstanceSelectionWindow.xaml.cs">
       <DependentUpon>ProjectInstanceSelectionWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)ProjectSystemLoader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RemoteDeploy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RemoteFile.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ReportBug.cs" />
