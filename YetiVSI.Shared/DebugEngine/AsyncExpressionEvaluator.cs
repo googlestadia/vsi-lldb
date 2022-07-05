@@ -202,10 +202,8 @@ namespace YetiVSI.DebugEngine
                 {
                     Trace.WriteLine("Reloading Natvis - triggered by .natvisreload command.");
                     var writer = new StringWriter();
-                    bool ret = _debugEngineCommands.ReloadNatvis(
-                        writer, out string resultDescription);
                     Trace.WriteLine(
-                        ret
+                        _debugEngineCommands.ReloadNatvis(writer, out string resultDescription)
                             ? $".natvisreload result: {writer}"
                             : $"Unable to reload Natvis.  {resultDescription}");
                     return resultDescription;
