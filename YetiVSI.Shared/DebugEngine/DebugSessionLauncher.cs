@@ -437,14 +437,14 @@ namespace YetiVSI.DebugEngine
         }
 
         bool TryConnectRemote(SbPlatform lldbPlatform, SbPlatformConnectOptions lldbConnectOptions,
-                              IAction debugerWaitAction)
+                              IAction debugWaitAction)
         {
             if (lldbPlatform.ConnectRemote(lldbConnectOptions).Success())
             {
                 return true;
             }
 
-            VerifyGameIsReady(debugerWaitAction);
+            VerifyGameIsReady(debugWaitAction);
             return false;
         }
 
