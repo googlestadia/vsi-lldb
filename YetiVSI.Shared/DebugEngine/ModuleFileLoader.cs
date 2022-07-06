@@ -372,7 +372,7 @@ namespace YetiVSI.DebugEngine
                 TextWriter searchLog = new StringWriter();
 
                 task.ThrowIfCancellationRequested();
-                task.Progress.Report($"Loading binary for {name}" +
+                task.Progress.Report($"Loading binary for {name} " +
                                      $"({index}/{preFilteredModules.Count})");
                 (SbModule outputModule, bool ok) =
                     await _binaryLoader.LoadBinaryAsync(sbModule, searchLog, forceLoad);
