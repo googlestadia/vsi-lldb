@@ -25,8 +25,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
-[assembly: AssemblyVersion("1.81.0.0")]
-[assembly: AssemblyFileVersion("1.81.0.0")]
+[assembly: AssemblyVersion("1.82.0.0")]
+[assembly: AssemblyFileVersion("1.82.0.0")]
 
 // Grpc.Auth references Google.Apis.Auth (>= 1.46.0), however the lower versions of 
 // Google.Apis.Auth reference Newtonsoft.json v12. This causes a breakage because
