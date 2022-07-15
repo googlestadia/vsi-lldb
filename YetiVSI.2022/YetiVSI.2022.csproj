@@ -3,6 +3,8 @@
   <PropertyGroup>
     <MinimumVisualStudioVersion>$(VisualStudioVersion)</MinimumVisualStudioVersion>
     <UseCodebase>true</UseCodebase>
+    <!-- Only deploy to the experimental instance when building from the same version of Visual Studio. -->
+    <DeployExtension Condition="'$(VisualStudioVersion)' != '17.0' OR '$(BuildingInsideVisualStudio)' != 'true'">False</DeployExtension>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <Import Project="$(SolutionDir)Common.props" />
