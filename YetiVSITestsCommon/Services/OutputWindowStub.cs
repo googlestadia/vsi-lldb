@@ -30,7 +30,9 @@ namespace YetiVSITestsCommon.Services
         {
             if (!panes.ContainsKey(rguidPane))
             {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 int result = CreatePane(ref rguidPane, "", 0, 0);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
                 if (result != VSConstants.S_OK)
                 {
                     ppPane = null;
