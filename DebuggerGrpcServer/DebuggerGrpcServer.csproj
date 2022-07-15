@@ -18,6 +18,22 @@
     <ProjectReference Include="..\DebuggerGrpc\DebuggerGrpc.csproj" />
     <ProjectReference Include="..\LldbApi\LldbApi.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.DebugEngine.LLDBWorker\YetiVSI.DebugEngine.LLDBWorker.vcxproj" />
+    <!--
+      Native DLLs are not copied to the output directory automatically, that's
+      by design in MSBuild project system. The dependency chain is as follows:
+        DebuggerGrpcServer -> LLDBWorker -> LLDBEval
+      LLDBWorker is a C++/CLI library and thus copied to the output directory
+      with all its managed dependencies. LLDBEval is a native library, so it
+      needs to be copied manually.
+    -->
+    <Content Include="$(SolutionDir)\bin\$(Configuration)\GgpVsi.DebugEngine.LLDBEval.dll">
+      <Visible>false</Visible>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(SolutionDir)\bin\$(Configuration)\GgpVsi.DebugEngine.LLDBEval.pdb">
+      <Visible>false</Visible>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser">

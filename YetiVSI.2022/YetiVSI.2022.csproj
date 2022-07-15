@@ -221,13 +221,6 @@
       <IncludeInVSIX>true</IncludeInVSIX>
       <Link>GgpVsi.PortSupplier.pkgdef</Link>
     </Content>
-    <Content Include="$(OutputBaseDir)bin\$(Configuration)\GgpVsi.DebugEngine.LLDBEval.dll">
-      <!-- LLDBEval is an unmanaged DLL. Alternative solutions to include it caused issues, cf. (internal). -->
-      <Link>GgpVsi.DebugEngine.LLDBEval.dll</Link>
-      <Visible>false</Visible>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
     <Content Include="$(GGP_SDK_PATH)dev\bin\CloudGrpc.dll" Condition="!$(IsInternalBuild)">
       <Link>CloudGrpc.dll</Link>
       <Visible>false</Visible>
@@ -261,6 +254,7 @@
       <Project>{115f721a-d99e-457b-932c-869a646b083d}</Project>
       <Name>DebuggerGrpcServer</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="$(ThirdPartyRootDir)LldbApi\LldbApi.csproj">
       <Project>{26aaf846-325f-4af8-8f06-da5fb523d9d8}</Project>
@@ -286,17 +280,6 @@
     <ProjectReference Include="..\YetiCommon\YetiCommon.csproj">
       <Project>{a2c9f9d7-a499-4e17-bdab-4ef18f1d9a18}</Project>
       <Name>YetiCommon</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.DebugEngine.LLDBEval\YetiVSI.DebugEngine.LLDBEval.vcxproj">
-      <Project>{03dcce13-6b53-4e82-a984-295cfe71eab4}</Project>
-      <Name>YetiVSI.DebugEngine.LLDBEval</Name>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <Private>true</Private>
-    </ProjectReference>
-    <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.DebugEngine.LLDBWorker\YetiVSI.DebugEngine.LLDBWorker.vcxproj">
-      <Project>{138ad833-91aa-41b4-9350-e2ff5262aefa}</Project>
-      <Name>YetiVSI.DebugEngine.LLDBWorker</Name>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\YetiVSI.ProjectSystem.Abstractions\YetiVSI.ProjectSystem.Abstractions.csproj">
       <Project>{1731F5D3-FDF7-4D5B-99FE-910E0924173A}</Project>
