@@ -18,6 +18,13 @@
     <ProjectReference Include="..\DebuggerGrpc\DebuggerGrpc.csproj" />
     <ProjectReference Include="..\LldbApi\LldbApi.csproj" />
     <ProjectReference Include="$(ThirdPartyRootDir)YetiVSI.DebugEngine.LLDBWorker\YetiVSI.DebugEngine.LLDBWorker.vcxproj" />
+  </ItemGroup>
+  <!-- Don't want to include BuildRoot.props because it overrides the build output directories. -->
+  <PropertyGroup>
+    <CppOutputDir Condition="'$(JenkinsBuildRoot)' == ''">$(SolutionDir)</CppOutputDir>
+    <CppOutputDir Condition="'$(JenkinsBuildRoot)' != ''">$(JenkinsBuildRoot)\</CppOutputDir>
+  </PropertyGroup>
+  <ItemGroup>
     <!--
       Native DLLs are not copied to the output directory automatically, that's
       by design in MSBuild project system. The dependency chain is as follows:
@@ -26,11 +33,11 @@
       with all its managed dependencies. LLDBEval is a native library, so it
       needs to be copied manually.
     -->
-    <Content Include="$(SolutionDir)\bin\$(Configuration)\GgpVsi.DebugEngine.LLDBEval.dll">
+    <Content Include="$(CppOutputDir)\bin\$(Configuration)\GgpVsi.DebugEngine.LLDBEval.dll">
       <Visible>false</Visible>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="$(SolutionDir)\bin\$(Configuration)\GgpVsi.DebugEngine.LLDBEval.pdb">
+    <Content Include="$(CppOutputDir)\bin\$(Configuration)\GgpVsi.DebugEngine.LLDBEval.pdb">
       <Visible>false</Visible>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
