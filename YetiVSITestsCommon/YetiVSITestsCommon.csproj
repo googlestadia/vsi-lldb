@@ -15,6 +15,9 @@
   </PropertyGroup>
   <Choose>
     <When Condition="$(IsInternalBuild)">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);INTERNAL_BUILD</DefineConstants>
+      </PropertyGroup>
       <ItemGroup>
         <ProjectReference Include="$(SolutionDir)GgpGrpc\GgpGrpc.csproj" />
         <ProjectReference Include="$(SolutionDir)\Metrics.Internal\Metrics.Internal.csproj" />
