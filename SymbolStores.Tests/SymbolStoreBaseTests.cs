@@ -40,8 +40,7 @@ namespace SymbolStores.Tests
         protected StringWriter _log;
         protected TextWriter _nullLog = TextWriter.Null;
 
-        protected ModuleSearchQuery _searchQuery =
-            new ModuleSearchQuery(_filename, _buildId, _elfFormat)
+        protected ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_filename, _buildId)
         {
             ForceLoad = true,
             RequireDebugInfo = true

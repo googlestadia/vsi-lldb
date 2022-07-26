@@ -154,9 +154,9 @@ namespace SymbolStores
                 return false;
             }
 
-            if (query.ModuleFormat == ModuleFormat.Elf
-                && !_moduleParser.IsValidElf(filepath, query.RequireDebugInfo,
-                                             out string errorMessage))
+            if (query.BuildId.ModuleFormat == ModuleFormat.Elf &&
+                !_moduleParser.IsValidElf(filepath, query.RequireDebugInfo,
+                                          out string errorMessage))
             {
                 log.WriteLineAndTrace(errorMessage);
                 return false;
@@ -167,8 +167,8 @@ namespace SymbolStores
                 return true;
             }
 
-            BuildIdInfo actualBuildId = _moduleParser.ParseBuildIdInfo(filepath,
-                                                                       query.ModuleFormat);
+            BuildIdInfo actualBuildId =
+                _moduleParser.ParseBuildIdInfo(filepath, query.BuildId.ModuleFormat);
             if (actualBuildId.HasError)
             {
                 log.WriteLineAndTrace(actualBuildId.Error);

@@ -31,8 +31,7 @@ namespace YetiVSI.Test.DebugEngine
         static readonly BuildId _uuid = new BuildId("0123", ModuleFormat.Elf);
         const string _pathInStore = @"path\foo";
 
-        readonly ModuleSearchQuery _searchQuery =
-            new ModuleSearchQuery(_filename, _uuid, ModuleFormat.Elf)
+        readonly ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_filename, _uuid)
         {
             RequireDebugInfo = true
         };
@@ -75,7 +74,7 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task FindFile_EmptyBuildIdAsync()
         {
-            var query = new ModuleSearchQuery(_filename, BuildId.Empty, ModuleFormat.Elf)
+            var query = new ModuleSearchQuery(_filename, BuildId.Empty)
             {
                 RequireDebugInfo = true
             };

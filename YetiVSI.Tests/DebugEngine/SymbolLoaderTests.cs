@@ -305,34 +305,34 @@ namespace YetiVSI.Test.DebugEngine
             Assert.IsEmpty(output);
         }
 
-        [TestCase(_elfFile, _linux, ModuleFormat.Elf)]
-        [TestCase(_peFile, _windows, ModuleFormat.Pe)]
-        [TestCase(_pdbFile, _windows, ModuleFormat.Pdb)]
+        [TestCase(_elfFile, _linux)]
+        [TestCase(_peFile, _windows)]
+        [TestCase(_pdbFile, _windows)]
         public async Task LoadSymbols_SymbolFileNameInSbModuleAndSymbolStoresEnabled_SucceedsAsync(
-            string filename, string triple, ModuleFormat format)
+            string filename, string triple)
         {
             var module = Substitute.For<SbModule>();
 
             module.GetPlatformFileSpec().GetFilename().Returns(filename);
             module.GetSymbolFileSpec().GetFilename().Returns(filename);
             module.GetTriple().Returns(triple);
-           
-            SetFindFile(filename, format, $"{_cacheDir}\\{filename}");
+
+            SetFindFile(filename, $"{_cacheDir}\\{filename}");
             SetHandleCommand(filename, _successfulCommand);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
                 module, _searchLog, true, _forceLoad);
             string output = _searchLog.ToString();
             Assert.IsTrue(result);
-            StringAssert.Contains(
-                $"Successfully loaded symbol file '{_cacheDir}\\{filename}'", output);
+            StringAssert.Contains($"Successfully loaded symbol file '{_cacheDir}\\{filename}'",
+                                  output);
         }
 
-        [TestCase(_elfFile, _linux, ModuleFormat.Elf)]
-        [TestCase(_peFile, _windows, ModuleFormat.Pe)]
-        [TestCase(_pdbFile, _windows, ModuleFormat.Pdb)]
+        [TestCase(_elfFile, _linux)]
+        [TestCase(_peFile, _windows)]
+        [TestCase(_pdbFile, _windows)]
         public async Task LoadSymbols_LLDBCannotAddSymbol_FailsAsync(
-            string filename, string triple, ModuleFormat format)
+            string filename, string triple)
         {
             var module = Substitute.For<SbModule>();
 
@@ -340,7 +340,7 @@ namespace YetiVSI.Test.DebugEngine
             module.GetSymbolFileSpec().GetFilename().Returns(filename);
             module.GetTriple().Returns(triple);
 
-            SetFindFile(filename, format, $"{_cacheDir}\\{filename}");
+            SetFindFile(filename, $"{_cacheDir}\\{filename}");
             SetHandleCommand(filename, _failedCommand);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
@@ -358,38 +358,35 @@ namespace YetiVSI.Test.DebugEngine
             module.GetSymbolFileSpec().GetFilename().Returns(_symbolName);
             module.GetFileSpec().GetFilename().Returns(_binaryName);
 
-            SetFindFile(_symbolName, ModuleFormat.Elf, null);
+            SetFindFile(_symbolName, null);
             var expectedOutput = $"{_cacheDir}\\{_binaryName}.debug";
-            SetFindFile($"{_binaryName}.debug", ModuleFormat.Elf, expectedOutput);
+            SetFindFile($"{_binaryName}.debug", expectedOutput);
             SetHandleCommand($"{_binaryName}.debug", _successfulCommand);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
                 module, _searchLog, true, _forceLoad);
             string output = _searchLog.ToString();
-            
+
             Assert.IsTrue(result);
-            Assert.That(
-                output.Contains($"Successfully loaded symbol file '{expectedOutput}'"));
+            Assert.That(output.Contains($"Successfully loaded symbol file '{expectedOutput}'"));
         }
 
         void SetParseBuildId(string path, ModuleFormat format, string buildId, string error = null)
         {
             var buildIdInfo = new BuildIdInfo() { Data = new BuildId(buildId, format) };
-            if (!string.IsNullOrWhiteSpace(error)) 
+            if (!string.IsNullOrWhiteSpace(error))
             {
                 buildIdInfo.AddError(error);
             }
-            _mockModuleParser.ParseBuildIdInfo(path, format)
-                .Returns(buildIdInfo);
+
+            _mockModuleParser.ParseBuildIdInfo(path, format).Returns(buildIdInfo);
         }
 
-        void SetFindFile(string file, ModuleFormat format, string foundPath)
+        void SetFindFile(string file, string foundPath)
         {
             _mockModuleFileFinder.FindFileAsync(
-                Arg.Is<ModuleSearchQuery>(x => x != null 
-                                          && x.Filename == file
-                                          && x.RequireDebugInfo
-                                          && x.ModuleFormat == format),
+                Arg.Is<ModuleSearchQuery>(
+                    x => x != null && x.Filename == file && x.RequireDebugInfo),
                 Arg.Any<StringWriter>()).Returns(foundPath);
         }
 

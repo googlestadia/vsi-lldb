@@ -25,13 +25,11 @@ namespace YetiCommon
 
     public class ModuleSearchQuery
     {
-        public ModuleSearchQuery(string filename, BuildId buildId,
-                                 ModuleFormat format)
+        public ModuleSearchQuery(string filename, BuildId buildId)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(filename));
             Filename = filename;
             BuildId = buildId;
-            ModuleFormat = format;
         }
 
         /// <summary>
@@ -65,10 +63,5 @@ namespace YetiCommon
         /// NOT_FOUND result.
         /// </summary>
         public bool ForceLoad { get; set; }
-
-        /// <summary>
-        /// Specifies in which format the file is stored (ELF/PE/PDB).
-        /// </summary>
-        public ModuleFormat ModuleFormat { get; }
     }
 }

@@ -103,7 +103,7 @@ namespace YetiVSI.DebugEngine
             }
 
             string binaryName = lldbModule.GetFileSpec()?.GetFilename();
-            var searchQuery = new ModuleSearchQuery(symbolPath.Filename, buildId, format)
+            var searchQuery = new ModuleSearchQuery(symbolPath.Filename, buildId)
             {
                 RequireDebugInfo = true,
                 ForceLoad = forceLoad
@@ -234,7 +234,7 @@ namespace YetiVSI.DebugEngine
             string filepath = await _moduleFileFinder.FindFileAsync(searchQuery, searchLog);
 
             if (string.IsNullOrWhiteSpace(filepath)
-                && searchQuery.ModuleFormat == ModuleFormat.Elf
+                && searchQuery.BuildId.ModuleFormat == ModuleFormat.Elf
                 && !string.IsNullOrWhiteSpace(binaryFilename))
             {
                 searchQuery.Filename = $"{binaryFilename}.debug";
