@@ -32,7 +32,7 @@ namespace YetiVSI.PortSupplier
 
     public interface IProcessListRequest
     {
-        Task<List<ProcessListEntry>> GetBySshAsync(SshTarget target);
+        Task<List<ProcessListEntry>> GetBySshAsync(SshTarget target, bool includeFromAllUsers);
     }
 
     public class ProcessListRequest : IProcessListRequest
@@ -55,8 +55,6 @@ namespace YetiVSI.PortSupplier
             }
         }
 
-        static readonly string COMMAND = "ps -o pid,ppid,comm,cmd -x -ww";
-
         readonly ManagedProcess.Factory remoteProcessFactory;
 
         private ProcessListRequest(ManagedProcess.Factory remoteProcessFactory)
@@ -64,10 +62,22 @@ namespace YetiVSI.PortSupplier
             this.remoteProcessFactory = remoteProcessFactory;
         }
 
-        public async Task<List<ProcessListEntry>> GetBySshAsync(SshTarget target)
+        public async Task<List<ProcessListEntry>> GetBySshAsync(
+            SshTarget target, bool includeFromAllUsers)
         {
+            var command = "ps -o pid,ppid,comm,cmd -ww";
+
+            if (includeFromAllUsers)
+            {
+                command += " --ppid 2 -p 2 --deselect";
+            }
+            else
+            {
+                command += " -x";
+            }
+
             using (var process = remoteProcessFactory.Create(
-                ProcessStartInfoBuilder.BuildForSsh(COMMAND, new List<string>(), target)))
+                ProcessStartInfoBuilder.BuildForSsh(command, new List<string>(), target)))
             {
                 return await GetByProcessAsync(process);
             }
@@ -121,8 +131,7 @@ namespace YetiVSI.PortSupplier
             await process.RunToExitWithSuccessAsync();
 
             // Remove the chain of processes from the "ps" command.
-            ProcessListEntry psResult;
-            while (results.TryGetValue(psPid, out psResult))
+            while (results.TryGetValue(psPid, out ProcessListEntry psResult))
             {
                 psPid = psResult.Ppid;
                 results.Remove(psResult.Pid);

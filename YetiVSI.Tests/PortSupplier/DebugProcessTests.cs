@@ -23,28 +23,23 @@ namespace YetiVSI.Test.PortSupplier
     [TestFixture]
     class DebugProcessTests
     {
-        private const int TEST_PID = 123;
-        private const string TEST_TITLE = "test title";
-        private const string TEST_COMMAND = "test command";
-
-        IDebugProcess2 process;
+        IDebugProcess2 _process;
 
         [SetUp]
         public void SetUp()
         {
             var port = Substitute.For<IDebugPort2>();
 
-            process = new DebugProcess(port, TEST_PID, TEST_TITLE, TEST_COMMAND);
+            _process = new DebugProcess(
+                port: port, pid: 1337, ppid: 42, title: "Title", command: "/bin/true");
         }
 
         [Test]
         public void EnumPrograms()
         {
-            IEnumDebugPrograms2 programEnum;
-            Assert.AreEqual(VSConstants.S_OK, process.EnumPrograms(out programEnum));
-
-            uint count;
-            Assert.AreEqual(VSConstants.S_OK, programEnum.GetCount(out count));
+            Assert.AreEqual(
+                VSConstants.S_OK, _process.EnumPrograms(out IEnumDebugPrograms2 programEnum));
+            Assert.AreEqual(VSConstants.S_OK, programEnum.GetCount(out uint count));
             Assert.AreEqual(1, count);
 
             uint num = 1;
@@ -53,7 +48,7 @@ namespace YetiVSI.Test.PortSupplier
             Assert.AreEqual(VSConstants.S_OK, programEnum.Next(num, programs, ref numFetched));
             Assert.AreEqual(1, numFetched);
             programs[0].GetName(out string name);
-            Assert.AreEqual(name, TEST_COMMAND);
+            Assert.AreEqual(name, "/bin/true");
         }
     }
 }

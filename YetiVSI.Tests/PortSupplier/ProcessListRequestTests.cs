@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using NUnit.Framework;
-using NSubstitute;
-using YetiVSI.PortSupplier;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using NSubstitute;
+using NUnit.Framework;
 using YetiCommon;
 using YetiCommon.SSH;
+using YetiVSI.PortSupplier;
 
 namespace YetiVSI.Test.PortSupplier
 {
     [TestFixture]
     class ProcessListRequestTests
     {
-        const string TEST_WORKING_DIR = "test working dir";
         const string TEST_IP_ADDRESS = "1.2.3.4";
         const string TEST_TARGET = TEST_IP_ADDRESS + ":44722";
 
@@ -52,7 +51,8 @@ namespace YetiVSI.Test.PortSupplier
             process.When(x => x.RunToExitAsync()).Do(x => OutputTestData(process));
 
             VerifyTestData(
-                await processListRequestFactory.Create().GetBySshAsync(new SshTarget(TEST_TARGET)));
+                await processListRequestFactory.Create()
+                    .GetBySshAsync(new SshTarget(TEST_TARGET), includeFromAllUsers: false));
         }
 
         [Test]
@@ -66,8 +66,12 @@ namespace YetiVSI.Test.PortSupplier
                 throw new ProcessException("test exception");
             });
 
-            Assert.ThrowsAsync<ProcessException>(async delegate
-            { await processListRequestFactory.Create().GetBySshAsync(new SshTarget(TEST_TARGET)); });
+            Assert.ThrowsAsync<ProcessException>(
+                async () =>
+                {
+                    await processListRequestFactory.Create()
+                        .GetBySshAsync(new SshTarget(TEST_TARGET), includeFromAllUsers: false);
+                });
         }
 
         void OutputTestData(IProcess process)

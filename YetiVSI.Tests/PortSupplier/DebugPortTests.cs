@@ -84,11 +84,11 @@ namespace YetiVSI.Test.PortSupplier
         [Test]
         public void GetPortSupplier()
         {
-            var port = _portFactory.Create(new Gamelet(), this._portSupplier, _testDebugSessionId);
+            var port = _portFactory.Create(new Gamelet(), _portSupplier, _testDebugSessionId);
 
             Assert.AreEqual(VSConstants.S_OK,
                             port.GetPortSupplier(out IDebugPortSupplier2 portSupplier));
-            Assert.AreEqual(this._portSupplier, portSupplier);
+            Assert.AreEqual(_portSupplier, portSupplier);
         }
 
         [Test]
@@ -144,7 +144,8 @@ namespace YetiVSI.Test.PortSupplier
 
             var entry1 = new ProcessListEntry {Pid = 101, Title = "title1", Command = "command 1"};
             var entry2 = new ProcessListEntry {Pid = 102, Title = "title2", Command = "command 2"};
-            _processListRequest.GetBySshAsync(new SshTarget(_testGameletTarget))
+            _processListRequest
+                .GetBySshAsync(new SshTarget(_testGameletTarget), includeFromAllUsers: false)
                 .Returns(new List<ProcessListEntry>() { entry1, entry2 });
 
             Assert.AreEqual(VSConstants.S_OK,
@@ -161,8 +162,6 @@ namespace YetiVSI.Test.PortSupplier
             processes[1].GetName(enum_GETNAME_TYPE.GN_TITLE, out string title2);
             Assert.AreEqual(title2, entry2.Title);
 
-            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
-                                 DeveloperEventStatus.Types.Code.Success);
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiProcessList,
                                  DeveloperEventStatus.Types.Code.Success);
         }
@@ -175,7 +174,9 @@ namespace YetiVSI.Test.PortSupplier
 
             _sshManager.EnableSshAsync(gamelet, Arg.Any<IAction>()).Returns(Task.FromResult(true));
 
-            _processListRequest.When(x => x.GetBySshAsync(new SshTarget(_testGameletTarget)))
+            _processListRequest
+                .When(x => x.GetBySshAsync(
+                    new SshTarget(_testGameletTarget), includeFromAllUsers: false))
                 .Do(x => { throw new ProcessException("test exception"); });
 
             Assert.AreEqual(VSConstants.S_OK,
@@ -186,8 +187,7 @@ namespace YetiVSI.Test.PortSupplier
 
             _dialogUtil.Received().ShowError(Arg.Is<string>(x => x.Contains("test exception")),
                                              Arg.Any<ProcessException>());
-            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
-                                 DeveloperEventStatus.Types.Code.Success);
+
             AssertMetricRecorded(DeveloperEventType.Types.Type.VsiProcessList,
                                  DeveloperEventStatus.Types.Code.ExternalToolUnavailable);
         }
@@ -210,7 +210,7 @@ namespace YetiVSI.Test.PortSupplier
 
             _dialogUtil.Received().ShowError(Arg.Is<string>(x => x.Contains("test exception")),
                                              Arg.Any<SshKeyException>());
-            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiGameletsEnableSsh,
+            AssertMetricRecorded(DeveloperEventType.Types.Type.VsiProcessList,
                                  DeveloperEventStatus.Types.Code.InternalError);
         }
 

@@ -22,13 +22,13 @@ namespace YetiVSI.PortSupplier
     // DebugProgram contains execution information about a process.
     public class DebugProgram : IDebugProgram2
     {
-        readonly DebugProcess process;
-        readonly Guid guid;
+        readonly DebugProcess _process;
+        readonly Guid _guid;
 
         public DebugProgram(DebugProcess process)
         {
-            this.process = process;
-            this.guid = Guid.NewGuid();
+            _process = process;
+            _guid = Guid.NewGuid();
         }
 
         public int Attach(IDebugEventCallback2 callback)
@@ -124,18 +124,23 @@ namespace YetiVSI.PortSupplier
 
         public int GetName(out string name)
         {
-            return process.GgpGetName(enum_GETNAME_TYPE.GN_BASENAME, out name);
+            name = _process.GgpGetName(enum_GETNAME_TYPE.GN_BASENAME);
+            if (name == null)
+            {
+                return VSConstants.S_FALSE;
+            }
+            return VSConstants.S_OK;
         }
 
         public int GetProcess(out IDebugProcess2 process)
         {
-            process = this.process;
+            process = _process;
             return VSConstants.S_OK;
         }
 
         public int GetProgramId(out Guid guid)
         {
-            guid = this.guid;
+            guid = _guid;
             return VSConstants.S_OK;
         }
 
