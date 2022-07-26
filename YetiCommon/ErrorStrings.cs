@@ -23,7 +23,6 @@ namespace YetiCommon
     public static class ErrorStrings
     {
         public const string EmptyBuildId = "The file must have a non-empty build ID.";
-        public const string MalformedBuildId = "The build-id section is malformed.";
         public const string NoDebugLink = "Unable to extract the file's debuglink section.";
         public const string NoDebugDir = "Unable to extract the file's debug_info_dir section.";
 
@@ -63,6 +62,10 @@ namespace YetiCommon
 
         public static string FailedToReadBuildId(string filepath, string message) =>
             $"Failed to read build ID of '{filepath}'. {message}";
+
+        public static string FailedToParseModuleFormatFromDump(IList<string> outputLines) =>
+            "Failed to parse module format from dump. Output lines: " +
+            $"[{string.Join(", ", outputLines)}]";
 
         public static string InvalidSymbolFileFormat(string filepath, ModuleFormat format) =>
             $"Failed to load '{filepath}'. The file was not recognized as " +

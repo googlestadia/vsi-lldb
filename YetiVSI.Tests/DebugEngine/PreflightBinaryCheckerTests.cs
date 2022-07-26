@@ -45,8 +45,8 @@ namespace YetiVSI.Test.DebugEngine
         static readonly List<string> _remoteTargetPaths = new List<string> { _remoteTargetPath };
 
         static readonly SshTarget _target = new SshTarget("127.0.0.1:22");
-        static readonly BuildId _validBuildId = new BuildId("AA");
-        static readonly BuildId _validBuildId2 = new BuildId("BB");
+        static readonly BuildId _validBuildId = new BuildId("AA", ModuleFormat.Elf);
+        static readonly BuildId _validBuildId2 = new BuildId("BB", ModuleFormat.Elf);
         static readonly HashSet<string> _searchPaths = new HashSet<string> { "/path1", "/path2" };
         static readonly List<string> _localPaths =
             _searchPaths.Select(path => Path.Combine(path, _executable)).ToList();
@@ -262,7 +262,8 @@ namespace YetiVSI.Test.DebugEngine
             _fileSystem.AddDirectory(_searchPaths.ElementAt(0));
             _fileSystem.AddFile(_localPaths[0], new MockFileData(""));
 
-            var buildIdInfoInvalid = new BuildIdInfo() {Data = new BuildId("BAAD")};
+            var buildIdInfoInvalid = new BuildIdInfo()
+                { Data = new BuildId("BAAD", ModuleFormat.Elf) };
             _moduleParser
                 .ParseBuildIdInfo(Arg.Any<string>(), ModuleFormat.Elf)
                 .Returns(buildIdInfoInvalid);

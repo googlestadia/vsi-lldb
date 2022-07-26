@@ -59,7 +59,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
                 {
                     // Iterate through the program headers, until we find the note with the build
                     // id.
-                    for (ulong i = 0; i < moduleHeader.EntriesCount; ++i)
+                    for (ulong i = 0; i < moduleHeader.EntriesCount; i++)
                     {
                         ulong offset = i * moduleHeader.EntrySize;
                         headerReader.BaseStream.Seek((long)offset, SeekOrigin.Begin);
@@ -80,9 +80,8 @@ namespace YetiVSI.DebugEngine.CoreDumps
                         ulong headerEnd = header.OffsetInFile + header.SizeInFile;
                         if (headerEnd > fileSize)
                         {
-                            Trace.WriteLine(
-                                "Can't extract note sections from program header. " +
-                                "Note section is outside of the first mapped location.");
+                            Trace.WriteLine("Can't extract note sections from program header. " +
+                                            "Note section is outside of the first mapped location.");
                             continue;
                         }
 
@@ -106,7 +105,8 @@ namespace YetiVSI.DebugEngine.CoreDumps
                         var notesStream = new MemoryStream(noteSegmentBytes);
                         using (var notesReader = new BinaryReader(notesStream))
                         {
-                            BuildId buildId = NoteSection.ReadBuildId(notesReader, size);
+                            BuildId buildId =
+                                NoteSection.ReadBuildId(notesReader, size, ModuleFormat.Elf);
                             if (buildId != BuildId.Empty)
                             {
                                 return new DumpModule(file.Path, buildId,
@@ -157,6 +157,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
                 remainSize -= blockBytes.Length;
                 startAddress += (ulong)blockBytes.Length;
             }
+
             if (remainSize > 0)
             {
                 byte[] shrunkResult = new byte[size - remainSize];
@@ -187,6 +188,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
                     max = mid - 1;
                     continue;
                 }
+
                 if (address >= end)
                 {
                     min = mid + 1;

@@ -29,13 +29,16 @@ namespace YetiCommon
 
         readonly IReadOnlyList<byte> bytes;
 
-        public BuildId(IEnumerable<byte> bytes)
+        public readonly ModuleFormat ModuleFormat;
+
+        public BuildId(IEnumerable<byte> bytes, ModuleFormat moduleFormat)
         {
             this.bytes = bytes?.ToArray();
+            ModuleFormat = moduleFormat;
         }
 
         // Throws FormatException
-        public BuildId(string hexStr)
+        public BuildId(string hexStr, ModuleFormat moduleFormat)
         {
             var byteList = new List<byte>();
             if (hexStr != null)
@@ -61,6 +64,7 @@ namespace YetiCommon
                 }
             }
             bytes = byteList;
+            ModuleFormat = moduleFormat;
         }
 
         public override string ToString() => ToUUIDString();
@@ -85,7 +89,7 @@ namespace YetiCommon
 
         public override int GetHashCode()
         {
-            int hash = 17;
+            int hash = 17 + (int)ModuleFormat;
             foreach (var b in Bytes)
             {
                 hash = hash * 23 + b;
@@ -105,7 +109,7 @@ namespace YetiCommon
 
         public static bool operator ==(BuildId a, BuildId b)
         {
-            return a.Bytes.SequenceEqual(b.Bytes);
+            return a.Bytes.SequenceEqual(b.Bytes) && a.ModuleFormat.Equals(b.ModuleFormat);
         }
 
         public static bool operator !=(BuildId a, BuildId b)

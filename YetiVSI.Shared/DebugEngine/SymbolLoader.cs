@@ -89,7 +89,7 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
-            var buildId = new BuildId(lldbModule.GetUUIDString());
+            var buildId = new BuildId(lldbModule.GetUUIDString(), format);
             // If we have a full path to the symbol file, we'll load it when build ids match.
             if (symbolPath.TryGetFullPath(out string fullPath)
                 && ShouldAddSymbolFile(fullPath, buildId, format, searchLog))

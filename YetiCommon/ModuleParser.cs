@@ -34,6 +34,7 @@ namespace YetiCommon
         readonly string _debugDirName = ".note.debug_info_dir";
         readonly string _buildIdName = ".note.gnu.build-id";
         readonly string _debugInfoName = ".debug_info";
+        readonly string _fileFormat = "file format";
 
         static readonly Regex _hexDumpRegex =
             new Regex(@"^\s*[0-9a-fA-F]+(?:\s([0-9a-fA-F]+)){1,4}");
@@ -128,7 +129,7 @@ namespace YetiCommon
                 if (buildIdSection is INoteSection buildIdNoteSection)
                 {
                     byte[] contents = buildIdNoteSection.Description;
-                    output.Data = ParseBuildIdValue(contents);
+                    output.Data = ParseBuildIdValue(contents, ModuleFormat.Elf);
                 }
                 else
                 {
@@ -152,7 +153,7 @@ namespace YetiCommon
                     return output;
                 }
 
-                output.Data = GetBuildId(pdb.Guid, pdb.Age);
+                output.Data = GetBuildId(pdb.Guid, pdb.Age, ModuleFormat.Pdb);
             }
 
             return output;
@@ -194,7 +195,7 @@ namespace YetiCommon
 
                             CodeViewDebugDirectoryData cv =
                                 reader.ReadCodeViewDebugDirectoryData(entry);
-                            output.Data = GetBuildId(cv.Guid, cv.Age);
+                            output.Data = GetBuildId(cv.Guid, cv.Age, ModuleFormat.Pe);
                             return output;
                         }
                     }
@@ -210,7 +211,8 @@ namespace YetiCommon
             return output;
         }
 
-        BuildId GetBuildId(Guid guid, int age) => new BuildId($"{guid}-{age:X8}");
+        BuildId GetBuildId(Guid guid, int age, ModuleFormat moduleFormat) =>
+            new BuildId($"{guid}-{age:X8}", moduleFormat);
 
         public async Task<BuildId> ParseRemoteBuildIdInfoAsync(string filepath, SshTarget target)
         {
@@ -235,7 +237,8 @@ namespace YetiCommon
                 }
 
                 string hexString = ParseHexDump(outputLines);
-                BuildId buildId = ParseBuildIdOutput(hexString);
+                ModuleFormat moduleFormat = ParseModuleFormatDump(outputLines);
+                BuildId buildId = ParseBuildIdOutput(hexString, moduleFormat);
                 return buildId;
             }
             catch (ProcessExecutionException e)
@@ -279,7 +282,7 @@ namespace YetiCommon
             {
                 // Indicates the build ID section is malformed.
                 throw new InvalidBuildIdException(
-                    ErrorStrings.FailedToReadBuildId(filepath, ErrorStrings.MalformedBuildId), e);
+                    ErrorStrings.FailedToReadBuildId(filepath, e.Message), e);
             }
 
             void LogObjdumpOutput(ProcessExecutionException e)
@@ -295,7 +298,7 @@ namespace YetiCommon
         /// </summary>
         /// <param name="hexDumpOutput">The raw output of the 'objdump' process.</param>
         /// <returns>The hexadecimal characters concatenated together without whitespace.</returns>
-        string ParseHexDump(IList<string> hexDumpOutput)
+        public string ParseHexDump(IList<string> hexDumpOutput)
         {
             var hexString = new StringBuilder();
             foreach (string line in hexDumpOutput)
@@ -311,6 +314,34 @@ namespace YetiCommon
         }
 
         /// <summary>
+        /// Parses the module format specified in the objdump.
+        /// </summary>
+        /// <param name="outputLines"></param>
+        /// <returns>The module format specified in the objdump lines. Currently we only support
+        /// elf format.</returns>
+        /// <exception cref="FormatException">If it's not possible to parse the module format.
+        /// </exception>
+        public ModuleFormat ParseModuleFormatDump(IList<string> outputLines)
+        {
+            foreach (string line in outputLines)
+            {
+                var index = line.IndexOf(_fileFormat, StringComparison.OrdinalIgnoreCase);
+                if (index != -1)
+                {
+                    var formatSubstring = line.Substring(index + _fileFormat.Length);
+                    if (formatSubstring.Contains("elf"))
+                    {
+                        return ModuleFormat.Elf;
+                    }
+                }
+            }
+
+            // TODO: Investigate how the buildId is handled in Silenus processes
+
+            throw new FormatException(ErrorStrings.FailedToParseModuleFormatFromDump(outputLines));
+        }
+
+        /// <summary>
         /// Given the content of the build ID section, returns the build ID.
         /// </summary>
         /// <param name="hexString">The content of the section represented in hex.</param>
@@ -319,7 +350,7 @@ namespace YetiCommon
         /// Thrown when the input does not have enough leading bytes, or when it does not encode a
         /// valid build ID.
         /// </exception>
-        BuildId ParseBuildIdOutput(string hexString)
+        BuildId ParseBuildIdOutput(string hexString, ModuleFormat moduleFormat)
         {
             // A note segment consists of a 4 byte namesz field, a 4 byte descsz field,
             // a 4 byte type field, a namesz-length name field, and a descsz-length desc field.
@@ -333,7 +364,7 @@ namespace YetiCommon
                                           "but wanted at least 32 leading digits");
             }
 
-            var buildId = new BuildId(hexString.Substring(32));
+            var buildId = new BuildId(hexString.Substring(32), moduleFormat);
 
             if (buildId == BuildId.Empty)
             {
@@ -383,6 +414,7 @@ namespace YetiCommon
             return Encoding.ASCII.GetString(stringBytes.ToArray());
         }
 
-        public BuildId ParseBuildIdValue(byte[] contents) => new BuildId(contents);
+        public BuildId ParseBuildIdValue(byte[] contents, ModuleFormat moduleFormat) =>
+            new BuildId(contents, moduleFormat);
     }
 }

@@ -149,8 +149,8 @@ namespace YetiVSI.Test.DebugEngine
             StringAssert.AreEqualIgnoringCase( 
                 Strings.BuildIdMismatch(
                     $"{_localDir}\\{filename}",
-                    new BuildId(_validBuildId),
-                    new BuildId(_mismatchedBuildId)), output);
+                    new BuildId(_validBuildId, ModuleFormat.Elf),
+                    new BuildId(_mismatchedBuildId, ModuleFormat.Elf)), output);
         }
 
         [Test]
@@ -374,7 +374,7 @@ namespace YetiVSI.Test.DebugEngine
 
         void SetParseBuildId(string path, ModuleFormat format, string buildId, string error = null)
         {
-            var buildIdInfo = new BuildIdInfo() { Data = new BuildId(buildId) };
+            var buildIdInfo = new BuildIdInfo() { Data = new BuildId(buildId, format) };
             if (!string.IsNullOrWhiteSpace(error)) 
             {
                 buildIdInfo.AddError(error);

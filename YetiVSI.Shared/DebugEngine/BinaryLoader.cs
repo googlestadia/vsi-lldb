@@ -96,9 +96,10 @@ namespace YetiVSI.DebugEngine
                 return (lldbModule, false);
             }
 
-            var searchQuery = new ModuleSearchQuery(binaryName,
-                                                    new BuildId(lldbModule.GetUUIDString()),
-                                                    lldbModule.GetModuleFormat())
+            ModuleFormat moduleFormat = lldbModule.GetModuleFormat();
+            BuildId buildId = new BuildId(lldbModule.GetUUIDString(), moduleFormat);
+
+            var searchQuery = new ModuleSearchQuery(binaryName, buildId, moduleFormat)
             {
                 ForceLoad = forceLoad,
                 RequireDebugInfo = false

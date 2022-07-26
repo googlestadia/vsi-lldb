@@ -30,8 +30,8 @@ namespace SymbolStores.Tests
         protected const string _missingFilepath = @"C:\missing\" + _filename;
         protected const string _destFilepath = @"C:\dest\" + _filename;
         protected const string _invalidPath = @"C:\invalid|";
-        protected static BuildId _buildId = new BuildId("1234");
         protected const ModuleFormat _elfFormat = ModuleFormat.Elf;
+        protected static BuildId _buildId = new BuildId("1234", _elfFormat);
 
         protected MockFileSystem _fakeFileSystem;
         protected IModuleParser _moduleParser;
@@ -184,7 +184,7 @@ namespace SymbolStores.Tests
         [TestCase(_filename, "")]
         public void AddFile_InvalidArgument(string filename, string buildIdStr)
         {
-            var buildId = new BuildId(buildIdStr);
+            var buildId = new BuildId(buildIdStr, ModuleFormat.Elf);
             var store = GetEmptyStore();
             if (!store.SupportsAddingFiles)
             {

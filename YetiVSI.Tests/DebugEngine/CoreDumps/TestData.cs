@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Linq;
 using System.Text;
 using YetiCommon;
@@ -27,10 +27,10 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
 
         public static BuildId expectedId = new BuildId(
-            "61A1A0AE-FAA0-04E4-228E-D5E8D37C7C1F-5C6EEB3D");
+            "61A1A0AE-FAA0-04E4-228E-D5E8D37C7C1F-5C6EEB3D", ModuleFormat.Elf);
 
         public static BuildId anotherExpectedId = new BuildId(
-            "61A1A0AE-FAA0-04E4-228E-D5E8D37C7C1F-5C6EEBED");
+            "61A1A0AE-FAA0-04E4-228E-D5E8D37C7C1F-5C6EEBED", ModuleFormat.Elf);
 
         public static readonly int bitnessIndex = magicNumberBytes.Length;
         public static readonly int endiannessIndex = bitnessIndex + 1;

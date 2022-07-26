@@ -28,7 +28,7 @@ namespace YetiVSI.Test.DebugEngine
     {
         const string _searchPaths = @"path";
         const string _filename = "foo";
-        static readonly BuildId _uuid = new BuildId("0123");
+        static readonly BuildId _uuid = new BuildId("0123", ModuleFormat.Elf);
         const string _pathInStore = @"path\foo";
 
         readonly ModuleSearchQuery _searchQuery =

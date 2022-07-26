@@ -126,14 +126,16 @@ namespace YetiVSI.DebugEngine.CoreDumps
         /// </exception>
         /// <param name="reader">Input stream reader.</param>
         /// <param name="size">Expected note section size from program header.</param>
+        /// <param name="moduleFormat">Format of the module. Required for Build ID.</param>
         /// <returns>Build id or BuildId.Empty.</returns>
-        public static BuildId ReadBuildId(BinaryReader reader, int size)
+        public static BuildId ReadBuildId(BinaryReader reader, int size, ModuleFormat moduleFormat)
         {
-            NoteSection buildIdNote =
-                ReadNotes(reader, size)
-                    .FirstOrDefault(note => note._name == Name.Gnu && note._type == Type.BuildId);
+            NoteSection buildIdNote = ReadNotes(reader, size)
+                .FirstOrDefault(note => note._name == Name.Gnu && note._type == Type.BuildId);
 
-            return buildIdNote == null ? BuildId.Empty : new BuildId(buildIdNote._data);
+            return buildIdNote == null
+                ? BuildId.Empty
+                : new BuildId(buildIdNote._data, moduleFormat);
         }
 
         static string ReadUtf8String(BinaryReader reader)

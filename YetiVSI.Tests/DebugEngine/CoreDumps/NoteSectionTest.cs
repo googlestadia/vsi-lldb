@@ -194,7 +194,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
                                              TestData.expectedId.Bytes.ToArray());
 
             var reader = new BinaryReader(new MemoryStream(noteBytes));
-            var buildId = NoteSection.ReadBuildId(reader, noteBytes.Length);
+            var buildId = NoteSection.ReadBuildId(reader, noteBytes.Length, ModuleFormat.Elf);
             Assert.AreEqual(TestData.expectedId, buildId);
         }
 
@@ -205,7 +205,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
                 NoteSection.GnuName, NoteSection.NtFileType, TestData.expectedId.Bytes.ToArray());
 
             var reader = new BinaryReader(new MemoryStream(noteBytes));
-            var buildId = NoteSection.ReadBuildId(reader, noteBytes.Length);
+            var buildId = NoteSection.ReadBuildId(reader, noteBytes.Length, ModuleFormat.Elf);
 
             Assert.AreEqual(BuildId.Empty, buildId);
         }
@@ -218,7 +218,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
                                              TestData.expectedId.Bytes.ToArray());
 
             var reader = new BinaryReader(new MemoryStream(noteBytes));
-            var buildId = NoteSection.ReadBuildId(reader, noteBytes.Length);
+            var buildId = NoteSection.ReadBuildId(reader, noteBytes.Length, ModuleFormat.Elf);
 
             Assert.AreEqual(BuildId.Empty, buildId);
         }

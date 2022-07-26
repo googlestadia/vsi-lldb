@@ -258,7 +258,7 @@ namespace SymbolStores.Tests
             _fakeBuildIdWriter.WriteBuildId(storeAPath, _buildId);
             _sourceSymbolFile = new FileReference(_fakeFileSystem, storeAPath);
 
-            BuildId badBuildId = new BuildId("BAAD");
+            BuildId badBuildId = new BuildId("BAAD", ModuleFormat.Elf);
             string cacheAPath = Path.Combine(_cacheAPath, _filename, _buildId.ToString(),
                                              _filename);
             _fakeBuildIdWriter.WriteBuildId(cacheAPath, badBuildId);
@@ -272,7 +272,7 @@ namespace SymbolStores.Tests
                 .Returns(x =>
                 {
                     var buildId = new BuildId(
-                        _fakeFileSystem.File.ReadAllText(x[0].ToString()));
+                        _fakeFileSystem.File.ReadAllText(x[0].ToString()), ModuleFormat.Elf);
                     if (buildId == badBuildId)
                     {
                         x[2] = customErrorMessage;

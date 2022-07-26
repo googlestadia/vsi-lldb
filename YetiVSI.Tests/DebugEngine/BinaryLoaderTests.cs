@@ -28,7 +28,7 @@ namespace YetiVSI.Test.DebugEngine
     {
         const string _binaryFilename = "test";
         const string _pathInStore = @"C:\store\" + _binaryFilename;
-        static BuildId _uuid = new BuildId("1234");
+        static BuildId _uuid = new BuildId("1234", ModuleFormat.Elf);
         const string _triple = "msp430--";
         readonly ModuleSearchQuery _searchQuery =
             new ModuleSearchQuery(_binaryFilename, _uuid, ModuleFormat.Elf)
