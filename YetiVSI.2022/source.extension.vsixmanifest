@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="GgpVSI.Google.2bde5d1f-9493-4430-bfb4-65581ad4c787" Version="1.82.0" Language="en-US" Publisher="Google Inc." />
+        <Identity Id="GgpVSI.Google.2bde5d1f-9493-4430-bfb4-65581ad4c787" Version="1.83.0" Language="en-US" Publisher="Google Inc." />
         <DisplayName>Stadia for Visual Studio</DisplayName>
         <Description xml:space="preserve">Extensions to the Visual Studio user interface to support Stadia development.</Description>
         <Icon>GGP.ico</Icon>
