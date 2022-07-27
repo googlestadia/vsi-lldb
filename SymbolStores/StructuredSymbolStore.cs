@@ -76,7 +76,7 @@ namespace SymbolStores
             {
                 filepath = Path.Combine(_path,
                                         searchQuery.Filename,
-                                        searchQuery.BuildId.ToString(),
+                                        searchQuery.BuildId.ToPathName(),
                                         searchQuery.Filename);
             }
             catch (ArgumentException e)
@@ -123,7 +123,8 @@ namespace SymbolStores
             {
                 AddMarkerFileIfNeeded();
 
-                string filepath = Path.Combine(_path, filename, buildId.ToString(), filename);
+                string filepath =
+                    Path.Combine(_path, filename, buildId.ToPathName(), filename);
                 await source.CopyToAsync(filepath);
 
                 log.WriteLineAndTrace(Strings.CopiedFile(filename, filepath));

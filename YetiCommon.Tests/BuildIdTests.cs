@@ -24,7 +24,8 @@ namespace YetiCommon.Tests
         [TestCase("0102", ModuleFormat.Elf, "0102", ModuleFormat.Elf)]
         [TestCase("abcd", ModuleFormat.Elf, "ABCD", ModuleFormat.Elf)]
         [TestCase("", ModuleFormat.Pdb, "", ModuleFormat.Pdb)]
-        public void Equality(string aStr, ModuleFormat aModuleFormat, string bStr, ModuleFormat bModuleFormat)
+        public void Equality(string aStr, ModuleFormat aModuleFormat, string bStr,
+                             ModuleFormat bModuleFormat)
         {
             var a = new BuildId(aStr, aModuleFormat);
             var b = new BuildId(bStr, bModuleFormat);
@@ -40,7 +41,8 @@ namespace YetiCommon.Tests
         [TestCase("0102", ModuleFormat.Elf, "", ModuleFormat.Elf)]
         [TestCase("0102", ModuleFormat.Pe, "0102", ModuleFormat.Elf)]
         [TestCase("", ModuleFormat.Pdb, "", ModuleFormat.Pe)]
-        public void Inequality(string aStr, ModuleFormat aModuleFormat, string bStr, ModuleFormat bModuleFormat)
+        public void Inequality(string aStr, ModuleFormat aModuleFormat, string bStr,
+                               ModuleFormat bModuleFormat)
         {
             var a = new BuildId(aStr, aModuleFormat);
             var b = new BuildId(bStr, bModuleFormat);
@@ -51,25 +53,52 @@ namespace YetiCommon.Tests
             Assert.AreNotEqual(a.GetHashCode(), b.GetHashCode());
         }
 
-        [TestCase(new byte[] { }, "")]
-        [TestCase(new byte[] { 0x00 }, "00")]
-        [TestCase(new byte[] { 0xF0, 0xE1, 0xD2, 0xC3 }, "F0E1D2C3")]
-        [TestCase(new byte[] { 0xF0, 0xE1, 0xD2, 0xC3, 0xB4, 0xA5, 0x96, 0x87, 0x78, 0x69, 0x5A,
-            0x4B, 0x3C, 0x2D, 0x1E, 0x0F, 0x01, 0x02, 0x03, 0x04},
-                "F0E1D2C3-B4A5-9687-7869-5A4B3C2D1E0F-01020304")]
-        public void FromBytesToUUIDString(byte[] bytes, string str)
+        [TestCase(new byte[] { }, ModuleFormat.Elf, "")]
+        [TestCase(new byte[] { }, ModuleFormat.Pdb, "")]
+        [TestCase(new byte[] { }, ModuleFormat.Pe, "")]
+        [TestCase(new byte[] { 0x00 }, ModuleFormat.Elf, "00")]
+        [TestCase(new byte[] { 0xF0, 0xE1, 0xD2, 0xC3 }, ModuleFormat.Elf, "F0E1D2C3")]
+        [TestCase(new byte[]
         {
-            var buildId = new BuildId(bytes, ModuleFormat.Elf);
+            0xF0, 0xE1, 0xD2, 0xC3, 0xB4, 0xA5, 0x96, 0x87, 0x78, 0x69, 0x5A,
+            0x4B, 0x3C, 0x2D, 0x1E, 0x0F, 0x00, 0x00, 0x13, 0x04
+        }, ModuleFormat.Elf, "F0E1D2C3-B4A5-9687-7869-5A4B3C2D1E0F-00001304")]
+        [TestCase(new byte[]
+        {
+            0xF0, 0xE1, 0xD2, 0xC3, 0xB4, 0xA5, 0x96, 0x87, 0x78, 0x69, 0x5A,
+            0x4B, 0x3C, 0x2D, 0x1E, 0x0F, 0x00, 0x00, 0x13, 0x04
+        }, ModuleFormat.Pdb, "F0E1D2C3B4A5968778695A4B3C2D1E0F1304")]
+        [TestCase(new byte[]
+        {
+            0x27, 0xAC, 0x09, 0x72, 0xE5, 0x25, 0x84, 0xFE, 0x1A, 0x88, 0xB1, 0xFE, 0x70, 0xD1,
+            0x60, 0x3B, 0x00, 0x00, 0x00, 0x02
+        }, ModuleFormat.Elf, "27AC0972-E525-84FE-1A88-B1FE70D1603B-00000002")]
+        [TestCase(new byte[]
+        {
+            0x27, 0xAC, 0x09, 0x72, 0xE5, 0x25, 0x84, 0xFE, 0x1A, 0x88, 0xB1, 0xFE, 0x70, 0xD1,
+            0x60, 0x3B, 0x00, 0x00, 0x00, 0x02
+        }, ModuleFormat.Pdb, "27AC0972E52584FE1A88B1FE70D1603B2")]
+        [TestCase(new byte[]
+        {
+            0x27, 0xAC, 0x09, 0x72, 0xE5, 0x25, 0x84, 0xFE, 0x1A, 0x88, 0xB1, 0xFE, 0x70, 0xD1,
+            0x60, 0x3B, 0x00, 0x00, 0x00, 0x02
+        }, ModuleFormat.Pe, "27AC0972E52584FE1A88B1FE70D1603B2")]
+        public void FromBytesToStringForPath(byte[] bytes, ModuleFormat moduleFormat,
+                                          string expectedPath)
+        {
+            var buildId = new BuildId(bytes, moduleFormat);
 
-            Assert.AreEqual(str, buildId.ToUUIDString());
+            Assert.AreEqual(expectedPath, buildId.ToPathName());
         }
 
         [TestCase(new byte[] { }, "")]
         [TestCase(new byte[] { 0x00 }, "00")]
         [TestCase(new byte[] { 0xF0, 0xE1, 0xD2, 0xC3 }, "F0E1D2C3")]
-        [TestCase(new byte[] { 0xF0, 0xE1, 0xD2, 0xC3, 0xB4, 0xA5, 0x96, 0x87, 0x78, 0x69, 0x5A,
-            0x4B, 0x3C, 0x2D, 0x1E, 0x0F, 0x01, 0x02, 0x03, 0x04},
-                "F0E1D2C3B4A5968778695A4B3C2D1E0F01020304")]
+        [TestCase(new byte[]
+        {
+            0xF0, 0xE1, 0xD2, 0xC3, 0xB4, 0xA5, 0x96, 0x87, 0x78, 0x69, 0x5A,
+            0x4B, 0x3C, 0x2D, 0x1E, 0x0F, 0x01, 0x02, 0x03, 0x04
+        }, "F0E1D2C3B4A5968778695A4B3C2D1E0F01020304")]
         public void FromBytesToHexString(byte[] bytes, string str)
         {
             var buildId = new BuildId(bytes, ModuleFormat.Elf);

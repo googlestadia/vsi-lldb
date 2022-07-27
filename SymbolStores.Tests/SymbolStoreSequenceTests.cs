@@ -224,7 +224,7 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_InvalidSymbolFileWithCacheAsync()
         {
-            string storeAPath = Path.Combine(_storeAPath, _filename, _buildId.ToString(),
+            string storeAPath = Path.Combine(_storeAPath, _filename, _buildId.ToPathName(),
                                              _filename);
 
             _fakeBuildIdWriter.WriteBuildId(storeAPath, _buildId);
@@ -253,13 +253,13 @@ namespace SymbolStores.Tests
             // Test the scenario where the symbol store cache contains an invalid symbol file,
             // but the store contains a correct file. In that case, we should overwrite the cache
             // with the correct file and return a reference to it.
-            string storeAPath = Path.Combine(_storeAPath, _filename, _buildId.ToString(),
+            string storeAPath = Path.Combine(_storeAPath, _filename, _buildId.ToPathName(),
                                              _filename);
             _fakeBuildIdWriter.WriteBuildId(storeAPath, _buildId);
             _sourceSymbolFile = new FileReference(_fakeFileSystem, storeAPath);
 
             BuildId badBuildId = new BuildId("BAAD", ModuleFormat.Elf);
-            string cacheAPath = Path.Combine(_cacheAPath, _filename, _buildId.ToString(),
+            string cacheAPath = Path.Combine(_cacheAPath, _filename, _buildId.ToPathName(),
                                              _filename);
             _fakeBuildIdWriter.WriteBuildId(cacheAPath, badBuildId);
             _sourceSymbolFile = new FileReference(_fakeFileSystem, cacheAPath);

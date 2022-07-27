@@ -28,10 +28,10 @@ namespace YetiVSI.Test.DebugEngine
     {
         const string _binaryFilename = "test";
         const string _pathInStore = @"C:\store\" + _binaryFilename;
-        static BuildId _uuid = new BuildId("1234", ModuleFormat.Elf);
+        static BuildId _buildId = new BuildId("1234", ModuleFormat.Elf);
         const string _triple = "msp430--";
 
-        readonly ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_binaryFilename, _uuid)
+        readonly ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_binaryFilename, _buildId)
         {
             RequireDebugInfo = false,
             ForceLoad = false
@@ -58,13 +58,12 @@ namespace YetiVSI.Test.DebugEngine
 
             _placeholderModule = Substitute.For<SbModule>();
             _placeholderModule.GetPlatformFileSpec().GetFilename().Returns(_binaryFilename);
-            _placeholderModule.GetUUIDString().Returns(_uuid.ToString());
+            _placeholderModule.GetUUIDString().Returns(_buildId.ToPathName());
             _placeholderModule.GetTriple().Returns(_triple);
             _placeholderModule.FindSection(".module_image").Returns(Substitute.For<SbSection>());
             _placeholderModule.GetNumSections().Returns(1ul);
 
-            _binaryLoader = new BinaryLoader(_mockModuleFileFinder,
-                _mockTarget);
+            _binaryLoader = new BinaryLoader(_mockModuleFileFinder, _mockTarget);
             _binaryLoader.LldbModuleReplaced += _moduleReplacedHandler;
         }
 
@@ -86,8 +85,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             var module = Substitute.For<SbModule>();
 
-            (SbModule found, bool ok) = await _binaryLoader.LoadBinaryAsync(module, _searchLog,
-                false);
+            (SbModule found, bool ok) =
+                await _binaryLoader.LoadBinaryAsync(module, _searchLog, false);
 
             Assert.False(ok);
             Assert.AreSame(module, found);
@@ -104,8 +103,8 @@ namespace YetiVSI.Test.DebugEngine
                 .FindFileAsync(Arg.Is<ModuleSearchQuery>(q => q.Filename == filename), _searchLog)
                 .Returns((string)null);
 
-            (SbModule found, bool ok) = await _binaryLoader.LoadBinaryAsync(module, _searchLog,
-                false);
+            (SbModule found, bool ok) =
+                await _binaryLoader.LoadBinaryAsync(module, _searchLog, false);
 
             Assert.False(ok);
             Assert.AreSame(module, found);
@@ -121,7 +120,7 @@ namespace YetiVSI.Test.DebugEngine
 
             Assert.AreSame(module, _placeholderModule);
             StringAssert.Contains(ErrorStrings.FailedToLoadBinary(_pathInStore),
-                _searchLog.ToString());
+                                  _searchLog.ToString());
         }
 
         [Test]
@@ -129,7 +128,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             var newModule = Substitute.For<SbModule>();
 
-            _mockTarget.AddModule(_pathInStore, _triple, _uuid.ToString()).Returns(newModule);
+            _mockTarget.AddModule(_pathInStore, _triple, _buildId.ToPathName())
+                .Returns(newModule);
             newModule.SetPlatformFileSpec(Arg.Any<SbFileSpec>()).Returns(true);
 
             (SbModule module, bool ok) = await _binaryLoader.LoadBinaryAsync(
@@ -138,8 +138,10 @@ namespace YetiVSI.Test.DebugEngine
 
             _mockTarget.Received().RemoveModule(_placeholderModule);
             _moduleReplacedHandler.Received().Invoke(_binaryLoader,
-                Arg.Is<LldbModuleReplacedEventArgs>(a =>
-                    a.AddedModule == newModule && a.RemovedModule == _placeholderModule));
+                                                     Arg.Is<LldbModuleReplacedEventArgs>(
+                                                         a => a.AddedModule == newModule &&
+                                                             a.RemovedModule ==
+                                                             _placeholderModule));
             Assert.AreSame(module, newModule);
             StringAssert.Contains("Successfully loaded binary 'C:\\store\\test'.",
                                   _searchLog.ToString());

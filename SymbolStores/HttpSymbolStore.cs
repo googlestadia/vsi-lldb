@@ -73,7 +73,7 @@ namespace SymbolStores
 
             string encodedFilename = Uri.EscapeDataString(searchQuery.Filename);
             string fileUrl = string.Join("/", _url.TrimEnd('/'), encodedFilename,
-                                      searchQuery.BuildId.ToString(), encodedFilename);
+                                      searchQuery.BuildId.ToPathName(), encodedFilename);
             if (DoesNotExistInSymbolStore(fileUrl, searchQuery.ForceLoad))
             {
                 log.WriteLineAndTrace(Strings.DoesNotExistInHttpStore(searchQuery.Filename, _url));

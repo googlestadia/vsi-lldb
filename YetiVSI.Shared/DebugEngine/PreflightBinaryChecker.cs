@@ -142,7 +142,7 @@ namespace YetiVSI.DebugEngine
 
             // Log the remote Build ID for debugging purposes.
             dataRecorder.ValidRemoteBuildId();
-            Trace.WriteLine($"Remote build ID: {remoteBuildId}");
+            Trace.WriteLine($"Remote build ID: {remoteBuildId?.ToPathName()}");
 
             // Make sure there is a local binary with the same name.
             List<string> localCandidatePaths = FindExecutableCandidates(libPaths, executable);

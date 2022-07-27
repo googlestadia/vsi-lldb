@@ -26,7 +26,8 @@ namespace SymbolStores.Tests
     {
         const string _storeUrl = "https://example.com/foo";
         const string _storeUrlB = "https://example.net/bar";
-        static readonly string _urlInStore = $"{_storeUrl}/{_filename}/{_buildId}/{_filename}";
+        static readonly string _urlInStore =
+            $"{_storeUrl}/{_filename}/{_buildId.ToPathName()}/{_filename}";
         FakeHttpMessageHandler _fakeHttpMessageHandler;
 
         HttpClient _httpClient;

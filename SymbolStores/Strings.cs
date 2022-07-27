@@ -33,9 +33,10 @@ namespace SymbolStores
         public const string UrlNullOrEmpty = "URL is null or empty.";
 
         public static string BuildIdMismatch(string filepath, BuildId expectedBuildId,
-            BuildId actualBuildId) =>
-            $"{filepath}... Build ID does not match. Expected build ID '${expectedBuildId}', " +
-            $"file has build ID '${actualBuildId}'.";
+                                             BuildId actualBuildId) =>
+            $"{filepath}... Build ID does not match. Expected build ID '" +
+            $"{expectedBuildId.ToPathName()}', file has build ID '" +
+            $"{actualBuildId.ToPathName()}'.";
         public static string ConnectionIsUnencrypted(string host) => $"Warning: The connection " +
             $"to '{host}' is unencrypted. Use HTTPS instead of HTTP for a more secure connection.";
         public static string CopiedFile(string filename, string filepath) =>

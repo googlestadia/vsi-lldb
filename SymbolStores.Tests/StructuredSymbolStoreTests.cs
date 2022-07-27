@@ -49,8 +49,9 @@ namespace SymbolStores.Tests
             var fileReference = await store.AddFileAsync(_sourceSymbolFile, _filename,
                                                          _buildId, _log);
 
-            Assert.AreEqual(Path.Combine(_storePath, _filename, _buildId.ToString(), _filename),
-                            fileReference.Location);
+            Assert.AreEqual(
+                Path.Combine(_storePath, _filename, _buildId.ToPathName(), _filename),
+                fileReference.Location);
         }
 
         [Test]
