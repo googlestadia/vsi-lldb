@@ -19,7 +19,7 @@ namespace YetiCommon.Tests
             BuildIdInfo output = moduleParser.ParseBuildIdInfo(path, format);
 
             Assert.IsFalse(output.HasError);
-            Assert.AreEqual(new BuildId(buildId, format), output.Data);
+            Assert.True(output.Data.Matches(new BuildId(buildId), format));
         }
 
         [Test]

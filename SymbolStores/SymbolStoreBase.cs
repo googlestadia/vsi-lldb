@@ -43,7 +43,9 @@ namespace SymbolStores
                                                            TextWriter logWriter);
 
         public abstract Task<IFileReference> AddFileAsync(IFileReference source, string filename,
-                                                          BuildId buildId, TextWriter logWriter);
+                                                          BuildId buildId,
+                                                          ModuleFormat moduleFormat,
+                                                          TextWriter logWriter);
 
         public abstract bool DeepEquals(ISymbolStore other);
     }

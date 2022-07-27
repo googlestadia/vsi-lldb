@@ -89,7 +89,7 @@ namespace YetiVSI.DebugEngine
                 }
             }
 
-            var buildId = new BuildId(lldbModule.GetUUIDString(), format);
+            var buildId = new BuildId(lldbModule.GetUUIDString());
             // If we have a full path to the symbol file, we'll load it when build ids match.
             if (symbolPath.TryGetFullPath(out string fullPath)
                 && ShouldAddSymbolFile(fullPath, buildId, format, searchLog))
@@ -103,7 +103,7 @@ namespace YetiVSI.DebugEngine
             }
 
             string binaryName = lldbModule.GetFileSpec()?.GetFilename();
-            var searchQuery = new ModuleSearchQuery(symbolPath.Filename, buildId)
+            var searchQuery = new ModuleSearchQuery(symbolPath.Filename, buildId, format)
             {
                 RequireDebugInfo = true,
                 ForceLoad = forceLoad
@@ -204,7 +204,7 @@ namespace YetiVSI.DebugEngine
         /// Check that the symbol file exists and has correct BuildId.
         /// </summary>
         bool ShouldAddSymbolFile(string fullPath, BuildId buildId, ModuleFormat format,
-            TextWriter log)
+                                 TextWriter log)
         {
             BuildIdInfo buildIdInfo = _moduleParser.ParseBuildIdInfo(fullPath, format);
             if (buildIdInfo.HasError)
@@ -213,12 +213,13 @@ namespace YetiVSI.DebugEngine
                     YetiCommon.ErrorStrings.FailedToReadBuildId(fullPath, buildIdInfo.Error));
             }
 
-            if (buildId == buildIdInfo.Data)
+            if (buildId.Matches(buildIdInfo.Data, format))
             {
                 return true;
             }
 
-            log.WriteLineAndTrace(Strings.BuildIdMismatch(fullPath, buildId, buildIdInfo.Data));
+            log.WriteLineAndTrace(
+                Strings.BuildIdMismatch(fullPath, buildId, buildIdInfo.Data, format));
             return false;
         }
 
@@ -233,9 +234,9 @@ namespace YetiVSI.DebugEngine
         {
             string filepath = await _moduleFileFinder.FindFileAsync(searchQuery, searchLog);
 
-            if (string.IsNullOrWhiteSpace(filepath)
-                && searchQuery.BuildId.ModuleFormat == ModuleFormat.Elf
-                && !string.IsNullOrWhiteSpace(binaryFilename))
+            if (string.IsNullOrWhiteSpace(filepath) &&
+                searchQuery.ModuleFormat == ModuleFormat.Elf &&
+                !string.IsNullOrWhiteSpace(binaryFilename))
             {
                 searchQuery.Filename = $"{binaryFilename}.debug";
                 filepath = await _moduleFileFinder.FindFileAsync(searchQuery, searchLog);

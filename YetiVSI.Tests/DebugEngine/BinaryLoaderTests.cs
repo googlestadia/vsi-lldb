@@ -28,14 +28,15 @@ namespace YetiVSI.Test.DebugEngine
     {
         const string _binaryFilename = "test";
         const string _pathInStore = @"C:\store\" + _binaryFilename;
-        static BuildId _buildId = new BuildId("1234", ModuleFormat.Elf);
+        static BuildId _buildId = new BuildId("1234");
         const string _triple = "msp430--";
 
-        readonly ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_binaryFilename, _buildId)
-        {
-            RequireDebugInfo = false,
-            ForceLoad = false
-        };
+        readonly ModuleSearchQuery _searchQuery =
+            new ModuleSearchQuery(_binaryFilename, _buildId, ModuleFormat.Elf)
+            {
+                RequireDebugInfo = false,
+                ForceLoad = false
+            };
 
         StringWriter _searchLog;
         RemoteTarget _mockTarget;
@@ -58,7 +59,7 @@ namespace YetiVSI.Test.DebugEngine
 
             _placeholderModule = Substitute.For<SbModule>();
             _placeholderModule.GetPlatformFileSpec().GetFilename().Returns(_binaryFilename);
-            _placeholderModule.GetUUIDString().Returns(_buildId.ToPathName());
+            _placeholderModule.GetUUIDString().Returns(_buildId.ToPathName(ModuleFormat.Elf));
             _placeholderModule.GetTriple().Returns(_triple);
             _placeholderModule.FindSection(".module_image").Returns(Substitute.For<SbSection>());
             _placeholderModule.GetNumSections().Returns(1ul);
@@ -128,7 +129,7 @@ namespace YetiVSI.Test.DebugEngine
         {
             var newModule = Substitute.For<SbModule>();
 
-            _mockTarget.AddModule(_pathInStore, _triple, _buildId.ToPathName())
+            _mockTarget.AddModule(_pathInStore, _triple, _buildId.ToUUIDString())
                 .Returns(newModule);
             newModule.SetPlatformFileSpec(Arg.Any<SbFileSpec>()).Returns(true);
 

@@ -23,9 +23,9 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
     [TestFixture]
     public class DumpModulesProviderTest
     {
-        const string dumpPath = "dump";
-        const string expectedFileName = "file";
-        const string anotherExpectedFileName = "File";
+        const string _dumpPath = "dump";
+        const string _expectedFileName = "file";
+        const string _anotherExpectedFileName = "File";
 
         DumpModulesProvider _provider;
         MockFileSystem _fileSystem;
@@ -53,8 +53,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             var elfHeaderBytes = TestData.GetElfBytes(ElfHeader.Size + 1, ProgramHeader.Size, 1,
                                                       false);
 
-            _fileSystem.AddFile(dumpPath, new MockFileData(elfHeaderBytes));
-            DumpReadResult dump = _provider.GetModules(dumpPath);
+            _fileSystem.AddFile(_dumpPath, new MockFileData(elfHeaderBytes));
+            DumpReadResult dump = _provider.GetModules(_dumpPath);
             Assert.AreEqual(0, dump.Modules.Count());
             Assert.AreEqual(DumpReadWarning.FileIsTruncated, dump.Warning);
         }
@@ -70,8 +70,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
                 ProgramHeader.Type.NoteSegment, positionOutsideFile, positionOutsideFile, 10);
 
             var data = elfHeaderBytes.Concat(programHeader).ToArray();
-            _fileSystem.AddFile(dumpPath, new MockFileData(data));
-            DumpReadResult dump = _provider.GetModules(dumpPath);
+            _fileSystem.AddFile(_dumpPath, new MockFileData(data));
+            DumpReadResult dump = _provider.GetModules(_dumpPath);
             Assert.AreEqual(0, dump.Modules.Count());
             Assert.AreEqual(DumpReadWarning.FileIsTruncated, dump.Warning);
         }
@@ -106,7 +106,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var firstFileIndexOffset = firstFileOffset + (ulong) firstFileBytes.Length;
             var fileIndexBytes = TestData.GetNtFileSectionBytes(
-                firstFileOffset, firstFileIndexOffset, 0ul, expectedFileName);
+                firstFileOffset, firstFileIndexOffset, 0ul, _expectedFileName);
 
             var firstFileIndexNoteBytes = TestData.GetNoteSectionBytes(
                 NoteSection.CoreName, NoteSection.NtFileType, fileIndexBytes);
@@ -121,7 +121,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             ulong secondFileDataEnd = secondFileOffset + (ulong) secondFileBytes.Length;
 
             var secondIndexBytes = TestData.GetNtFileSectionBytes(
-                secondFileOffset, secondFileDataEnd, 0ul, anotherExpectedFileName);
+                secondFileOffset, secondFileDataEnd, 0ul, _anotherExpectedFileName);
 
             var secondFileIndexHeaderBytes = TestData.GetProgramHeaderBytes(
                 ProgramHeader.Type.NoteSegment, secondFileIndexOffset, secondFileIndexOffset,
@@ -140,18 +140,18 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
                 .Concat(firstFileIndexNoteBytes).Concat(secondFileIndexNoteBytes)
                 .Concat(secondFileBytes).ToArray();
 
-            _fileSystem.AddFile(dumpPath, new MockFileData(dumpBytes));
+            _fileSystem.AddFile(_dumpPath, new MockFileData(dumpBytes));
 
-            DumpReadResult dump = _provider.GetModules(dumpPath);
+            DumpReadResult dump = _provider.GetModules(_dumpPath);
             Assert.AreEqual(2, dump.Modules.Count());
 
             var firstModule = dump.Modules.First();
-            Assert.AreEqual(expectedFileName, firstModule.Path);
-            Assert.AreEqual(TestData.expectedId, firstModule.BuildId);
+            Assert.AreEqual(_expectedFileName, firstModule.Path);
+            Assert.That(TestData.expectedId.Matches(firstModule.BuildId, ModuleFormat.Elf));
 
             var lastModule = dump.Modules.Last();
-            Assert.AreEqual(anotherExpectedFileName, lastModule.Path);
-            Assert.AreEqual(TestData.anotherExpectedId, lastModule.BuildId);
+            Assert.AreEqual(_anotherExpectedFileName, lastModule.Path);
+            Assert.That(TestData.anotherExpectedId.Matches(lastModule.BuildId, ModuleFormat.Elf));
         }
 
         struct TestDumpFile
@@ -191,7 +191,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             byte[] fileIndexBytes = TestData.GetNtFileSectionsBytes(
                 new[] { file1Address, file2Address },
                 new[] { file1Address + file1Size, file2Address + file2Size }, new[] { 0ul, 0ul },
-                new[] { expectedFileName, anotherExpectedFileName });
+                new[] { _expectedFileName, _anotherExpectedFileName });
             byte[] fileIndexNoteBytes = TestData.GetNoteSectionBytes(
                 NoteSection.CoreName, NoteSection.NtFileType, fileIndexBytes);
 
@@ -223,16 +223,18 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
         public void TwoModulesInIndexCorrect()
         {
             TestDumpFile dumpFile = CreateValidDumpFile();
-            _fileSystem.AddFile(dumpPath, new MockFileData(dumpFile.Bytes));
+            _fileSystem.AddFile(_dumpPath, new MockFileData(dumpFile.Bytes));
 
-            DumpReadResult dump = _provider.GetModules(dumpPath);
+            DumpReadResult dump = _provider.GetModules(_dumpPath);
 
             Assert.That(dump.Warning, Is.EqualTo(DumpReadWarning.None));
             Assert.That(dump.Modules.Count(), Is.EqualTo(2));
-            Assert.That(dump.Modules.ElementAt(0).Path, Is.EqualTo(expectedFileName));
-            Assert.That(dump.Modules.ElementAt(0).BuildId, Is.EqualTo(TestData.expectedId));
-            Assert.That(dump.Modules.ElementAt(1).Path, Is.EqualTo(anotherExpectedFileName));
-            Assert.That(dump.Modules.ElementAt(1).BuildId, Is.EqualTo(TestData.anotherExpectedId));
+            Assert.That(dump.Modules.ElementAt(0).Path, Is.EqualTo(_expectedFileName));
+            Assert.That(dump.Modules.ElementAt(0).BuildId
+                            .Matches(TestData.expectedId, ModuleFormat.Elf));
+            Assert.That(dump.Modules.ElementAt(1).Path, Is.EqualTo(_anotherExpectedFileName));
+            Assert.That(dump.Modules.ElementAt(1).BuildId
+                            .Matches(TestData.anotherExpectedId, ModuleFormat.Elf));
         }
 
         [Test]
@@ -245,8 +247,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             for (ulong i = 0; i < dumpFile.NoteNtFileEnd; i += 10)
             {
                 byte[] truncatedDumpBytes = dumpFile.Bytes.Take((int)i).ToArray();
-                _fileSystem.AddFile(dumpPath, new MockFileData(truncatedDumpBytes));
-                DumpReadResult dump = _provider.GetModules(dumpPath);
+                _fileSystem.AddFile(_dumpPath, new MockFileData(truncatedDumpBytes));
+                DumpReadResult dump = _provider.GetModules(_dumpPath);
                 Assert.That(dump.Modules.Count(), Is.EqualTo(0));
                 Assert.That(dump.Warning, Is.AnyOf(DumpReadWarning.FileIsTruncated,
                                                    DumpReadWarning.ElfHeaderIsCorrupted));
@@ -263,11 +265,12 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             for (int i = (int)dumpFile.NoteNtFileEnd; i < dumpFile.Bytes.Length; i += 10)
             {
                 byte[] truncatedDumpBytes = dumpFile.Bytes.Take(i).ToArray();
-                _fileSystem.AddFile(dumpPath, new MockFileData(truncatedDumpBytes));
-                DumpReadResult dump = _provider.GetModules(dumpPath);
+                _fileSystem.AddFile(_dumpPath, new MockFileData(truncatedDumpBytes));
+                DumpReadResult dump = _provider.GetModules(_dumpPath);
                 Assert.That(dump.Modules.Count(), Is.EqualTo(1));
-                Assert.That(dump.Modules.ElementAt(0).Path, Is.EqualTo(expectedFileName));
-                Assert.That(dump.Modules.ElementAt(0).BuildId, Is.EqualTo(TestData.expectedId));
+                Assert.That(dump.Modules.ElementAt(0).Path, Is.EqualTo(_expectedFileName));
+                Assert.That(dump.Modules.ElementAt(0).BuildId
+                                .Matches(TestData.expectedId, ModuleFormat.Elf));
                 Assert.That(dump.Warning, Is.EqualTo(DumpReadWarning.FileIsTruncated));
             }
         }
@@ -338,7 +341,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             ulong fileIndexOffset = fileOffset + fileSize;
             byte[] fileIndexBytes = TestData.GetNtFileSectionBytes(
-                fileAddress, fileAddress + fileSize, 0ul, expectedFileName);
+                fileAddress, fileAddress + fileSize, 0ul, _expectedFileName);
             byte[] fileIndexNoteBytes = TestData.GetNoteSectionBytes(
                 NoteSection.CoreName, NoteSection.NtFileType, fileIndexBytes);
 
@@ -351,14 +354,15 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
                 .ToArray();
 
             byte[] dumpFileBytes = headers.Concat(fileBytes).Concat(fileIndexNoteBytes).ToArray();
-            _fileSystem.AddFile(dumpPath, new MockFileData(dumpFileBytes));
+            _fileSystem.AddFile(_dumpPath, new MockFileData(dumpFileBytes));
 
-            DumpReadResult dump = _provider.GetModules(dumpPath);
+            DumpReadResult dump = _provider.GetModules(_dumpPath);
 
             Assert.That(dump.Warning, Is.EqualTo(DumpReadWarning.None));
             Assert.That(dump.Modules.Count(), Is.EqualTo(1));
-            Assert.That(dump.Modules.ElementAt(0).Path, Is.EqualTo(expectedFileName));
-            Assert.That(dump.Modules.ElementAt(0).BuildId, Is.EqualTo(TestData.expectedId));
+            Assert.That(dump.Modules.ElementAt(0).Path, Is.EqualTo(_expectedFileName));
+            Assert.That(dump.Modules.ElementAt(0).BuildId
+                            .Matches(TestData.expectedId, ModuleFormat.Elf));
         }
     }
 }

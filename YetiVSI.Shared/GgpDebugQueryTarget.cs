@@ -609,7 +609,7 @@ namespace YetiVSI
             string executableFileName = Path.GetFileName(executableRelPath);
             await _preflightBinaryChecker.CheckLocalAndRemoteBinaryOnLaunchAsync(
                 lldbSearchPaths, executableFileName, sshTarget, remoteTargetPaths,
-                preflightCheckAction);
+                preflightCheckAction, ModuleFormat.Elf);
         }
 
         class SetupQueriesResult

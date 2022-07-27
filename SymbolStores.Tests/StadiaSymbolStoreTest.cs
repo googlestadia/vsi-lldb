@@ -80,7 +80,8 @@ namespace SymbolStores.Tests
 
             await store.FindFileAsync(_searchQuery, _nullLog);
             var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
-                                                                _searchQuery.BuildId);
+                                                                _searchQuery.BuildId,
+                                                                _searchQuery.ModuleFormat);
             IFileReference fileReference = await store.FindFileAsync(queryWithForceReloadOff, _log);
 
             Assert.Null(fileReference);
@@ -120,7 +121,8 @@ namespace SymbolStores.Tests
 
             await store.FindFileAsync(_searchQuery, _nullLog);
             var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
-                                                                _searchQuery.BuildId);
+                                                                _searchQuery.BuildId,
+                                                                _searchQuery.ModuleFormat);
             IFileReference fileReference = await store.FindFileAsync(queryWithForceReloadOff, _log);
 
             Assert.Null(fileReference);
@@ -157,7 +159,8 @@ namespace SymbolStores.Tests
 
             await store.FindFileAsync(_searchQuery, _nullLog);
             var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
-                                                                _searchQuery.BuildId);
+                                                                _searchQuery.BuildId,
+                                                                _searchQuery.ModuleFormat);
             IFileReference fileReference = await store.FindFileAsync(queryWithForceReloadOff, _log);
 
             Assert.Null(fileReference);
@@ -195,14 +198,15 @@ namespace SymbolStores.Tests
 
             await store.FindFileAsync(_searchQuery, _nullLog);
             var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
-                                                                _searchQuery.BuildId);
-           
+                                                                _searchQuery.BuildId,
+                                                                _searchQuery.ModuleFormat);
+
             IFileReference fileReference = await store.FindFileAsync(queryWithForceReloadOff, _log);
 
             Assert.Null(fileReference);
-            StringAssert.Contains(Strings.DoesNotExistInStadiaStore(_filename,
-                                      _buildId.ToHexString()),
-                                  _log.ToString());
+            StringAssert.Contains(
+                Strings.DoesNotExistInStadiaStore(_filename, _buildId.ToHexString()),
+                _log.ToString());
         }
 
         [Test]

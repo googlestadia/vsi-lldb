@@ -73,7 +73,8 @@ namespace SymbolStores
 
             string encodedFilename = Uri.EscapeDataString(searchQuery.Filename);
             string fileUrl = string.Join("/", _url.TrimEnd('/'), encodedFilename,
-                                      searchQuery.BuildId.ToPathName(), encodedFilename);
+                                         searchQuery.BuildId.ToPathName(searchQuery.ModuleFormat),
+                                         encodedFilename);
             if (DoesNotExistInSymbolStore(fileUrl, searchQuery.ForceLoad))
             {
                 log.WriteLineAndTrace(Strings.DoesNotExistInHttpStore(searchQuery.Filename, _url));
@@ -130,7 +131,9 @@ namespace SymbolStores
         }
 
         public override Task<IFileReference> AddFileAsync(IFileReference source, string filename,
-                                                          BuildId buildId, TextWriter log) =>
+                                                          BuildId buildId,
+                                                          ModuleFormat moduleFormat,
+                                                          TextWriter log) =>
             throw new NotSupportedException(Strings.CopyToHttpStoreNotSupported);
 
         public override bool DeepEquals(ISymbolStore otherStore) =>

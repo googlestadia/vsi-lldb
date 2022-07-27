@@ -36,13 +36,13 @@ namespace SymbolStores
         public const string UrlNullOrEmpty = "URL is null or empty.";
 
         public static string BuildIdMismatch(string filepath, BuildId expectedBuildId,
-                                             BuildId actualBuildId)
+                                             BuildId actualBuildId, ModuleFormat moduleFormat)
         {
             string expectedString = expectedBuildId != null
-                ? expectedBuildId.ToPathName()
+                ? expectedBuildId.ToPathName(moduleFormat)
                 : "null";
             string actualString = actualBuildId != null
-                ? actualBuildId.ToPathName()
+                ? actualBuildId.ToPathName(moduleFormat)
                 : "null";
             return $"'{filepath}' Build ID does not match. Expected build ID '{expectedString}', " +
                 $"file has build ID '{actualString}'.";

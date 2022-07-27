@@ -67,7 +67,7 @@ namespace SymbolStores
         /// <exception cref="NotSupportedException">if the store does not support adding files.
         /// </exception>
         Task<IFileReference> AddFileAsync(IFileReference source, string filename, BuildId buildId,
-                                          TextWriter log);
+                                          ModuleFormat moduleFormat, TextWriter log);
         /// <summary>
         /// Deep value equality
         /// </summary>

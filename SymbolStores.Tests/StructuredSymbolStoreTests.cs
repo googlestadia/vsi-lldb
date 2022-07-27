@@ -47,10 +47,10 @@ namespace SymbolStores.Tests
             var store = GetEmptyStore();
 
             var fileReference = await store.AddFileAsync(_sourceSymbolFile, _filename,
-                                                         _buildId, _log);
+                                                         _buildId, _elfFormat, _log);
 
             Assert.AreEqual(
-                Path.Combine(_storePath, _filename, _buildId.ToPathName(), _filename),
+                Path.Combine(_storePath, _filename, _buildId.ToPathName(_elfFormat), _filename),
                 fileReference.Location);
         }
 
@@ -60,7 +60,7 @@ namespace SymbolStores.Tests
             var store = GetEmptyStore();
 
             var exception = Assert.ThrowsAsync<ArgumentException>(
-                () => store.AddFileAsync(_sourceSymbolFile, _filename, null, _nullLog));
+                () => store.AddFileAsync(_sourceSymbolFile, _filename, null, _elfFormat, _nullLog));
 
             StringAssert.Contains(
                 Strings.FailedToCopyToStructuredStore(_storePath, _filename, Strings.EmptyBuildId),
@@ -97,7 +97,7 @@ namespace SymbolStores.Tests
         protected override async Task<ISymbolStore> GetStoreWithFileAsync()
         {
             var store = new StructuredSymbolStore(_fakeFileSystem, _storePath);
-            await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log);
             return store;
         }
 

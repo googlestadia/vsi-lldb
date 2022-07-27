@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -42,7 +42,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var module = ReadModule(data, new[] {segment},
                                     new FileSection("", 0, (ulong) data.Length));
-            Assert.AreEqual(TestData.expectedId, module.BuildId);
+            Assert.That(TestData.expectedId.Matches(module.BuildId, ModuleFormat.Elf));
         }
 
         [Test]
@@ -78,7 +78,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var module = ReadModule(data, new[] {segment},
                                     new FileSection("", 0, (ulong) data.Length));
-            Assert.AreNotEqual(TestData.expectedId, module.BuildId);
+            Assert.That(BuildId.IsNullOrEmpty(module.BuildId));
         }
 
         [Test]
@@ -105,7 +105,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var module = ReadModule(data, new[] { segment },
                 new FileSection("", (ulong) buildIdLength, (ulong) buildIdLength * 2));
-            Assert.AreEqual(TestData.expectedId, module.BuildId);
+            Assert.That(module.BuildId.Matches(TestData.expectedId, ModuleFormat.Elf));
         }
 
         [Test]
@@ -121,8 +121,8 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var module = ReadModule(data, new[] { segment },
                 new FileSection("", (ulong)buildIdLength, (ulong)buildIdLength * 2));
-            Assert.AreEqual(TestData.expectedId, module.BuildId);
-            Assert.AreEqual(true, module.IsExecutable);
+            Assert.That(TestData.expectedId.Matches(module.BuildId, ModuleFormat.Elf));
+            Assert.That(module.IsExecutable);
         }
 
         [Test]
@@ -139,7 +139,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var module = ReadModule(data, new[] { secondSegment, firstSegment },
                             new FileSection("", (ulong)buildIdLength, (ulong) buildIdLength * 2));
-            Assert.AreEqual(TestData.expectedId, module.BuildId);
+            Assert.That(module.BuildId.Matches(TestData.expectedId, ModuleFormat.Elf));
         }
 
         [Test]
@@ -160,7 +160,7 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var module = ReadModule(data, new[] {secondSegment, firstSegment},
                                     new FileSection("", 0, (ulong) data.Length));
-            Assert.AreEqual(TestData.expectedId, module.BuildId);
+            Assert.That(TestData.expectedId.Matches(module.BuildId, ModuleFormat.Elf));
         }
 
         [Test]
@@ -170,20 +170,18 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             var secondFileBytes = TestData.GetElfFileBytesFromBuildId(TestData.anotherExpectedId);
             var data = firstFileBytes.Concat(secondFileBytes).ToArray();
 
-            var firstFileSection = new FileSection("", 0, (ulong) firstFileBytes.Length);
-            var secondFileSection = new FileSection("", (ulong) firstFileBytes.Length,
-                                                (ulong) data.Length);
-
-            var reader = new BinaryReader(new MemoryStream(data));
+            var firstFileSection = new FileSection("", 0, (ulong)firstFileBytes.Length);
+            var secondFileSection = new FileSection("", (ulong)firstFileBytes.Length,
+                                                    (ulong)data.Length);
 
             var segment = new ProgramHeader(ProgramHeader.Type.LoadableSegment, 0, 0,
-                (ulong) data.Length);
+                                            (ulong)data.Length);
 
-            var firstModule = ReadModule(data, new[] {segment}, firstFileSection);
-            Assert.AreEqual(TestData.expectedId, firstModule.BuildId);
+            var firstModule = ReadModule(data, new[] { segment }, firstFileSection);
+            Assert.That(firstModule.BuildId.Matches(TestData.expectedId, ModuleFormat.Elf));
 
-            var secondModule = ReadModule(data, new[] {segment}, secondFileSection);
-            Assert.AreEqual(TestData.anotherExpectedId, secondModule.BuildId);
+            var secondModule = ReadModule(data, new[] { segment }, secondFileSection);
+            Assert.That(secondModule.BuildId.Matches(TestData.anotherExpectedId, ModuleFormat.Elf));
         }
 
         [Test]
@@ -197,8 +195,6 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
             var secondFileSection = new FileSection("", (ulong) firstFileBytes.Length,
                                                 (ulong) data.Length);
 
-            var reader = new BinaryReader(new MemoryStream(data));
-
             var firstSegmentSize = firstFileBytes.Length - 1;
             var firstSegment = new ProgramHeader(ProgramHeader.Type.LoadableSegment, 0, 0,
                                                  (ulong) firstFileBytes.Length - 1);
@@ -210,14 +206,14 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
             var firstModule = ReadModule(data, new[] { secondSegment, firstSegment },
                                          firstFileSection);
-            Assert.AreEqual(TestData.expectedId, firstModule.BuildId);
+            Assert.That(TestData.expectedId.Matches(firstModule.BuildId, ModuleFormat.Elf));
 
             var secondModule = ReadModule(data, new[] { firstSegment, secondSegment },
                                           secondFileSection);
-            Assert.AreEqual(TestData.anotherExpectedId, secondModule.BuildId);
+            Assert.That(TestData.anotherExpectedId.Matches(secondModule.BuildId, ModuleFormat.Elf));
         }
 
-        private DumpModule ReadModule(byte[] data, ProgramHeader[] segments, FileSection index)
+        DumpModule ReadModule(byte[] data, ProgramHeader[] segments, FileSection index)
         {
             var reader = new BinaryReader(new MemoryStream(data));
 

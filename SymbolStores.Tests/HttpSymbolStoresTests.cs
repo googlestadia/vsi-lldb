@@ -27,7 +27,7 @@ namespace SymbolStores.Tests
         const string _storeUrl = "https://example.com/foo";
         const string _storeUrlB = "https://example.net/bar";
         static readonly string _urlInStore =
-            $"{_storeUrl}/{_filename}/{_buildId.ToPathName()}/{_filename}";
+            $"{_storeUrl}/{_filename}/{_buildId.ToPathName(_elfFormat)}/{_filename}";
         FakeHttpMessageHandler _fakeHttpMessageHandler;
 
         HttpClient _httpClient;
@@ -76,7 +76,8 @@ namespace SymbolStores.Tests
 
             await store.FindFileAsync(_searchQuery, _nullLog);
             var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
-                                                                _searchQuery.BuildId);
+                                                                _searchQuery.BuildId,
+                                                                _searchQuery.ModuleFormat);
 
             var fileReference = await store.FindFileAsync(queryWithForceReloadOff, _log);
             Assert.Null(fileReference);
@@ -113,7 +114,8 @@ namespace SymbolStores.Tests
 
             await store.FindFileAsync(_searchQuery, _nullLog);
             var queryWithForceReloadOff = new ModuleSearchQuery(_searchQuery.Filename,
-                                                                _searchQuery.BuildId);
+                                                                _searchQuery.BuildId,
+                                                                _searchQuery.ModuleFormat);
             IFileReference fileReference =
                 await store.FindFileAsync(queryWithForceReloadOff, _log);
             Assert.Null(fileReference);

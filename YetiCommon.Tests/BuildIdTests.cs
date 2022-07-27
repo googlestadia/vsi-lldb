@@ -21,36 +21,40 @@ namespace YetiCommon.Tests
     [TestFixture]
     class BuildIdTests
     {
-        [TestCase("0102", ModuleFormat.Elf, "0102", ModuleFormat.Elf)]
-        [TestCase("abcd", ModuleFormat.Elf, "ABCD", ModuleFormat.Elf)]
-        [TestCase("", ModuleFormat.Pdb, "", ModuleFormat.Pdb)]
-        public void Equality(string aStr, ModuleFormat aModuleFormat, string bStr,
-                             ModuleFormat bModuleFormat)
+        [TestCase("0102", "0102", ModuleFormat.Elf)]
+        [TestCase("abcd", "ABCD", ModuleFormat.Elf)]
+        [TestCase("", "", ModuleFormat.Pdb)]
+        [TestCase("27AC0972E52584FE1A88B1FE70D1603B00000002",
+                  "27AC0972E52584FE1A88B1FE70D1603B00000002", ModuleFormat.Pdb)]
+        [TestCase("27AC0972E52584FE1A88B1FE70D1603B00000002",
+                  "27AC0972E52584FE1A88B1FE70D1603B00000002", ModuleFormat.Pe)]
+        [TestCase("27AC0972E52584FE1A88B1FE70D1603B00000002",
+                  "27AC0972E52584FE1A88B1FE70D1603B00005004", ModuleFormat.Pdb)]
+        public void BuildIdMatches(string aStr, string bStr, ModuleFormat moduleFormat)
         {
-            var a = new BuildId(aStr, aModuleFormat);
-            var b = new BuildId(bStr, bModuleFormat);
+            var a = new BuildId(aStr);
+            var b = new BuildId(bStr);
 
-            Assert.True(a.Equals(b));
-            Assert.True(Equals(a, b));
-            Assert.True(a == b);
-            Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
+            Assert.True(a.Matches(b, moduleFormat));
         }
 
-        [TestCase("0102", ModuleFormat.Elf, "0201", ModuleFormat.Elf)]
-        [TestCase("0102", ModuleFormat.Elf, "010203", ModuleFormat.Elf)]
-        [TestCase("0102", ModuleFormat.Elf, "", ModuleFormat.Elf)]
-        [TestCase("0102", ModuleFormat.Pe, "0102", ModuleFormat.Elf)]
-        [TestCase("", ModuleFormat.Pdb, "", ModuleFormat.Pe)]
-        public void Inequality(string aStr, ModuleFormat aModuleFormat, string bStr,
-                               ModuleFormat bModuleFormat)
+        [TestCase("0102", "0201", ModuleFormat.Elf)]
+        [TestCase("0102", "010203", ModuleFormat.Elf)]
+        [TestCase("0102", "", ModuleFormat.Elf)]
+        [TestCase("27AC0972E52584FE1A88B1FE70D1603B00000002",
+                  "27AC0972E52584FE1A88B1FE70D1603B00000004", ModuleFormat.Elf)]
+        [TestCase("27AC0972E52584FE1A88B1FE70D1603B", "27AC0972E52584FE1A88B1FE70D1603B00000004",
+                  ModuleFormat.Elf)]
+        [TestCase("27AC0972E52584FE1A88B1FE70D1603B", "27AC0972E52584FE1A88B170D1603B",
+                  ModuleFormat.Pdb)]
+        [TestCase("27AC0972E52584FE1A88B1FE70D1603B00000002",
+                  "27AC0972E52584FE1A88B1FE70D1603B00000004", ModuleFormat.Pe)]
+        public void BuildIdDoesNotMatch(string aStr, string bStr, ModuleFormat moduleFormat)
         {
-            var a = new BuildId(aStr, aModuleFormat);
-            var b = new BuildId(bStr, bModuleFormat);
+            var a = new BuildId(aStr);
+            var b = new BuildId(bStr);
 
-            Assert.False(a.Equals(b));
-            Assert.False(Equals(a, b));
-            Assert.True(a != b);
-            Assert.AreNotEqual(a.GetHashCode(), b.GetHashCode());
+            Assert.False(a.Matches(b, moduleFormat));
         }
 
         [TestCase(new byte[] { }, ModuleFormat.Elf, "")]
@@ -86,9 +90,9 @@ namespace YetiCommon.Tests
         public void FromBytesToStringForPath(byte[] bytes, ModuleFormat moduleFormat,
                                           string expectedPath)
         {
-            var buildId = new BuildId(bytes, moduleFormat);
+            var buildId = new BuildId(bytes);
 
-            Assert.AreEqual(expectedPath, buildId.ToPathName());
+            Assert.AreEqual(expectedPath, buildId.ToPathName(moduleFormat));
         }
 
         [TestCase(new byte[] { }, "")]
@@ -101,7 +105,7 @@ namespace YetiCommon.Tests
         }, "F0E1D2C3B4A5968778695A4B3C2D1E0F01020304")]
         public void FromBytesToHexString(byte[] bytes, string str)
         {
-            var buildId = new BuildId(bytes, ModuleFormat.Elf);
+            var buildId = new BuildId(bytes);
 
             Assert.AreEqual(str, buildId.ToHexString());
         }
@@ -112,7 +116,7 @@ namespace YetiCommon.Tests
         [TestCase("1A-2B-3C", new byte[] { 0x1A, 0x2B, 0x3C })]
         public void FromStringToBytes(string str, byte[] bytes)
         {
-            var buildId = new BuildId(str, ModuleFormat.Elf);
+            var buildId = new BuildId(str);
 
             Assert.AreEqual(bytes, buildId.Bytes);
         }
@@ -122,7 +126,7 @@ namespace YetiCommon.Tests
         [TestCase("123")]
         public void FromStringToBytes_FormatException(string str)
         {
-            Assert.Throws(typeof(FormatException), () => new BuildId(str, ModuleFormat.Elf));
+            Assert.Throws(typeof(FormatException), () => new BuildId(str));
         }
     }
 }

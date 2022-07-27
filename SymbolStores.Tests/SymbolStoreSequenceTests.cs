@@ -60,7 +60,8 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_NoCacheAsync()
         {
-            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId,
+                                       _searchQuery.ModuleFormat, _log);
             _storeSequence.AddStore(_storeA);
 
             var fileReference = await _storeSequence.FindFileAsync(_searchQuery, _log);
@@ -80,7 +81,7 @@ namespace SymbolStores.Tests
             _storeSequence.AddStore(_flatStoreA);
             _storeSequence.AddStore(_flatStoreB);
 
-            var query = new ModuleSearchQuery( "symbolB", null);
+            var query = new ModuleSearchQuery( "symbolB", null, _elfFormat);
             await _storeSequence.FindFileAsync(query, _log);
             string output = _log.ToString();
             Assert.AreEqual(output,
@@ -94,7 +95,7 @@ namespace SymbolStores.Tests
         {
             _fakeFileSystem.AddFile($"{_flatStoreAPath}/symbolA", new MockFileData(""));
             _fakeFileSystem.AddFile($"{_flatStoreBPath}/symbolB", new MockFileData(""));
-            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log);
 
             _storeSequence.AddStore(_flatStoreA);
             _storeSequence.AddStore(_flatStoreB);
@@ -115,7 +116,7 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_WithCacheAsync()
         {
-            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log);
             _storeSequence.AddStore(_cacheA);
             _storeSequence.AddStore(_storeA);
 
@@ -129,7 +130,7 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_WithCacheAfterStoreAsync()
         {
-            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log);
             _storeSequence.AddStore(_storeA);
             _storeSequence.AddStore(_cacheA);
 
@@ -143,7 +144,7 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_WithMultipleCachesAsync()
         {
-            await _storeB.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await _storeB.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log);
             _storeSequence.AddStore(_cacheA);
             _storeSequence.AddStore(_storeA);
             _storeSequence.AddStore(_cacheB);
@@ -160,7 +161,7 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_CachedAsync()
         {
-            await _cacheA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await _cacheA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log);
             _storeSequence.AddStore(_cacheA);
 
             var fileReference = await _storeSequence.FindFileAsync(_searchQuery, _log);
@@ -172,7 +173,7 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_CachedInLaterCacheAsync()
         {
-            await _cacheB.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await _cacheB.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log);
             _storeSequence.AddStore(_cacheA);
             _storeSequence.AddStore(_cacheB);
 
@@ -205,11 +206,12 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_SkipUnsupportedCacheAsync()
         {
-            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log);
             var unsupportedCache = Substitute.For<ISymbolStore>();
-            var query = new ModuleSearchQuery("foo", null);
+            var query = new ModuleSearchQuery("foo", null, _elfFormat);
             unsupportedCache.FindFileAsync(query, _log).ReturnsForAnyArgs((IFileReference)null);
-            unsupportedCache.AddFileAsync(null, "", null, null).Throws(new NotSupportedException());
+            unsupportedCache.AddFileAsync(null, "", null, _elfFormat, null)
+                .Throws(new NotSupportedException());
             _storeSequence.AddStore(unsupportedCache);
             _storeSequence.AddStore(_storeA);
 
@@ -222,8 +224,8 @@ namespace SymbolStores.Tests
         [Test]
         public async Task FindFile_InvalidSymbolFileWithCacheAsync()
         {
-            string storeAPath = Path.Combine(_storeAPath, _filename, _buildId.ToPathName(),
-                                             _filename);
+            string storeAPath = Path.Combine(_storeAPath, _filename,
+                                             _buildId.ToPathName(_elfFormat), _filename);
 
             _fakeBuildIdWriter.WriteBuildId(storeAPath, _buildId);
             _sourceSymbolFile = new FileReference(_fakeFileSystem, storeAPath);
@@ -251,14 +253,14 @@ namespace SymbolStores.Tests
             // Test the scenario where the symbol store cache contains an invalid symbol file,
             // but the store contains a correct file. In that case, we should overwrite the cache
             // with the correct file and return a reference to it.
-            string storeAPath = Path.Combine(_storeAPath, _filename, _buildId.ToPathName(),
-                                             _filename);
+            string storeAPath = Path.Combine(_storeAPath, _filename,
+                                             _buildId.ToPathName(_elfFormat), _filename);
             _fakeBuildIdWriter.WriteBuildId(storeAPath, _buildId);
             _sourceSymbolFile = new FileReference(_fakeFileSystem, storeAPath);
 
-            BuildId badBuildId = new BuildId("BAAD", ModuleFormat.Elf);
-            string cacheAPath = Path.Combine(_cacheAPath, _filename, _buildId.ToPathName(),
-                                             _filename);
+            BuildId badBuildId = new BuildId("BAAD");
+            string cacheAPath = Path.Combine(_cacheAPath, _filename,
+                                             _buildId.ToPathName(_elfFormat), _filename);
             _fakeBuildIdWriter.WriteBuildId(cacheAPath, badBuildId);
             _sourceSymbolFile = new FileReference(_fakeFileSystem, cacheAPath);
             string customErrorMessage = "Symbol verification error";
@@ -270,8 +272,8 @@ namespace SymbolStores.Tests
                 .Returns(x =>
                 {
                     var buildId = new BuildId(
-                        _fakeFileSystem.File.ReadAllText(x[0].ToString()), ModuleFormat.Elf);
-                    if (buildId == badBuildId)
+                        _fakeFileSystem.File.ReadAllText(x[0].ToString()));
+                    if (buildId.Matches(badBuildId, _elfFormat))
                     {
                         x[2] = customErrorMessage;
                         return false;
@@ -363,7 +365,7 @@ namespace SymbolStores.Tests
 
         protected override async Task<ISymbolStore> GetStoreWithFileAsync()
         {
-            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await _storeA.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log);
             _storeSequence.AddStore(_storeA);
             return _storeSequence;
         }

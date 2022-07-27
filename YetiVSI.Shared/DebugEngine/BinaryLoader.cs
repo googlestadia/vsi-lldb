@@ -96,13 +96,14 @@ namespace YetiVSI.DebugEngine
                 return (lldbModule, false);
             }
 
-            BuildId buildId = new BuildId(lldbModule.GetUUIDString(), lldbModule.GetModuleFormat());
+            BuildId buildId = new BuildId(lldbModule.GetUUIDString());
 
-            var searchQuery = new ModuleSearchQuery(binaryName, buildId)
-            {
-                ForceLoad = forceLoad,
-                RequireDebugInfo = false
-            };
+            var searchQuery =
+                new ModuleSearchQuery(binaryName, buildId, lldbModule.GetModuleFormat())
+                {
+                    ForceLoad = forceLoad,
+                    RequireDebugInfo = false
+                };
 
             string binaryPath = await _moduleFileFinder.FindFileAsync(searchQuery, searchLog);
 
@@ -114,9 +115,8 @@ namespace YetiVSI.DebugEngine
             if (TryReplaceModule(lldbModule, binaryPath, out SbModule addedModule))
             {
                 searchLog.WriteLineAndTrace($"Successfully loaded binary '{binaryPath}'.");
-                LldbModuleReplaced?.Invoke(Self,
-                                           new LldbModuleReplacedEventArgs(
-                                               addedModule, lldbModule));
+                LldbModuleReplaced?.Invoke(
+                    Self, new LldbModuleReplacedEventArgs(addedModule, lldbModule));
 
                 return (addedModule, true);
             }

@@ -301,8 +301,8 @@ namespace YetiVSI.Test
             _preflightBinaryChecker
                 .When(g => g.CheckLocalAndRemoteBinaryOnLaunchAsync(
                           Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
-                          Arg.Any<List<string>>(), Arg.Any<IAction>())).Throw(
-                    new PreflightBinaryCheckerException(msg, null, isCritical: true));
+                          Arg.Any<List<string>>(), Arg.Any<IAction>(), Arg.Any<ModuleFormat>()))
+                .Throw(new PreflightBinaryCheckerException(msg, null, isCritical: true));
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
             Assert.AreEqual(0, launchSettings.Count);
@@ -318,7 +318,8 @@ namespace YetiVSI.Test
             _preflightBinaryChecker
                 .When(g => g.CheckLocalAndRemoteBinaryOnLaunchAsync(
                           Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
-                          Arg.Any<List<string>>(), Arg.Any<IAction>())).Throw(
+                          Arg.Any<List<string>>(), Arg.Any<IAction>(), Arg.Any<ModuleFormat>()))
+                .Throw(
                     new PreflightBinaryCheckerException(msg, null, isCritical: false));
 
             var launchSettings = await QueryDebugTargetsAsync(DebugLaunchOptions.NoDebug);
@@ -342,7 +343,7 @@ namespace YetiVSI.Test
             await _preflightBinaryChecker.Received().CheckLocalAndRemoteBinaryOnLaunchAsync(
                 Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
                 Arg.Is<List<string>>(paths => paths.SequenceEqual(expectedPaths)),
-                Arg.Any<IAction>());
+                Arg.Any<IAction>(), Arg.Any<ModuleFormat>());
         }
 
         [Test]
@@ -360,7 +361,7 @@ namespace YetiVSI.Test
             await _preflightBinaryChecker.Received().CheckLocalAndRemoteBinaryOnLaunchAsync(
                 Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
                 Arg.Is<List<string>>(paths => paths.SequenceEqual(expectedPaths)),
-                Arg.Any<IAction>());
+                Arg.Any<IAction>(), Arg.Any<ModuleFormat>());
         }
 
         [Test]
@@ -376,7 +377,7 @@ namespace YetiVSI.Test
             await _preflightBinaryChecker.Received().CheckLocalAndRemoteBinaryOnLaunchAsync(
                 Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
                 Arg.Is<List<string>>(paths => paths.SequenceEqual(expectedPaths)),
-                Arg.Any<IAction>());
+                Arg.Any<IAction>(), Arg.Any<ModuleFormat>());
         }
 
         [Test]
@@ -392,7 +393,7 @@ namespace YetiVSI.Test
             await _preflightBinaryChecker.Received().CheckLocalAndRemoteBinaryOnLaunchAsync(
                 Arg.Any<ISet<string>>(), Arg.Any<string>(), Arg.Any<SshTarget>(),
                 Arg.Is<List<string>>(paths => paths.SequenceEqual(expectedPaths)),
-                Arg.Any<IAction>());
+                Arg.Any<IAction>(), Arg.Any<ModuleFormat>());
         }
 
         [Test]

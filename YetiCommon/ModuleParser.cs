@@ -129,7 +129,7 @@ namespace YetiCommon
                 if (buildIdSection is INoteSection buildIdNoteSection)
                 {
                     byte[] contents = buildIdNoteSection.Description;
-                    output.Data = ParseBuildIdValue(contents, ModuleFormat.Elf);
+                    output.Data = ParseBuildIdValue(contents);
                 }
                 else
                 {
@@ -153,7 +153,7 @@ namespace YetiCommon
                     return output;
                 }
 
-                output.Data = GetBuildId(pdb.Guid, pdb.Age, ModuleFormat.Pdb);
+                output.Data = GetBuildId(pdb.Guid, pdb.Age);
             }
 
             return output;
@@ -195,7 +195,7 @@ namespace YetiCommon
 
                             CodeViewDebugDirectoryData cv =
                                 reader.ReadCodeViewDebugDirectoryData(entry);
-                            output.Data = GetBuildId(cv.Guid, cv.Age, ModuleFormat.Pe);
+                            output.Data = GetBuildId(cv.Guid, cv.Age);
                             return output;
                         }
                     }
@@ -211,8 +211,8 @@ namespace YetiCommon
             return output;
         }
 
-        BuildId GetBuildId(Guid guid, int age, ModuleFormat moduleFormat) =>
-            new BuildId($"{guid}-{age:X8}", moduleFormat);
+        BuildId GetBuildId(Guid guid, int age) =>
+            new BuildId($"{guid}-{age:X8}");
 
         public async Task<BuildId> ParseRemoteBuildIdInfoAsync(string filepath, SshTarget target)
         {
@@ -237,8 +237,7 @@ namespace YetiCommon
                 }
 
                 string hexString = ParseHexDump(outputLines);
-                ModuleFormat moduleFormat = ParseModuleFormatDump(outputLines);
-                BuildId buildId = ParseBuildIdOutput(hexString, moduleFormat);
+                BuildId buildId = ParseBuildIdOutput(hexString);
                 return buildId;
             }
             catch (ProcessExecutionException e)
@@ -350,7 +349,7 @@ namespace YetiCommon
         /// Thrown when the input does not have enough leading bytes, or when it does not encode a
         /// valid build ID.
         /// </exception>
-        BuildId ParseBuildIdOutput(string hexString, ModuleFormat moduleFormat)
+        BuildId ParseBuildIdOutput(string hexString)
         {
             // A note segment consists of a 4 byte namesz field, a 4 byte descsz field,
             // a 4 byte type field, a namesz-length name field, and a descsz-length desc field.
@@ -364,7 +363,7 @@ namespace YetiCommon
                                           "but wanted at least 32 leading digits");
             }
 
-            var buildId = new BuildId(hexString.Substring(32), moduleFormat);
+            var buildId = new BuildId(hexString.Substring(32));
 
             if (BuildId.IsNullOrEmpty(buildId))
             {
@@ -414,7 +413,7 @@ namespace YetiCommon
             return Encoding.ASCII.GetString(stringBytes.ToArray());
         }
 
-        public BuildId ParseBuildIdValue(byte[] contents, ModuleFormat moduleFormat) =>
-            new BuildId(contents, moduleFormat);
+        public BuildId ParseBuildIdValue(byte[] contents) =>
+            new BuildId(contents);
     }
 }

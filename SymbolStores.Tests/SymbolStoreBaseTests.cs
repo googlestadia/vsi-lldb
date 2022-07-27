@@ -31,7 +31,7 @@ namespace SymbolStores.Tests
         protected const string _destFilepath = @"C:\dest\" + _filename;
         protected const string _invalidPath = @"C:\invalid|";
         protected const ModuleFormat _elfFormat = ModuleFormat.Elf;
-        protected static BuildId _buildId = new BuildId("1234", _elfFormat);
+        protected static BuildId _buildId = new BuildId("1234");
 
         protected MockFileSystem _fakeFileSystem;
         protected IModuleParser _moduleParser;
@@ -40,11 +40,12 @@ namespace SymbolStores.Tests
         protected StringWriter _log;
         protected TextWriter _nullLog = TextWriter.Null;
 
-        protected ModuleSearchQuery _searchQuery = new ModuleSearchQuery(_filename, _buildId)
-        {
-            ForceLoad = true,
-            RequireDebugInfo = true
-        };
+        protected ModuleSearchQuery _searchQuery =
+            new ModuleSearchQuery(_filename, _buildId, _elfFormat)
+            {
+                ForceLoad = true,
+                RequireDebugInfo = true
+            };
 
         [SetUp]
         public virtual void SetUp()
@@ -92,7 +93,7 @@ namespace SymbolStores.Tests
             }
 
             var fileReference = await store.AddFileAsync(_sourceSymbolFile, _filename,
-                                                         _buildId, _log);
+                                                         _buildId, _elfFormat, _log);
 
             StringAssert.Contains(Strings.CopiedFile(_filename, fileReference.Location),
                                   _log.ToString());
@@ -108,7 +109,7 @@ namespace SymbolStores.Tests
             }
 
             Assert.ThrowsAsync<NotSupportedException>(
-                () => store.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log));
+                () => store.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log));
         }
 
         [Test]
@@ -121,7 +122,7 @@ namespace SymbolStores.Tests
             }
 
             var fileReference = await store.AddFileAsync(_sourceSymbolFile, _filename,
-                                                         _buildId, _log);
+                                                         _buildId, _elfFormat, _log);
             await fileReference.CopyToAsync(_destFilepath);
         }
 
@@ -134,7 +135,7 @@ namespace SymbolStores.Tests
                 return;
             }
 
-            await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _log);
+            await store.AddFileAsync(_sourceSymbolFile, _filename, _buildId, _elfFormat, _log);
         }
 
         [Test]
@@ -148,7 +149,7 @@ namespace SymbolStores.Tests
 
             Assert.ThrowsAsync<SymbolStoreException>(
                 () => store.AddFileAsync(new FileReference(_fakeFileSystem, _missingFilepath),
-                                         _filename, _buildId, _log));
+                                         _filename, _buildId, _elfFormat, _log));
         }
 
         [Test]
@@ -162,8 +163,7 @@ namespace SymbolStores.Tests
 
             Assert.ThrowsAsync<SymbolStoreException>(
                 () => store.AddFileAsync(new FileReference(_fakeFileSystem, _invalidPath),
-                                         _filename,
-                                         _buildId, _log));
+                                         _filename, _buildId, _elfFormat, _log));
         }
 
         [Test]
@@ -176,14 +176,14 @@ namespace SymbolStores.Tests
             }
 
             Assert.ThrowsAsync<ArgumentException>(
-                () => store.AddFileAsync(null, _filename, _buildId, _log));
+                () => store.AddFileAsync(null, _filename, _buildId, _elfFormat, _log));
         }
 
         [TestCase(null, "1234")]
         [TestCase(_filename, "")]
         public void AddFile_InvalidArgument(string filename, string buildIdStr)
         {
-            var buildId = new BuildId(buildIdStr, ModuleFormat.Elf);
+            var buildId = new BuildId(buildIdStr);
             var store = GetEmptyStore();
             if (!store.SupportsAddingFiles)
             {
@@ -191,7 +191,8 @@ namespace SymbolStores.Tests
             }
 
             Assert.ThrowsAsync<ArgumentException>(
-                () => store.AddFileAsync(_sourceSymbolFile, filename, buildId, _log));
+                () => store.AddFileAsync(_sourceSymbolFile, filename, buildId, ModuleFormat.Elf,
+                                         _log));
         }
 
         /// <summary>

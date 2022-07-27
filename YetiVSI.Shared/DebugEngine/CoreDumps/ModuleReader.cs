@@ -105,8 +105,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
                         var notesStream = new MemoryStream(noteSegmentBytes);
                         using (var notesReader = new BinaryReader(notesStream))
                         {
-                            BuildId buildId =
-                                NoteSection.ReadBuildId(notesReader, size, ModuleFormat.Elf);
+                            BuildId buildId = NoteSection.ReadBuildId(notesReader, size);
                             if (!BuildId.IsNullOrEmpty(buildId))
                             {
                                 return new DumpModule(file.Path, buildId,

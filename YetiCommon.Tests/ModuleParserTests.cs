@@ -32,8 +32,8 @@ namespace YetiCommon.Tests
         public void ParseBuildIdValue(byte[] input, string expectedHexString)
         {
             var moduleParser = new ModuleParser();
-            BuildId output = moduleParser.ParseBuildIdValue(input, ModuleFormat.Elf);
-            Assert.AreEqual(new BuildId(expectedHexString, ModuleFormat.Elf), output);
+            BuildId output = moduleParser.ParseBuildIdValue(input);
+            Assert.True(output.Matches(new BuildId(expectedHexString), ModuleFormat.Elf));
         }
 
         [TestCase(new byte[]

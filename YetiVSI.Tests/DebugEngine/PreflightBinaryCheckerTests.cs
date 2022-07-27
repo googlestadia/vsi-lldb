@@ -45,8 +45,8 @@ namespace YetiVSI.Test.DebugEngine
         static readonly List<string> _remoteTargetPaths = new List<string> { _remoteTargetPath };
 
         static readonly SshTarget _target = new SshTarget("127.0.0.1:22");
-        static readonly BuildId _validBuildId = new BuildId("AA", ModuleFormat.Elf);
-        static readonly BuildId _validBuildId2 = new BuildId("BB", ModuleFormat.Elf);
+        static readonly BuildId _validBuildId = new BuildId("AA");
+        static readonly BuildId _validBuildId2 = new BuildId("BB");
         static readonly HashSet<string> _searchPaths = new HashSet<string> { "/path1", "/path2" };
         static readonly List<string> _localPaths =
             _searchPaths.Select(path => Path.Combine(path, _executable)).ToList();
@@ -171,7 +171,8 @@ namespace YetiVSI.Test.DebugEngine
                 .Returns(new BuildIdInfo() { Data = _validBuildId });
 
             await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                _searchPaths, _executable, _target, _remoteTargetPaths, _action));
+                                          _searchPaths, _executable, _target, _remoteTargetPaths,
+                                          _action, ModuleFormat.Elf));
 
             _metrics.Received().RecordEvent(
                 DeveloperEventType.Types.Type.VsiDebugPreflightBinaryCheck,
@@ -191,7 +192,8 @@ namespace YetiVSI.Test.DebugEngine
         {
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
                 await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                _searchPaths, _executable, _target, _remoteTargetPaths, _action)));
+                                              _searchPaths, _executable, _target,
+                                              _remoteTargetPaths, _action, ModuleFormat.Elf)));
             Assert.AreEqual(ErrorStrings.UnableToFindExecutable(_executable), ex.Message);
 
             _metrics.Received().RecordEvent(
@@ -217,7 +219,8 @@ namespace YetiVSI.Test.DebugEngine
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
                 await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                    _searchPaths, _executable, _target, _remoteTargetPaths, _action)));
+                                              _searchPaths, _executable, _target,
+                                              _remoteTargetPaths, _action, ModuleFormat.Elf)));
             Assert.IsInstanceOf<BinaryFileUtilException>(ex.InnerException);
             Assert.AreEqual(ErrorStrings.FailedToCheckRemoteBuildIdWithExplanation(
                 ex.InnerException.Message), ex.Message);
@@ -242,7 +245,8 @@ namespace YetiVSI.Test.DebugEngine
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
                 await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                    _searchPaths, _executable, _target, _remoteTargetPaths, _action)));
+                                              _searchPaths, _executable, _target,
+                                              _remoteTargetPaths, _action, ModuleFormat.Elf)));
             Assert.AreEqual(ErrorStrings.LaunchEndedGameBinaryNotFound, ex.Message);
 
             _metrics.Received().RecordEvent(
@@ -262,15 +266,15 @@ namespace YetiVSI.Test.DebugEngine
             _fileSystem.AddDirectory(_searchPaths.ElementAt(0));
             _fileSystem.AddFile(_localPaths[0], new MockFileData(""));
 
-            var buildIdInfoInvalid = new BuildIdInfo()
-                { Data = new BuildId("BAAD", ModuleFormat.Elf) };
+            var buildIdInfoInvalid = new BuildIdInfo() { Data = new BuildId("BAAD") };
             _moduleParser
                 .ParseBuildIdInfo(Arg.Any<string>(), ModuleFormat.Elf)
                 .Returns(buildIdInfoInvalid);
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
                 await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                    _searchPaths, _executable, _target, _remoteTargetPaths, _action)));
+                                              _searchPaths, _executable, _target,
+                                              _remoteTargetPaths, _action, ModuleFormat.Elf)));
             Assert.AreEqual(ErrorStrings.UnableToFindExecutableMatchingRemoteBinary(_executable,
                 _remoteTargetPath), ex.Message);
 
@@ -305,7 +309,8 @@ namespace YetiVSI.Test.DebugEngine
 
             Exception ex = Assert.ThrowsAsync<PreflightBinaryCheckerException>(async () =>
                 await _action.RecordAsync(_checker.CheckLocalAndRemoteBinaryOnLaunchAsync(
-                    _searchPaths, _executable, _target, _remoteTargetPaths, _action)));
+                                              _searchPaths, _executable, _target,
+                                              _remoteTargetPaths, _action, ModuleFormat.Elf)));
             Assert.AreEqual(ErrorStrings.UnableToFindExecutableMatchingRemoteBinary(_executable,
                 _remoteTargetPath), ex.Message);
 

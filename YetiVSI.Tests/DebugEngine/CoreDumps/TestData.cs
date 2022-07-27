@@ -27,10 +27,10 @@ namespace YetiVSI.Test.DebugEngine.CoreDumps
 
 
         public static BuildId expectedId = new BuildId(
-            "61A1A0AE-FAA0-04E4-228E-D5E8D37C7C1F-5C6EEB3D", ModuleFormat.Elf);
+            "61A1A0AE-FAA0-04E4-228E-D5E8D37C7C1F-5C6EEB3D");
 
         public static BuildId anotherExpectedId = new BuildId(
-            "61A1A0AE-FAA0-04E4-228E-D5E8D37C7C1F-5C6EEBED", ModuleFormat.Elf);
+            "61A1A0AE-FAA0-04E4-228E-D5E8D37C7C1F-5C6EEBED");
 
         public static readonly int bitnessIndex = magicNumberBytes.Length;
         public static readonly int endiannessIndex = bitnessIndex + 1;

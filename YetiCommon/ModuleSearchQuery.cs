@@ -25,11 +25,12 @@ namespace YetiCommon
 
     public class ModuleSearchQuery
     {
-        public ModuleSearchQuery(string filename, BuildId buildId)
+        public ModuleSearchQuery(string filename, BuildId buildId, ModuleFormat moduleFormat)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(filename));
             Filename = filename;
             BuildId = buildId;
+            ModuleFormat = moduleFormat;
         }
 
         /// <summary>
@@ -51,6 +52,8 @@ namespace YetiCommon
         /// Module BuildId.
         /// </summary>
         public BuildId BuildId { get; }
+
+        public ModuleFormat ModuleFormat { get; }
 
         /// <summary>
         /// Should contain debug information or not.

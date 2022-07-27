@@ -74,9 +74,8 @@ namespace SymbolStores
             string filepath;
             try
             {
-                filepath = Path.Combine(_path,
-                                        searchQuery.Filename,
-                                        searchQuery.BuildId.ToPathName(),
+                filepath = Path.Combine(_path, searchQuery.Filename,
+                                        searchQuery.BuildId.ToPathName(searchQuery.ModuleFormat),
                                         searchQuery.Filename);
             }
             catch (ArgumentException e)
@@ -98,19 +97,23 @@ namespace SymbolStores
 
         public override async Task<IFileReference> AddFileAsync(IFileReference source,
                                                                 string filename, BuildId buildId,
+                                                                ModuleFormat moduleFormat,
                                                                 TextWriter log)
         {
             if (source == null)
             {
-                throw new ArgumentException(Strings.FailedToCopyToStructuredStore(
-                                                _path, filename, Strings.SourceFileReferenceNull),
-                                            nameof(source));
+                throw new ArgumentException(
+                    Strings.FailedToCopyToStructuredStore(_path, filename,
+                                                          Strings.SourceFileReferenceNull),
+                    nameof(source));
             }
+
             if (string.IsNullOrEmpty(filename))
             {
-                throw new ArgumentException(Strings.FailedToCopyToStructuredStore(
-                                                _path, filename, Strings.FilenameNullOrEmpty),
-                                            nameof(filename));
+                throw new ArgumentException(
+                    Strings.FailedToCopyToStructuredStore(_path, filename,
+                                                          Strings.FilenameNullOrEmpty),
+                    nameof(filename));
             }
 
             if (BuildId.IsNullOrEmpty(buildId))
@@ -125,7 +128,7 @@ namespace SymbolStores
                 AddMarkerFileIfNeeded();
 
                 string filepath =
-                    Path.Combine(_path, filename, buildId.ToPathName(), filename);
+                    Path.Combine(_path, filename, buildId.ToPathName(moduleFormat), filename);
                 await source.CopyToAsync(filepath);
 
                 log.WriteLineAndTrace(Strings.CopiedFile(filename, filepath));

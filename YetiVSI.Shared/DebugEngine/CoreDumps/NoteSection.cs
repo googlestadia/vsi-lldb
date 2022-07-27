@@ -126,15 +126,14 @@ namespace YetiVSI.DebugEngine.CoreDumps
         /// </exception>
         /// <param name="reader">Input stream reader.</param>
         /// <param name="size">Expected note section size from program header.</param>
-        /// <param name="moduleFormat">Format of the module. Required for Build ID.</param>
         /// <returns>Build id or BuildId.Empty.</returns>
-        public static BuildId ReadBuildId(BinaryReader reader, int size, ModuleFormat moduleFormat)
+        public static BuildId ReadBuildId(BinaryReader reader, int size)
         {
             NoteSection buildIdNote = ReadNotes(reader, size)
                 .FirstOrDefault(note => note._name == Name.Gnu && note._type == Type.BuildId);
 
             return buildIdNote != null
-                ? new BuildId(buildIdNote._data, moduleFormat)
+                ? new BuildId(buildIdNote._data)
                 : null;
         }
 

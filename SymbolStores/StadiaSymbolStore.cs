@@ -146,7 +146,9 @@ namespace SymbolStores
         }
 
         public override Task<IFileReference> AddFileAsync(IFileReference source, string filename,
-                                                          BuildId buildId, TextWriter log) =>
+                                                          BuildId buildId,
+                                                          ModuleFormat moduleFormat,
+                                                          TextWriter log) =>
             throw new NotSupportedException(Strings.CopyToHttpStoreNotSupported);
 
         public override bool DeepEquals(ISymbolStore otherStore) => otherStore is StadiaSymbolStore;

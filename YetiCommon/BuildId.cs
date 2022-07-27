@@ -23,60 +23,55 @@ namespace YetiCommon
     /// Immutable struct that contains the build ID of a binary or symbol file and its format. Uses
     /// the same string representation as LLDB's internal UUID class.
     /// </summary>
-    public class BuildId : IEquatable<BuildId>
+    public class BuildId
     {
         // For Windows modules (pdb and pe), amount of bytes that correspond only to the BuildId.
         // The following bytes should correspond to the age.
         const int _windowsBuildIdBytes = 16;
+        const int _windowsBuildIdAndAgeBytes = 20;
 
         public readonly IList<byte> Bytes;
 
-        public readonly ModuleFormat ModuleFormat;
-
-        public BuildId(IEnumerable<byte> bytes, ModuleFormat moduleFormat)
+        public BuildId(IEnumerable<byte> bytes)
         {
             Bytes = bytes != null
                 ? new List<byte>(bytes)
                 : new List<byte>();
-            ModuleFormat = moduleFormat;
         }
 
         /// <summary>
         /// BuildId constructor that parses a string into its bytes representation.
         /// </summary>
         /// <param name="hexStr">Hexadecimal representation of the build ID.</param>
-        /// <param name="moduleFormat">Format of the module corresponding to the build ID. Can be
-        /// elf, pdb or pe.</param>
         /// <exception cref="FormatException">When the provided string has invalid characters or
         /// doesn't have an even number of digits.</exception>
-        public BuildId(string hexStr, ModuleFormat moduleFormat)
+        public BuildId(string hexStr)
         {
             var byteList = new List<byte>();
             if (hexStr != null)
             {
-                var digits = hexStr.Replace("-", null);
-                foreach (var c in digits.SkipWhile(Uri.IsHexDigit))
+                string digits = hexStr.Replace("-", null);
+                foreach (char c in digits.SkipWhile(Uri.IsHexDigit))
                 {
                     throw new FormatException(
                         $"BuildId string '{hexStr}' contains invalid character '{c}'");
                 }
 
 
-                if (moduleFormat == ModuleFormat.Elf && digits.Length % 2 != 0)
+                if (digits.Length % 2 != 0)
                 {
                     throw new FormatException(
-                        $"BuildId string with elf format '{hexStr}' does not have an even" +
-                        "number of hexadecimal digits");
+                        $"BuildId string '{hexStr}' does not have an even number of hexadecimal " +
+                        "digits");
                 }
 
-                for (var i = 0; i < digits.Length; i += 2)
+                for (int i = 0; i < digits.Length; i += 2)
                 {
                     byteList.Add(Convert.ToByte(digits.Substring(i, 2), 16));
                 }
             }
 
             Bytes = byteList;
-            ModuleFormat = moduleFormat;
         }
 
         /// <summary>
@@ -94,7 +89,7 @@ namespace YetiCommon
         /// trailing zeroes of the age are omitted.
         /// </summary>
         /// <returns></returns>
-        public string ToPathName() => ModuleFormat == ModuleFormat.Elf
+        public string ToPathName(ModuleFormat moduleFormat) => moduleFormat == ModuleFormat.Elf
             ? ToUUIDString()
             : PathNameForWindows();
 
@@ -153,52 +148,58 @@ namespace YetiCommon
         /// </summary>
         /// <returns>String representation of BuildId including the ModuleFormat.</returns>
         public override string ToString() =>
-            $"{{Build-Id: {ToPathName()}, Module format: {ModuleFormat}}}";
+            $"{{Build-Id: {ToUUIDString()}}}";
 
         public string ToHexString() =>
             BitConverter.ToString(Bytes.ToArray()).Replace("-", "").ToUpper();
 
         public static bool IsNullOrEmpty(BuildId buildId) => (buildId?.Bytes.Count ?? 0) == 0;
 
-        public override int GetHashCode()
+        /// <summary>
+        /// Compares the current buildId against other buildId to validate if they match. The
+        /// validation takes into account the format of the modules. For pdb module format, the age
+        /// is disregarded.
+        /// </summary>
+        /// <param name="otherBuildId">Build Id against the comparison is made.</param>
+        /// <param name="moduleFormat">Module format being used.</param>
+        /// <returns>True if the Bytes match, excluding the age for buildId with pdb module format.
+        /// </returns>
+        public bool Matches(BuildId otherBuildId, ModuleFormat moduleFormat)
         {
-            int hash = 17 + (int)ModuleFormat;
-            foreach (var b in Bytes)
-            {
-                hash = hash * 23 + b;
-            }
-
-            return hash;
-        }
-
-        public override bool Equals(object other)
-        {
-            return other is BuildId && this == (BuildId)other;
-        }
-
-        public bool Equals(BuildId other)
-        {
-            return this == other;
-        }
-
-        public static bool operator ==(BuildId a, BuildId b)
-        {
-            if (a is null && b is null)
-            {
-                return true;
-            }
-
-            if (a is null || b is null)
+            if (otherBuildId == null)
             {
                 return false;
             }
 
-            return a.Bytes.SequenceEqual(b.Bytes) && a.ModuleFormat.Equals(b.ModuleFormat);
-        }
+            if (Bytes.Count != otherBuildId.Bytes.Count)
+            {
+                return false;
+            }
 
-        public static bool operator !=(BuildId a, BuildId b)
-        {
-            return !(a == b);
+            int byteLengthToValidate;
+            switch (moduleFormat)
+            {
+                case ModuleFormat.Pe:
+                    byteLengthToValidate = _windowsBuildIdAndAgeBytes;
+                    break;
+                case ModuleFormat.Pdb:
+                    byteLengthToValidate = _windowsBuildIdBytes;
+                    break;
+                case ModuleFormat.Elf:
+                default:
+                    byteLengthToValidate = Bytes.Count;
+                    break;
+            }
+
+            for (int i = 0; i < byteLengthToValidate && i < Bytes.Count; i++)
+            {
+                if (!Bytes[i].Equals(otherBuildId.Bytes[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

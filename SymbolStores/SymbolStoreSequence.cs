@@ -31,7 +31,7 @@ namespace SymbolStores
     /// </summary>
     public class SymbolStoreSequence : SymbolStoreBase
     {
-        public bool HasCache => _stores.Any(s => s.IsCache == true);
+        public bool HasCache => _stores.Any(s => s.IsCache);
 
         readonly IModuleParser _moduleParser;
 
@@ -81,9 +81,8 @@ namespace SymbolStores
                         try
                         {
                             fileReference = await currentCache.AddFileAsync(
-                                fileReference,
-                                searchQuery.Filename,
-                                searchQuery.BuildId, log);
+                                fileReference, searchQuery.Filename, searchQuery.BuildId,
+                                searchQuery.ModuleFormat, log);
                         }
                         catch (Exception e)
                             when (e is NotSupportedException || e is SymbolStoreException ||
@@ -126,6 +125,7 @@ namespace SymbolStores
 
         public override Task<IFileReference> AddFileAsync(IFileReference sourceFilepath,
                                                           string filename, BuildId buildId,
+                                                          ModuleFormat moduleFormat,
                                                           TextWriter log) =>
             throw new NotSupportedException(Strings.CopyToStoreSequenceNotSupported);
 
@@ -152,7 +152,7 @@ namespace SymbolStores
                 return false;
             }
 
-            if (query.BuildId?.ModuleFormat == ModuleFormat.Elf &&
+            if (query.ModuleFormat == ModuleFormat.Elf &&
                 !_moduleParser.IsValidElf(filepath, query.RequireDebugInfo,
                                           out string errorMessage))
             {
@@ -166,20 +166,21 @@ namespace SymbolStores
             }
 
             BuildIdInfo actualBuildId =
-                _moduleParser.ParseBuildIdInfo(filepath, query.BuildId.ModuleFormat);
+                _moduleParser.ParseBuildIdInfo(filepath, query.ModuleFormat);
             if (actualBuildId.HasError)
             {
                 log.WriteLineAndTrace(actualBuildId.Error);
                 return false;
             }
 
-            if (actualBuildId.Data == query.BuildId)
+            if (actualBuildId.Data.Matches(query.BuildId, query.ModuleFormat))
             {
                 return true;
             }
 
             string buildIdMismatch =
-                Strings.BuildIdMismatch(filepath, query.BuildId, actualBuildId.Data);
+                Strings.BuildIdMismatch(filepath, query.BuildId, actualBuildId.Data,
+                                        query.ModuleFormat);
             log.WriteLineAndTrace(buildIdMismatch);
             return false;
         }

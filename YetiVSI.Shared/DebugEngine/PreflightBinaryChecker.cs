@@ -59,14 +59,17 @@ namespace YetiVSI.DebugEngine
         /// Look for a local copy of the binary based on the name and build id. Log messages and
         /// record metrics to indicate the result of the checks.
         /// </summary>
-        /// <param name="libPaths">LLDB search paths to check for local binaries</param>
-        /// <param name="executable">Name of the binary to look for locally and remotely</param>
-        /// <param name="target">The machine that should have a valid remote binary</param>
-        /// <param name="remoteTargetPaths">Remote paths where the binary is expected to be</param>
+        /// <param name="libPaths">LLDB search paths to check for local binaries.</param>
+        /// <param name="executable">Name of the binary to look for locally and remotely.</param>
+        /// <param name="target">The machine that should have a valid remote binary.</param>
+        /// <param name="remoteTargetPaths">Remote paths where the binary is expected to be.
+        /// </param>
         /// <param name="action">An action to be recorded as a metrics log event.</param>
+        /// <param name="moduleFormat">Format of the module. It can be elf, pdb or pe.</param>
         Task CheckLocalAndRemoteBinaryOnLaunchAsync(ISet<string> libPaths, string executable,
                                                     SshTarget target,
-                                                    List<string> remoteTargetPaths, IAction action);
+                                                    List<string> remoteTargetPaths, IAction action,
+                                                    ModuleFormat moduleFormat);
 
         /// <summary>
         /// Check that the specified remote process's binary has a valid build id. Log messages and
@@ -93,7 +96,7 @@ namespace YetiVSI.DebugEngine
 
         public async Task CheckLocalAndRemoteBinaryOnLaunchAsync(
             ISet<string> libPaths, string executable, SshTarget target,
-            List<string> remoteTargetPaths, IAction action)
+            List<string> remoteTargetPaths, IAction action, ModuleFormat moduleFormat)
         {
             // Check that the remote binary has a build id and try to match it against
             // the local candidates to find the matching local binary.
@@ -142,7 +145,7 @@ namespace YetiVSI.DebugEngine
 
             // Log the remote Build ID for debugging purposes.
             dataRecorder.ValidRemoteBuildId();
-            Trace.WriteLine($"Remote build ID: {remoteBuildId?.ToPathName()}");
+            Trace.WriteLine($"Remote build ID: {remoteBuildId?.ToPathName(moduleFormat)}");
 
             // Make sure there is a local binary with the same name.
             List<string> localCandidatePaths = FindExecutableCandidates(libPaths, executable);
@@ -159,8 +162,8 @@ namespace YetiVSI.DebugEngine
 
             // Check local candidates to find one matching the remote build id.
             // Ignore local candidates that are missing a build id.
-            if (HasMatchingBuildId(localCandidatePaths, executable, remoteTargetPath,
-                                   remoteBuildId))
+            if (HasMatchingBuildId(localCandidatePaths, executable, remoteTargetPath, remoteBuildId,
+                                   moduleFormat))
             {
                 dataRecorder.LocalBinaryCheckResult(
                     DebugPreflightCheckData.Types.LocalBinarySearchResult.BinaryMatch);
@@ -205,7 +208,8 @@ namespace YetiVSI.DebugEngine
         }
 
         bool HasMatchingBuildId(IEnumerable<string> localCandidatePaths, string executable,
-                                string remoteTargetPath, BuildId remoteBuildId)
+                                string remoteTargetPath, BuildId remoteBuildId,
+                                ModuleFormat moduleFormat)
         {
             // TODO: re-write this using LINQ and Optional<T, TException>
             foreach (string path in localCandidatePaths)
@@ -217,7 +221,7 @@ namespace YetiVSI.DebugEngine
                     continue;
                 }
 
-                if (localBuildId.Data == remoteBuildId)
+                if (localBuildId.Data.Matches(remoteBuildId, moduleFormat))
                 {
                     Trace.WriteLine($"Found local copy of '{executable}' at '{path}' " +
                                     $"matching build ID of remote binary '{remoteTargetPath}'");

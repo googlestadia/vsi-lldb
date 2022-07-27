@@ -57,13 +57,12 @@ namespace SymbolStores
 
             for (int i = 0; i < _stores.Count; ++i)
             {
-                IFileReference fileReference =
-                    await _stores[i].FindFileAsync(searchQuery, log);
+                IFileReference fileReference = await _stores[i].FindFileAsync(searchQuery, log);
                 if (fileReference != null)
                 {
-                    IFileReference cascadeFileRef =
-                        await CascadeAsync(fileReference, searchQuery.Filename,
-                                           searchQuery.BuildId, i - 1, log);
+                    IFileReference cascadeFileRef = await CascadeAsync(
+                        fileReference, searchQuery.Filename, searchQuery.BuildId,
+                        searchQuery.ModuleFormat, i - 1, log);
                     return cascadeFileRef ?? fileReference;
                 }
             }
@@ -73,6 +72,7 @@ namespace SymbolStores
 
         public override async Task<IFileReference> AddFileAsync(IFileReference source,
                                                                 string filename, BuildId buildId,
+                                                                ModuleFormat moduleFormat,
                                                                 TextWriter log)
         {
             if (source == null)
@@ -97,7 +97,7 @@ namespace SymbolStores
             }
 
             var fileReference =
-                await CascadeAsync(source, filename, buildId, _stores.Count - 1, log);
+                await CascadeAsync(source, filename, buildId, moduleFormat, _stores.Count - 1, log);
             if (fileReference == null)
             {
                 throw new SymbolStoreException(Strings.FailedToCopyToSymbolServer(filename));
@@ -122,15 +122,16 @@ namespace SymbolStores
         // Returns a reference to the file in the last store that it is successfully copied to, or
         // null if it was not successfully copied.
         async Task<IFileReference> CascadeAsync(IFileReference sourceFileReference, string filename,
-                                                BuildId buildId, int index, TextWriter log)
+                                                BuildId buildId, ModuleFormat moduleFormat,
+                                                int index, TextWriter log)
         {
             IFileReference fileReference = null;
             for (int i = index; i >= 0; --i)
             {
                 try
                 {
-                    sourceFileReference = fileReference =
-                        await _stores[i].AddFileAsync(sourceFileReference, filename, buildId, log);
+                    sourceFileReference = fileReference = await _stores[i]
+                        .AddFileAsync(sourceFileReference, filename, buildId, moduleFormat, log);
                 }
                 catch (Exception e) when (e is NotSupportedException || e is SymbolStoreException ||
                                           e is ArgumentException)
@@ -138,6 +139,7 @@ namespace SymbolStores
                     log.WriteLineAndTrace(e.Message);
                 }
             }
+
             return fileReference;
         }
     }

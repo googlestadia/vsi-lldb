@@ -30,20 +30,15 @@ namespace SymbolStores
         }
 
         public override Task<IFileReference> AddFileAsync(IFileReference source, string filename,
-                                                          BuildId buildId, TextWriter logWriter)
-        {
+                                                          BuildId buildId,
+                                                          ModuleFormat moduleFormat,
+                                                          TextWriter logWriter) =>
             throw new NotImplementedException();
-        }
 
-        public override bool DeepEquals(ISymbolStore other)
-        {
-            return other is NullSymbolStore;
-        }
+        public override bool DeepEquals(ISymbolStore other) => other is NullSymbolStore;
 
         public override Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
-                                                           TextWriter searchLog)
-        {
-            return Task.FromResult<IFileReference>(null);
-        }
+                                                           TextWriter searchLog) =>
+            Task.FromResult<IFileReference>(null);
     }
 }
