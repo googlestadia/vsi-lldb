@@ -310,7 +310,8 @@ namespace YetiVSI.PortSupplier
 
         public int SupportsAutoRefresh(out bool pSupportsAutoRefresh)
         {
-            pSupportsAutoRefresh = true;
+            // TODO: Figure out why it breaks the test.
+            pSupportsAutoRefresh = false;
             return VSConstants.S_OK;
         }
     }
