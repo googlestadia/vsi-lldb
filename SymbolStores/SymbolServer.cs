@@ -53,7 +53,7 @@ namespace SymbolStores
                                                                  TextWriter log)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
-            Debug.Assert(searchQuery.BuildId != BuildId.Empty);
+            Debug.Assert(!BuildId.IsNullOrEmpty(searchQuery.BuildId));
 
             for (int i = 0; i < _stores.Count; ++i)
             {
@@ -81,13 +81,15 @@ namespace SymbolStores
                     Strings.FailedToCopyToSymbolServer(filename, Strings.SourceFileReferenceNull),
                     nameof(source));
             }
+
             if (string.IsNullOrEmpty(filename))
             {
                 throw new ArgumentException(
                     Strings.FailedToCopyToSymbolServer(filename, Strings.FilenameNullOrEmpty),
                     nameof(filename));
             }
-            if (buildId == BuildId.Empty)
+
+            if (BuildId.IsNullOrEmpty(buildId))
             {
                 throw new ArgumentException(
                     Strings.FailedToCopyToSymbolServer(filename, Strings.EmptyBuildId),

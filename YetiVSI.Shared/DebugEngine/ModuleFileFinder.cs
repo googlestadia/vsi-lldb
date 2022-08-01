@@ -90,7 +90,7 @@ namespace YetiVSI.DebugEngine
             Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
 
             searchLog.WriteLineAndTrace($"Searching for '{searchQuery.Filename}'");
-            if (searchQuery.BuildId == BuildId.Empty)
+            if (BuildId.IsNullOrEmpty(searchQuery.BuildId))
             {
                 searchLog.WriteLineAndTrace(
                     ErrorStrings.ModuleBuildIdUnknown(searchQuery.Filename));

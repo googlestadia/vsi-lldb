@@ -133,9 +133,9 @@ namespace YetiVSI.DebugEngine.CoreDumps
             NoteSection buildIdNote = ReadNotes(reader, size)
                 .FirstOrDefault(note => note._name == Name.Gnu && note._type == Type.BuildId);
 
-            return buildIdNote == null
-                ? BuildId.Empty
-                : new BuildId(buildIdNote._data, moduleFormat);
+            return buildIdNote != null
+                ? new BuildId(buildIdNote._data, moduleFormat)
+                : null;
         }
 
         static string ReadUtf8String(BinaryReader reader)

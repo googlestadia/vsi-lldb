@@ -223,7 +223,7 @@ namespace SymbolStores.Tests
         {
             // We need the API to return something, but it doesn't matter what.
             // By default, the HTTP client responds to all requests with Not Found.
-            _crashReportClient.GenerateSymbolFileDownloadUrlAsync(new BuildId().ToHexString(), null)
+            _crashReportClient.GenerateSymbolFileDownloadUrlAsync("", null)
                 .ReturnsForAnyArgs(_urlInStore);
 
             return new StadiaSymbolStore(_fakeFileSystem, _httpClient, _crashReportClient);

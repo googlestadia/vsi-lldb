@@ -60,7 +60,7 @@ namespace SymbolStores.Tests
             var store = GetEmptyStore();
 
             var exception = Assert.ThrowsAsync<ArgumentException>(
-                () => store.AddFileAsync(_sourceSymbolFile, _filename, BuildId.Empty, _nullLog));
+                () => store.AddFileAsync(_sourceSymbolFile, _filename, null, _nullLog));
 
             StringAssert.Contains(
                 Strings.FailedToCopyToStructuredStore(_storePath, _filename, Strings.EmptyBuildId),

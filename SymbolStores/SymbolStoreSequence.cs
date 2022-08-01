@@ -58,12 +58,10 @@ namespace SymbolStores
         public override IEnumerable<ISymbolStore> Substores => _stores;
 
         public override Task<IFileReference> FindFileAsync(ModuleSearchQuery searchQuery,
-                                                           TextWriter log)
-        {
-            return searchQuery.BuildId == BuildId.Empty
+                                                           TextWriter log) =>
+            BuildId.IsNullOrEmpty(searchQuery.BuildId)
                 ? SearchFlatSymbolStoresAsync(searchQuery, log)
                 : SearchAllSymbolStoresAsync(searchQuery, log);
-        }
 
         async Task<IFileReference> SearchAllSymbolStoresAsync(ModuleSearchQuery searchQuery,
                                                               TextWriter log)
@@ -154,7 +152,7 @@ namespace SymbolStores
                 return false;
             }
 
-            if (query.BuildId.ModuleFormat == ModuleFormat.Elf &&
+            if (query.BuildId?.ModuleFormat == ModuleFormat.Elf &&
                 !_moduleParser.IsValidElf(filepath, query.RequireDebugInfo,
                                           out string errorMessage))
             {
@@ -162,7 +160,7 @@ namespace SymbolStores
                 return false;
             }
 
-            if (query.BuildId == BuildId.Empty)
+            if (BuildId.IsNullOrEmpty(query.BuildId))
             {
                 return true;
             }

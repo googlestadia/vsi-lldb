@@ -366,7 +366,7 @@ namespace YetiCommon
 
             var buildId = new BuildId(hexString.Substring(32), moduleFormat);
 
-            if (buildId == BuildId.Empty)
+            if (BuildId.IsNullOrEmpty(buildId))
             {
                 throw new FormatException(ErrorStrings.EmptyBuildId);
             }

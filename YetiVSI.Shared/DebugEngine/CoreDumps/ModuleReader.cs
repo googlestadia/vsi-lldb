@@ -107,7 +107,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
                         {
                             BuildId buildId =
                                 NoteSection.ReadBuildId(notesReader, size, ModuleFormat.Elf);
-                            if (buildId != BuildId.Empty)
+                            if (!BuildId.IsNullOrEmpty(buildId))
                             {
                                 return new DumpModule(file.Path, buildId,
                                                       moduleHeader.IsExecutable);

@@ -99,7 +99,7 @@ namespace YetiVSI.DebugEngine
             // the local candidates to find the matching local binary.
             var dataRecorder =
                 new DataRecorder(action, DebugPreflightCheckData.Types.CheckType.RunAndAttach);
-            BuildId? remoteBuildId = null;
+            BuildId remoteBuildId = null;
             string remoteTargetPath = null;
             foreach (string pathCandidate in remoteTargetPaths)
             {
@@ -160,7 +160,7 @@ namespace YetiVSI.DebugEngine
             // Check local candidates to find one matching the remote build id.
             // Ignore local candidates that are missing a build id.
             if (HasMatchingBuildId(localCandidatePaths, executable, remoteTargetPath,
-                                   (BuildId)remoteBuildId))
+                                   remoteBuildId))
             {
                 dataRecorder.LocalBinaryCheckResult(
                     DebugPreflightCheckData.Types.LocalBinarySearchResult.BinaryMatch);
@@ -173,7 +173,7 @@ namespace YetiVSI.DebugEngine
                     $"No local copy of '{executable}' matched the build ID of the remote binary");
                 throw new PreflightBinaryCheckerException(
                     ErrorStrings.UnableToFindExecutableMatchingRemoteBinary(executable,
-                                                                            remoteTargetPath),
+                        remoteTargetPath),
                     ErrorStrings.BuildIdCheckDetails(localCandidatePaths, libPaths),
                     new NoMatchingLocalCandidatesException(), isCritical: false);
             }

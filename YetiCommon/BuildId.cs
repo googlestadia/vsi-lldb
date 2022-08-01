@@ -22,23 +22,22 @@ namespace YetiCommon
     /// <summary>
     /// Immutable struct that contains the build ID of a binary or symbol file and its format. Uses
     /// the same string representation as LLDB's internal UUID class.
-    /// </summary> 
-    public struct BuildId : IEquatable<BuildId>
+    /// </summary>
+    public class BuildId : IEquatable<BuildId>
     {
         // For Windows modules (pdb and pe), amount of bytes that correspond only to the BuildId.
         // The following bytes should correspond to the age.
         const int _windowsBuildIdBytes = 16;
-        public static BuildId Empty { get; } = new BuildId();
 
-        public IReadOnlyList<byte> Bytes => bytes ?? Array.Empty<byte>();
-
-        readonly IReadOnlyList<byte> bytes;
+        public readonly IList<byte> Bytes;
 
         public readonly ModuleFormat ModuleFormat;
 
         public BuildId(IEnumerable<byte> bytes, ModuleFormat moduleFormat)
         {
-            this.bytes = bytes?.ToArray();
+            Bytes = bytes != null
+                ? new List<byte>(bytes)
+                : new List<byte>();
             ModuleFormat = moduleFormat;
         }
 
@@ -76,7 +75,7 @@ namespace YetiCommon
                 }
             }
 
-            bytes = byteList;
+            Bytes = byteList;
             ModuleFormat = moduleFormat;
         }
 
@@ -117,6 +116,7 @@ namespace YetiCommon
                     {
                         hexBytes = hexBytes.PadLeft(2, '0');
                     }
+
                     builder.Append(hexBytes);
                     ageStarted = true;
                 }
@@ -158,6 +158,8 @@ namespace YetiCommon
         public string ToHexString() =>
             BitConverter.ToString(Bytes.ToArray()).Replace("-", "").ToUpper();
 
+        public static bool IsNullOrEmpty(BuildId buildId) => (buildId?.Bytes.Count ?? 0) == 0;
+
         public override int GetHashCode()
         {
             int hash = 17 + (int)ModuleFormat;
@@ -165,6 +167,7 @@ namespace YetiCommon
             {
                 hash = hash * 23 + b;
             }
+
             return hash;
         }
 
@@ -180,6 +183,16 @@ namespace YetiCommon
 
         public static bool operator ==(BuildId a, BuildId b)
         {
+            if (a is null && b is null)
+            {
+                return true;
+            }
+
+            if (a is null || b is null)
+            {
+                return false;
+            }
+
             return a.Bytes.SequenceEqual(b.Bytes) && a.ModuleFormat.Equals(b.ModuleFormat);
         }
 

@@ -696,7 +696,7 @@ namespace YetiVSI.DebugEngine
 
             // The list of modules comes from a core file, only ELF modules are at the
             // moment supported.
-            var searchQuery = new ModuleSearchQuery(moduleName, module.Id)
+            var searchQuery = new ModuleSearchQuery(moduleName, module.BuildId)
             {
                 ForceLoad = false,
                 RequireDebugInfo = false
@@ -709,9 +709,10 @@ namespace YetiVSI.DebugEngine
 
             if (!string.IsNullOrWhiteSpace(modulePath))
             {
-                var sbModule = lldbTarget.AddModule(modulePath, "", module.Id.ToUUIDString());
-                Trace.WriteLine($"Full dump load: found module {moduleName} with id {module.Id} " +
-                                $"by path {modulePath}. Module preloaded: {sbModule != null}");
+                var sbModule = lldbTarget.AddModule(modulePath, "", module.BuildId.ToUUIDString());
+                Trace.WriteLine(
+                    $"Full dump load: found module {moduleName} with id {module.BuildId} " +
+                    $"by path {modulePath}. Module preloaded: {sbModule != null}");
 
                 if (sbModule?.SetPlatformFileSpec(moduleOriginPath, moduleName) == true)
                 {

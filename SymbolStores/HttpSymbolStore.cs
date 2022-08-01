@@ -69,7 +69,7 @@ namespace SymbolStores
                                                                  TextWriter log)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
-            Debug.Assert(searchQuery.BuildId != BuildId.Empty);
+            Debug.Assert(!BuildId.IsNullOrEmpty(searchQuery.BuildId));
 
             string encodedFilename = Uri.EscapeDataString(searchQuery.Filename);
             string fileUrl = string.Join("/", _url.TrimEnd('/'), encodedFilename,

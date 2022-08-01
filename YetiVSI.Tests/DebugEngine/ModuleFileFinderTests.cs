@@ -74,7 +74,7 @@ namespace YetiVSI.Test.DebugEngine
         [Test]
         public async Task FindFile_EmptyBuildIdAsync()
         {
-            var query = new ModuleSearchQuery(_filename, BuildId.Empty)
+            var query = new ModuleSearchQuery(_filename, null)
             {
                 RequireDebugInfo = true
             };

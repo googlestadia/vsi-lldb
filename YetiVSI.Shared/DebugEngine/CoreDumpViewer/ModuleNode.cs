@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+﻿// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.IO;
 using YetiCommon;
 using YetiVSI.DebugEngine.CoreDumps;
@@ -23,7 +23,7 @@ namespace YetiVSI.DebugEngine.CoreDumpViewer
     {
         public ModuleNode(DumpModule dumpModule)
         {
-            BuildId = dumpModule.Id;
+            BuildId = dumpModule.BuildId;
             IsExecutable = dumpModule.IsExecutable;
 
             ModuleGroup = dumpModule.Path;

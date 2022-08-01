@@ -50,19 +50,18 @@ namespace YetiVSI.DebugEngine.CoreDumps
     {
         public string Path { get; }
 
-        public BuildId Id { get; }
+        public BuildId BuildId { get; }
 
         public bool IsExecutable { get; }
 
-        public DumpModule(string path, BuildId id, bool isExecutable)
+        public DumpModule(string path, BuildId buildId, bool isExecutable)
         {
             Path = path;
-            Id = id;
+            BuildId = buildId;
             IsExecutable = isExecutable;
         }
 
-        public static readonly DumpModule Empty =
-            new DumpModule(string.Empty, BuildId.Empty, false);
+        public static readonly DumpModule Empty = new DumpModule(string.Empty, null, false);
     }
 
     public class DumpModulesProvider : IDumpModulesProvider
@@ -163,7 +162,7 @@ namespace YetiVSI.DebugEngine.CoreDumps
             foreach (FileSection file in fileSections)
             {
                 DumpModule module = loadableSegmentsReader.GetModule(file);
-                if (module.Id == BuildId.Empty)
+                if (BuildId.IsNullOrEmpty(module.BuildId))
                 {
                     Trace.WriteLine($"Can't find build id for module {module.Path}.");
                 }

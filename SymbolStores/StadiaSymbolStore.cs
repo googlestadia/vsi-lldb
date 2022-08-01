@@ -63,7 +63,7 @@ namespace SymbolStores
                                                                  TextWriter log)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
-            Debug.Assert(searchQuery.BuildId != BuildId.Empty);
+            Debug.Assert(!BuildId.IsNullOrEmpty(searchQuery.BuildId));
 
             string buildIdHex = searchQuery.BuildId.ToHexString();
             string symbolStoreKey = $"{searchQuery.Filename};{buildIdHex}";

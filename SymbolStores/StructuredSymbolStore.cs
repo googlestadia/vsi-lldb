@@ -69,7 +69,7 @@ namespace SymbolStores
                                                            TextWriter log)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(searchQuery.Filename));
-            Debug.Assert(searchQuery.BuildId != BuildId.Empty);
+            Debug.Assert(!BuildId.IsNullOrEmpty(searchQuery.BuildId));
 
             string filepath;
             try
@@ -112,7 +112,8 @@ namespace SymbolStores
                                                 _path, filename, Strings.FilenameNullOrEmpty),
                                             nameof(filename));
             }
-            if (buildId == BuildId.Empty)
+
+            if (BuildId.IsNullOrEmpty(buildId))
             {
                 throw new ArgumentException(
                     Strings.FailedToCopyToStructuredStore(_path, filename, Strings.EmptyBuildId),
