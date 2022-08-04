@@ -208,14 +208,14 @@ namespace SymbolStores
                     continue;
                 }
 
-                if (StructuredSymbolStore.IsStructuredStore(_fileSystem, path))
+                if (!string.IsNullOrWhiteSpace(path))
                 {
                     var symbolStore = new StructuredSymbolStore(_fileSystem, path);
                     server.AddStore(symbolStore);
                     continue;
                 }
 
-                if (StructuredSymbolStore.IsStructuredStore(_fileSystem, defaultPath))
+                if (!string.IsNullOrWhiteSpace(defaultPath))
                 {
                     var symbolStore = new StructuredSymbolStore(_fileSystem, defaultPath);
                     server.AddStore(symbolStore);

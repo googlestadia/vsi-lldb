@@ -188,6 +188,22 @@ namespace SymbolStores.Tests
         }
 
         [Test]
+        public void Parse_StadiaStore_ExplicitCacheNotStructured()
+        {
+            ISymbolStore store = _pathParser.Parse($"cache*{_cacheA};{_stadiaStore}");
+
+            var expected = new SymbolStoreSequence(_moduleParser);
+            var cache = new SymbolServer(isCache: true);
+            cache.AddStore(new StructuredSymbolStore(_fakeFileSystem, _cacheA));
+            expected.AddStore(cache);
+            var server = new SymbolServer(isCache: false);
+            server.AddStore(new StadiaSymbolStore(_fakeFileSystem, _httpClient,
+                                                  _crashReportClient));
+            expected.AddStore(server);
+            AssertEqualStores(expected, store);
+        }
+
+        [Test]
         public void Parse_StadiaStore_DefaultCache()
         {
             MarkFoldersAsStructuredSymbolStores(new[] { _defaultCache });
