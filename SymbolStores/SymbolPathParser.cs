@@ -56,6 +56,10 @@ namespace SymbolStores
         // parsed.
         readonly ISet<string> _hostExcludeList;
 
+        // Used as cache for the previous Symbol Store parsing.
+        string _previousSymbolPath;
+        ISymbolStore _previousParseResult;
+
         public SymbolPathParser(IFileSystem fileSystem, IModuleParser moduleParser,
                                 HttpClient httpClient, ICrashReportClient crashReportClient,
                                 string defaultCachePath, string defaultSymbolStorePath,
@@ -82,6 +86,11 @@ namespace SymbolStores
             if (symbolPaths == null)
             {
                 throw new ArgumentNullException(nameof(symbolPaths));
+            }
+
+            if (symbolPaths.Equals(_previousSymbolPath))
+            {
+                return _previousParseResult;
             }
 
             Trace.WriteLine($"Parsing symbol paths: '{symbolPaths}'");
@@ -164,6 +173,10 @@ namespace SymbolStores
                 storeSequence,
                 new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
             Trace.WriteLine($"Symbol path parsing result: {jsonRepresentation}");
+
+            // Cache the parsing result.
+            _previousSymbolPath = symbolPaths;
+            _previousParseResult = storeSequence;
 
             return storeSequence;
         }
