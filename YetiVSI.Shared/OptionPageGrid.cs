@@ -196,7 +196,6 @@ namespace YetiVSI
         bool CaptureGameOutput { get; }
         string SelectedAccount { get; }
         LLDBVisualizerSupport LLDBVisualizerSupport { get; }
-        SymbolServerSupport SymbolServerSupport { get; }
         ShowOption ShowSuggestionToEnableSymbolsServer { get; }
         NatvisLoggingLevel NatvisLoggingLevel { get; }
         FastExpressionEvaluation FastExpressionEvaluation { get; }
@@ -254,14 +253,6 @@ namespace YetiVSI
         [TypeConverter(typeof(FeatureFlagConverter))]
         [DefaultValue(LLDBVisualizerFeatureFlag.DEFAULT)]
         public LLDBVisualizerFeatureFlag LLDBVisualizerSupport1 { get; set; }
-
-        [Category(LldbDebugger)]
-        [DisplayName("Enable symbol server support")]
-        [Description("If enabled, searches for symbol files in the locations specified in " +
-            "'Tools -> Options... -> Debugging -> Symbols'.")]
-        [TypeConverter(typeof(FeatureFlagConverter))]
-        [DefaultValue(SymbolServerFeatureFlag.DEFAULT)]
-        public SymbolServerFeatureFlag SymbolServerSupport { get; set; }
 
         [Category(LldbDebugger)]
         [DisplayName(SuggestToEnableSymbolStore)]
@@ -383,10 +374,6 @@ namespace YetiVSI
         LLDBVisualizerSupport IExtensionOptions.LLDBVisualizerSupport =>
             EnumValueAliasAttribute.GetAliasOrValue(LLDBVisualizerSupport1)
                 .ConvertTo<LLDBVisualizerSupport>();
-
-        SymbolServerSupport IExtensionOptions.SymbolServerSupport =>
-            EnumValueAliasAttribute.GetAliasOrValue(SymbolServerSupport)
-                .ConvertTo<SymbolServerSupport>();
 
         ShowOption IExtensionOptions.ShowSuggestionToEnableSymbolsServer =>
             EnumValueAliasAttribute.GetAliasOrValue(ShowSuggestionToEnableSymbolsServer)

@@ -224,15 +224,6 @@ namespace YetiVSI.DebugEngine
                     {
                         log = "Symbols for this module were automatically located by LLDB.";
                     }
-                    else if (!_symbolSettingsProvider.IsSymbolServerEnabled)
-                    {
-                        log = "Symbols are not loaded automatically because symbol server " +
-                            "support is disabled." + Environment.NewLine +
-                            "Please enable symbol server support in Stadia SDK settings " +
-                            "to load symbols automatically when the debug session is started." +
-                            Environment.NewLine +
-                            "Note that this may slow down your debug session startup.";
-                    }
                 }
 
                 info.bstrVerboseSearchInfo = log;

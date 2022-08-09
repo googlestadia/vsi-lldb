@@ -32,14 +32,6 @@ namespace YetiVSI.DebugEngine
         SymbolInclusionSettings GetInclusionSettings();
 
         /// <summary>
-        /// Returns the value of the Stadia-specific setting used to enable/disable symbols server
-        /// support. It returns the value of the setting in the beginning of the debug session since
-        /// at the moment we only use it when loading symbols during the session start. In order for
-        /// the changes to the setting to take effect, users need to restart the debug session.
-        /// </summary>
-        bool IsSymbolServerEnabled { get; }
-
-        /// <summary>
         /// Gets the string containing all currently enabled symbol store paths and cache.
         /// </summary>
         void GetStorePaths(out string paths, out string cache);
@@ -93,15 +85,11 @@ namespace YetiVSI.DebugEngine
         readonly IVsDebugger2 _debuggerService;
         readonly JoinableTaskContext _taskContext;
 
-        public bool IsSymbolServerEnabled { get; }
-
         public SymbolSettingsProvider(IVsDebuggerSymbolSettingsManager120A symbolSettingsManager,
-                                      IVsDebugger2 debuggerService, bool symbolServerEnabled,
-                                      JoinableTaskContext taskContext)
+                                      IVsDebugger2 debuggerService, JoinableTaskContext taskContext)
         {
             _symbolSettingsManager = symbolSettingsManager ?? throw new ArgumentNullException();
             _debuggerService = debuggerService;
-            IsSymbolServerEnabled = symbolServerEnabled;
             _taskContext = taskContext ?? throw new ArgumentNullException();
         }
 

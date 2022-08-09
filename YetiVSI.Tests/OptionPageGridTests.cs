@@ -44,8 +44,6 @@ namespace YetiVSI.Test
 
         [TestCase(nameof(OptionPageGrid.LLDBVisualizerSupport1),
                   nameof(IExtensionOptions.LLDBVisualizerSupport))]
-        [TestCase(nameof(OptionPageGrid.SymbolServerSupport),
-                  nameof(IExtensionOptions.SymbolServerSupport))]
         [TestCase(nameof(OptionPageGrid.NatvisLoggingLevel),
                   nameof(IExtensionOptions.NatvisLoggingLevel))]
         [TestCase(nameof(OptionPageGrid.FastExpressionEvaluation),

@@ -46,7 +46,7 @@ namespace YetiVSI.Test.DebugEngine
             // module's SymbolFileSpec, FileSpec and PlatformFileSpec are empty.
             var module = Substitute.For<SbModule>();
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, false, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString().Trim();
             Assert.IsFalse(result);
             StringAssert.AreEqualIgnoringCase(ErrorStrings.SymbolFileNameUnknown, output);
@@ -71,7 +71,7 @@ namespace YetiVSI.Test.DebugEngine
             SetHandleCommand(filename, _successfulCommand);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, false, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
             Assert.IsTrue(result);
             StringAssert.Contains($"Successfully loaded symbol file", output);
@@ -97,7 +97,7 @@ namespace YetiVSI.Test.DebugEngine
             SetHandleCommand(filename, _successfulCommand);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, false, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
             Assert.IsTrue(result);
             StringAssert.Contains( $"Successfully loaded symbol file", output);
@@ -120,7 +120,7 @@ namespace YetiVSI.Test.DebugEngine
             SetParseBuildId($"{_localDir}\\{filename}", expectedFormat, "", errorBuildIdMessage);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, false, _forceLoad);
+                module, _searchLog, _forceLoad);
             var output = _searchLog.ToString();
             Assert.IsFalse(result);
             StringAssert.Contains(errorBuildIdMessage, output);
@@ -142,7 +142,7 @@ namespace YetiVSI.Test.DebugEngine
             SetParseBuildId($"{_localDir}\\{filename}", expectedFormat, _mismatchedBuildId);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, false, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString().Trim();
 
             Assert.IsFalse(result);
@@ -172,7 +172,7 @@ namespace YetiVSI.Test.DebugEngine
             SetHandleCommand(_parsedSymbolName, _successfulCommand);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, useSymbolStores, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
             Assert.IsTrue(result);
             StringAssert.Contains(
@@ -199,7 +199,7 @@ namespace YetiVSI.Test.DebugEngine
                 .Returns(parsedInfo);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, useSymbolStores, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
 
             Assert.IsFalse(result);
@@ -216,7 +216,7 @@ namespace YetiVSI.Test.DebugEngine
             module.GetPlatformFileSpec().GetFilename().Returns(_elfFile);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, useSymbolStores, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
 
             Assert.IsFalse(result);
@@ -235,7 +235,7 @@ namespace YetiVSI.Test.DebugEngine
             module.GetFileSpec().GetFilename().Returns(_elfFile);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, useSymbolStores, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
             Assert.IsFalse(result);
             StringAssert.Contains(
@@ -254,7 +254,7 @@ namespace YetiVSI.Test.DebugEngine
             module.GetTriple().Returns(_windows);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, useSymbolStores, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
             Assert.IsFalse(result);
             StringAssert.Contains(ErrorStrings.SymbolFileNameUnknown, output);
@@ -277,7 +277,7 @@ namespace YetiVSI.Test.DebugEngine
             SetHandleCommand(_pdbFile, _successfulCommand);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, useSymbolStores, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
             Assert.IsTrue(result);
             StringAssert.Contains(
@@ -297,7 +297,7 @@ namespace YetiVSI.Test.DebugEngine
             module.GetSymbolFileSpec().GetFilename().Returns(filename);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, false, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
             Assert.IsFalse(result);
             Assert.IsEmpty(output);
@@ -319,7 +319,7 @@ namespace YetiVSI.Test.DebugEngine
             SetHandleCommand(filename, _successfulCommand);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, true, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
             Assert.IsTrue(result);
             StringAssert.Contains($"Successfully loaded symbol file '{_cacheDir}\\{filename}'",
@@ -342,7 +342,7 @@ namespace YetiVSI.Test.DebugEngine
             SetHandleCommand(filename, _failedCommand);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, true, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
             Assert.IsFalse(result);
             StringAssert.Contains($"LLDB error: ", output);
@@ -362,7 +362,7 @@ namespace YetiVSI.Test.DebugEngine
             SetHandleCommand($"{_binaryName}.debug", _successfulCommand);
 
             bool result = await _symbolLoader.LoadSymbolsAsync(
-                module, _searchLog, true, _forceLoad);
+                module, _searchLog, _forceLoad);
             string output = _searchLog.ToString();
 
             Assert.IsTrue(result);

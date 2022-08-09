@@ -404,14 +404,11 @@ namespace YetiVSI.DebugEngine
                 var symbolManager = CreateServiceManager().GetGlobalService(
                     typeof(SVsShellDebugger)) as IVsDebuggerSymbolSettingsManager120A;
 
-                var symbolServerEnabled =
-                    GetVsiService().Options.SymbolServerSupport == SymbolServerSupport.ENABLED;
-
                 var debuggerService =
                     (IVsDebugger2)new ServiceManager().GetGlobalService(typeof(SVsShellDebugger));
 
                 _symbolSettingsProvider = new SymbolSettingsProvider(
-                    symbolManager, debuggerService, symbolServerEnabled, GetJoinableTaskContext());
+                    symbolManager, debuggerService, GetJoinableTaskContext());
             }
 
             return _symbolSettingsProvider;

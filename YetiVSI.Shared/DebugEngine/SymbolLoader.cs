@@ -37,9 +37,8 @@ namespace YetiVSI.DebugEngine
         /// True if the module's symbols were successfully loaded or were already loaded, false
         /// otherwise.
         /// </returns>
-        Task<bool> LoadSymbolsAsync([NotNull] SbModule lldbModule,
-                                    [NotNull] TextWriter searchLog,
-                                    bool useSymbolStores, bool forceLoad);
+        Task<bool> LoadSymbolsAsync([NotNull] SbModule lldbModule, [NotNull] TextWriter searchLog,
+                                    bool forceLoad);
     }
 
     public class SymbolLoader : ISymbolLoader
@@ -73,8 +72,8 @@ namespace YetiVSI.DebugEngine
             _lldbCommandInterpreter = lldbCommandInterpreter;
         }
 
-        public virtual async Task<bool> LoadSymbolsAsync(
-            SbModule lldbModule, TextWriter searchLog, bool useSymbolStores, bool forceLoad)
+        public virtual async Task<bool> LoadSymbolsAsync(SbModule lldbModule, TextWriter searchLog,
+                                                         bool forceLoad)
         {
             SymbolFileLocation symbolPath = GetSymbolPathFromSbModule(lldbModule);
             ModuleFormat format = lldbModule.GetModuleFormat();
@@ -91,15 +90,10 @@ namespace YetiVSI.DebugEngine
 
             var buildId = new BuildId(lldbModule.GetUUIDString());
             // If we have a full path to the symbol file, we'll load it when build ids match.
-            if (symbolPath.TryGetFullPath(out string fullPath)
-                && ShouldAddSymbolFile(fullPath, buildId, format, searchLog))
+            if (symbolPath.TryGetFullPath(out string fullPath) &&
+                ShouldAddSymbolFile(fullPath, buildId, format, searchLog))
             {
                 return AddSymbolFile(fullPath, lldbModule, searchLog);
-            }
-
-            if (!useSymbolStores)
-            {
-                return false;
             }
 
             string binaryName = lldbModule.GetFileSpec()?.GetFilename();
@@ -111,8 +105,8 @@ namespace YetiVSI.DebugEngine
 
             string filepath = await SearchSymbolFileInSymbolStoresAsync(
                 binaryName, searchQuery, searchLog);
-            return !(string.IsNullOrWhiteSpace(filepath))
-                && AddSymbolFile(filepath, lldbModule, searchLog);
+            return !(string.IsNullOrWhiteSpace(filepath)) &&
+                AddSymbolFile(filepath, lldbModule, searchLog);
         }
 
         SymbolFileLocation GetSymbolPathFromSbModule(SbModule lldbModule)

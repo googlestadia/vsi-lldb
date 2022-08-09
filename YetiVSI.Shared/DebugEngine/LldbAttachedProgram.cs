@@ -82,22 +82,26 @@ namespace YetiVSI.DebugEngine
         /// <summary>
         /// Load the symbols. Skips modules that already have their symbols loaded.
         /// </summary>
+        /// <param name="symbolsSettings"></param>
+        /// <param name="isStadiaSymbolsServerUsed">
+        ///     If true, then the method will not return suggestion to enable symbol store server.
+        ///     A <see cref="LoadModuleFilesResult.SuggestToEnableSymbolStore"/>.
+        /// </param>
+        /// <param name="task"></param>
+        /// <param name="moduleFileLoadRecorder"></param>
         /// <param name="useSymbolStores">
         /// If true, then during loading the module the method will try to lookup module in
         /// symbol stores by the name extracted from module.
         /// <see cref="SymbolLoader.GetSymbolFileDirAndNameAsync"/>
         /// </param>
-        /// <param name="isStadiaSymbolsServerUsed">
-        /// If true, then the method will not return suggestion to enable symbol store server.
-        /// A <see cref="LoadModuleFilesResult.SuggestToEnableSymbolStore"/>.
-        /// </param>
         /// <returns>
         /// A <see cref="LoadModuleFilesResult"/>.
         /// </returns>
-        Task<LoadModuleFilesResult> LoadModuleFilesAsync(
-            SymbolInclusionSettings symbolsSettings,
-            bool useSymbolsStores, bool isStadiaSymbolsServerUsed, ICancelable task,
-            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
+        Task<LoadModuleFilesResult> LoadModuleFilesAsync(SymbolInclusionSettings symbolsSettings,
+                                                         bool isStadiaSymbolsServerUsed,
+                                                         ICancelable task,
+                                                         IModuleFileLoadMetricsRecorder
+                                                             moduleFileLoadRecorder);
 
         /// <summary>
         /// Get the modules with the specified name.
@@ -394,17 +398,13 @@ namespace YetiVSI.DebugEngine
         /// or that are excluded via Include / Exclude options on symbols settings page.
         /// </summary>
         public Task<LoadModuleFilesResult> LoadModuleFilesAsync(
-            SymbolInclusionSettings symbolsSettings, bool useSymbolStores,
-            bool isStadiaSymbolsServerUsed, ICancelable task,
-            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
+            SymbolInclusionSettings symbolsSettings, bool isStadiaSymbolsServerUsed,
+            ICancelable task, IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
         {
             return _moduleFileLoader.LoadModuleFilesAsync(
-                Enumerable.Range(0, NumLoadedModules)
-                    .Select(_target.GetModuleAtIndex)
-                    .Where(m => m != null)
-                    .ToList(),
-                symbolsSettings, useSymbolStores, isStadiaSymbolsServerUsed, task,
-                moduleFileLoadRecorder);
+                Enumerable.Range(0, NumLoadedModules).Select(_target.GetModuleAtIndex)
+                    .Where(m => m != null).ToList(), symbolsSettings, isStadiaSymbolsServerUsed,
+                task, moduleFileLoadRecorder);
         }
 
         public IList<IDebugModule3> GetModulesByName(string moduleName)

@@ -86,13 +86,4 @@
         BUILT_IN_ONLY,
         ENABLED,
     }
-
-    /// <summary>
-    /// Indicates if symbol servers are enabled.
-    /// </summary>
-    public enum SymbolServerSupport
-    {
-        DISABLED,
-        ENABLED,
-    }
 }

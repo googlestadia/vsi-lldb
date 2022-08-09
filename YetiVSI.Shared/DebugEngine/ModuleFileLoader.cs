@@ -52,28 +52,20 @@ namespace YetiVSI.DebugEngine
         /// </summary>
         /// <param name="modules">List of modules to process.</param>
         /// <param name="symbolSettings">Symbol settings with IncludeList and ExcludeList
-        /// to filter out symbols that should be skipped. </param>
-        /// <param name="useSymbolStores">
-        /// If true, then during loading the module the method will try to lookup module in
-        /// symbol stores by the name extracted from module.
-        /// <see cref="SymbolLoader.GetSymbolFileDirAndName"/>
-        /// </param>
+        ///     to filter out symbols that should be skipped. </param>
         /// <param name="isStadiaSymbolsServerUsed">
-        /// If true, then the method will not return suggestion to enable symbol store server.
-        /// A <see cref="LoadModuleFilesResult.SuggestToEnableSymbolStore"/>.
+        ///     If true, then the method will not return suggestion to enable symbol store server.
+        ///     A <see cref="LoadModuleFilesResult.SuggestToEnableSymbolStore"/>.
         /// </param>
         /// <param name="task">Long-running operation associated with the process.</param>
         /// <param name="moduleFileLoadRecorder">Instance to record metrics related to the
-        /// loading of symbols and binaries.</param>
+        ///     loading of symbols and binaries.</param>
         /// <returns>
         /// A <see cref="LoadModuleFilesResult"/>.
         /// </returns>
         Task<LoadModuleFilesResult> LoadModuleFilesAsync(
-            [NotNull, ItemNotNull] IList<SbModule> modules,
-            SymbolInclusionSettings symbolSettings,
-            bool useSymbolStores,
-            bool isStadiaSymbolsServerUsed,
-            [NotNull] ICancelable task,
+            [NotNull] [ItemNotNull] IList<SbModule> modules, SymbolInclusionSettings symbolSettings,
+            bool isStadiaSymbolsServerUsed, [NotNull] ICancelable task,
             [NotNull] IModuleFileLoadMetricsRecorder moduleFileLoadRecorder);
     }
 
@@ -231,13 +223,9 @@ namespace YetiVSI.DebugEngine
             _moduleSearchLogHolder = moduleSearchLogHolder;
         }
 
-        public async Task<LoadModuleFilesResult> LoadModuleFilesAsync(
-            IList<SbModule> modules,
-            SymbolInclusionSettings symbolSettings,
-            bool useSymbolStores,
-            bool isStadiaSymbolsServerUsed,
-            ICancelable task,
-            IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
+        public async Task<LoadModuleFilesResult> LoadModuleFilesAsync(IList<SbModule> modules,
+            SymbolInclusionSettings symbolSettings, bool isStadiaSymbolsServerUsed,
+            ICancelable task, IModuleFileLoadMetricsRecorder moduleFileLoadRecorder)
         {
             // If LoadSymbols is called from the "Modules -> Load Symbols" context menu
             // or by clicking "Load Symbols" in "Symbols" pane in the settings, `symbolSettings`
@@ -276,9 +264,8 @@ namespace YetiVSI.DebugEngine
                 preFilteredModules, task, isStadiaSymbolsServerUsed, forceLoad, loadSymbolData,
                 result);
 
-            await ProcessModulesWithoutSymbolsAsync(
-                modulesWithBinariesLoaded, task, useSymbolStores, forceLoad, loadSymbolData,
-                result);
+            await ProcessModulesWithoutSymbolsAsync(modulesWithBinariesLoaded, task, forceLoad,
+                                                    loadSymbolData, result);
 
             // Record the final state.
             moduleFileLoadRecorder.RecordAfterLoad(loadSymbolData);
@@ -288,7 +275,7 @@ namespace YetiVSI.DebugEngine
         public Task<LoadModuleFilesResult> LoadModuleFilesAsync(
             IList<SbModule> modules, ICancelable task,
             IModuleFileLoadMetricsRecorder moduleFileLoadRecorder) =>
-            LoadModuleFilesAsync(modules, null, true, true, task, moduleFileLoadRecorder);
+            LoadModuleFilesAsync(modules, null, true, task, moduleFileLoadRecorder);
 
         /// <summary>
         /// Filter out modules that should be skipped based on their name
@@ -404,12 +391,8 @@ namespace YetiVSI.DebugEngine
         /// <c>result</c>'s ResultCode.
         /// </remarks>
         async Task ProcessModulesWithoutSymbolsAsync(
-            IReadOnlyList<SbModule> modulesWithBinariesLoaded,
-            ICancelable task,
-            bool useSymbolStores,
-            bool forceLoad,
-            DeveloperLogEvent.Types.LoadSymbolData loadSymbolData,
-            LoadModuleFilesResult result)
+            IReadOnlyList<SbModule> modulesWithBinariesLoaded, ICancelable task, bool forceLoad,
+            DeveloperLogEvent.Types.LoadSymbolData loadSymbolData, LoadModuleFilesResult result)
         {
             for (int index = 0; index < modulesWithBinariesLoaded.Count; index++)
             {
@@ -424,8 +407,7 @@ namespace YetiVSI.DebugEngine
                 task.ThrowIfCancellationRequested();
                 task.Progress.Report($"Loading symbols for {name} " +
                                      $"({index}/{modulesWithBinariesLoaded.Count})");
-                bool ok = await _symbolLoader.LoadSymbolsAsync(
-                    sbModule, searchLog, useSymbolStores, forceLoad);
+                bool ok = await _symbolLoader.LoadSymbolsAsync(sbModule, searchLog, forceLoad);
                 if (!ok)
                 {
                     result.ResultCode = VSConstants.E_FAIL;

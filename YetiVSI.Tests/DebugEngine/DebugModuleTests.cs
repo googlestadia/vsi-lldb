@@ -193,26 +193,6 @@ namespace YetiVSI.Test.DebugEngine
         }
 
         [Test]
-        public void GetSymbolInfoNotifiesIfSymbolServerSupportIsDisabled()
-        {
-            _mockSymbolSettingsProvider.IsSymbolServerEnabled.Returns(false);
-
-            var flags = enum_SYMBOL_SEARCH_INFO_FIELDS.SSIF_VERBOSE_SEARCH_INFO;
-            var symbolSearchInfo = new MODULE_SYMBOL_SEARCH_INFO[1];
-
-            int result = _debugModule.GetSymbolInfo(flags, symbolSearchInfo);
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.EqualTo(VSConstants.S_OK));
-                Assert.That(symbolSearchInfo[0].bstrVerboseSearchInfo.ToLower(),
-                            Does.Contain("symbol server support"));
-                Assert.That(symbolSearchInfo[0].bstrVerboseSearchInfo.ToLower(),
-                            Does.Contain("disabled"));
-            });
-        }
-
-        [Test]
         public void LoadSymbolsSendsEvent()
         {
             var action = Substitute.For<IAction>();

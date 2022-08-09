@@ -46,7 +46,7 @@ namespace YetiVSI.Test.DebugEngine
             settings.ExcludeList.Returns(options);
 
             SymbolInclusionSettings inclusionSettings =
-                new SymbolSettingsProvider(settingsManager, debuggerService, false, taskContext)
+                new SymbolSettingsProvider(settingsManager, debuggerService, taskContext)
                     .GetInclusionSettings();
             Assert.That(inclusionSettings.IncludeList, Does.Contain("enabled"));
             Assert.That(inclusionSettings.IncludeList, Does.Not.Contain("disabled"));

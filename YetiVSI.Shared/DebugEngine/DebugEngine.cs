@@ -969,7 +969,6 @@ namespace YetiVSI.DebugEngine
             var action = _actionRecorder.CreateToolAction(ActionType.DebugEngineLoadSymbols);
 
             var inclusionSettings = _symbolSettingsProvider.GetInclusionSettings();
-            var isSymbolServerEnabled = _symbolSettingsProvider.IsSymbolServerEnabled;
             var isStadiaSymbolsServerUsed = _moduleFileFinder.IsStadiaSymbolsServerUsed;
 
             var loadSymbolsTask = _cancelableTaskFactory.Create(
@@ -977,7 +976,7 @@ namespace YetiVSI.DebugEngine
                 task =>
                 {
                     return _attachedProgram.LoadModuleFilesAsync(
-                        inclusionSettings, isSymbolServerEnabled, isStadiaSymbolsServerUsed, task,
+                        inclusionSettings, isStadiaSymbolsServerUsed, task,
                         _moduleFileLoadRecorderFactory.Create(action));
                 });
 
@@ -987,7 +986,7 @@ namespace YetiVSI.DebugEngine
                 // The operation was cancelled by the user, the task doesn't have a Result.
                 return VSConstants.E_ABORT;
             }
-
+            
             if (loadSymbolsTask.Result.SuggestToEnableSymbolStore &&
                 _vsiService.Options.ShowSuggestionToEnableSymbolsServer != ShowOption.NeverShow &&
                 !isStadiaSymbolsServerUsed)

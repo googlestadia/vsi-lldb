@@ -122,7 +122,7 @@ namespace YetiVSI.Test.DebugEngine
             var modules = new List<SbModule> { deletedModule };
             Assert.That(
                 (await _moduleFileLoader.LoadModuleFilesAsync(
-                    modules, null, false, false, _mockTask, _mockModuleFileLoadRecorder))
+                    modules, null, false, _mockTask, _mockModuleFileLoadRecorder))
                 .ResultCode,
                 Is.EqualTo(VSConstants.S_OK));
             Assert.AreEqual($"Module '{_deleted}' marked as deleted by LLDB.",
@@ -136,7 +136,7 @@ namespace YetiVSI.Test.DebugEngine
             var modules = new List<SbModule> { emptyNameModule };
             Assert.That(
                 (await _moduleFileLoader.LoadModuleFilesAsync(
-                    modules, null, false, false, _mockTask, _mockModuleFileLoadRecorder))
+                    modules, null, false, _mockTask, _mockModuleFileLoadRecorder))
                 .ResultCode,
                 Is.EqualTo(VSConstants.S_OK));
             Assert.AreEqual($"Module name not set.",
@@ -161,7 +161,7 @@ namespace YetiVSI.Test.DebugEngine
 
             Assert.That(
                 (await _moduleFileLoader.LoadModuleFilesAsync(
-                    modules, settings, true, true, _mockTask, _mockModuleFileLoadRecorder))
+                    modules, settings, true, _mockTask, _mockModuleFileLoadRecorder))
                     .ResultCode,
                 Is.EqualTo(VSConstants.S_OK));
 
@@ -189,7 +189,7 @@ namespace YetiVSI.Test.DebugEngine
 
             Assert.That(
                 (await _moduleFileLoader.LoadModuleFilesAsync(
-                    modules, settings, true, true, _mockTask, _mockModuleFileLoadRecorder))
+                    modules, settings, true, _mockTask, _mockModuleFileLoadRecorder))
                     .ResultCode,
                 Is.EqualTo(VSConstants.S_OK));
 
@@ -217,7 +217,7 @@ namespace YetiVSI.Test.DebugEngine
 
             // 1. Run LoadSymbols with the settings, excluding the `excludedModule`.
             await _moduleFileLoader.LoadModuleFilesAsync(
-                modules, settings, false, false, _mockTask, _mockModuleFileLoadRecorder);
+                modules, settings, false, _mockTask, _mockModuleFileLoadRecorder);
 
             Assert.AreEqual(SymbolInclusionSettings.ModuleExcludedMessage(_excludedModuleName),
                             _moduleSearchLogHolder.GetSearchLog(excludedModule));
@@ -225,7 +225,7 @@ namespace YetiVSI.Test.DebugEngine
 
             // 2. Settings are null, so both modules will be loaded.
             await _moduleFileLoader.LoadModuleFilesAsync(
-                modules, null, false, false, _mockTask, _mockModuleFileLoadRecorder);
+                modules, null, false, _mockTask, _mockModuleFileLoadRecorder);
 
             Assert.AreEqual("",
                             _moduleSearchLogHolder.GetSearchLog(excludedModule));
@@ -233,7 +233,7 @@ namespace YetiVSI.Test.DebugEngine
 
             // 3. Run LoadSymbols with the settings, excluding the `excludedModule`.
             await _moduleFileLoader.LoadModuleFilesAsync(
-                modules, settings, false, false, _mockTask, _mockModuleFileLoadRecorder);
+                modules, settings, false, _mockTask, _mockModuleFileLoadRecorder);
 
             Assert.AreEqual(SymbolInclusionSettings.ModuleExcludedMessage(_excludedModuleName),
                             _moduleSearchLogHolder.GetSearchLog(excludedModule));
@@ -249,10 +249,10 @@ namespace YetiVSI.Test.DebugEngine
             module.HasCompileUnits().Returns(hasCompileUnits);
             var modules = new List<SbModule>() { module };
             await _moduleFileLoader.LoadModuleFilesAsync(
-                modules, null, false, false, _mockTask, _mockModuleFileLoadRecorder);
+                modules, null, false, _mockTask, _mockModuleFileLoadRecorder);
             await _mockSymbolLoader
                 .Received(callsToLoadSymbolsAsync)
-                .LoadSymbolsAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>(), Arg.Any<bool>());
+                .LoadSymbolsAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>());
 
         }
 
@@ -287,9 +287,9 @@ namespace YetiVSI.Test.DebugEngine
                     .LoadModuleFilesAsync(modules, _mockTask, _mockModuleFileLoadRecorder));
 
             await _mockSymbolLoader.Received().LoadSymbolsAsync(
-                modules[0], Arg.Any<TextWriter>(), Arg.Any<bool>(), Arg.Any<bool>());
+                modules[0], Arg.Any<TextWriter>(), Arg.Any<bool>());
             await _mockSymbolLoader.DidNotReceive().LoadSymbolsAsync(
-                modules[1], Arg.Any<TextWriter>(), Arg.Any<bool>(), Arg.Any<bool>());
+                modules[1], Arg.Any<TextWriter>(), Arg.Any<bool>());
         }
 
         [Test]
@@ -330,7 +330,7 @@ namespace YetiVSI.Test.DebugEngine
 
             await AssertLoadBinaryReceivedAsync(module);
             await _mockSymbolLoader.DidNotReceiveWithAnyArgs()
-                .LoadSymbolsAsync(module, null,true, false);
+                .LoadSymbolsAsync(module, null, false);
         }
 
         [Test]
@@ -341,8 +341,7 @@ namespace YetiVSI.Test.DebugEngine
             _mockBinaryLoader.LoadBinaryAsync(placeholderModule, Arg.Any<TextWriter>(),
                                               Arg.Any<bool>())
                 .Returns(x => (realModule, true));
-            _mockSymbolLoader.LoadSymbolsAsync(realModule, Arg.Any<TextWriter>(),
-                                              Arg.Any<bool>(), Arg.Any<bool>())
+            _mockSymbolLoader.LoadSymbolsAsync(realModule, Arg.Any<TextWriter>(), Arg.Any<bool>())
                 .Returns(Task.FromResult(true));
             SbModule[] modules = new[] { placeholderModule };
 
@@ -362,7 +361,7 @@ namespace YetiVSI.Test.DebugEngine
                 .LoadBinaryAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
                 .Returns((module, false));
             LoadModuleFilesResult result = await _moduleFileLoader.LoadModuleFilesAsync(
-                new[] { module }, null, true, true, _mockTask, _mockModuleFileLoadRecorder);
+                new[] { module }, null, true, _mockTask, _mockModuleFileLoadRecorder);
 
             Assert.AreEqual(VSConstants.E_FAIL, result.ResultCode);
             Assert.AreEqual(false, result.SuggestToEnableSymbolStore);
@@ -381,7 +380,7 @@ namespace YetiVSI.Test.DebugEngine
                 var dumpModuleFileLoader = new ModuleFileLoader(
                     _mockSymbolLoader, _mockBinaryLoader, true, _moduleSearchLogHolder);
                 LoadModuleFilesResult result = await dumpModuleFileLoader.LoadModuleFilesAsync(
-                    new[] { module }, null, false, false, _mockTask, _mockModuleFileLoadRecorder);
+                    new[] { module }, null, false, _mockTask, _mockModuleFileLoadRecorder);
 
                 Assert.AreEqual(VSConstants.E_FAIL, result.ResultCode, moduleName);
                 Assert.AreEqual(true, result.SuggestToEnableSymbolStore, moduleName);
@@ -398,7 +397,7 @@ namespace YetiVSI.Test.DebugEngine
             var dumpModuleFileLoader = new ModuleFileLoader(_mockSymbolLoader, _mockBinaryLoader,
                                                             true, _moduleSearchLogHolder);
             LoadModuleFilesResult result = await dumpModuleFileLoader.LoadModuleFilesAsync(
-                new[] { module }, null, false, false, _mockTask, _mockModuleFileLoadRecorder);
+                new[] { module }, null, false, _mockTask, _mockModuleFileLoadRecorder);
 
             Assert.AreEqual(VSConstants.E_FAIL, result.ResultCode);
             Assert.AreEqual(false, result.SuggestToEnableSymbolStore);
@@ -415,7 +414,7 @@ namespace YetiVSI.Test.DebugEngine
                                                             true,
                                                             _moduleSearchLogHolder);
             LoadModuleFilesResult result = await dumpModuleFileLoader.LoadModuleFilesAsync(
-                new[] { module }, null, true, true, _mockTask, _mockModuleFileLoadRecorder);
+                new[] { module }, null, true, _mockTask, _mockModuleFileLoadRecorder);
 
             Assert.AreEqual(VSConstants.E_FAIL, result.ResultCode);
             Assert.AreEqual(false, result.SuggestToEnableSymbolStore);
@@ -490,7 +489,7 @@ namespace YetiVSI.Test.DebugEngine
         async Task AssertLoadSymbolsReceivedAsync(SbModule module)
         {
             await _mockSymbolLoader.Received().LoadSymbolsAsync(
-                module, Arg.Any<TextWriter>(), Arg.Any<bool>(), Arg.Any<bool>());
+                module, Arg.Any<TextWriter>(), Arg.Any<bool>());
         }
 
         async Task AssertLoadBinaryNotReceivedAsync(SbModule module)
@@ -502,7 +501,7 @@ namespace YetiVSI.Test.DebugEngine
         async Task AssertLoadSymbolsNotReceivedAsync(SbModule module)
         {
             await _mockSymbolLoader.DidNotReceive().LoadSymbolsAsync(
-                module, Arg.Any<TextWriter>(), Arg.Any<bool>(), Arg.Any<bool>());
+                module, Arg.Any<TextWriter>(), Arg.Any<bool>());
         }
 
         /// <summary>
@@ -525,7 +524,7 @@ namespace YetiVSI.Test.DebugEngine
                     .Returns(Task.FromResult((module, loadBinarySucceeds)));
             }
             _mockSymbolLoader
-                .LoadSymbolsAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>(), Arg.Any<bool>())
+                .LoadSymbolsAsync(module, Arg.Any<TextWriter>(), Arg.Any<bool>())
                 .Returns(Task.FromResult(loadSymbolsSucceeds));
 
             return module;

@@ -218,10 +218,8 @@ namespace YetiVSI.Test.DebugEngine
             JoinableTaskContext taskContext = GetJoinableTaskContext();
             var symbolSettingsManager = Substitute.For<IVsDebuggerSymbolSettingsManager120A>();
             var debuggerService = Substitute.For<IVsDebugger2>();
-            bool symbolServerEnabled = GetVsiService().Options.SymbolServerSupport ==
-                SymbolServerSupport.ENABLED;
             _symbolSettingsProvider = new SymbolSettingsProvider(
-                symbolSettingsManager, debuggerService, symbolServerEnabled, taskContext);
+                symbolSettingsManager, debuggerService, taskContext);
             return _symbolSettingsProvider;
         }
     }
