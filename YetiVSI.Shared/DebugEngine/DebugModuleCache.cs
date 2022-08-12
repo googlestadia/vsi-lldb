@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerApi;
-using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using DebuggerApi;
+using Microsoft.VisualStudio.Debugger.Interop;
 using YetiCommon.CastleAspects;
-using YetiVSI.Util;
 
 namespace YetiVSI.DebugEngine
 {
@@ -106,8 +105,7 @@ namespace YetiVSI.DebugEngine
         public event EventHandler<ModuleRemovedEventArgs> ModuleRemoved;
 
         readonly ModuleCreator moduleCreator;
-
-        Dictionary<SbModule, IDebugModule3> cache;
+        readonly Dictionary<SbModule, IDebugModule3> cache;
         uint nextLoadOrder = 0;
 
         public DebugModuleCache(ModuleCreator moduleCreator)
@@ -118,51 +116,71 @@ namespace YetiVSI.DebugEngine
 
         public IDebugModule3 GetOrCreate(SbModule lldbModule, IGgpDebugProgram program)
         {
+            IDebugModule3 module;
+            bool added = false;
+
             lock (cache)
             {
-                if (!cache.TryGetValue(lldbModule, out IDebugModule3 module))
+                if (!cache.TryGetValue(lldbModule, out module))
                 {
                     module = moduleCreator(lldbModule, nextLoadOrder++, program);
                     cache.Add(lldbModule, module);
-
-                    try
-                    {
-                        ModuleAdded?.Invoke(Self, new ModuleAddedEventArgs(module));
-                    }
-                    catch (Exception e)
-                    {
-                        Trace.WriteLine(
-                            $"Warning: ModuleAdded handler failed: {e.Demystify()}");
-                    }
-                };
-                return module;
+                    added = true;
+                }
             }
+
+            // Event handlers _may_ try to switch to the main thread, which is dangerous to do
+            // while holding a lock. Therefore we fire them after leaving the critical section.
+            if (added)
+            {
+                try
+                {
+                    ModuleAdded?.Invoke(Self, new ModuleAddedEventArgs(module));
+                }
+                catch (Exception e)
+                {
+                    Trace.WriteLine(
+                        $"Warning: ModuleAdded handler failed: {e.Demystify()}");
+                }
+            }
+            return module;
         }
 
         public bool Remove(SbModule lldbModule)
         {
+            IDebugModule3 module;
+            bool removed = false;
+
             lock (cache)
             {
-                if (cache.TryGetValue(lldbModule, out IDebugModule3 module))
+                if (cache.TryGetValue(lldbModule, out module))
                 {
                     cache.Remove(lldbModule);
-                    try
-                    {
-                        ModuleRemoved?.Invoke(Self, new ModuleRemovedEventArgs(module));
-                    }
-                    catch (Exception e)
-                    {
-                        Trace.WriteLine(
-                            $"Warning: ModuleRemoved handler failed: {e.Demystify()}");
-                    }
-                    return true;
+                    removed = true;
                 }
-                return false;
             }
+
+            // Event handlers _may_ try to switch to the main thread, which is dangerous to do
+            // while holding a lock. Therefore we fire them after leaving the critical section.
+            if (removed)
+            {
+                try
+                {
+                    ModuleRemoved?.Invoke(Self, new ModuleRemovedEventArgs(module));
+                }
+                catch (Exception e)
+                {
+                    Trace.WriteLine(
+                        $"Warning: ModuleRemoved handler failed: {e.Demystify()}");
+                }
+            }
+            return removed;
         }
 
         public void RemoveAllExcept(IEnumerable<SbModule> liveModules)
         {
+            var removedModules = new List<IDebugModule3>();
+
             lock (cache)
             {
                 var comparer = SbModuleEqualityComparer.Instance;
@@ -170,7 +188,24 @@ namespace YetiVSI.DebugEngine
 
                 foreach (var module in deadModules)
                 {
-                    Remove(module);
+                    IDebugModule3 debugModule = cache[module];
+                    cache.Remove(module);
+                    removedModules.Add(debugModule);
+                }
+            }
+
+            // Event handlers _may_ try to switch to the main thread, which is dangerous to do
+            // while holding a lock. Therefore we fire them after leaving the critical section.
+            foreach (var module in removedModules)
+            {
+                try
+                {
+                    ModuleRemoved?.Invoke(Self, new ModuleRemovedEventArgs(module));
+                }
+                catch (Exception e)
+                {
+                    Trace.WriteLine(
+                        $"Warning: ModuleRemoved handler failed: {e.Demystify()}");
                 }
             }
         }

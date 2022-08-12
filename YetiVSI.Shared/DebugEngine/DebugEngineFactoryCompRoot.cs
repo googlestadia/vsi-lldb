@@ -306,7 +306,7 @@ namespace YetiVSI.DebugEngine
                     new LldbAttachedProgram.Factory(
                         GetJoinableTaskContext(),
                         GetFactoryDecorator().Decorate<IDebugEngineHandlerFactory>(
-                            new DebugEngineHandler.Factory(GetJoinableTaskContext())),
+                            new DebugEngineHandler.Factory()),
                         GetTaskExecutor(), eventManagerFactory, debugProgramFactory,
                         debugModuleFactory, debugThreadAsyncFactory,
                         debugStackFrameFactory, lldbShell, breakpointManagerFactory,

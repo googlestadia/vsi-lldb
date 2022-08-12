@@ -152,7 +152,7 @@ namespace YetiVSI.DebugEngine
                 info.m_addrPreferredLoadAddress = _lldbModule.GetCodeLoadAddress();
                 info.dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_PREFFEREDADDRESS;
             }
-            
+
             // is used to calculate address's range end
             if (HasFlag(enum_MODULE_INFO_FIELDS.MIF_SIZE))
             {

@@ -492,7 +492,7 @@ namespace YetiVSI.Test.DebugEngine
             var symbolSettingsProvider = Substitute.For<ISymbolSettingsProvider>();
 
             var attachedProgramFactory = new LldbAttachedProgram.Factory(
-                taskContext, new DebugEngineHandler.Factory(taskContext), taskExecutor,
+                taskContext, new DebugEngineHandler.Factory(), taskExecutor,
                 new LldbEventManager.Factory(new BoundBreakpointEnumFactory(), taskContext),
                 new DebugProgram.Factory(taskContext,
                                          new DebugDisassemblyStream.Factory(

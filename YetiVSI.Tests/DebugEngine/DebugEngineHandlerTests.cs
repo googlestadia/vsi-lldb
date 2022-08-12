@@ -15,7 +15,6 @@
 ﻿using DebuggerApi;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
-using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using NUnit.Framework;
 using System;
@@ -45,10 +44,6 @@ namespace YetiVSI.Test.DebugEngine
         [SetUp]
         public void SetUp()
         {
-#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
-            var taskContext = new JoinableTaskContext();
-#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
-
             logSpy = new LogSpy();
             logSpy.Attach();
 
@@ -56,7 +51,7 @@ namespace YetiVSI.Test.DebugEngine
             debugEngine = Substitute.For<IDebugEngine2>();
             callback = Substitute.For<IDebugEventCallback2>();
 
-            handler = new DebugEngineHandler(taskContext, debugEngine, callback);
+            handler = new DebugEngineHandler(debugEngine, callback);
 
             var idArg = Arg.Any<Guid>();
             program.GetProgramId(out idArg)

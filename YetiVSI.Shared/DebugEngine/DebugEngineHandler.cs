@@ -14,13 +14,11 @@
 
 using System;
 using System.Collections.Generic;
-using DebuggerApi;
-using Microsoft.VisualStudio.Debugger.Interop;
-using Microsoft.VisualStudio;
 using System.Diagnostics;
+using DebuggerApi;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Debugger.Interop;
 using YetiVSI.DebugEngine.Exit;
-using Microsoft.VisualStudio.Threading;
-using System.Threading.Tasks;
 
 namespace YetiVSI.DebugEngine
 {
@@ -124,26 +122,18 @@ namespace YetiVSI.DebugEngine
     {
         public class Factory : IDebugEngineHandlerFactory
         {
-            readonly JoinableTaskContext _taskContext;
-
-            public Factory(JoinableTaskContext taskContext)
+            public IDebugEngineHandler Create(
+                IDebugEngine2 debugEngine, IDebugEventCallback2 eventCallback)
             {
-                _taskContext = taskContext;
+                return new DebugEngineHandler(debugEngine, eventCallback);
             }
-
-            public IDebugEngineHandler Create(IDebugEngine2 debugEngine,
-                                              IDebugEventCallback2 eventCallback) =>
-                new DebugEngineHandler(_taskContext, debugEngine, eventCallback);
         }
 
-        readonly JoinableTaskContext _taskContext;
         readonly IDebugEngine2 _debugEngine;
         readonly IDebugEventCallback2 _eventCallback;
 
-        public DebugEngineHandler(JoinableTaskContext taskContext, IDebugEngine2 debugEngine,
-                                  IDebugEventCallback2 eventCallback)
+        public DebugEngineHandler(IDebugEngine2 debugEngine, IDebugEventCallback2 eventCallback)
         {
-            _taskContext = taskContext;
             _debugEngine = debugEngine;
             _eventCallback = eventCallback;
         }
@@ -155,30 +145,27 @@ namespace YetiVSI.DebugEngine
         // https://docs.microsoft.com/en-us/visualstudio/extensibility/debugger/supported-event-types
         public int SendEvent(IGgpDebugEvent evnt, IGgpDebugProgram program, IDebugThread2 thread)
         {
-            return _taskContext.Factory.Run(async () =>
-            {
-                return await SendEventAsync(evnt, program, thread);
-            });
-        }
 
-        public int SendEvent(IGgpDebugEvent evnt, IGgpDebugProgram program,
-                             RemoteThread thread) => SendEvent(evnt, program,
-                                                               program.GetDebugThread(thread));
-
-        async Task<int> SendEventAsync(IGgpDebugEvent evnt, IGgpDebugProgram program,
-                                       IDebugThread2 thread)
-        {
-            await _taskContext.Factory.SwitchToMainThreadAsync();
-
-            if (((IDebugEvent2)evnt).GetAttributes(out uint attributes) != VSConstants.S_OK)
+            if (evnt.GetAttributes(out uint attributes) != VSConstants.S_OK)
             {
                 Trace.WriteLine($"Could not get event attributes of event ({evnt})");
                 return VSConstants.E_FAIL;
             }
 
             Guid eventId = evnt.EventId;
-            return _eventCallback.Event(_debugEngine, null, program, thread, evnt, ref eventId,
-                                        attributes);
+
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+            // IDebugEventCallback2.Send doesn't actually require to be called on the main thread.
+            var ret = _eventCallback.Event(
+                _debugEngine, null, program, thread, evnt, ref eventId, attributes);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+
+            return ret;
+        }
+
+        public int SendEvent(IGgpDebugEvent evnt, IGgpDebugProgram program, RemoteThread thread)
+        {
+            return SendEvent(evnt, program, program.GetDebugThread(thread));
         }
     }
 }
