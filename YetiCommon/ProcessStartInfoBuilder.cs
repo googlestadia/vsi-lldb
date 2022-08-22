@@ -35,10 +35,8 @@ namespace YetiCommon
         /// <summary>
         /// Returns ProcessStartInfo for running a command on a remote gamelet using SSH.
         /// </summary>
-        public static ProcessStartInfo BuildForSsh(string command, IEnumerable<string> environment,
-                                                   SshTarget target)
+        public static ProcessStartInfo BuildForSsh(string command, SshTarget target)
         {
-            string envArgs = environment.Aggregate("", (acc, entry) => acc + entry + " ");
             return new ProcessStartInfo()
             {
                 FileName = Path.Combine(SDKUtil.GetSshPath(), YetiConstants.SshWinExecutable),
@@ -46,7 +44,7 @@ namespace YetiCommon
                 Arguments = $"-tt -i \"{SDKUtil.GetSshKeyFilePath()}\" " +
                     $"-F \"{SDKUtil.GetSshConfigFilePath()}\" -oStrictHostKeyChecking=yes " +
                     $"-oUserKnownHostsFile=\"\"\"{SDKUtil.GetSshKnownHostsFilePath()}\"\"\" " +
-                    $"cloudcast@{target.IpAddress} -p {target.Port} -- \"{envArgs}{command}\""
+                    $"cloudcast@{target.IpAddress} -p {target.Port} -- \"{command}\""
             };
         }
 

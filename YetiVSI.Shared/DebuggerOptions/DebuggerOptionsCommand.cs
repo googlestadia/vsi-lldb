@@ -12,22 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft.VisualStudio.Shell;
 using System;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.Linq;
-using System.Collections.Concurrent;
-using System.Text;
-using YetiCommon;
-using Microsoft.VisualStudio.Threading;
-using YetiVSI.Util;
-using McMaster.Extensions.CommandLineUtils;
-using System.IO;
 using System.Diagnostics;
-using YetiVSI.DebugEngine;
+using System.IO;
+using System.Linq;
+using System.Text;
+using McMaster.Extensions.CommandLineUtils;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using System.Collections;
+using YetiCommon;
+using YetiVSI.DebugEngine;
 
 namespace YetiVSI.DebuggerOptions
 {

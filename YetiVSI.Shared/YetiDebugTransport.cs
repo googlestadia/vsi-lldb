@@ -294,21 +294,26 @@ namespace YetiVSI
                 session.TransportSession.GetRemoteDebuggerPort(),
                 session.TransportSession.GetReservedLocalAndRemotePort(),
                 session.TransportSession.GetReservedLocalAndRemotePort() + 1);
-            List<string> lldbServerEnvironment = new List<string>();
+
             if (_yetiVSIService.DebuggerOptions[DebuggerOption.SERVER_LOGGING] ==
                 DebuggerOptionState.ENABLED)
             {
                 string channels = "lldb default:posix default:gdb-remote default";
+
                 // gdb-server.log
-                lldbServerEnvironment.Add(
-                    "LLDB_DEBUGSERVER_LOG_FILE=/usr/local/cloudcast/log/gdb-server.log");
-                lldbServerEnvironment.Add("LLDB_SERVER_LOG_CHANNELS=\\\"" + channels + "\\\"");
+                var env = new List<string>()
+                {
+                    $"LLDB_DEBUGSERVER_LOG_FILE=/usr/local/cloudcast/log/gdb-server.log",
+                    $"LLDB_SERVER_LOG_CHANNELS=\\\"{channels}\\\"",
+                };
+                lldbServerCommand = string.Join(" ", env) + " " + lldbServerCommand;
+
                 // lldb-server.log
-                lldbServerCommand += " --log-file=/usr/local/cloudcast/log/lldb-server.log " +
-                    "--log-channels=\\\"" + channels + "\\\"";
+                lldbServerCommand += $" --log-file=/usr/local/cloudcast/log/lldb-server.log";
+                lldbServerCommand += $" --log-channels=\\\"{channels}\\\"";
             }
-            var startInfo = ProcessStartInfoBuilder.BuildForSsh(
-                lldbServerCommand, lldbServerEnvironment, target);
+
+            var startInfo = ProcessStartInfoBuilder.BuildForSsh(lldbServerCommand, target);
             return new ProcessStartData("lldb server", startInfo);
         }
         ProcessStartData CreateTailLogsProcessStartData(SshTarget target, uint remotePid)
@@ -328,8 +333,7 @@ namespace YetiVSI
                 Trace.WriteLine($"Tail process {(exited ? "exited" : "did not exit")} gracefully");
             };
             var startInfo = ProcessStartInfoBuilder.BuildForSsh(
-                $"tail --pid={remotePid} -n +0 -F -q /var/game/stdout /var/game/stderr",
-                new List<string>(), target);
+                $"tail --pid={remotePid} -n +0 -F -q /var/game/stdout /var/game/stderr", target);
             return new ProcessStartData("output tail", startInfo, monitorExit: false,
                                         outputToConsole: true, stopHandler: stopHandler);
         }
@@ -339,7 +343,7 @@ namespace YetiVSI
             {
                 FileName = File.Exists(Path.Combine(YetiConstants.DebuggerGrpcServerDir,
                                                     YetiConstants.DebuggerGrpcServerExecutable)) ?
-                    Path.Combine(YetiConstants.DebuggerGrpcServerDir, 
+                    Path.Combine(YetiConstants.DebuggerGrpcServerDir,
                                  YetiConstants.DebuggerGrpcServerExecutable) :
                     Path.Combine(YetiConstants.RootDir, YetiConstants.DebuggerGrpcServerExecutable),
             };

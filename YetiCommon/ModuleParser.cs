@@ -225,8 +225,7 @@ namespace YetiCommon
             string objDumpArgs =
                 $"-s --section={_buildIdName} {ProcessUtil.QuoteArgument(filepath)}";
             ProcessStartInfo startInfo = ProcessStartInfoBuilder.BuildForSsh(
-                $"{YetiConstants.ObjDumpLinuxExecutable} {objDumpArgs}", new List<string>(),
-                target);
+                $"{YetiConstants.ObjDumpLinuxExecutable} {objDumpArgs}", target);
             var processFactory = new ManagedProcess.Factory();
             try
             {

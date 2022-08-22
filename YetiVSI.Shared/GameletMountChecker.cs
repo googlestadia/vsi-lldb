@@ -38,7 +38,7 @@ namespace YetiVSI
 
         /// <summary>
         /// A package is mounted, e.g. with ggp instance mount --package, or
-        /// a game was run directly, e.g. with ggp run --package. 
+        /// a game was run directly, e.g. with ggp run --package.
         /// </summary>
         PackageMounted = 1 << 1,
 
@@ -81,8 +81,6 @@ namespace YetiVSI
     public class GameletMountChecker
     {
         public const string ReadMountsCmd = "cat /proc/mounts";
-
-        const string _overlayFileSystem = "overlay";
 
         // Possible values are be fuse.sshfs (AS20) or fuse.cdc_fuse_fs (AS30).
         const string _fuseFileSystem = "fuse.";
@@ -199,12 +197,6 @@ namespace YetiVSI
             public string Address { get; }
             public string FileSystemType { get; }
             public string Parameters { get; }
-        }
-
-        bool DevicesMatch(Device a, Device b)
-        {
-            return a != null && b != null && a.Address == b.Address &&
-                a.FileSystemType == b.FileSystemType && a.Parameters == b.Parameters;
         }
 
         /// <summary>

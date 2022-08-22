@@ -74,7 +74,7 @@ namespace YetiVSI.CoreAttach
         {
             // TODO: Find a more robust method of listing files on the gamelet.
             ProcessStartInfo processStartInfo = ProcessStartInfoBuilder.BuildForSsh(
-                COMMAND, new List<string>(), sshTarget);
+                COMMAND, sshTarget);
             return await GetCoreListFromProcessStartInfoAsync(processStartInfo);
         }
 

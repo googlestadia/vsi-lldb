@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using YetiCommon;
+using NUnit.Framework;
 using YetiCommon.SSH;
 
 namespace YetiCommon.Tests
@@ -28,23 +27,12 @@ namespace YetiCommon.Tests
         public void BuildForSsh()
         {
             var startInfo = ProcessStartInfoBuilder.BuildForSsh(
-                "test_command arg1 arg2", new List<string>(), new SshTarget("1.2.3.4:56"));
+                "test_command arg1 arg2", new SshTarget("1.2.3.4:56"));
             Assert.AreEqual(GetSshPath(), startInfo.FileName);
             Assert.True(startInfo.Arguments.Contains(
                 "cloudcast@1.2.3.4 -p 56 -- \"test_command arg1 arg2\""));
             Assert.True(startInfo.Arguments.Contains(
                 $"-oUserKnownHostsFile=\"\"\"{GetKnownHostsPath()}\"\"\""));
-        }
-
-        [Test]
-        public void BuildForSshEnv()
-        {
-            var startInfo = ProcessStartInfoBuilder.BuildForSsh(
-                "test_command arg1 arg2", new List<string>() { "VAR1=X", "VAR2=Y" },
-                new SshTarget("1.2.3.4:56"));
-            Assert.AreEqual(GetSshPath(), startInfo.FileName);
-            Assert.True(startInfo.Arguments.Contains(
-                "cloudcast@1.2.3.4 -p 56 -- \"VAR1=X VAR2=Y test_command arg1 arg2\""));
         }
 
         [Test]

@@ -77,7 +77,7 @@ namespace YetiVSI.PortSupplier
             }
 
             using (var process = remoteProcessFactory.Create(
-                ProcessStartInfoBuilder.BuildForSsh(command, new List<string>(), target)))
+                ProcessStartInfoBuilder.BuildForSsh(command, target)))
             {
                 return await GetByProcessAsync(process);
             }

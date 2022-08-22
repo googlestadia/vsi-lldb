@@ -14,7 +14,6 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using YetiCommon;
 using YetiCommon.SSH;
 
 namespace YetiCommon
@@ -44,8 +43,7 @@ namespace YetiCommon
 
         public async Task RunWithSuccessAsync(SshTarget target, string command)
         {
-            var startInfo =
-                ProcessStartInfoBuilder.BuildForSsh(command, new List<string>(), target);
+            var startInfo = ProcessStartInfoBuilder.BuildForSsh(command, target);
             using (var process = remoteProcessFactory.Create(startInfo))
             {
                 await process.RunToExitWithSuccessAsync();
@@ -67,8 +65,7 @@ namespace YetiCommon
         public async Task<List<string>> RunWithSuccessCapturingOutputAsync(
                 SshTarget target, string command)
         {
-            var startInfo =
-                ProcessStartInfoBuilder.BuildForSsh(command, new List<string>(), target);
+            var startInfo = ProcessStartInfoBuilder.BuildForSsh(command, target);
             using (var process = remoteProcessFactory.Create(startInfo))
             {
                 return await process.RunToExitWithSuccessCapturingOutputAsync();
