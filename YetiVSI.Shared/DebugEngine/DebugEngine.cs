@@ -286,6 +286,7 @@ namespace YetiVSI.DebugEngine
             public string CoreFilePath { get; set; }
             public bool DeleteCoreFile { get; set; }
             public string DebugSessionId { get; set; }
+            public string GameletBaseVersion { get; set; }
         }
 
         readonly TimeSpan _deleteTimeout = TimeSpan.FromSeconds(5);
@@ -333,9 +334,9 @@ namespace YetiVSI.DebugEngine
         SshTarget _target;
         string _coreFilePath;
         LaunchOption _launchOption;
-        LaunchParams _launchParams;
         bool _deleteCoreFileAtCleanup;
         IVsiGameLaunch _vsiGameLaunch;
+        string _gameletBaseVersion;
 
         // Attached program is set after successfully attaching.
         ILldbAttachedProgram _attachedProgram;
@@ -723,7 +724,8 @@ namespace YetiVSI.DebugEngine
                                                      _grpcSession.GrpcConnection,
                                                      _grpcSession.GetLocalDebuggerPort(),
                                                      _target?.IpAddress, _target?.Port ?? 0,
-                                                     _launchOption, callback, lldbDebugger);
+                                                     _launchOption, _gameletBaseVersion,
+                                                     callback, lldbDebugger);
 
                 // Launch processes that need the game process id.
                 _yetiTransport.StartPostGame(_launchOption, _target, program.RemotePid);
@@ -1089,6 +1091,7 @@ namespace YetiVSI.DebugEngine
                 {
                     _target = new SshTarget(parameters.TargetIp);
                 }
+                _gameletBaseVersion = parameters.GameletBaseVersion;
             }
             else
             {
@@ -1203,7 +1206,6 @@ namespace YetiVSI.DebugEngine
         // (not Attach to Process / Attach to Stadia Crash Dump).
         void LaunchGame(IChromeClientsLauncher chromeClientsLauncher)
         {
-            _launchParams = chromeClientsLauncher.LaunchParams;
             _vsiGameLaunch = _gameLauncher.CreateLaunch(chromeClientsLauncher.LaunchParams);
             if (_vsiGameLaunch != null)
             {

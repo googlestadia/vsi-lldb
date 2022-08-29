@@ -383,7 +383,8 @@ namespace YetiVSI
                     var parameters = new DebugEngine.DebugEngine.Params
                     {
                         TargetIp = new SshTarget(gamelet).GetString(),
-                        DebugSessionId = _metrics.DebugSessionId
+                        DebugSessionId = _metrics.DebugSessionId,
+                        GameletBaseVersion = gamelet.GameletVersions.BaseVersion
                     };
                     debugLaunchSettings.Options = JsonConvert.SerializeObject(parameters);
                 }

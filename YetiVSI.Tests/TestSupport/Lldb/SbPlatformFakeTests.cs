@@ -32,7 +32,7 @@ namespace YetiVSI.Test.TestSupport.Lldb
         {
             var factory = new GrpcPlatformFactoryFake(null);
             factory.AddFakeProcess("linux-remote", "myGame", 2222);
-            factory.AddFakeProcess("linux-remote", "sh", 2221);
+
             factory.AddFakeProcess("linux-remote", "ssh", 443244);
             factory.AddFakeProcess("linux-remote", "blah", 4545);
 
@@ -64,10 +64,10 @@ namespace YetiVSI.Test.TestSupport.Lldb
         [Test]
         public void TestRunPidCommand()
         {
-            var cmd = shellCommandFactory.Create("blah blah /proc/*/cmdline blah blah");
+            var cmd = shellCommandFactory.Create("blah blah game_pid.current blah");
             var result = platform.Run(cmd);
             Assert.That(result.Success(), Is.True);
-            Assert.That(cmd.GetOutput(), Is.EqualTo("2221"));
+            Assert.That(cmd.GetOutput(), Is.EqualTo("2222"));
         }
     }
 }

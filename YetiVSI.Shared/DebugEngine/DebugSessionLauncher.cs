@@ -14,6 +14,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -51,6 +52,7 @@ namespace YetiVSI.DebugEngine
                                                GrpcConnection grpcConnection, int localDebuggerPort,
                                                string targetIpAddress, int targetPort,
                                                LaunchOption launchOption,
+                                               string gameletBaseVersion,
                                                IDebugEventCallback2 callback,
                                                StadiaLldbDebugger stadiaDebugger);
     }
@@ -200,8 +202,8 @@ namespace YetiVSI.DebugEngine
         public async Task<ILldbAttachedProgram> LaunchAsync(
             ICancelable task, IDebugProcess2 process, Guid programId, uint? attachPid,
             GrpcConnection grpcConnection, int localDebuggerPort, string targetIpAddress,
-            int targetPort, LaunchOption launchOption, IDebugEventCallback2 callback,
-            StadiaLldbDebugger stadiaDebugger)
+            int targetPort, LaunchOption launchOption, string gameletBaseVersion,
+            IDebugEventCallback2 callback, StadiaLldbDebugger stadiaDebugger)
         {
             Stopwatch launchTimer = Stopwatch.StartNew();
             SbPlatform lldbPlatform = stadiaDebugger.CreatePlatform(grpcConnection);
@@ -257,7 +259,7 @@ namespace YetiVSI.DebugEngine
                         break;
                     case LaunchOption.LaunchGame:
                         processId = GetProcessIdFromGamelet(task, launchTimer, lldbPlatform,
-                                                            processId);
+                                                            gameletBaseVersion, processId);
                         break;
                 }
 
@@ -335,10 +337,11 @@ namespace YetiVSI.DebugEngine
         }
 
         uint GetProcessIdFromGamelet(ICancelable task, Stopwatch launchTimer,
-                                     SbPlatform lldbPlatform, uint processId)
+                                     SbPlatform lldbPlatform, string gameletBaseVersion,
+                                     uint processId)
         {
             IAction debugWaitAction = _actionRecorder.CreateToolAction(ActionType.DebugWaitProcess);
-
+            bool gameletPidFileSupport = GameletSupportsGamePidFile(gameletBaseVersion);
             try
             {
                 // Since we have no way of knowing when the remote process actually
@@ -346,7 +349,7 @@ namespace YetiVSI.DebugEngine
                 debugWaitAction.Record(() => RetryWithTimeout(
                                            task,
                                            () => TryGetRemoteProcessId(
-                                               lldbPlatform, ref processId, debugWaitAction),
+                                               lldbPlatform, ref processId, gameletPidFileSupport, debugWaitAction),
                                            _launchRetryDelay, _launchTimeout, launchTimer));
             }
             catch (TimeoutException e)
@@ -359,9 +362,10 @@ namespace YetiVSI.DebugEngine
         }
 
         bool TryGetRemoteProcessId(SbPlatform lldbPlatform, ref uint processId,
-                                   IAction debugWaitAction)
+                                   bool gameletPidFileSupport, IAction debugWaitAction)
         {
-            if (GetRemoteProcessId(_executableFileName, lldbPlatform, out processId))
+            if (GetRemoteProcessId(_executableFileName, lldbPlatform, gameletPidFileSupport,
+                                   out processId))
             {
                 return true;
             }
@@ -747,46 +751,88 @@ namespace YetiVSI.DebugEngine
             moduleFileLoadRecorder.RecordAfterLoad(modules);
         }
 
-        bool GetRemoteProcessId(string executable, SbPlatform platform, out uint pid)
+        bool GetRemoteProcessId(string executable, SbPlatform platform, bool gameletPidFileSupport,
+                                out uint pid)
         {
             pid = 0;
-            string cmd =
-                $"for i in /proc/*/cmdline; do if cat $i | grep -q \"{executable}\"; then echo \"$i\"; break; fi; done | egrep -o \"[0-9]+\"";
+            string cmd;
+
+            // Adding the else part temporarily to support back versions of Gamelets which don't
+            // write PID to a file.
+            // TODO: Remove the condition when support for Gamelet Base versions < 1.82
+            // expires.
+            if (gameletPidFileSupport)
+            {
+                cmd =
+                    $"set -e; pid=\\`cat /usr/local/cloudcast/etc/session_info/game_pid.current\\`;" +
+                    "username=\\`ps -o uname= -p $pid\\`; if [ \"$username\" = \"cloudcast\" ];" +
+                    "then echo $pid; fi";
+            }
+            else
+            {
+                cmd =
+                    $"for i in /proc/*/cmdline; do if cat $i | grep -q \"{executable}\"; then echo \"$i\";" +
+                    "break; fi; done | egrep -o \"[0-9]+\"";
+            }
             var shellCommand = _lldbPlatformShellCommandFactory.Create(cmd);
+
             if (platform == null)
             {
                 Trace.WriteLine("Unable to find process, no platform selected");
                 return false;
             }
 
+            Trace.WriteLine($"Running command: '{cmd}' on the remote host via lldb-server");
             var error = platform.Run(shellCommand);
             if (error.Fail())
             {
-                Trace.WriteLine($"Unable to find process: {error.GetCString()}");
+                Trace.WriteLine($"SBPlatform::Run() failed with error: {error.GetCString()}");
                 return false;
             }
 
             string output = shellCommand.GetOutput();
-            if (string.IsNullOrEmpty(output))
+            int status = shellCommand.GetStatus();
+
+            if (status != 0)
             {
-                Trace.WriteLine($"Unable to find process '{executable}'");
+                Trace.WriteLine($"Command returned non-zero exit code: {status}\n" +
+                                $"Command output: '{output}'");
                 return false;
             }
 
-            string[] pids = output.Split(' ');
-            if (pids.Length > 1)
+            if (!uint.TryParse(output, out pid))
             {
-                Trace.WriteLine(
-                    $"Unable to select process, multiple instances of '{executable}' are running");
+                Trace.WriteLine($"Unable to parse output as PID: '{output}'");
                 return false;
             }
 
-            if (!uint.TryParse(pids[0], out pid))
+            return true;
+        }
+
+        static bool GameletSupportsGamePidFile(string gameletBaseVersion)
+        {
+            Trace.WriteLine($"Gamelet Platform Core Version: '{gameletBaseVersion}");
+
+            // Gamelets with Platform Core version < "102767.master" or < "1.83.x.x"
+            // don't write the game pid file.
+            Regex versionFormat1 = new Regex("([0-9]+)\\.master");
+            Regex versionFormat2 = new Regex("([0-9]+)\\.([0-9]+).*");
+
+            Match match = versionFormat1.Match(gameletBaseVersion);
+            if (match.Success)
             {
-                Trace.WriteLine($"Unable to convert pid '{pids[0]}' to int");
-                return false;
+                uint gameletBaseVersionNum = uint.Parse(match.Groups[1].Value);
+                return gameletBaseVersionNum >= 102767;
             }
 
+            match = versionFormat2.Match(gameletBaseVersion);
+            if (match.Success)
+            {
+                uint majorVersion = uint.Parse(match.Groups[1].Value);
+                uint minorVersion = uint.Parse(match.Groups[2].Value);
+                return majorVersion > 1 || majorVersion == 1 && minorVersion >= 83;
+            }
+            // Default to true as it is more likely.
             return true;
         }
 

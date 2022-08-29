@@ -47,7 +47,7 @@ namespace YetiVSI.Test.DebugEngine
     [TestFixture]
     class DebugSessionLauncherTests
     {
-        const string _gameBinary = "myGame.exe";
+        const string _gameBinary = "myGame";
         const int _pid = 22;
         const string _gameletIpAddress = "136.112.50.119";
         const int _gameletPort = 44722;
@@ -55,6 +55,7 @@ namespace YetiVSI.Test.DebugEngine
             "Fast expression evaluation setting was disabled.";
         const string _binaryNotFound =
             "Cannot proceed with the game launch. The game binary was not found.";
+        const string _gameletBaseVersion = "102800.master";
 
         IDebugEngine3 _debugEngine;
         GrpcConnection _grpcConnection;
@@ -467,7 +468,7 @@ namespace YetiVSI.Test.DebugEngine
             var platformName = stadiaPlatformAvailable
                 ? "remote-stadia"
                 : "remote-linux";
-            _platformFactory.AddFakeProcess(platformName, "sh", 44);
+            _platformFactory.AddFakeProcess(platformName, _gameBinary, 44);
             var exceptionManagerFactory =
                 new LldbExceptionManager.Factory(new Dictionary<int, Signal>());
             var connectOptionsFactory = new GrpcPlatformConnectOptionsFactory();
@@ -551,8 +552,8 @@ namespace YetiVSI.Test.DebugEngine
             IDebugSessionLauncher launcher, LaunchOption option, StadiaLldbDebugger lldbDebugger)
         {
             return launcher.LaunchAsync(_task, _process, _programId, _pid, _grpcConnection, 10200,
-                                        _gameletIpAddress, _gameletPort, option, _callback,
-                                        lldbDebugger);
+                                        _gameletIpAddress, _gameletPort, option,
+                                        _gameletBaseVersion, _callback, lldbDebugger);
         }
     }
 }

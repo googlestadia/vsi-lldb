@@ -270,6 +270,7 @@ namespace YetiVSI.Test.DebugEngine
                                              Arg.Is(expectedTarget?.IpAddress),
                                              Arg.Is(expectedTarget?.Port ?? 0),
                                              Arg.Any<LaunchOption>(),
+                                             Arg.Any<string>(),
                                              Arg.Any<IDebugEventCallback2>(),
                                              Arg.Any<StadiaLldbDebugger>()).Returns(func);
 

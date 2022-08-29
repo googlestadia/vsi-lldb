@@ -1,3 +1,4 @@
+
 // Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -130,11 +131,11 @@ namespace YetiVSI.Test.TestSupport.Lldb
                 }
 
                 var commandText = command.GetCommand();
-                if (commandText.Contains("/proc/*/cmdline"))
+                if (commandText.Contains("game_pid.current") ||
+                    commandText.Contains("/proc/*/cmdline"))
                 {
-                    // We're always looking for the 'sh' process when executing a command
-                    // with this location.
-                    var processName = "sh";
+                    // game_pid.current file gives pid of the game executable
+                    var processName = "myGame";
                     var process = _processes.FirstOrDefault(p => p.Name == processName);
                     if (process == null)
                     {
