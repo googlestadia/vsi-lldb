@@ -139,8 +139,9 @@ namespace YetiVSI
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             string vsVersion = await VsVersion.GetVisualStudioVersionAsync(this);
+            string extensionVersion = Versions.GetExtensionVersion();
             return new VsiMetricsService(
-                ThreadHelper.JoinableTaskContext, Versions.Populate(vsVersion));
+                ThreadHelper.JoinableTaskContext, Versions.Populate(extensionVersion, vsVersion));
         }
 
         Task<object> CreateSDebugEngineManagerAsync(IAsyncServiceContainer container,

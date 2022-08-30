@@ -85,12 +85,12 @@ namespace YetiCommon
 
         // Populates a Versions struct using the local environment.
         // If a field cannot be populated, it is set to the empty string.
-        public static Versions Populate(string vsVersion)
+        public static Versions Populate(string extensionVersion, string vsVersion)
         {
             return new Versions
             {
                 FullSdkVersionString = GetFullSdkVersionString(),
-                ExtensionVersion = GetExtensionVersion(),
+                ExtensionVersion = extensionVersion,
                 VsVersion = vsVersion ?? "",
             };
         }

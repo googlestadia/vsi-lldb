@@ -34,7 +34,7 @@ namespace YetiVSI.Test.MediumTestsSupport
         {
             var vsiService = new YetiVSIService(vsiOptions);
             var symbolSettingsManager = new VsDebuggerSymbolSettingsManagerStub();
-            var metrics = new VsiMetricsService(taskContext, Versions.Populate(null));
+            var metrics = new VsiMetricsService(taskContext, Versions.Populate(null, null));
 
             AddService(typeof(SVsShellDebugger), symbolSettingsManager);
             AddService(typeof(YetiVSIService), vsiService);
