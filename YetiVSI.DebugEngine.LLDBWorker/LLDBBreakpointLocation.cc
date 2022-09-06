@@ -12,13 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "string.h"
 #include "LLDBBreakpointLocation.h"
 
+#include <lldb/API/SBProcess.h>
+#include <lldb/API/SBThread.h>
 #include <msclr\marshal_cppstd.h>
 
 #include "LLDBAddress.h"
 #include "LLDBBreakpoint.h"
 #include "lldb/API/SBAddress.h"
+#include "lldb-eval/api.h"
 
 namespace YetiVSI {
 namespace DebugEngine {
@@ -55,9 +59,23 @@ SbAddress ^ LLDBBreakpointLocation::GetAddress() {
   }
 }
 
-void LLDBBreakpointLocation::SetCondition(System::String ^ condition) {
+bool LldbEvalCallback(void* baton, lldb::SBProcess& process,
+                      lldb::SBThread& thread,
+                      lldb::SBBreakpointLocation& location) {
+  const std::string* condition = static_cast<std::string*>(baton);
+  lldb::SBError error;
+  auto result = lldb_eval::EvaluateExpression(thread.GetSelectedFrame(),
+                                              condition->c_str(), error);
+  if (error.Fail()) {
+    return false;
+  }
+  return result.GetValueAsUnsigned(0);
+}
+
+void LLDBBreakpointLocation::SetCondition(System::String^ condition) {
   auto conditionStr = msclr::interop::marshal_as<std::string>(condition);
-  breakpointLocation_->SetCondition(conditionStr.c_str());
+  callbackBaton_ = MakeUniquePtr<std::string>(conditionStr);
+  breakpointLocation_->SetCallback(LldbEvalCallback, (*callbackBaton_).Get());
 }
 
 void LLDBBreakpointLocation::SetIgnoreCount(unsigned int ignoreCount) {

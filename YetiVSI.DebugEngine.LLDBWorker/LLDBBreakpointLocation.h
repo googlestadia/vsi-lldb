@@ -19,6 +19,7 @@
 #include "lldb/API/SBBreakpointLocation.h"
 
 #include "ManagedUniquePtr.h"
+#include <string>
 
 namespace YetiVSI {
 namespace DebugEngine {
@@ -41,6 +42,7 @@ ref class LLDBBreakpointLocation : SbBreakpointLocation {
 
  private:
   ManagedUniquePtr<lldb::SBBreakpointLocation> ^ breakpointLocation_;
+  ManagedUniquePtr<std::string> ^ callbackBaton_;
 };
 
 }  // namespace DebugEngine
