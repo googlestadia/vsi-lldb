@@ -17,36 +17,35 @@ using NSubstitute;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using YetiCommon;
 using YetiCommon.SSH;
 
-namespace YetiCommon.Tests
+namespace YetiCommon.Tests.SSH
 {
     [TestFixture]
     class SshKeyTests
     {
-        string tempPath;
-        string keyPath;
+        string _tempPath;
+        string _keyPath;
 
-        ManagedProcess.Factory managedProcessFactory;
-        SshKeyLoader sshKeyLoader;
+        ManagedProcess.Factory _managedProcessFactory;
+        SshKeyLoader _sshKeyLoader;
 
         [SetUp]
         public void SetUp()
         {
-            tempPath = Path.Combine(Path.GetTempPath(), "yetivsitest" + Path.GetRandomFileName());
-            Directory.CreateDirectory(tempPath);
+            _tempPath = Path.Combine(Path.GetTempPath(), "yetivsitest" + Path.GetRandomFileName());
+            Directory.CreateDirectory(_tempPath);
 
-            keyPath = Path.Combine(tempPath, "tempKeyFile");
+            _keyPath = Path.Combine(_tempPath, "tempKeyFile");
 
-            managedProcessFactory = Substitute.For<ManagedProcess.Factory>();
-            sshKeyLoader = new SshKeyLoader(managedProcessFactory, keyPath);
+            _managedProcessFactory = Substitute.For<ManagedProcess.Factory>();
+            _sshKeyLoader = new SshKeyLoader(_managedProcessFactory, _keyPath);
         }
 
         [TearDown]
         public void TearDown()
         {
-            Directory.Delete(tempPath, true);
+            Directory.Delete(_tempPath, true);
         }
 
         [Test]
@@ -55,15 +54,15 @@ namespace YetiCommon.Tests
             const string keyContents = "key contents";
 
             var process = Substitute.For<IProcess>();
-            managedProcessFactory.Create(Arg.Any<ProcessStartInfo>()).Returns(process);
+            _managedProcessFactory.Create(Arg.Any<ProcessStartInfo>()).Returns(process);
 
             process.RunToExitAsync().Returns(x =>
             {
-                File.WriteAllText(keyPath + ".pub", keyContents);
+                File.WriteAllText(_keyPath + ".pub", keyContents);
                 return 0;
             });
 
-            var key = await sshKeyLoader.LoadOrCreateAsync();
+            var key = await _sshKeyLoader.LoadOrCreateAsync();
             Assert.AreEqual(keyContents, key.PublicKey);
         }
 
@@ -71,27 +70,27 @@ namespace YetiCommon.Tests
         public async Task LoadOrCreateDoesLoadAsync()
         {
             const string keyContents = "public key contents";
-            File.WriteAllText(keyPath, "private key contents");
-            File.WriteAllText(keyPath + ".pub", keyContents);
+            File.WriteAllText(_keyPath, "private key contents");
+            File.WriteAllText(_keyPath + ".pub", keyContents);
 
-            var key = await sshKeyLoader.LoadOrCreateAsync();
+            var key = await _sshKeyLoader.LoadOrCreateAsync();
             Assert.AreEqual(keyContents, key.PublicKey);
 
-            managedProcessFactory.Create(Arg.Any<ProcessStartInfo>()).DidNotReceive();
+            _managedProcessFactory.Create(Arg.Any<ProcessStartInfo>()).DidNotReceive();
         }
 
         [Test]
         public void LoadOrCreateFails()
         {
             var process = Substitute.For<IProcess>();
-            managedProcessFactory.Create(Arg.Any<ProcessStartInfo>()).Returns(process);
+            _managedProcessFactory.Create(Arg.Any<ProcessStartInfo>()).Returns(process);
 
             process.RunToExitAsync().Returns(x =>
             {
                 return 1;
             });
 
-            Assert.ThrowsAsync<SshKeyException>(() => sshKeyLoader.LoadOrCreateAsync());
+            Assert.ThrowsAsync<SshKeyException>(() => _sshKeyLoader.LoadOrCreateAsync());
         }
     }
 }
