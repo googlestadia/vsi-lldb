@@ -739,7 +739,7 @@ namespace YetiVSI.DebugEngine
         {
             pid = 0;
             string cmd =
-                $"for i in /proc/*/cmdline; do if cat $i | tr \"\\0\" \" \" | grep -q \"{executable}\"; then echo \"$i\"; break; fi; done | egrep -o \"[0-9]+\"";
+                $"for i in /proc/*/cmdline; do if cat $i | grep -q \"{executable}\"; then echo \"$i\"; break; fi; done | egrep -o \"[0-9]+\"";
             var shellCommand = _lldbPlatformShellCommandFactory.Create(cmd);
             if (platform == null)
             {
