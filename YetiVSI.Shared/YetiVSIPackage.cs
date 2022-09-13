@@ -41,7 +41,7 @@ using Task = System.Threading.Tasks.Task;
 namespace YetiVSI
 {
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-    [InstalledProductRegistration("#110", "#112", "1.84.0", IconResourceID = 400)]
+    [InstalledProductRegistration("#110", "#112", "1.85.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid("5fc8481d-4b1a-4cdc-b123-fd6d32fc4096")]
     [ProvideOptionPage(typeof(OptionPageGrid), "Stadia SDK", "General", 0, 0, true)]
