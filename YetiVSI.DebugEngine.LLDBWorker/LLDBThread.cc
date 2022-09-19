@@ -107,6 +107,14 @@ StopReason LLDBThread::GetStopReason() {
       return StopReason::EXITING;
     case lldb::StopReason::eStopReasonInstrumentation:
       return StopReason::INSTRUMENTATION;
+    case lldb::eStopReasonProcessorTrace:
+      return StopReason::PROCESSOR_TRACE;
+    case lldb::StopReason::eStopReasonFork:
+      return StopReason::FORK;
+    case lldb::StopReason::eStopReasonVFork:
+      return StopReason::VFORK;
+    case lldb::StopReason::eStopReasonVForkDone:
+      return StopReason::VFORK_DONE;
     case lldb::StopReason::eStopReasonInvalid:
       // fall-through
     default:

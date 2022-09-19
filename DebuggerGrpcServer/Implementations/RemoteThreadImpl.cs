@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
+using DebuggerCommonApi;
+using DebuggerGrpcServer.RemoteInterfaces;
 using LldbApi;
 using YetiCommon;
-using DebuggerGrpcServer.RemoteInterfaces;
-using DebuggerCommonApi;
 
 namespace DebuggerGrpcServer
 {
@@ -24,55 +24,55 @@ namespace DebuggerGrpcServer
     {
         public class Factory
         {
-            private readonly RemoteFrameImpl.Factory remoteFrameFactory;
+            readonly RemoteFrameImpl.Factory _remoteFrameFactory;
 
             public Factory(RemoteFrameImpl.Factory remoteFrameFactory)
             {
-                this.remoteFrameFactory = remoteFrameFactory;
+                _remoteFrameFactory = remoteFrameFactory;
             }
 
             public RemoteThread Create(SbThread sbThread) =>
-                sbThread != null ? new RemoteThreadImpl(sbThread, remoteFrameFactory) : null;
+                sbThread != null ? new RemoteThreadImpl(sbThread, _remoteFrameFactory) : null;
         }
 
-        private readonly SbThread sbThread;
-        private readonly RemoteFrameImpl.Factory remoteFrameFactory;
+        readonly SbThread _sbThread;
+        readonly RemoteFrameImpl.Factory _remoteFrameFactory;
 
-        private RemoteThreadImpl(SbThread sbThread, RemoteFrameImpl.Factory remoteFrameFactory)
+        RemoteThreadImpl(SbThread sbThread, RemoteFrameImpl.Factory remoteFrameFactory)
         {
-            this.sbThread = sbThread;
-            this.remoteFrameFactory = remoteFrameFactory;
+            _sbThread = sbThread;
+            _remoteFrameFactory = remoteFrameFactory;
         }
 
-        public SbProcess GetProcess() => sbThread.GetProcess();
+        public SbProcess GetProcess() => _sbThread.GetProcess();
 
-        public string GetName() => sbThread.GetName();
+        public string GetName() => _sbThread.GetName();
 
-        public ulong GetThreadId() => sbThread.GetThreadId();
+        public ulong GetThreadId() => _sbThread.GetThreadId();
 
-        public string GetStatus() => sbThread.GetStatus();
+        public string GetStatus() => _sbThread.GetStatus();
 
-        public void StepInto() => sbThread.StepInto();
+        public void StepInto() => _sbThread.StepInto();
 
-        public void StepOver() => sbThread.StepOver();
+        public void StepOver() => _sbThread.StepOver();
 
-        public void StepOut() => sbThread.StepOut();
+        public void StepOut() => _sbThread.StepOut();
 
-        public void StepInstruction(bool stepOver) => sbThread.StepInstruction(stepOver);
+        public void StepInstruction(bool stepOver) => _sbThread.StepInstruction(stepOver);
 
-        public uint GetNumFrames() => sbThread.GetNumFrames();
+        public uint GetNumFrames() => _sbThread.GetNumFrames();
 
         public RemoteFrame GetFrameAtIndex(uint index) =>
-            remoteFrameFactory.Create(sbThread.GetFrameAtIndex(index));
+            _remoteFrameFactory.Create(_sbThread.GetFrameAtIndex(index));
 
-        public StopReason GetStopReason() => sbThread.GetStopReason().ConvertTo<StopReason>();
+        public StopReason GetStopReason() => _sbThread.GetStopReason().ConvertTo<StopReason>();
 
         public ulong GetStopReasonDataAtIndex(uint index) =>
-            sbThread.GetStopReasonDataAtIndex(index);
+            _sbThread.GetStopReasonDataAtIndex(index);
 
-        public uint GetStopReasonDataCount() => sbThread.GetStopReasonDataCount();
+        public uint GetStopReasonDataCount() => _sbThread.GetStopReasonDataCount();
 
-        public SbThread GetSbThread() => sbThread;
+        public SbThread GetSbThread() => _sbThread;
 
         public List<FrameInfoPair> GetFramesWithInfo(
             FrameInfoFlags fields, uint startIndex, uint maxCount)
@@ -84,7 +84,7 @@ namespace DebuggerGrpcServer
             /// than <see cref="startIndex+maxCount"/>, because it traverses the whole stack.
             for (uint i = startIndex; i < startIndex + maxCount; ++i)
             {
-                SbFrame ithFrame = sbThread.GetFrameAtIndex(i);
+                SbFrame ithFrame = _sbThread.GetFrameAtIndex(i);
 
                 if (ithFrame == null)
                 {
@@ -92,7 +92,7 @@ namespace DebuggerGrpcServer
                     break;
                 }
 
-                var frame = remoteFrameFactory.Create(ithFrame);
+                var frame = _remoteFrameFactory.Create(ithFrame);
                 framesWithInfo.Add(
                     new FrameInfoPair { Frame = frame, Info = frame.GetInfo(fields) });
             }

@@ -126,6 +126,10 @@ message GetStopReasonResponse {
     PLAN_COMPLETE = 8;
     EXITING = 9;
     INSTRUMENTATION = 10;
+    PROCESSOR_TRACE = 11;
+    FORK = 12;
+    VFORK = 13;
+    VFORK_DONE = 14;
   }
   StopReason stop_reason = 1;
 }

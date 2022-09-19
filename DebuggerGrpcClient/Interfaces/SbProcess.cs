@@ -21,8 +21,7 @@ namespace DebuggerApi
     {
         STATE_CHANGED = (1 << 0),
         INTERRUPT = (1 << 1),
-    }
-    ;
+    };
 
     // Interface mirrors the SBProcess API as closely as possible.
     public interface SbProcess
@@ -74,7 +73,6 @@ namespace DebuggerApi
         // Writes memory to the current process's address space and maintains any traps that might
         // be present due to software breakpoints.
         ulong WriteMemory(ulong address, byte[] buffer, ulong size, out SbError error);
-
 
         /// <summary>
         /// Dumps core to dumpUrl path and returns status of the operation.

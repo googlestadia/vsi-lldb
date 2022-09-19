@@ -373,7 +373,7 @@ namespace DebuggerGrpcClient
 
         #endregion
 
-        private StopReason GetStopReason(GetStopReasonResponse.Types.StopReason grpcStopReason)
+        StopReason GetStopReason(GetStopReasonResponse.Types.StopReason grpcStopReason)
         {
             switch (grpcStopReason)
             {
@@ -385,6 +385,8 @@ namespace DebuggerGrpcClient
                     return StopReason.EXEC;
                 case GetStopReasonResponse.Types.StopReason.Exiting:
                     return StopReason.EXITING;
+                case GetStopReasonResponse.Types.StopReason.Fork:
+                    return StopReason.FORK;
                 case GetStopReasonResponse.Types.StopReason.Instrumentation:
                     return StopReason.INSTRUMENTATION;
                 case GetStopReasonResponse.Types.StopReason.Invalid:
@@ -393,10 +395,16 @@ namespace DebuggerGrpcClient
                     return StopReason.NONE;
                 case GetStopReasonResponse.Types.StopReason.PlanComplete:
                     return StopReason.PLAN_COMPLETE;
+                case GetStopReasonResponse.Types.StopReason.ProcessorTrace:
+                    return StopReason.PROCESSOR_TRACE;
                 case GetStopReasonResponse.Types.StopReason.Signal:
                     return StopReason.SIGNAL;
                 case GetStopReasonResponse.Types.StopReason.Trace:
                     return StopReason.TRACE;
+                case GetStopReasonResponse.Types.StopReason.Vfork:
+                    return StopReason.VFORK;
+                case GetStopReasonResponse.Types.StopReason.VforkDone:
+                    return StopReason.VFORK_DONE;
                 case GetStopReasonResponse.Types.StopReason.Watchpoint:
                     return StopReason.WATCHPOINT;
             }

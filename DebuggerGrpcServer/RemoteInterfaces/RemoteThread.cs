@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using DebuggerCommonApi;
+using System.Collections.Generic;
+using DebuggerCommonApi;
 using DebuggerGrpcServer.RemoteInterfaces;
 using LldbApi;
-using System.Collections.Generic;
 
 namespace DebuggerGrpcServer
 {
-    // Enumeration of reasons for a thread to be stopped.
+    /// <summary>
+    /// Enumeration of reasons for a thread to be stopped.
+    /// </summary>
     public enum StopReason
     {
         INVALID = 0,
@@ -33,6 +35,10 @@ namespace DebuggerGrpcServer
         PLAN_COMPLETE,
         EXITING,
         INSTRUMENTATION,
+        PROCESSOR_TRACE,
+        FORK,
+        VFORK,
+        VFORK_DONE,
     };
 
     /// <summary>
@@ -95,26 +101,10 @@ namespace DebuggerGrpcServer
         /// </summary>
         StopReason GetStopReason();
 
-        //--------------------------------------------------------------------------
-        // Gets information associated with a stop reason.
-        //
-        // Breakpoint stop reasons will have data that consists of pairs of
-        // breakpoint IDs followed by the breakpoint location IDs (they always come
-        // in pairs). I.e. GetStopReasonDataAtIndex(2*n) is a breakpoint ID while
-        // GetStopReasonDataAtIndex(2*n + 1) is the corresponding breakpoint location
-        // ID.
-        //
-        // Stop Reason Count Data Type
-        // ======================== ===== =========================================
-        // eStopReasonNone 0
-        // eStopReasonTrace 0
-        // eStopReasonBreakpoint N duple: {breakpoint id, location id}
-        // eStopReasonWatchpoint 1 watchpoint id
-        // eStopReasonSignal 1 unix signal number
-        // eStopReasonException N exception data
-        // eStopReasonExec 0
-        // eStopReasonPlanComplete 0
-        //--------------------------------------------------------------------------
+        /// <summary>
+        /// Gets information associated with a stop reason.
+        /// See <see cref="SbThread.GetStopReasonDataAtIndex"/> for more details.
+        /// </summary>
         ulong GetStopReasonDataAtIndex(uint index);
 
         /// <summary>

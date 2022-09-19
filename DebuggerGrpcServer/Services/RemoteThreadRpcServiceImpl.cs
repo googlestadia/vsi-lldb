@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Debugger.Common;
-using Debugger.RemoteThreadRpc;
-using Grpc.Core;
-using LldbApi;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using System.Linq;
+using Debugger.Common;
+using Debugger.RemoteThreadRpc;
 using DebuggerCommonApi;
+using Grpc.Core;
+using LldbApi;
 
 namespace DebuggerGrpcServer
 {
@@ -199,6 +198,8 @@ namespace DebuggerGrpcServer
             {
                 case StopReason.BREAKPOINT:
                     return GetStopReasonResponse.Types.StopReason.Breakpoint;
+                case StopReason.FORK:
+                    return GetStopReasonResponse.Types.StopReason.Fork;
                 case StopReason.EXCEPTION:
                     return GetStopReasonResponse.Types.StopReason.Exception;
                 case StopReason.EXEC:
@@ -213,10 +214,16 @@ namespace DebuggerGrpcServer
                     return GetStopReasonResponse.Types.StopReason.None;
                 case StopReason.PLAN_COMPLETE:
                     return GetStopReasonResponse.Types.StopReason.PlanComplete;
+                case StopReason.PROCESSOR_TRACE:
+                    return GetStopReasonResponse.Types.StopReason.ProcessorTrace;
                 case StopReason.SIGNAL:
                     return GetStopReasonResponse.Types.StopReason.Signal;
                 case StopReason.TRACE:
                     return GetStopReasonResponse.Types.StopReason.Trace;
+                case StopReason.VFORK:
+                    return GetStopReasonResponse.Types.StopReason.Vfork;
+                case StopReason.VFORK_DONE:
+                    return GetStopReasonResponse.Types.StopReason.VforkDone;
                 case StopReason.WATCHPOINT:
                     return GetStopReasonResponse.Types.StopReason.Watchpoint;
             }
