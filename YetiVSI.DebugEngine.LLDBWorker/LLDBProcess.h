@@ -44,7 +44,7 @@ ref class LLDBProcess sealed : SbProcess {
   virtual bool SetSelectedThreadById(uint64_t threadId);
   virtual bool Stop();
   virtual bool Continue();
-  virtual bool Detach();
+  virtual bool Detach(bool keepStopped);
   virtual bool Kill();
   virtual int32_t GetUniqueId();
   virtual SbUnixSignals ^ GetUnixSignals();

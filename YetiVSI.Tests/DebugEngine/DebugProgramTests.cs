@@ -507,7 +507,7 @@ namespace YetiVSI.Test.DebugEngine
                     Arg.Do<ProgramDestroyEvent>(x => capturedEvent = x),
                     Arg.Any<IGgpDebugProgram>())
                 .Returns(0);
-            mockSbProcess.Detach().Returns(true);
+            mockSbProcess.Detach(false).Returns(true);
 
             Assert.AreEqual(VSConstants.S_OK, program.Detach());
 

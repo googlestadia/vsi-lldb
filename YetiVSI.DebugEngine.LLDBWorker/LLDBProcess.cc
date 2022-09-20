@@ -99,8 +99,8 @@ bool LLDBProcess::Continue() {
   return true;
 }
 
-bool LLDBProcess::Detach() {
-  lldb::SBError error = process_->Detach();
+bool LLDBProcess::Detach(bool keepStopped) {
+  lldb::SBError error = process_->Detach(keepStopped);
   if (error.Fail()) {
     Log("Failed to detach process: " +
         gcnew System::String(error.GetCString()));

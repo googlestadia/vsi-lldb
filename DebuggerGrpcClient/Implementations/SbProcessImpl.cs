@@ -21,7 +21,9 @@ using System.Diagnostics;
 
 namespace DebuggerGrpcClient
 {
-    // Creates SBProcess objects.
+    /// <summary>
+    /// Creates SBProcess objects.
+    /// </summary>
     class GrpcProcessFactory
     {
         public SbProcess Create(GrpcConnection grpcConnection, GrpcSbProcess grpcSbProcess)
@@ -30,7 +32,9 @@ namespace DebuggerGrpcClient
         }
     }
 
-    // Implementation of the SBProcess interface that uses GRPC to make RPCs to a remote endpoint.
+    /// <summary>
+    /// Implementation of the SBProcess interface that uses GRPC to make RPCs to a remote endpoint.
+    /// </summary>
     class SbProcessImpl : SbProcess
     {
         readonly GrpcConnection connection;
@@ -155,11 +159,12 @@ namespace DebuggerGrpcClient
             return false;
         }
 
-        public bool Detach()
+        public bool Detach(bool keepStopped)
         {
             var request = new DetachRequest
             {
-                Process = grpcSbProcess
+                Process = grpcSbProcess,
+                KeepStopped = keepStopped
             };
             DetachResponse response = null;
             if (connection.InvokeRpc(() =>

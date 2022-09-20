@@ -101,6 +101,7 @@ message KillResponse {
 
 message DetachRequest {
   Common.GrpcSbProcess process = 1;
+  bool keepStopped = 2;
 }
 
 message DetachResponse {

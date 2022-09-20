@@ -23,55 +23,97 @@ namespace DebuggerApi
         INTERRUPT = (1 << 1),
     };
 
-    // Interface mirrors the SBProcess API as closely as possible.
+    /// <summary>
+    /// Interface mirrors the SBProcess API as closely as possible.
+    /// </summary>
     public interface SbProcess
     {
-        // Get the target that this process is assocatied with.
+        /// <summary>
+        /// Returns a read only property that represents the target
+        /// (lldb.SBTarget) that owns this process.
+        /// </summary>
         RemoteTarget GetTarget();
 
-        // Get the total number of threads in the thread list.
+        /// <summary>
+        /// Returns the number of threads in this process as an integer.
+        /// </summary>
         int GetNumThreads();
 
-        // Get a thread at the specified index in the thread list.
+        /// <summary>
+        /// Returns the index'th thread from the list of current threads. The index
+        /// of a thread is only valid for the current stop.For a persistent thread
+        /// identifier use either the thread ID or the IndexID.
+        /// </summary>
         RemoteThread GetThreadAtIndex(int index);
 
-        // Get the thread with the specified id.
+        /// <summary>
+        /// Returns the thread with the given thread ID.
+        /// </summary>
         RemoteThread GetThreadById(ulong id);
 
-        // Returns the currently selected thread.
+        /// <summary>
+        /// Returns the currently selected thread.
+        /// </summary>
         RemoteThread GetSelectedThread();
 
-        // Set the currently selected thread by its thread ID.
+        /// <summary>
+        /// Sets the currently selected thread in this process by its thread ID.
+        /// </summary>
         bool SetSelectedThreadById(ulong threadId);
 
-        // Continues the process.
-        // Returns true if successful, false otherwise.
+        /// <summary>
+        /// Continues the process.
+        /// </summary>
         bool Continue();
 
-        // Pauses the process.
-        // Retruns true is successful, false otherwise.
+        /// <summary>
+        /// Pauses the process.
+        /// </summary>
         bool Stop();
 
-        // Kills the process.
-        // Returns true if successful, false otherwise.
+        /// <summary>
+        /// Kills the process and shuts down all threads that were spawned to
+        /// track and monitor process.
+        /// </summary>
         bool Kill();
 
-        // Detaches the process.
-        // Retruns true if successful, false otherwise.
-        bool Detach();
+        /// <summary>
+        /// Detaches from the process and, optionally, keeps it stopped.
+        /// </summary>
+        /// <param name="keepStopped">Should the process be stopped after Detach.</param>
+        /// <returns>Whether the operation succeeded.</returns>
+        bool Detach(bool keepStopped);
 
-        // Gets a unique ID across all process instances.
+        /// <summary>
+        /// Gets the unique ID associated with this process object.
+        ///
+        /// Unique IDs start at 1 and increment up with each new process
+        /// instance. Since starting a process on a system might always
+        /// create a process with the same process ID, there needs to be a
+        /// way to tell two process instances apart.
+        /// </summary>
+        /// <returns>
+        /// A non-zero integer ID if this object contains a
+        /// valid process object, zero if this object does not contain
+        /// a valid process object.
+        /// </returns>
         int GetUniqueId();
-
-        // Gets the Unix signals.
+        
+        /// <summary>
+        /// Gets the Unix signals.
+        /// </summary>
         SbUnixSignals GetUnixSignals();
 
-        // Reads memory from the current process's address space and removes any traps that may
-        // have been inserted into the memory.
+        /// <summary>
+        /// Reads memory from the current process's address space and removes any
+        /// traps that may have been inserted into the memory.
+        /// </summary>
         ulong ReadMemory(ulong address, byte[] buffer, ulong size, out SbError error);
 
-        // Writes memory to the current process's address space and maintains any traps that might
-        // be present due to software breakpoints.
+        /// <summary>
+        /// Writes memory to the current process's address space and maintains any
+        /// traps that might be present due to software breakpoints.
+        /// </summary>
         ulong WriteMemory(ulong address, byte[] buffer, ulong size, out SbError error);
 
         /// <summary>

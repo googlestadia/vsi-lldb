@@ -74,7 +74,7 @@ namespace YetiVSI.Test.TestSupport.Lldb
             throw new NotImplementedTestDoubleException();
         }
 
-        public bool Detach()
+        public bool Detach(bool keepStopped)
         {
             throw new NotImplementedTestDoubleException();
         }

@@ -231,7 +231,7 @@ namespace YetiVSI.DebugEngine
         public int Detach()
         {
             DetachRequested = true;
-            if (!_lldbProcess.Detach())
+            if (!_lldbProcess.Detach(false))
             {
                 DetachRequested = false;
                 return VSConstants.E_FAIL;
