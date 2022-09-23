@@ -66,10 +66,14 @@ bool LldbEvalCallback(void* baton, lldb::SBProcess& process,
   lldb::SBError error;
   auto result = lldb_eval::EvaluateExpression(thread.GetSelectedFrame(),
                                               condition->c_str(), error);
+
+  // We return true when an error occurs in the evaluation in order to match the behavior
+  // of Visual Studio. A conditional breakpoint should only be skipped when the condition
+  // is successfully evaluated and the result of the evaluation is false.
   if (error.Fail()) {
-    return false;
+    return true;
   }
-  return result.GetValueAsUnsigned(0);
+  return result.GetValueAsUnsigned(1);
 }
 
 void LLDBBreakpointLocation::SetCondition(System::String^ condition) {
