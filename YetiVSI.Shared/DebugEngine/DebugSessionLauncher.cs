@@ -531,12 +531,24 @@ namespace YetiVSI.DebugEngine
             // If the error does not need special handling, just return the default message.
             if (platform == null || lldbError.GetCString() != lldbMessageWhenAlreadyTraced)
             {
+                //TODO: Temporary debug code to investigate "Internal lldb error".
+                Trace.WriteLine($"LLDB Error: '{lldbError.GetCString()}'");
+                if (platform != null)
+                {
+                    string stdout = RunShellCommand($"cat /proc/{processId}/status", platform);
+                    Trace.WriteLine($"Game PID: '{processId}', Status: {stdout}");
+                }
+
                 return errorString;
             }
 
             // Let us detect if there is a debugger already attached and provide a better error
             // message there.
             string output = RunShellCommand($"cat /proc/{processId}/status", platform);
+
+            //TODO: Temporary debug code to investigate "Internal lldb error".
+            Trace.WriteLine($"Game PID: '{processId}', Status: {output}");
+
             if (string.IsNullOrEmpty(output))
             {
                 return errorString;
