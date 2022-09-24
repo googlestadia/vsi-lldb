@@ -69,8 +69,8 @@ namespace YetiVSI.Test
             var remoteFile = new RemoteFile(_managedProcessFactory);
             var task = Substitute.For<ICancelable>();
 
-            await remoteFile.SyncAsync(
-                GetSshTarget(instanceId), _localPath, _remotePath, task, force);
+            await remoteFile.SyncAsync(GetSshTarget(instanceId), _localPath, _remotePath, task,
+                                       force);
             await process.Received(1).RunToExitWithSuccessAsync();
         }
 
@@ -87,8 +87,8 @@ namespace YetiVSI.Test
             var remoteFile = new RemoteFile(_managedProcessFactory);
             var task = Substitute.For<ICancelable>();
 
-            await remoteFile.SyncAsync(
-                GetSshTarget(instanceId), _localPath, _remotePath, task, force);
+            await remoteFile.SyncAsync(GetSshTarget(instanceId), _localPath, _remotePath, task,
+                                       force);
             await process.Received(1).RunToExitWithSuccessAsync();
         }
 
@@ -97,13 +97,12 @@ namespace YetiVSI.Test
         {
             var process = Substitute.For<IProcess>();
             _managedProcessFactory
-                .CreateVisible(
-                    Arg.Is<ProcessStartInfo>(x => UsesScpWinExecutable(x)), Arg.Any<int>())
-                .Returns(process);
+                .CreateVisible(Arg.Is<ProcessStartInfo>(x => UsesScpWinExecutable(x)),
+                               Arg.Any<int>()).Returns(process);
             var remoteFile = new RemoteFile(_managedProcessFactory);
             var task = Substitute.For<ICancelable>();
 
-            await remoteFile.GetAsync(GetSshTarget(""),  _localPath, _remotePath, task);
+            await remoteFile.GetAsync(GetSshTarget(""), _localPath, _remotePath, task);
             await process.Received(1).RunToExitWithSuccessAsync();
         }
 
@@ -128,7 +127,7 @@ namespace YetiVSI.Test
             var result = Assert.ThrowsAsync<ArgumentNullException>(
                 async () => await remoteFile.SyncAsync(null, localPath, _remotePath, null));
             var message = "Local path should be specified when running ggp_rsync\r\n" +
-                          "Parameter name: localPath";
+                "Parameter name: localPath";
             Assert.That(result.Message, Is.EqualTo(message));
         }
 
@@ -139,7 +138,7 @@ namespace YetiVSI.Test
             var result = Assert.ThrowsAsync<ArgumentNullException>(
                 async () => await remoteFile.SyncAsync(null, _localPath, remotePath, null));
             var message = "Remote path should be specified when running ggp_rsync\r\n" +
-                          "Parameter name: remotePath";
+                "Parameter name: remotePath";
             Assert.That(result.Message, Is.EqualTo(message));
         }
 
@@ -169,8 +168,8 @@ namespace YetiVSI.Test
         {
             string singleLine = "Initial output from ggp rsync";
             var task = Substitute.For<ICancelable>();
-            RemoteFile remoteFile = PrepareRemoteFileInstanceCanceledAfterFirstOutput(task,
-                                                                                      singleLine);
+            RemoteFile remoteFile =
+                PrepareRemoteFileInstanceCanceledAfterFirstOutput(task, singleLine);
 
             // Validate that only one line is propagated into _task.Progress and after that
             // the OperationCanceledException is raised
@@ -179,8 +178,8 @@ namespace YetiVSI.Test
             {
                 Assert.ThrowsAsync<OperationCanceledException>(
                     async () =>
-                        await remoteFile.SyncAsync(GetSshTarget(""), _localPath,
-                                                   _remotePath, task));
+                        await remoteFile.SyncAsync(GetSshTarget(""), _localPath, _remotePath,
+                                                   task));
                 task.Progress.Received(1).Report(singleLine);
             });
         }
@@ -197,11 +196,11 @@ namespace YetiVSI.Test
             // cancels the task -> raises event)
             Assert.Multiple(() =>
             {
-                var exception = Assert.ThrowsAsync<ProcessException>(
+                var exception = Assert.ThrowsAsync<ProcessExecutionException>(
                     async () =>
-                        await remoteFile.SyncAsync(GetSshTarget(""), _localPath,
-                                                   _remotePath, task));
-                Assert.That(exception.Message, Is.EqualTo(errorMessage));
+                        await remoteFile.SyncAsync(GetSshTarget(""), _localPath, _remotePath,
+                                                   task));
+                StringAssert.Contains(errorMessage, exception.Message);
                 task.Progress.Received(0).Report(Arg.Any<string>());
             });
         }
@@ -216,7 +215,7 @@ namespace YetiVSI.Test
         /// <returns>Pre-configured RemoteFile.</returns>
         RemoteFile PrepareRemoteFileInstanceWithOutput(ICancelable task, List<string> output)
         {
-            var process = new TestProcess(task, output);
+            var process = new TestProcess(task, 0, output);
             _managedProcessFactory.Create(Arg.Any<ProcessStartInfo>(), Arg.Any<int>())
                 .Returns(process);
             return new RemoteFile(_managedProcessFactory);
@@ -234,8 +233,8 @@ namespace YetiVSI.Test
         RemoteFile PrepareRemoteFileInstanceCanceledAfterFirstOutput(ICancelable task,
                                                                      string singleLine)
         {
-            var process = new TestProcess(task, new List<string>() {singleLine},
-                                          cancels:true);
+            var process =
+                new TestProcess(task, 0, new List<string>() { singleLine }, cancels: true);
 
             _managedProcessFactory.Create(Arg.Any<ProcessStartInfo>(), Arg.Any<int>())
                 .Returns(process);
@@ -251,19 +250,18 @@ namespace YetiVSI.Test
         /// <returns>Pre-configured RemoteFile.</returns>
         RemoteFile PrepareRemoteFileInstanceWithError(ICancelable task, string error)
         {
-            var process = new TestProcess(task, errorMessage: error);
+            var process = new TestProcess(task, 1, errorMessage: error);
             _managedProcessFactory.Create(Arg.Any<ProcessStartInfo>(), Arg.Any<int>())
                 .Returns(process);
             return new RemoteFile(_managedProcessFactory);
         }
 
         bool HasArgumentsAsExpected(ProcessStartInfo processStartInfo, int port, bool force) =>
-            processStartInfo.Arguments.Equals(
-                force
-                ? $"--port {port} --ip {_ipAddress} --compress --whole-file --checksum" +
-                  $" \"{_localPath}\" \"{_remotePath}\""
-                : $"--port {port} --ip {_ipAddress} --compress " +
-                  $" \"{_localPath}\" \"{_remotePath}\"");
+            processStartInfo.Arguments.Equals(force
+                                                  ? $"--port {port} --ip {_ipAddress} --compress --whole-file --checksum" +
+                                                  $" \"{_localPath}\" \"{_remotePath}\""
+                                                  : $"--port {port} --ip {_ipAddress} --compress " +
+                                                  $" \"{_localPath}\" \"{_remotePath}\"");
 
         bool UsesGgpRsync(ProcessStartInfo processStartInfo) =>
             processStartInfo.FileName.EndsWith("ggp_rsync.exe");
@@ -277,18 +275,20 @@ namespace YetiVSI.Test
 
     public class TestProcess : IProcess
     {
+        readonly ICancelable _cancelable;
+        readonly int _exitCode;
         readonly List<string> _expectedOutput;
         readonly string _errorMessage;
         readonly bool _cancels;
-        readonly ICancelable _cancelable;
 
-        public TestProcess(ICancelable cancelable, List<string> expectedOutput = null,
+        public TestProcess(ICancelable cancelable, int exitCode, List<string> expectedOutput = null,
                            string errorMessage = "", bool cancels = false)
         {
+            _cancelable = cancelable;
+            _exitCode = exitCode;
             _expectedOutput = expectedOutput;
             _errorMessage = errorMessage;
             _cancels = cancels;
-            _cancelable = cancelable;
         }
 
         public Task<int> RunToExitAsync()
@@ -312,7 +312,7 @@ namespace YetiVSI.Test
                 ErrorDataReceived?.Invoke(null, new TextReceivedEventArgs(_errorMessage));
             }
 
-            return Task.FromResult(0);
+            return Task.FromResult(_exitCode);
         }
 
         public void Dispose()
@@ -328,6 +328,7 @@ namespace YetiVSI.Test
         public event TextReceivedEventHandler ErrorDataReceived;
         public StreamReader StandardOutput { get; }
         public event EventHandler OnExit;
+
         public void Start(bool standardOutputReadLine = true)
         {
             throw new NotImplementedException();

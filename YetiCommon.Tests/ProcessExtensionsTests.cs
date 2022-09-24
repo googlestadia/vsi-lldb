@@ -92,6 +92,7 @@ namespace YetiCommon.Tests
 
             Assert.That(ex, Has.Message.Contain(FakeFilename));
             Assert.That(ex, Has.Message.Contain(exitCode.ToString()));
+            Assert.That(ex, Has.Message.Contain("error text"));
             Assert.That(ex.OutputLines, Has.Count.EqualTo(1));
             Assert.That(ex.OutputLines[0], Is.EqualTo("output text"));
             Assert.That(ex.ErrorLines, Has.Count.EqualTo(1));

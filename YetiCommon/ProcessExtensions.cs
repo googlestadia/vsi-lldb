@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -44,9 +44,8 @@ namespace YetiCommon
             ExitCode = exitCode;
         }
 
-        public ProcessExecutionException(string message, int exitCode,
-            List<string> outputLines, List<string> errorLines)
-            : base(message)
+        public ProcessExecutionException(string message, int exitCode, List<string> outputLines,
+                                         List<string> errorLines) : base(message)
         {
             ExitCode = exitCode;
             OutputLines = outputLines;
@@ -89,7 +88,7 @@ namespace YetiCommon
             if (code != 0)
             {
                 throw new ProcessExecutionException(
-                    ErrorStrings.ProcessExitedWithErrorCode(process.ProcessName, code), code);
+                    ErrorStrings.ProcessExitedWithError(process.ProcessName, code, null), code);
             }
         }
 
@@ -131,9 +130,10 @@ namespace YetiCommon
             if (code != 0)
             {
                 throw new ProcessExecutionException(
-                    ErrorStrings.ProcessExitedWithErrorCode(process.ProcessName, code),
+                    ErrorStrings.ProcessExitedWithError(process.ProcessName, code, errorLines),
                     code, outputLines, errorLines);
             }
+
             return outputLines;
         }
     }

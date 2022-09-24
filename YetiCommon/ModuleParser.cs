@@ -261,8 +261,9 @@ namespace YetiCommon
                     throw new BinaryFileUtilException(
                         ErrorStrings.FailedToReadBuildId(
                             filepath,
-                            ErrorStrings.ProcessExitedWithErrorCode(
-                                YetiConstants.ObjDumpLinuxExecutable, e.ExitCode)), e);
+                            ErrorStrings.ProcessExitedWithError(
+                                YetiConstants.ObjDumpLinuxExecutable, e.ExitCode, e.ErrorLines)),
+                        e);
                 }
 
                 throw new BinaryFileUtilException(

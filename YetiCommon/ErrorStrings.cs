@@ -84,8 +84,17 @@ namespace YetiCommon
         public static string FailedToWriteKnownHostsFile(string message) =>
             $"Failed to write known_hosts file. {message}";
 
-        public static string ProcessExitedWithErrorCode(string process, int errorCode) =>
-            $"{process} exited with error code {errorCode}.";
+        public static string ProcessExitedWithError(string process, int errorCode,
+                                                    List<string> errors)
+        {
+            string msg = $"{process} exited with error code {errorCode}.";
+            if (errors != null && errors.Count > 0)
+            {
+                msg += "\n" + string.Join("\n", errors);
+            }
+
+            return msg;
+        }
 
         public static string SshKeyGenerationFailed(string process, int errorCode) =>
             $"Failed to generate SSH key file. {process} exited with error code {errorCode}.";

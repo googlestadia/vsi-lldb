@@ -55,7 +55,7 @@ namespace YetiVSI.GameLaunch
 
         /// <summary>
         /// Polls the backend for the current launch state until it is
-        /// ended ot until polling is timed out. Records the resulting state.
+        /// ended or until polling is timed out. Records the resulting state.
         /// </summary>
         /// <returns><see cref="DeleteLaunchResult"/></returns>
         Task<DeleteLaunchResult> WaitForGameLaunchEndedAndRecordAsync();

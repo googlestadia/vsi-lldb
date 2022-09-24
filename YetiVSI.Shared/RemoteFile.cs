@@ -74,21 +74,23 @@ namespace YetiVSI
         {
             if (string.IsNullOrWhiteSpace(localPath))
             {
-                throw new ArgumentNullException(nameof(localPath), "Local path should be specified when running ggp_rsync");
+                throw new ArgumentNullException(nameof(localPath),
+                                                "Local path should be specified when running ggp_rsync");
             }
 
             if (string.IsNullOrWhiteSpace(remotePath))
             {
-                throw new ArgumentNullException(nameof(remotePath), "Remote path should be specified when running ggp_rsync");
+                throw new ArgumentNullException(nameof(remotePath),
+                                                "Remote path should be specified when running ggp_rsync");
             }
 
             ProcessManager processManager = ProcessManager.CreateForCancelableTask(task);
             ProcessStartInfo startInfo = BuildForGgpSync(target, localPath, remotePath, force);
             using (IProcess process = _remoteProcessFactory.Create(startInfo, int.MaxValue))
             {
-
                 processManager.AddProcess(process);
-                process.OutputDataReceived += (sender, args) => {
+                process.OutputDataReceived += (sender, args) =>
+                {
                     task.ThrowIfCancellationRequested();
 
                     if (string.IsNullOrWhiteSpace(args.Text))
@@ -100,23 +102,7 @@ namespace YetiVSI
                     task.Progress.Report(data);
                 };
 
-                List<string> errors = new List<string>();
-                process.ErrorDataReceived += (sender, args) => {
-                    task.ThrowIfCancellationRequested();
-                    if (string.IsNullOrWhiteSpace(args.Text))
-                    {
-                        return;
-                    }
-
-                    string data = args.Text;
-                    errors.Add(data);
-                };
-
-                await process.RunToExitWithSuccessAsync();
-                if (errors.Count > 0)
-                {
-                    throw new ProcessException(String.Join("\n", errors));
-                }
+                await process.RunToExitWithSuccessCapturingOutputAsync();
             }
 
             // Notify client if operation was cancelled.
@@ -129,13 +115,14 @@ namespace YetiVSI
             string tunnelSetup = $"--port {target.Port} --ip {target.IpAddress} --compress";
             string quotedLocalPath = ProcessUtil.QuoteArgument(localPath);
             string quotedRemotePath = ProcessUtil.QuoteArgument(remotePath);
-            string copyWholeFiles = force ? "--whole-file --checksum" : "";
+            string copyWholeFiles = force
+                ? "--whole-file --checksum"
+                : "";
 
             return new ProcessStartInfo
             {
                 FileName = Path.Combine(SDKUtil.GetSDKToolsPath(), "ggp_rsync.exe"),
-                Arguments =
-                    $"{tunnelSetup} {copyWholeFiles} {quotedLocalPath} {quotedRemotePath}",
+                Arguments = $"{tunnelSetup} {copyWholeFiles} {quotedLocalPath} {quotedRemotePath}",
             };
         }
 
