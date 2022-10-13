@@ -1,0 +1,37 @@
+From a469bcd00c68e317e50c5bf0ca86c69c57d3ffe9 Mon Sep 17 00:00:00 2001
+From: Levon Ter-Grigoryan <patrios@google.com>
+Date: Mon, 31 May 2021 12:49:09 +0200
+Subject: [lldb] Select most relevant frame only in case of signal.
+
+In order to select most relevant frame the debugger needs to unwind current frames for each thread which could be slow.
+This is a problem in case of executing with remote debugger attached and conditional breakpoints set.
+In that case the debugger will stop the execution on a breakpoint hit to run conditional expression and will resume the execution after.
+If there are a lot of threads (90+) the simple "for" loop with 50 iterations and conditional breakpoint could take more than 2 minutes to execute.
+From my observation most of this time will be spent on SelectMostRelevantFrame method (since it need to unwind stack for all threads).
+
+Since most of theads are stopped without any reason, we can skip selection of the most relevant frame for them.
+
+For relevant discussion, see: https://reviews.llvm.org/D103271
+
+---
+ lldb/source/Target/Thread.cpp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/lldb/source/Target/Thread.cpp b/lldb/source/Target/Thread.cpp
+index bde6dad554e7..4d6b717cda82 100644
+--- a/lldb/source/Target/Thread.cpp
++++ b/lldb/source/Target/Thread.cpp
+@@ -604,7 +604,9 @@ void Thread::SelectMostRelevantFrame() {
+ void Thread::WillStop() {
+   ThreadPlan *current_plan = GetCurrentPlan();
+ 
+-  SelectMostRelevantFrame();
++  lldb::StopReason stop_reason = GetStopReason();
++  if (stop_reason != lldb::StopReason::eStopReasonNone)
++    SelectMostRelevantFrame();
+ 
+   // FIXME: I may decide to disallow threads with no plans.  In which
+   // case this should go to an assert.
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

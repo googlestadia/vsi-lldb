@@ -1,0 +1,136 @@
+From f5734d245a1e422a3081f69894d1e9173751d0b4 Mon Sep 17 00:00:00 2001
+From: Levon Ter-Grigoryan <patrios@google.com>
+Date: Thu, 7 Apr 2022 10:21:29 +0200
+Subject: [lldb] Minidump should contain just enough info
+
+Full memory is not needed in the minidump and populating full
+data takes significant amount of time which should be avoided.
+This change limits a number of bytes saved per thread.
+Additionally we fix module names (for remote runs it was taking
+cached values from the local lldb). This is not upstreamed yet.
+
+---
+ .../Minidump/MinidumpFileBuilder.cpp          | 50 ++++++++++++-------
+ 1 file changed, 33 insertions(+), 17 deletions(-)
+
+diff --git a/lldb/source/Plugins/ObjectFile/Minidump/MinidumpFileBuilder.cpp b/lldb/source/Plugins/ObjectFile/Minidump/MinidumpFileBuilder.cpp
+index 516bcb21b019..fec4aba61069 100644
+--- a/lldb/source/Plugins/ObjectFile/Minidump/MinidumpFileBuilder.cpp
++++ b/lldb/source/Plugins/ObjectFile/Minidump/MinidumpFileBuilder.cpp
+@@ -29,6 +29,7 @@
+ #include "Plugins/Process/minidump/MinidumpTypes.h"
+ 
+ #include <cinttypes>
++#include <algorithm>
+ 
+ using namespace lldb;
+ using namespace lldb_private;
+@@ -222,7 +223,7 @@ Status MinidumpFileBuilder::AddModuleList(Target &target) {
+ 
+   for (size_t i = 0; i < modules_count; ++i) {
+     ModuleSP mod = modules.GetModuleAtIndex(i);
+-    std::string module_name = mod->GetSpecificationDescription();
++    std::string module_name = mod->GetPlatformFileSpec().GetPath();
+     auto maybe_mod_size = getModuleFileSize(target, mod);
+     if (!maybe_mod_size) {
+       error.SetErrorStringWithFormat("Unable to get the size of module %s.",
+@@ -445,10 +446,14 @@ Status MinidumpFileBuilder::AddThreadList(const lldb::ProcessSP &process_sp) {
+     std::pair<uint64_t, uint64_t> range = std::move(*expected_address_range);
+     uint64_t addr = range.first;
+     uint64_t size = range.second;
++    const uint64_t stack_max_bytes_down = 256;
++    const uint64_t stack_max_bytes_up = 1'000'000;
+ 
++    uint64_t lower_bound = std::max(rsp - stack_max_bytes_down, addr);
++    uint64_t upper_bound = std::min(rsp + stack_max_bytes_up, addr + size);
+     auto data_up = std::make_unique<DataBufferHeap>(size, 0);
+-    const size_t stack_bytes_read =
+-        process_sp->ReadMemory(addr, data_up->GetBytes(), size, error);
++    const size_t stack_bytes_read = process_sp->ReadMemory(
++        lower_bound, data_up->GetBytes(), upper_bound - lower_bound, error);
+ 
+     if (error.Fail())
+       return error;
+@@ -460,7 +465,8 @@ Status MinidumpFileBuilder::AddThreadList(const lldb::ProcessSP &process_sp) {
+         size_before + thread_stream_size + helper_data.GetByteSize());
+ 
+     MemoryDescriptor stack;
+-    stack.StartOfMemoryRange = static_cast<llvm::support::ulittle64_t>(addr);
++    stack.StartOfMemoryRange =
++        static_cast<llvm::support::ulittle64_t>(lower_bound);
+     stack.Memory = stack_memory;
+ 
+     helper_data.AppendData(data_up->GetBytes(), stack_bytes_read);
+@@ -564,38 +570,48 @@ MinidumpFileBuilder::AddMemoryList(const lldb::ProcessSP &process_sp) {
+     return error;
+   }
+ 
+-  // Get interesting addresses
+-  std::vector<size_t> interesting_addresses;
++  using InterestingRangeHelper = std::pair<uint64_t, uint64_t>;
++  InterestingRangeHelper interesting_range_rsp = {256, 1'000'000};
++  InterestingRangeHelper interesting_range_rip = {256, 256};
++  // Get interesting addresses.
++  std::vector<std::pair<size_t, InterestingRangeHelper>> interesting_addresses;
+   auto thread_list = process_sp->GetThreadList();
+   for (size_t i = 0; i < thread_list.GetSize(); ++i) {
+     ThreadSP thread_sp(thread_list.GetThreadAtIndex(i));
+     RegisterContextSP reg_ctx_sp(thread_sp->GetRegisterContext());
+     RegisterContext *reg_ctx = reg_ctx_sp.get();
+ 
+-    interesting_addresses.push_back(read_register_u64(reg_ctx, "rsp"));
+-    interesting_addresses.push_back(read_register_u64(reg_ctx, "rip"));
++    interesting_addresses.push_back(
++        {read_register_u64(reg_ctx, "rsp"), interesting_range_rsp});
++    interesting_addresses.push_back(
++        {read_register_u64(reg_ctx, "rip"), interesting_range_rip});
+   }
+ 
+   DataBufferHeap helper_data;
+   std::vector<MemoryDescriptor> mem_descriptors;
+ 
+-  std::set<addr_t> visited_region_base_addresses;
+-  for (size_t interesting_address : interesting_addresses) {
++  for (auto interesting_address_with_range : interesting_addresses) {
++    size_t interesting_address = interesting_address_with_range.first;
++    size_t max_bytes_down = interesting_address_with_range.second.first;
++    size_t max_bytes_up = interesting_address_with_range.second.second;
+     MemoryRegionInfo range_info;
+     error = process_sp->GetMemoryRegionInfo(interesting_address, range_info);
+     // Skip failed memory region requests or any regions with no permissions.
+     if (error.Fail() || range_info.GetLLDBPermissions() == 0)
+       continue;
+     const addr_t addr = range_info.GetRange().GetRangeBase();
+-    // Skip any regions we have already saved out.
+-    if (visited_region_base_addresses.insert(addr).second == false)
+-      continue;
+     const addr_t size = range_info.GetRange().GetByteSize();
+     if (size == 0)
+       continue;
+-    auto data_up = std::make_unique<DataBufferHeap>(size, 0);
+-    const size_t bytes_read =
+-        process_sp->ReadMemory(addr, data_up->GetBytes(), size, error);
++    uint64_t lower_bound =
++        std::max(interesting_address - max_bytes_down, addr);
++    uint64_t upper_bound =
++        std::min(interesting_address + max_bytes_up, addr + size);
++    auto data_up =
++        std::make_unique<DataBufferHeap>(upper_bound - lower_bound, 0);
++    const size_t bytes_read = process_sp->ReadMemory(
++        lower_bound, data_up->GetBytes(), upper_bound - lower_bound, error);
++
+     if (bytes_read == 0)
+       continue;
+     // We have a good memory region with valid bytes to store.
+@@ -605,7 +621,7 @@ MinidumpFileBuilder::AddMemoryList(const lldb::ProcessSP &process_sp) {
+         static_cast<llvm::support::ulittle32_t>(GetCurrentDataEndOffset());
+     MemoryDescriptor memory_desc;
+     memory_desc.StartOfMemoryRange =
+-        static_cast<llvm::support::ulittle64_t>(addr);
++        static_cast<llvm::support::ulittle64_t>(lower_bound);
+     memory_desc.Memory = memory_dump;
+     mem_descriptors.push_back(memory_desc);
+     m_data.AppendData(data_up->GetBytes(), bytes_read);
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

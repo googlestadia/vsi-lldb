@@ -1,0 +1,96 @@
+From 6cbc22c066e689e199dffd496ff75be90ece23d5 Mon Sep 17 00:00:00 2001
+From: Levon Ter-Grigoryan <patrios@google.com>
+Date: Tue, 31 May 2022 10:17:10 +0200
+Subject: [lldb] Fix resolving nested template parameters
+
+Right now LLDB ignores nested template type:
+echo "
+template <typename T>
+struct A {};
+int main() {
+
+A<A<int>> s;
+}
+" > sample.cc
+
+clang++ sample.cc -g -O0
+lldb-15 a.out -o "breakpoint set -l 6 -f sample.cc" -o "run" -o "frame variable"
+
+The result:
+(A<A<>>) s = {}
+
+It looks like this CL introduced this behavior: https://reviews.llvm.org/D92425
+Before the LLDB was resolving this type correctly:
+lldb-11 a.out -o "breakpoint set -l 6 -f sample.cc" -o "run" -o "frame variable"
+(A<A<int> >) s = {}
+
+I discussed this issue with Raphael in discord:
+https://discord.com/channels/636084430946959380/636732809708306432/980825811714191371
+
+Apparently in this case Clang emits A<int> as a forward declaration:
+./llvm-dwarfdump a.out
+
+0x000005b4: DW_TAG_base_type
+
+DW_AT_name      ("int")
+DW_AT_encoding  (DW_ATE_signed)
+DW_AT_byte_size (0x04)
+0x000005bb: DW_TAG_structure_type
+
+DW_AT_calling_convention        (DW_CC_pass_by_value)
+DW_AT_name      ("A<A<int> >")
+DW_AT_byte_size (0x01)
+DW_AT_decl_file ("/home/teemperor/test/args.cpp")
+DW_AT_decl_line (2)
+0x000005c4: DW_TAG_template_type_parameter
+
+DW_AT_type    (0x000005ce "A<int>")
+DW_AT_name    ("T")
+0x000005cd: NULL
+
+0x000005ce: DW_TAG_structure_type
+
+DW_AT_name      ("A<int>")
+DW_AT_declaration       (true)
+0x000005d3: NULL
+
+So for LLDB it looks the same as template with empty arguments.
+Turning back the old logic is fixing this issue. Other tests from LLVM test suite on Linux seems to be green.
+
+Diff revision:
+https://reviews.llvm.org/D126668
+
+---
+ lldb/source/Plugins/SymbolFile/DWARF/DWARFASTParserClang.cpp    | 2 ++
+ .../API/lang/cpp/complete-type-check/TestCppIsTypeComplete.py   | 2 +-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/DWARFASTParserClang.cpp b/lldb/source/Plugins/SymbolFile/DWARF/DWARFASTParserClang.cpp
+index 81fbba0b058f..d05f6e7abc57 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/DWARFASTParserClang.cpp
++++ b/lldb/source/Plugins/SymbolFile/DWARF/DWARFASTParserClang.cpp
+@@ -2085,6 +2085,8 @@ bool DWARFASTParserClang::ParseTemplateParameterInfos(
+       break;
+     }
+   }
++  if (template_param_infos.args.empty() && template_param_infos.names.empty())
++    return false;
+   return template_param_infos.args.size() == template_param_infos.names.size();
+ }
+ 
+diff --git a/lldb/test/API/lang/cpp/complete-type-check/TestCppIsTypeComplete.py b/lldb/test/API/lang/cpp/complete-type-check/TestCppIsTypeComplete.py
+index 1059e0387801..05a65fffd0df 100644
+--- a/lldb/test/API/lang/cpp/complete-type-check/TestCppIsTypeComplete.py
++++ b/lldb/test/API/lang/cpp/complete-type-check/TestCppIsTypeComplete.py
+@@ -47,7 +47,7 @@ class TestCase(TestBase):
+         # Record types without a defining declaration are not complete.
+         self.assertPointeeIncomplete("FwdClass *", "fwd_class")
+         self.assertPointeeIncomplete("FwdClassTypedef *", "fwd_class_typedef")
+-        self.assertPointeeIncomplete("FwdTemplateClass<> *", "fwd_template_class")
++        self.assertPointeeIncomplete("FwdTemplateClass<int> *", "fwd_template_class")
+ 
+         # A pointer type is complete even when it points to an incomplete type.
+         fwd_class_ptr = self.expect_expr("fwd_class", result_type="FwdClass *")
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

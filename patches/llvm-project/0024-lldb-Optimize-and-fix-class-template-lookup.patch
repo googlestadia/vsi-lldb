@@ -1,0 +1,189 @@
+From 704f51d1d25a19335e00ccead12817dc81affc38 Mon Sep 17 00:00:00 2001
+From: Jaroslav Sevcik <jarin@google.com>
+Date: Sat, 19 Sep 2020 09:55:50 +0200
+Subject: [lldb] Optimize and fix class template lookup
+
+With this patch, we choose one template instantiation as
+a representative for each template name when building
+the (manual) index.
+
+As a result, when we find a template in the index, we
+only build AST for one instantiation rather than for
+all the instantiations. This greatly speeds up the first
+lookup of each template name (subsequent lookups have
+been already fast because the ASTs are already built).
+In Unreal engine, we see the first evaluation involving
+the TArray template go from 4s to 0.8s.
+
+This patch also fixes template lookup in namespaces.
+
+---
+ .../ExpressionParser/Clang/ClangASTSource.cpp |  6 ++-
+ .../SymbolFile/DWARF/ManualDWARFIndex.cpp     | 45 ++++++++++++++++++-
+ .../TestClassTemplateInstantiation.py         | 16 +++++++
+ .../cpp/class-template-instantiation/main.cpp | 23 +++++++---
+ 4 files changed, 81 insertions(+), 9 deletions(-)
+
+diff --git a/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp b/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp
+index 9bb8072f6f8f..3ae1e8f2f9af 100644
+--- a/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp
++++ b/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp
+@@ -424,12 +424,14 @@ bool ClangASTSource::FindClassTemplateSpecialization(
+ 
+   TypeList types;
+   llvm::DenseSet<lldb_private::SymbolFile *> searched_symbol_files;
+-  m_target->GetImages().FindTypes(nullptr, name, true, 1, searched_symbol_files,
+-                                  types);
++  m_target->GetImages().FindTypes(nullptr, name, true, UINT32_MAX,
++                                  searched_symbol_files, types);
+ 
+   size_t num_types = types.GetSize();
+   for (size_t ti = 0; ti < num_types; ++ti) {
+     lldb::TypeSP type_sp = types.GetTypeAtIndex(ti);
++    if (type_sp->GetQualifiedName() != name)
++      continue;
+     CompilerType full_type = type_sp->GetFullCompilerType();
+     if (GuardedCopyType(full_type)) {
+       LLDB_LOG(log, "      FCTS[{0}] Specialization inserted.", current_id);
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.cpp b/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.cpp
+index 0efb62233b9b..c6d18c5cf075 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.cpp
++++ b/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.cpp
+@@ -121,6 +121,35 @@ void ManualDWARFIndex::Index() {
+     progress.Increment();
+   };
+ 
++  auto finalize_generics_fn = [this, &sets]() {
++    NameToDIE &result = m_set.generic_types;
++    NameToDIE intermediate;
++    for (auto &set : sets)
++      intermediate.Append(set.generic_types);
++    intermediate.Finalize();
++
++    // The generics are initially indexed with fully qualified name.
++    // In the following code, we choose one template instantiation
++    // for each qualified template name, and build the final index
++    // with unqualified names as keys.
++    ConstString last_name;
++    intermediate.ForEach(
++        [&last_name, &result](ConstString qualified, const DIERef &ref) {
++          if (qualified != last_name) {
++            last_name = qualified;
++
++            // Remove qualifiers from the name and insert it into the index.
++            llvm::StringRef name_ref = qualified.GetStringRef();
++            size_t separator_pos = name_ref.rfind(':');
++            if (separator_pos != llvm::StringRef::npos)
++              name_ref = name_ref.drop_front(separator_pos + 1);
++            result.Insert(ConstString(name_ref), ref);
++          }
++          return true;
++        });
++    result.Finalize();
++  };
++
+   pool.async(finalize_fn, &IndexSet::function_basenames);
+   pool.async(finalize_fn, &IndexSet::function_fullnames);
+   pool.async(finalize_fn, &IndexSet::function_methods);
+@@ -128,7 +157,7 @@ void ManualDWARFIndex::Index() {
+   pool.async(finalize_fn, &IndexSet::objc_class_selectors);
+   pool.async(finalize_fn, &IndexSet::globals);
+   pool.async(finalize_fn, &IndexSet::types);
+-  pool.async(finalize_fn, &IndexSet::generic_types);
++  pool.async([&]() { finalize_generics_fn(); });
+   pool.async(finalize_fn, &IndexSet::namespaces);
+   pool.wait();
+ 
+@@ -324,7 +353,19 @@ void ManualDWARFIndex::IndexUnitImpl(DWARFUnit &unit,
+           const char *angle_bracket_pos = strchr(name, '<');
+           assert(angle_bracket_pos && "missing matching angle bracket");
+           size_t generic_length = angle_bracket_pos - name;
+-          set.generic_types.Insert(ConstString(name, generic_length), ref);
++
++          // We use qualified names as keys for generic names so that we
++          // can later easily choose one representative instantiation for
++          // each template. Here, we compute the qualified name and store
++          // the type under that name.
++          DWARFDIE parent_decl_context = die.GetParentDeclContextDIE(&unit);
++          std::string qualified_name;
++          if (parent_decl_context.Tag() != DW_TAG_compile_unit &&
++              parent_decl_context.Tag() != DW_TAG_partial_unit)
++            parent_decl_context.GetQualifiedName(qualified_name);
++          qualified_name += "::";
++          qualified_name += std::string(name, generic_length);
++          set.generic_types.Insert(ConstString(qualified_name.c_str()), ref);
+         }
+       }
+       if (mangled_cstr && !is_declaration)
+diff --git a/lldb/test/API/lang/cpp/class-template-instantiation/TestClassTemplateInstantiation.py b/lldb/test/API/lang/cpp/class-template-instantiation/TestClassTemplateInstantiation.py
+index 7b3c91a556f6..9ad272fa2421 100644
+--- a/lldb/test/API/lang/cpp/class-template-instantiation/TestClassTemplateInstantiation.py
++++ b/lldb/test/API/lang/cpp/class-template-instantiation/TestClassTemplateInstantiation.py
+@@ -45,6 +45,22 @@ class TestClassTemplateInstantiation(TestBase):
+         self.assertTrue(expr_result.IsValid())
+         self.assertEqual(expr_result.GetValue(), "8")
+ 
++        expr_result = frame.EvaluateExpression("::ns::foo<char>::y")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "11")
++
++        expr_result = frame.EvaluateExpression("::ns::foo<int>::y")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "14")
++
++        expr_result = frame.EvaluateExpression("C::foo<char>::z")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "21")
++
++        expr_result = frame.EvaluateExpression("C::foo<int>::z")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "24")
++
+     @skipIf(debug_info=no_match(["dwarf"]),oslist=no_match(["macosx"]))
+     def test_instantiate_template_from_method(self):
+         self.runCmd("settings set target.experimental.infer-class-templates true")
+diff --git a/lldb/test/API/lang/cpp/class-template-instantiation/main.cpp b/lldb/test/API/lang/cpp/class-template-instantiation/main.cpp
+index c2793c7b6d5e..97a2692f86bd 100644
+--- a/lldb/test/API/lang/cpp/class-template-instantiation/main.cpp
++++ b/lldb/test/API/lang/cpp/class-template-instantiation/main.cpp
+@@ -2,10 +2,7 @@ template <typename T> struct foo { static int x; };
+ 
+ template <typename T> int foo<T>::x = 42 + sizeof(T);
+ 
+-template <typename T>
+-struct S {
+-  T t;
+-};
++template <typename T> struct S { T t; };
+ 
+ struct A {
+   template <typename T> struct bar { T f; };
+@@ -20,8 +17,24 @@ struct A {
+   }
+ };
+ 
++namespace ns {
++
++template <typename T> struct foo { static int y; };
++
++template <typename T> int foo<T>::y = 10 + sizeof(T);
++
++} // namespace ns
++
++class C {
++public:
++  template <typename T> struct foo { static int z; };
++};
++
++template <typename T> int C::foo<T>::z = 20 + sizeof(T);
++
+ int main() {
+   A a;
+   a.size();
+-  return foo<char>::x + foo<int>::x; // break main
++  return foo<char>::x + foo<int>::x + ns::foo<char>::y + ns::foo<int>::y +
++         C::foo<int>::z + C::foo<char>::z; // break main
+ }
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

@@ -1,0 +1,415 @@
+From 6065e9b01df0dbb0aee38133ee4c5604b229e8a0 Mon Sep 17 00:00:00 2001
+From: Jaroslav Sevcik <jarin@google.com>
+Date: Tue, 11 Feb 2020 12:01:19 +0100
+Subject: [lldb] jThreadsInfo returns stack memory
+
+This patch adds parts of the stack that should be useful for unwinding
+to the jThreadsInfo reply from lldb-server. We return the top of the
+stack (12 words), and we also try to walk the frame pointer linked list
+and return the memory containing frame pointer and return address pairs.
+The idea is to cover the cases with and without frame pointer omission.
+
+Differential Revision: https://reviews.llvm.org/D74398
+
+This patch landed upstream and later reverted because of a bug
+in process' L1 memory cache. The fix to the bug was proposed in
+https://reviews.llvm.org/D77765, but not accepted because of
+disagreements on testing.
+
+---
+ .../GDBRemoteCommunicationServerLLGS.cpp      | 118 ++++++++++++++++++
+ .../TestGdbRemoteThreadsInStopReply.py        |  70 ++++++++++-
+ .../tools/lldb-server/threads-info/Makefile   |   3 +
+ .../TestGdbRemoteThreadsInfoMemory.py         |  99 +++++++++++++++
+ .../tools/lldb-server/threads-info/main.cpp   |  27 ++++
+ 5 files changed, 316 insertions(+), 1 deletion(-)
+ create mode 100644 lldb/test/API/tools/lldb-server/threads-info/Makefile
+ create mode 100644 lldb/test/API/tools/lldb-server/threads-info/TestGdbRemoteThreadsInfoMemory.py
+ create mode 100644 lldb/test/API/tools/lldb-server/threads-info/main.cpp
+
+diff --git a/lldb/source/Plugins/Process/gdb-remote/GDBRemoteCommunicationServerLLGS.cpp b/lldb/source/Plugins/Process/gdb-remote/GDBRemoteCommunicationServerLLGS.cpp
+index 123a8198a89b..7ab8ac15f213 100644
+--- a/lldb/source/Plugins/Process/gdb-remote/GDBRemoteCommunicationServerLLGS.cpp
++++ b/lldb/source/Plugins/Process/gdb-remote/GDBRemoteCommunicationServerLLGS.cpp
+@@ -32,6 +32,7 @@
+ #include "lldb/Target/MemoryRegionInfo.h"
+ #include "lldb/Utility/Args.h"
+ #include "lldb/Utility/DataBuffer.h"
++#include "lldb/Utility/DataExtractor.h"
+ #include "lldb/Utility/Endian.h"
+ #include "lldb/Utility/GDBRemote.h"
+ #include "lldb/Utility/LLDBAssert.h"
+@@ -659,6 +660,119 @@ GetRegistersAsJSON(NativeThreadProtocol &thread) {
+   return register_object;
+ }
+ 
++static llvm::Optional<RegisterValue>
++GetRegisterValue(NativeRegisterContext &reg_ctx, uint32_t generic_regnum) {
++  Log *log(GetLogIfAnyCategoriesSet(LIBLLDB_LOG_THREAD));
++  uint32_t reg_num = reg_ctx.ConvertRegisterKindToRegisterNumber(
++      eRegisterKindGeneric, generic_regnum);
++  const RegisterInfo *const reg_info_p =
++      reg_ctx.GetRegisterInfoAtIndex(reg_num);
++
++  if (reg_info_p == nullptr || reg_info_p->value_regs != nullptr) {
++    LLDB_LOGF(log, "%s failed to get register info for register index %" PRIu32,
++              __FUNCTION__, reg_num);
++    return {};
++  }
++
++  RegisterValue reg_value;
++  Status error = reg_ctx.ReadRegister(reg_info_p, reg_value);
++  if (error.Fail()) {
++    LLDB_LOGF(log, "%s failed to read register '%s' index %" PRIu32 ": %s",
++              __FUNCTION__,
++              reg_info_p->name ? reg_info_p->name : "<unnamed-register>",
++              reg_num, error.AsCString());
++    return {};
++  }
++  return reg_value;
++}
++
++static json::Object CreateMemoryChunk(json::Array &stack_memory_chunks,
++                                      addr_t address,
++                                      std::vector<uint8_t> &bytes) {
++  json::Object chunk;
++  chunk.try_emplace("address", static_cast<int64_t>(address));
++  StreamString stream;
++    for (uint8_t b : bytes)
++    stream.PutHex8(b);
++  chunk.try_emplace("bytes", stream.GetString().str());
++  return chunk;
++}
++
++static json::Array GetStackMemoryAsJSON(NativeProcessProtocol &process,
++                                        NativeThreadProtocol &thread) {
++  uint32_t address_size = process.GetArchitecture().GetAddressByteSize();
++  const size_t kStackTopMemoryInfoWordSize = 12;
++  size_t stack_top_memory_info_byte_size =
++      kStackTopMemoryInfoWordSize * address_size;
++  const size_t kMaxStackSize = 128 * 1024;
++  const size_t kMaxFrameSize = 4 * 1024;
++  size_t fp_and_ra_size = 2 * address_size;
++  const size_t kMaxFrameCount = 128;
++
++  NativeRegisterContext &reg_ctx = thread.GetRegisterContext();
++
++  json::Array stack_memory_chunks;
++
++  lldb::addr_t sp_value;
++  if (llvm::Optional<RegisterValue> optional_sp_value =
++          GetRegisterValue(reg_ctx, LLDB_REGNUM_GENERIC_SP)) {
++    sp_value = optional_sp_value->GetAsUInt64();
++  } else {
++    return stack_memory_chunks;
++  }
++  lldb::addr_t fp_value;
++  if (llvm::Optional<RegisterValue> optional_fp_value =
++            GetRegisterValue(reg_ctx, LLDB_REGNUM_GENERIC_FP)) {
++    fp_value = optional_fp_value->GetAsUInt64();
++  } else {
++    return stack_memory_chunks;
++  }
++
++  // First, make sure we copy the top stack_top_memory_info_byte_size bytes
++  // from the stack.
++  size_t byte_count = std::min(stack_top_memory_info_byte_size,
++                               static_cast<size_t>(fp_value - sp_value));
++  std::vector<uint8_t> buf(byte_count, 0);
++
++  size_t bytes_read = 0;
++  Status error = process.ReadMemoryWithoutTrap(sp_value, buf.data(), byte_count,
++                                                 bytes_read);
++  if (error.Success() && bytes_read > 0) {
++    buf.resize(bytes_read);
++    stack_memory_chunks.push_back(
++        CreateMemoryChunk(stack_memory_chunks, sp_value, buf));
++  }
++
++  // Additionally, try to walk the frame pointer link chain. If the frame
++  // is too big or if the frame pointer points too far, stop the walk.
++  addr_t max_frame_pointer = sp_value + kMaxStackSize;
++  for (size_t i = 0; i < kMaxFrameCount; i++) {
++    if (fp_value < sp_value || fp_value > sp_value + kMaxFrameSize ||
++        fp_value > max_frame_pointer)
++      break;
++
++    std::vector<uint8_t> fp_ra_buf(fp_and_ra_size, 0);
++    bytes_read = 0;
++    error = process.ReadMemoryWithoutTrap(fp_value, fp_ra_buf.data(),
++                                          fp_and_ra_size, bytes_read);
++    if (error.Fail() || bytes_read != fp_and_ra_size)
++      break;
++
++    stack_memory_chunks.push_back(
++        CreateMemoryChunk(stack_memory_chunks, fp_value, fp_ra_buf));
++
++    // Advance the stack pointer and the frame pointer.
++    sp_value = fp_value;
++    lldb_private::DataExtractor extractor(
++        fp_ra_buf.data(), fp_and_ra_size,
++        process.GetArchitecture().GetByteOrder(), address_size);
++            offset_t offset = 0;
++    fp_value = extractor.GetAddress(&offset);
++  }
++
++  return stack_memory_chunks;
++}
++
+ static const char *GetStopReasonString(StopReason stop_reason) {
+   switch (stop_reason) {
+   case eStopReasonTrace:
+@@ -727,6 +841,10 @@ GetJSONThreadsInfo(NativeProcessProtocol &process, bool abridged) {
+     if (!abridged) {
+       if (llvm::Optional<json::Object> registers = GetRegistersAsJSON(*thread))
+         thread_obj.try_emplace("registers", std::move(*registers));
++
++      json::Array stack_memory = GetStackMemoryAsJSON(process, *thread);
++      if (!stack_memory.empty())
++        thread_obj.try_emplace("memory", std::move(stack_memory));
+     }
+ 
+     thread_obj.try_emplace("tid", static_cast<int64_t>(tid));
+diff --git a/lldb/test/API/tools/lldb-server/TestGdbRemoteThreadsInStopReply.py b/lldb/test/API/tools/lldb-server/TestGdbRemoteThreadsInStopReply.py
+index e66424f96295..eb4908f08385 100644
+--- a/lldb/test/API/tools/lldb-server/TestGdbRemoteThreadsInStopReply.py
++++ b/lldb/test/API/tools/lldb-server/TestGdbRemoteThreadsInStopReply.py
+@@ -156,7 +156,7 @@ class TestGdbRemoteThreadsInStopReply(
+         register = str(pc_register)
+         # The jThreadsInfo response is not valid JSON data, so we have to
+         # clean it up first.
+-        jthreads_info = json.loads(re.sub(r"}]", "}", threads_info))
++        jthreads_info = json.loads(self.decode_gdbremote_binary(threads_info))
+         thread_pcs = dict()
+         for thread_info in jthreads_info:
+             tid = thread_info["tid"]
+@@ -165,6 +165,32 @@ class TestGdbRemoteThreadsInStopReply(
+ 
+         return thread_pcs
+ 
++    def gather_threads_info_memory(self):
++        self.reset_test_sequence()
++        self.test_sequence.add_log_lines(
++                [
++                    "read packet: $jThreadsInfo#c1",
++                    {
++                        "direction": "send",
++                        "regex": r"^\$(.*)#[0-9a-fA-F]{2}$",
++                        "capture": {
++                            1: "threads_info"}},
++                ],
++                True)
++        context = self.expect_gdbremote_sequence()
++        self.assertIsNotNone(context)
++        threads_info = context.get("threads_info")
++        # The jThreadsInfo response is not valid JSON data, so we have to
++        # clean it up first.
++        jthreads_info = json.loads(self.decode_gdbremote_binary(threads_info))
++        # Collect all the memory chunks from all threads
++        memory_chunks = dict()
++        for thread_info in jthreads_info:
++            chunk_list = thread_info["memory"]
++            self.assertNotEqual(len(chunk_list), 0)
++            for chunk in chunk_list:
++                memory_chunks[chunk["address"]] = chunk["bytes"]
++        return memory_chunks
+ 
+     def test_QListThreadsInStopReply_supported(self):
+         self.build()
+@@ -249,3 +275,45 @@ class TestGdbRemoteThreadsInStopReply(
+             self.assertIn(thread_id, threads_info_pcs)
+             self.assertEqual(int(stop_reply_pcs[thread_id], 16),
+                     int(threads_info_pcs[thread_id], 16))
++
++    def read_memory_chunk(self, address, length):
++        self.test_sequence.add_log_lines(
++            ["read packet: $x{0:x},{1:x}#00".format(address, length),
++             {
++                 "direction": "send",
++                 "regex": r"^\$([\s\S]*)#[0-9a-fA-F]{2}$",
++                 "capture": {
++                     1: "contents"}},
++            ],
++            True)
++        contents = self.expect_gdbremote_sequence()["contents"]
++        contents = self.decode_gdbremote_binary(contents)
++        hex_contents = ""
++        for c in contents:
++            hex_contents += "%02x" % ord(c)
++        return hex_contents
++
++    def check_memory_chunks_equal(self, memory_chunks):
++        self.reset_test_sequence()
++        for address in memory_chunks:
++            contents = memory_chunks[address]
++            byte_size = len(contents) // 2
++            mem = self.read_memory_chunk(address, byte_size)
++            self.assertEqual(mem, contents)
++
++    def stop_reply_thread_info_correct_memory(self, thread_count):
++        # Run and stop the program.
++        self.gather_stop_reply_fields([], thread_count, [])
++        # Read memory chunks from jThreadsInfo.
++        memory_chunks = self.gather_threads_info_memory()
++        # Check the chunks are correct.
++        self.check_memory_chunks_equal(memory_chunks)
++
++    @expectedFailureAll(oslist=["windows"])
++    @skipIfNetBSD
++    @llgs_test
++    def test_stop_reply_thread_info_correct_memory_llgs(self):
++        self._init_llgs_test()
++        self.build()
++        self.set_inferior_startup_launch()
++        self.stop_reply_thread_info_correct_memory(5)
+\ No newline at end of file
+diff --git a/lldb/test/API/tools/lldb-server/threads-info/Makefile b/lldb/test/API/tools/lldb-server/threads-info/Makefile
+new file mode 100644
+index 000000000000..99998b20bcb0
+--- /dev/null
++++ b/lldb/test/API/tools/lldb-server/threads-info/Makefile
+@@ -0,0 +1,3 @@
++CXX_SOURCES := main.cpp
++
++include Makefile.rules
+diff --git a/lldb/test/API/tools/lldb-server/threads-info/TestGdbRemoteThreadsInfoMemory.py b/lldb/test/API/tools/lldb-server/threads-info/TestGdbRemoteThreadsInfoMemory.py
+new file mode 100644
+index 000000000000..ce98d7c3ceb0
+--- /dev/null
++++ b/lldb/test/API/tools/lldb-server/threads-info/TestGdbRemoteThreadsInfoMemory.py
+@@ -0,0 +1,99 @@
++
++import json
++
++import gdbremote_testcase
++from lldbsuite.test.decorators import *
++from lldbsuite.test.lldbtest import *
++
++def invert_byte_order(a):
++    return "".join(reversed([a[i:i+2] for i in range(0, len(a),2)]))
++
++def decode_hex(a):
++    return int(invert_byte_order(a), 16)
++
++def encode_hex(a):
++    return invert_byte_order("%016x" % a)
++
++class TestGdbRemoteThreadsInfoMemory(gdbremote_testcase.GdbRemoteTestCaseBase):
++
++    mydir = TestBase.compute_mydir(__file__)
++
++    @skipIf(archs=no_match(["x86_64"]))
++    def threadsInfoStackCorrect(self):
++        procs = self.prep_debug_monitor_and_inferior()
++
++        self.add_register_info_collection_packets()
++        context = self.expect_gdbremote_sequence()
++        self.assertIsNotNone(context)
++
++        # Gather register info.
++        reg_infos = self.parse_register_info_packets(context)
++        self.assertIsNotNone(reg_infos)
++        self.add_lldb_register_index(reg_infos)
++        # Index register info entries by name.
++        reg_infos = {info['name']: info for info in reg_infos}
++
++        # Send vCont packet to resume the inferior.
++        self.test_sequence.add_log_lines(["read packet: $vCont;c#a8",
++                                          {"direction": "send",
++                                           "regex": r"^\$T([0-9a-fA-F]{2}).*#[0-9a-fA-F]{2}$",
++                                           "capture": {1: "hex_exit_code"}},
++                                          ],
++                                         True)
++
++        # Send g packet to retrieve the register bank
++        self.test_sequence.add_log_lines(
++                [
++                    "read packet: $jThreadsInfo#c1",
++                    {
++                        "direction": "send",
++                        "regex": r"^\$(.*)#[0-9a-fA-F]{2}$",
++                        "capture": {
++                            1: "threads_info"}},
++                ],
++                True)
++
++        context = self.expect_gdbremote_sequence()
++        threads_info = context["threads_info"]
++        threads_info = json.loads(self.decode_gdbremote_binary(threads_info))
++        self.assertEqual(1, len(threads_info))
++        thread = threads_info[0]
++
++        # Read the stack pointer and the frame pointer from the jThreadsInfo
++        # reply.
++        rsp_id = reg_infos["rsp"]["lldb_register_index"]
++        sp = decode_hex(thread["registers"][str(rsp_id)])
++        rbp_id = reg_infos["rbp"]["lldb_register_index"]
++        fp = decode_hex(thread["registers"][str(rbp_id)])
++
++        # The top frame size is 3 words.
++        self.assertEqual(sp + 3 * 8, fp)
++
++        # Check the memory chunks.
++        chunks = thread["memory"]
++        self.assertEqual(3, len(chunks))
++        # First memory chunk should contain everything between sp and fp.
++        self.assertEqual(sp, chunks[0]["address"])
++        self.assertEqual(encode_hex(6) + encode_hex(5) + encode_hex(4),
++                         chunks[0]["bytes"])
++        # Second chunk should be at |fp|, its return address should be 0xfeed,
++        # and the next fp should 5 words away (3 values, ra and fp).
++        self.assertEqual(fp, chunks[1]["address"])
++        next_fp = fp + 5 * 8
++        self.assertEqual(encode_hex(next_fp) + encode_hex(0xfeed),
++                         chunks[1]["bytes"])
++        # Third chunk at |next_fp|, the next fp is 0x1008 bytes away and
++        # the ra is 0xf00d.
++        self.assertEqual(next_fp, chunks[2]["address"])
++        next_fp = next_fp + 0x1008
++        self.assertEqual(encode_hex(next_fp) + encode_hex(0xf00d),
++                         chunks[2]["bytes"])
++
++    @expectedFailureAll(oslist=["windows"])
++    @skipIfNetBSD
++    @llgs_test
++    def test_g_returns_correct_data_with_suffix_llgs(self):
++        self._init_llgs_test()
++        self.build()
++        self.set_inferior_startup_launch()
++        self.threadsInfoStackCorrect()
+diff --git a/lldb/test/API/tools/lldb-server/threads-info/main.cpp b/lldb/test/API/tools/lldb-server/threads-info/main.cpp
+new file mode 100644
+index 000000000000..17d27b5d6b6e
+--- /dev/null
++++ b/lldb/test/API/tools/lldb-server/threads-info/main.cpp
+@@ -0,0 +1,27 @@
++int main() {
++#if defined(__x86_64__)
++  // We setup two fake frames with frame pointer linking. The test will then
++  // check that lldb-server's jThreadsInfo reply includes the top frame's
++  // contents and the linked list of (frame-pointer, return-address) pairs. We
++  // pretend the next frame is too large to stop the frame walk.
++  asm volatile("movabsq $0xf00d, %rax\n\t"
++               "pushq   %rax\n\t"               // fake return address
++               "leaq    0x1000(%rsp), %rbp\n\t" // larger than kMaxFrameSize
++               "pushq   %rbp\n\t"
++               "movq    %rsp, %rbp\n\t"
++               "pushq   $1\n\t" // fake frame contents
++               "pushq   $2\n\t"
++               "pushq   $3\n\t"
++               "\n\t"
++               "movabsq $0xfeed, %rax\n\t"
++               "push    %rax\n\t" // second fake return address
++               "pushq   %rbp\n\t"
++               "movq    %rsp, %rbp\n\t"
++               "pushq   $4\n\t" // fake frame contents
++               "pushq   $5\n\t"
++               "pushq   $6\n\t"
++               "\n\t"
++               "int3\n\t");
++#endif
++  return 0;
++}
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

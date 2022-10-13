@@ -1,0 +1,292 @@
+From f1e4b43bced50da07f40e6801a08d26a8dc4883e Mon Sep 17 00:00:00 2001
+From: Andy Yankovsky <weratt@gmail.com>
+Date: Fri, 16 Apr 2021 13:21:16 +0200
+Subject: [lldb] Filter out functions defined in classes/namespaces
+
+`FindFunctions` might find multiple candidates, so we need to pick the
+correct one. In general case it's not clear which one is "correct", but
+here we're looking for a global function, so class methods and functions
+defined in namespaces should be ignored.
+
+---
+ .../Process/Utility/InferiorCallPOSIX.cpp     | 246 +++++++++---------
+ 1 file changed, 127 insertions(+), 119 deletions(-)
+
+diff --git a/lldb/source/Plugins/Process/Utility/InferiorCallPOSIX.cpp b/lldb/source/Plugins/Process/Utility/InferiorCallPOSIX.cpp
+index 5091f68a9acf..ec2dda99d321 100644
+--- a/lldb/source/Plugins/Process/Utility/InferiorCallPOSIX.cpp
++++ b/lldb/source/Plugins/Process/Utility/InferiorCallPOSIX.cpp
+@@ -34,6 +34,39 @@
+ using namespace lldb;
+ using namespace lldb_private;
+ 
++static bool FindGlobalFunction(Process *process, const char *name,
++                               SymbolContext &sym_ctx) {
++  SymbolContextList sym_ctx_list;
++
++  ModuleFunctionSearchOptions function_options;
++  function_options.include_symbols = true;
++  function_options.include_inlines = false;
++
++  process->GetTarget().GetImages().FindFunctions(
++      ConstString(name), eFunctionNameTypeFull, function_options, sym_ctx_list);
++
++  if (sym_ctx_list.GetSize() == 0)
++    return false;
++
++  for (size_t i = 0; i < sym_ctx_list.GetSize(); ++i) {
++    if (!sym_ctx_list.GetContextAtIndex(i, sym_ctx))
++      break;
++    if (!sym_ctx.symbol)
++      continue;
++
++    // Filter out functions defined in namespaces. Strip the leading scope
++    // qualifier (as it could be "::mmap") and check if there is more.
++    llvm::StringRef name = sym_ctx.symbol->GetNameNoArguments().GetStringRef();
++    name.consume_front("::");
++    if (name.contains("::"))
++      continue;
++
++    return true;
++  }
++
++  return false;
++}
++
+ bool lldb_private::InferiorCallMmap(Process *process, addr_t &allocated_addr,
+                                     addr_t addr, addr_t length, unsigned prot,
+                                     unsigned flags, addr_t fd, addr_t offset) {
+@@ -42,86 +75,72 @@ bool lldb_private::InferiorCallMmap(Process *process, addr_t &allocated_addr,
+   if (thread == nullptr)
+     return false;
+ 
+-  ModuleFunctionSearchOptions function_options;
+-  function_options.include_symbols = true;
+-  function_options.include_inlines = false;
++  SymbolContext sc;
++  if (!FindGlobalFunction(process, "mmap", sc))
++    return false;
+ 
+-  SymbolContextList sc_list;
+-  process->GetTarget().GetImages().FindFunctions(
+-      ConstString("mmap"), eFunctionNameTypeFull, function_options, sc_list);
+-  const uint32_t count = sc_list.GetSize();
+-  if (count > 0) {
+-    SymbolContext sc;
+-    if (sc_list.GetContextAtIndex(0, sc)) {
+-      const uint32_t range_scope =
+-          eSymbolContextFunction | eSymbolContextSymbol;
+-      const bool use_inline_block_range = false;
+-      EvaluateExpressionOptions options;
+-      options.SetStopOthers(true);
+-      options.SetUnwindOnError(true);
+-      options.SetIgnoreBreakpoints(true);
+-      options.SetTryAllThreads(true);
+-      options.SetDebug(false);
+-      options.SetTimeout(process->GetUtilityExpressionTimeout());
+-      options.SetTrapExceptions(false);
+-
+-      addr_t prot_arg;
+-      if (prot == eMmapProtNone)
+-        prot_arg = PROT_NONE;
+-      else {
+-        prot_arg = 0;
+-        if (prot & eMmapProtExec)
+-          prot_arg |= PROT_EXEC;
+-        if (prot & eMmapProtRead)
+-          prot_arg |= PROT_READ;
+-        if (prot & eMmapProtWrite)
+-          prot_arg |= PROT_WRITE;
+-      }
++  const uint32_t range_scope = eSymbolContextFunction | eSymbolContextSymbol;
++  const bool use_inline_block_range = false;
++  EvaluateExpressionOptions options;
++  options.SetStopOthers(true);
++  options.SetUnwindOnError(true);
++  options.SetIgnoreBreakpoints(true);
++  options.SetTryAllThreads(true);
++  options.SetDebug(false);
++  options.SetTimeout(process->GetUtilityExpressionTimeout());
++  options.SetTrapExceptions(false);
++
++  addr_t prot_arg;
++  if (prot == eMmapProtNone)
++    prot_arg = PROT_NONE;
++  else {
++    prot_arg = 0;
++    if (prot & eMmapProtExec)
++      prot_arg |= PROT_EXEC;
++    if (prot & eMmapProtRead)
++      prot_arg |= PROT_READ;
++    if (prot & eMmapProtWrite)
++      prot_arg |= PROT_WRITE;
++  }
+ 
+-      AddressRange mmap_range;
+-      if (sc.GetAddressRange(range_scope, 0, use_inline_block_range,
+-                             mmap_range)) {
+-        auto type_system_or_err =
+-            process->GetTarget().GetScratchTypeSystemForLanguage(
+-                eLanguageTypeC);
+-        if (!type_system_or_err) {
+-          llvm::consumeError(type_system_or_err.takeError());
+-          return false;
+-        }
+-        CompilerType void_ptr_type =
+-            type_system_or_err->GetBasicTypeFromAST(eBasicTypeVoid)
+-                .GetPointerType();
+-        const ArchSpec arch = process->GetTarget().GetArchitecture();
+-        MmapArgList args =
+-            process->GetTarget().GetPlatform()->GetMmapArgumentList(
+-                arch, addr, length, prot_arg, flags, fd, offset);
+-        lldb::ThreadPlanSP call_plan_sp(
+-            new ThreadPlanCallFunction(*thread, mmap_range.GetBaseAddress(),
+-                                       void_ptr_type, args, options));
+-        if (call_plan_sp) {
+-          DiagnosticManager diagnostics;
+-
+-          StackFrame *frame = thread->GetStackFrameAtIndex(0).get();
+-          if (frame) {
+-            ExecutionContext exe_ctx;
+-            frame->CalculateExecutionContext(exe_ctx);
+-            ExpressionResults result = process->RunThreadPlan(
+-                exe_ctx, call_plan_sp, options, diagnostics);
+-            if (result == eExpressionCompleted) {
+-
+-              allocated_addr =
+-                  call_plan_sp->GetReturnValueObject()->GetValueAsUnsigned(
+-                      LLDB_INVALID_ADDRESS);
+-              if (process->GetAddressByteSize() == 4) {
+-                if (allocated_addr == UINT32_MAX)
+-                  return false;
+-              } else if (process->GetAddressByteSize() == 8) {
+-                if (allocated_addr == UINT64_MAX)
+-                  return false;
+-              }
+-              return true;
+-            }
++  AddressRange mmap_range;
++  if (sc.GetAddressRange(range_scope, 0, use_inline_block_range, mmap_range)) {
++    auto type_system_or_err =
++        process->GetTarget().GetScratchTypeSystemForLanguage(eLanguageTypeC);
++    if (!type_system_or_err) {
++      llvm::consumeError(type_system_or_err.takeError());
++      return false;
++    }
++    CompilerType void_ptr_type =
++        type_system_or_err->GetBasicTypeFromAST(eBasicTypeVoid)
++            .GetPointerType();
++    const ArchSpec arch = process->GetTarget().GetArchitecture();
++    MmapArgList args = process->GetTarget().GetPlatform()->GetMmapArgumentList(
++        arch, addr, length, prot_arg, flags, fd, offset);
++    lldb::ThreadPlanSP call_plan_sp(new ThreadPlanCallFunction(
++        *thread, mmap_range.GetBaseAddress(), void_ptr_type, args, options));
++    if (call_plan_sp) {
++      DiagnosticManager diagnostics;
++
++      StackFrame *frame = thread->GetStackFrameAtIndex(0).get();
++      if (frame) {
++        ExecutionContext exe_ctx;
++        frame->CalculateExecutionContext(exe_ctx);
++        ExpressionResults result =
++            process->RunThreadPlan(exe_ctx, call_plan_sp, options, diagnostics);
++        if (result == eExpressionCompleted) {
++
++          allocated_addr =
++              call_plan_sp->GetReturnValueObject()->GetValueAsUnsigned(
++                  LLDB_INVALID_ADDRESS);
++          if (process->GetAddressByteSize() == 4) {
++            if (allocated_addr == UINT32_MAX)
++              return false;
++          } else if (process->GetAddressByteSize() == 8) {
++            if (allocated_addr == UINT64_MAX)
++              return false;
+           }
++          return true;
+         }
+       }
+     }
+@@ -137,49 +156,38 @@ bool lldb_private::InferiorCallMunmap(Process *process, addr_t addr,
+   if (thread == nullptr)
+     return false;
+ 
+-  ModuleFunctionSearchOptions function_options;
+-  function_options.include_symbols = true;
+-  function_options.include_inlines = false;
++  SymbolContext sc;
++  if (!FindGlobalFunction(process, "munmap", sc))
++    return false;
+ 
+-  SymbolContextList sc_list;
+-  process->GetTarget().GetImages().FindFunctions(
+-      ConstString("munmap"), eFunctionNameTypeFull, function_options, sc_list);
+-  const uint32_t count = sc_list.GetSize();
+-  if (count > 0) {
+-    SymbolContext sc;
+-    if (sc_list.GetContextAtIndex(0, sc)) {
+-      const uint32_t range_scope =
+-          eSymbolContextFunction | eSymbolContextSymbol;
+-      const bool use_inline_block_range = false;
+-      EvaluateExpressionOptions options;
+-      options.SetStopOthers(true);
+-      options.SetUnwindOnError(true);
+-      options.SetIgnoreBreakpoints(true);
+-      options.SetTryAllThreads(true);
+-      options.SetDebug(false);
+-      options.SetTimeout(process->GetUtilityExpressionTimeout());
+-      options.SetTrapExceptions(false);
+-
+-      AddressRange munmap_range;
+-      if (sc.GetAddressRange(range_scope, 0, use_inline_block_range,
+-                             munmap_range)) {
+-        lldb::addr_t args[] = {addr, length};
+-        lldb::ThreadPlanSP call_plan_sp(
+-            new ThreadPlanCallFunction(*thread, munmap_range.GetBaseAddress(),
+-                                       CompilerType(), args, options));
+-        if (call_plan_sp) {
+-          DiagnosticManager diagnostics;
+-
+-          StackFrame *frame = thread->GetStackFrameAtIndex(0).get();
+-          if (frame) {
+-            ExecutionContext exe_ctx;
+-            frame->CalculateExecutionContext(exe_ctx);
+-            ExpressionResults result = process->RunThreadPlan(
+-                exe_ctx, call_plan_sp, options, diagnostics);
+-            if (result == eExpressionCompleted) {
+-              return true;
+-            }
+-          }
++  const uint32_t range_scope = eSymbolContextFunction | eSymbolContextSymbol;
++  const bool use_inline_block_range = false;
++  EvaluateExpressionOptions options;
++  options.SetStopOthers(true);
++  options.SetUnwindOnError(true);
++  options.SetIgnoreBreakpoints(true);
++  options.SetTryAllThreads(true);
++  options.SetDebug(false);
++  options.SetTimeout(process->GetUtilityExpressionTimeout());
++  options.SetTrapExceptions(false);
++
++  AddressRange munmap_range;
++  if (sc.GetAddressRange(range_scope, 0, use_inline_block_range,
++                         munmap_range)) {
++    lldb::addr_t args[] = {addr, length};
++    lldb::ThreadPlanSP call_plan_sp(new ThreadPlanCallFunction(
++        *thread, munmap_range.GetBaseAddress(), CompilerType(), args, options));
++    if (call_plan_sp) {
++      DiagnosticManager diagnostics;
++
++      StackFrame *frame = thread->GetStackFrameAtIndex(0).get();
++      if (frame) {
++        ExecutionContext exe_ctx;
++        frame->CalculateExecutionContext(exe_ctx);
++        ExpressionResults result =
++            process->RunThreadPlan(exe_ctx, call_plan_sp, options, diagnostics);
++        if (result == eExpressionCompleted) {
++          return true;
+         }
+       }
+     }
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

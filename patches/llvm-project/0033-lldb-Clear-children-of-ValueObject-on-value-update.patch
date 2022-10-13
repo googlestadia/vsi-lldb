@@ -1,0 +1,126 @@
+From f31471d7c1380a4a4ba284d65fb5c2bbf5fa5df2 Mon Sep 17 00:00:00 2001
+From: Andy Yankovsky <weratt@gmail.com>
+Date: Mon, 12 Jul 2021 10:42:57 +0200
+Subject: [lldb] Clear children of ValueObject on value update
+
+Children of ValueObject automatically update themselves when they detect
+the state of the process has changed, which typically happens when the
+parent value is updated. However, if in case of updating
+ValueObjectConstResult the process state is unchanged and the children
+remain stale.
+
+Explicitly clear the children upon the parent update, so that they're
+re-calculated afterwards.
+
+Differential Revision: https://reviews.llvm.org/D105470
+
+NOTE: The upstream patch is not submitted as there is an ongoing
+discussion. However I believe the patch is "good enough" for our use
+case, so I want to proceed with it as is and replace with a better
+solution later.
+
+---
+ lldb/source/Core/ValueObject.cpp              |  4 +++
+ .../value/change_values/TestChangeValueAPI.py | 35 +++++++++++++++++++
+ .../API/python_api/value/change_values/main.c | 17 ++++++++-
+ 3 files changed, 55 insertions(+), 1 deletion(-)
+
+diff --git a/lldb/source/Core/ValueObject.cpp b/lldb/source/Core/ValueObject.cpp
+index 6794d0c7331d..23d0a7779f5a 100644
+--- a/lldb/source/Core/ValueObject.cpp
++++ b/lldb/source/Core/ValueObject.cpp
+@@ -231,6 +231,10 @@ void ValueObject::SetNeedsUpdate() {
+   // We have to clear the value string here so ConstResult children will notice
+   // if their values are changed by hand (i.e. with SetValueAsCString).
+   ClearUserVisibleData(eClearUserVisibleDataItemsValue);
++  // Children have to be re-computed after updating the parent value.
++  m_flags.m_children_count_valid = false;
++  m_children.Clear();
++  SetSyntheticChildren(lldb::SyntheticChildrenSP());
+ }
+ 
+ void ValueObject::ClearDynamicTypeInformation() {
+diff --git a/lldb/test/API/python_api/value/change_values/TestChangeValueAPI.py b/lldb/test/API/python_api/value/change_values/TestChangeValueAPI.py
+index 3ffa5bfb67fa..98052f4c5d70 100644
+--- a/lldb/test/API/python_api/value/change_values/TestChangeValueAPI.py
++++ b/lldb/test/API/python_api/value/change_values/TestChangeValueAPI.py
+@@ -130,6 +130,41 @@ class ChangeValueAPITestCase(TestBase):
+         self.assertEquals(actual_value, 98765,
+                         "Got the right changed value from ptr->second_val")
+ 
++        # Test updating the children after updating the parent value.
++        def test_update_parent_value(parent):
++            self.assertEquals(
++                parent.GetValue(),
++                frame0.FindVariable("b1").GetValue())
++            self.assertEquals(parent.GetChildAtIndex(0).GetValue(), "1")
++
++            result = parent.SetValueFromCString(
++                frame0.FindVariable("b2").GetValue())
++            self.assertTrue(result, "Success setting {}".format(parent.name))
++            self.assertEquals(
++                parent.GetValue(),
++                frame0.FindVariable("b2").GetValue())
++            self.assertEquals(parent.GetChildAtIndex(0).GetValue(), "2")
++
++        # Test for value returned by SBFrame::EvaluateExpression.
++        test_update_parent_value(
++            frame0.EvaluateExpression("auto $b_0 = b1; $b_0"))
++
++        # Test for value _created_ by SBFrame::EvaluateExpression.
++        frame0.EvaluateExpression("auto $b_0 = b1")
++        test_update_parent_value(
++            frame0.FindValue('$b_0', lldb.eValueTypeConstResult))
++
++        # Test for value created by SBTarget::CreateValueFromData.
++        b1 = frame0.FindVariable("b1")
++        b1_size = b1.GetByteSize()
++        b1_value = b1.GetValueAsUnsigned()
++        b1_addr_bytes = b1_value.to_bytes(b1_size, 'little')
++        error = lldb.SBError()
++        data = lldb.SBData()
++        data.SetData(error, b1_addr_bytes, lldb.eByteOrderLittle, b1_size)
++        test_update_parent_value(
++            target.CreateValueFromData("b", data, b1.GetType()))
++
+         # gcc may set multiple locations for breakpoint
+         breakpoint.SetEnabled(False)
+ 
+diff --git a/lldb/test/API/python_api/value/change_values/main.c b/lldb/test/API/python_api/value/change_values/main.c
+index 01455c019647..b55e1dc83fd1 100644
+--- a/lldb/test/API/python_api/value/change_values/main.c
++++ b/lldb/test/API/python_api/value/change_values/main.c
+@@ -8,7 +8,12 @@ struct foo
+   uint32_t  second_val;
+   uint64_t  third_val;
+ };
+-  
++
++struct bar
++{
++  int value;
++};
++
+ int main ()
+ {
+   int val = 100;
+@@ -18,6 +23,16 @@ int main ()
+   ptr->second_val = 6666;
+   ptr->third_val = 66666666;
+ 
++  struct bar _b1 = {.value = 1};
++  struct bar _b2 = {.value = 2};
++  struct bar *b1 = &_b1;
++  struct bar *b2 = &_b2;
++
++  int _arr1[] = {1, 2};
++  int _arr2[] = {3, 4};
++  int* arr1 = _arr1;
++  int* arr2 = _arr2;
++
+   // Stop here and set values
+   printf ("Val - %d Mine - %d, %d, %llu. Ptr - %d, %d, %llu\n", val, 
+           mine.first_val, mine.second_val, mine.third_val,
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

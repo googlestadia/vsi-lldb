@@ -1,0 +1,38 @@
+From fbe56755b909e48345b23c16d950b7262bbc65b1 Mon Sep 17 00:00:00 2001
+From: Scott Funkenhauser <sfunkenhauser@google.com>
+Date: Fri, 14 Jul 2017 07:46:23 -0400
+Subject: [lldb] Increase DownloadModuleSlice read buffer.
+
+This is a temporary change, and we should look into upstreaming a
+proper fix.
+
+Since all reads are done in series, the network overhead for sending
+thousands of small requests adds up. By increasing the read buffer size
+there is a 10x improvement in transfer speed, and 30x improvement in
+transfer speed over port forwarding for a 16MB file.
+
+---
+ lldb/source/Target/Platform.cpp | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/lldb/source/Target/Platform.cpp b/lldb/source/Target/Platform.cpp
+index 3c331c8760df..55ee5a2f4b6f 100644
+--- a/lldb/source/Target/Platform.cpp
++++ b/lldb/source/Target/Platform.cpp
+@@ -1695,7 +1695,12 @@ Status Platform::DownloadModuleSlice(const FileSpec &src_file_spec,
+     return error;
+   }
+ 
+-  std::vector<char> buffer(1024);
++  // TODO: Temporarily increase the read buffer. Since all reads
++  // are done in series, the network overhead for sending thousands of small
++  // request adds up. By increasing the read buffer there is a 10x improvement
++  // in transfer speed for a 16MB file.  This change is temporary as we should
++  // try to fix this properly upstream.
++  std::vector<char> buffer(1024 * 100);
+   auto offset = src_offset;
+   uint64_t total_bytes_read = 0;
+   while (total_bytes_read < src_size) {
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

@@ -1,0 +1,220 @@
+From b024026868600417f1734153a7992c973dc450d6 Mon Sep 17 00:00:00 2001
+From: Jaroslav Sevcik <jarin@google.com>
+Date: Sat, 17 Jul 2021 13:49:44 +0200
+Subject: [lldb] Lookup unwind row from unwind info base
+
+If the unwind info base address does not agree with the symbol start
+address, lldb can currently find a wrong unwind table row because it
+computes the offset from the symbol start address.
+
+With this patch we adjust the offset for unwind row lookup to start from
+unwind info base (if both the unwind info base and function start are
+available).
+
+We also test this on a simple example where the unwind info starts at an
+address after function start. Similar situation also occurs with mingw's
+handling of the ms_hook_prologue attribute. There, the unwind info
+starts before the function low-pc address. As a result, we see lldb not
+being to able unwind stacks with hotpatchable functions (i.e., functions
+with ms_hook_prologue).
+
+---
+ lldb/include/lldb/Symbol/UnwindPlan.h         |  3 +-
+ lldb/source/Symbol/UnwindPlan.cpp             | 10 ++++-
+ lldb/source/Target/RegisterContextUnwind.cpp  | 26 ++++++++-----
+ .../Unwind/Inputs/eh-frame-fde-after-pad.s    | 39 +++++++++++++++++++
+ .../Shell/Unwind/eh-frame-fde-after-pad.test  | 15 +++++++
+ 5 files changed, 81 insertions(+), 12 deletions(-)
+ create mode 100644 lldb/test/Shell/Unwind/Inputs/eh-frame-fde-after-pad.s
+ create mode 100644 lldb/test/Shell/Unwind/eh-frame-fde-after-pad.test
+
+diff --git a/lldb/include/lldb/Symbol/UnwindPlan.h b/lldb/include/lldb/Symbol/UnwindPlan.h
+index ebb0ec421da7..0893ee50ecc8 100644
+--- a/lldb/include/lldb/Symbol/UnwindPlan.h
++++ b/lldb/include/lldb/Symbol/UnwindPlan.h
+@@ -430,7 +430,8 @@ public:
+   // unknown - the final row in the UnwindPlan is returned. In practice, the
+   // UnwindPlan for a function with no known start address will be the
+   // architectural default UnwindPlan which will only have one row.
+-  UnwindPlan::RowSP GetRowForFunctionOffset(int offset) const;
++  UnwindPlan::RowSP GetRowForFunctionOffset(int offset,
++                                            Address start_address = {}) const;
+ 
+   lldb::RegisterKind GetRegisterKind() const { return m_register_kind; }
+ 
+diff --git a/lldb/source/Symbol/UnwindPlan.cpp b/lldb/source/Symbol/UnwindPlan.cpp
+index 5547998691db..2d92a7a37670 100644
+--- a/lldb/source/Symbol/UnwindPlan.cpp
++++ b/lldb/source/Symbol/UnwindPlan.cpp
+@@ -380,7 +380,15 @@ void UnwindPlan::InsertRow(const UnwindPlan::RowSP &row_sp,
+     *it = row_sp;
+ }
+ 
+-UnwindPlan::RowSP UnwindPlan::GetRowForFunctionOffset(int offset) const {
++UnwindPlan::RowSP
++UnwindPlan::GetRowForFunctionOffset(int offset, Address start_address) const {
++  Address range_base = m_plan_valid_address_range.GetBaseAddress();
++  // If we have the function start address and the unwind info base address,
++  // make |offset| relative to the unwind info base address.
++  if (start_address.IsValid() && range_base.IsValid() &&
++      start_address.GetSection() == range_base.GetSection()) {
++    offset = start_address.GetOffset() + offset - range_base.GetOffset();
++  }
+   RowSP row;
+   if (!m_row_list.empty()) {
+     if (offset == -1)
+diff --git a/lldb/source/Target/RegisterContextUnwind.cpp b/lldb/source/Target/RegisterContextUnwind.cpp
+index 315ccea65d1f..05c01ae52e60 100644
+--- a/lldb/source/Target/RegisterContextUnwind.cpp
++++ b/lldb/source/Target/RegisterContextUnwind.cpp
+@@ -244,8 +244,8 @@ void RegisterContextUnwind::InitializeZerothFrame() {
+ 
+   if (m_full_unwind_plan_sp &&
+       m_full_unwind_plan_sp->PlanValidAtAddress(m_current_pc)) {
+-    active_row =
+-        m_full_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset);
++    active_row = m_full_unwind_plan_sp->GetRowForFunctionOffset(
++        m_current_offset, m_start_pc);
+     row_register_kind = m_full_unwind_plan_sp->GetRegisterKind();
+     if (active_row.get() && log) {
+       StreamString active_row_strm;
+@@ -621,8 +621,8 @@ void RegisterContextUnwind::InitializeNonZerothFrame() {
+ 
+   if (m_fast_unwind_plan_sp &&
+       m_fast_unwind_plan_sp->PlanValidAtAddress(m_current_pc)) {
+-    active_row =
+-        m_fast_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset);
++    active_row = m_fast_unwind_plan_sp->GetRowForFunctionOffset(
++        m_current_offset, m_start_pc);
+     row_register_kind = m_fast_unwind_plan_sp->GetRegisterKind();
+     PropagateTrapHandlerFlagFromUnwindPlan(m_fast_unwind_plan_sp);
+     if (active_row.get() && log) {
+@@ -637,7 +637,8 @@ void RegisterContextUnwind::InitializeNonZerothFrame() {
+     m_full_unwind_plan_sp = GetFullUnwindPlanForFrame();
+     int valid_offset = -1;
+     if (IsUnwindPlanValidForCurrentPC(m_full_unwind_plan_sp, valid_offset)) {
+-      active_row = m_full_unwind_plan_sp->GetRowForFunctionOffset(valid_offset);
++      active_row = m_full_unwind_plan_sp->GetRowForFunctionOffset(valid_offset,
++                                                                  m_start_pc);
+       row_register_kind = m_full_unwind_plan_sp->GetRegisterKind();
+       PropagateTrapHandlerFlagFromUnwindPlan(m_full_unwind_plan_sp);
+       if (active_row.get() && log) {
+@@ -1271,7 +1272,8 @@ RegisterContextUnwind::SavedLocationForRegister(
+ 
+   if (m_fast_unwind_plan_sp) {
+     UnwindPlan::RowSP active_row =
+-        m_fast_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset);
++        m_fast_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset,
++                                                       m_start_pc);
+     unwindplan_registerkind = m_fast_unwind_plan_sp->GetRegisterKind();
+     if (regnum.GetAsKind(unwindplan_registerkind) == LLDB_INVALID_REGNUM) {
+       UnwindLogMsg("could not convert lldb regnum %s (%d) into %d RegisterKind "
+@@ -1312,7 +1314,8 @@ RegisterContextUnwind::SavedLocationForRegister(
+                                LLDB_REGNUM_GENERIC_PC);
+ 
+       UnwindPlan::RowSP active_row =
+-          m_full_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset);
++          m_full_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset,
++                                                         m_start_pc);
+       unwindplan_registerkind = m_full_unwind_plan_sp->GetRegisterKind();
+ 
+       if (got_new_full_unwindplan && active_row.get() && log) {
+@@ -1440,7 +1443,8 @@ RegisterContextUnwind::SavedLocationForRegister(
+           // Update for the possibly new unwind plan
+           unwindplan_registerkind = m_full_unwind_plan_sp->GetRegisterKind();
+           UnwindPlan::RowSP active_row =
+-              m_full_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset);
++              m_full_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset,
++                                                             m_start_pc);
+ 
+           // Sanity check: Verify that we can fetch a pc value and CFA value
+           // with this unwind plan
+@@ -1769,7 +1773,8 @@ bool RegisterContextUnwind::TryFallbackUnwindPlan() {
+   m_full_unwind_plan_sp = m_fallback_unwind_plan_sp;
+ 
+   UnwindPlan::RowSP active_row =
+-      m_fallback_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset);
++      m_fallback_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset,
++                                                         m_start_pc);
+ 
+   if (active_row &&
+       active_row->GetCFAValue().GetValueType() !=
+@@ -1854,7 +1859,8 @@ bool RegisterContextUnwind::ForceSwitchToFallbackUnwindPlan() {
+   }
+ 
+   UnwindPlan::RowSP active_row =
+-      m_fallback_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset);
++      m_fallback_unwind_plan_sp->GetRowForFunctionOffset(m_current_offset,
++                                                         m_start_pc);
+ 
+   if (active_row &&
+       active_row->GetCFAValue().GetValueType() !=
+diff --git a/lldb/test/Shell/Unwind/Inputs/eh-frame-fde-after-pad.s b/lldb/test/Shell/Unwind/Inputs/eh-frame-fde-after-pad.s
+new file mode 100644
+index 000000000000..243b24fcf50d
+--- /dev/null
++++ b/lldb/test/Shell/Unwind/Inputs/eh-frame-fde-after-pad.s
+@@ -0,0 +1,39 @@
++        .text
++
++        .type   inner, @function
++inner:
++        .cfi_startproc
++        int3
++        ret
++        .cfi_endproc
++        .size   inner, .-inner
++
++        .type   hotpatchable, @function
++hotpatchable:
++        nop
++        nop
++        nop
++        nop
++        nop
++        nop
++        nop
++        nop
++        # Make the FDE entry start after the pad.
++        .cfi_startproc
++        push %rsp
++        .cfi_def_cfa_offset 16
++        call    inner
++        add $16, %rsp
++        .cfi_def_cfa_offset 8
++        ret
++        .cfi_endproc
++        .size   hotpatchable, .-hotpatchable
++
++        .globl  main
++        .type   main, @function
++main:
++        .cfi_startproc
++        call hotpatchable
++        ret
++        .cfi_endproc
++        .size   main, .-main
+diff --git a/lldb/test/Shell/Unwind/eh-frame-fde-after-pad.test b/lldb/test/Shell/Unwind/eh-frame-fde-after-pad.test
+new file mode 100644
+index 000000000000..cd6f8261c463
+--- /dev/null
++++ b/lldb/test/Shell/Unwind/eh-frame-fde-after-pad.test
+@@ -0,0 +1,15 @@
++# This test that we are able to unwind using eh_frame in case an FDE entry does
++# not cover the entire range of a function we are unwinding through.
++
++# REQUIRES: target-x86_64, system-linux, native
++
++# RUN: %clang_host %p/Inputs/eh-frame-fde-after-pad.s -o %t
++# RUN: %lldb %t -s %s -o exit | FileCheck %s
++
++process launch
++# CHECK: stop reason = signal SIGTRAP
++
++thread backtrace
++# CHECK: frame #0: {{.*}}`inner + 1
++# CHECK: frame #1: {{.*}}`hotpatchable + 14
++# CHECK: frame #2: {{.*}}`main + 5
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

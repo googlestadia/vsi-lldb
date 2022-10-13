@@ -1,0 +1,86 @@
+From d2971e93ae6522037081fada857f28d79c48cd39 Mon Sep 17 00:00:00 2001
+From: Andy Yankovsky <weratt@gmail.com>
+Date: Tue, 23 Nov 2021 13:09:03 +0100
+Subject: [lldb] Extract the qualified name from the DIE
+
+Getting the qualified name from the Type is expensive, because it
+requires building a forward declaration of the type. In the extreme case
+of having thousands of elements in the TypeMap the initial lookup takes
+~minutes.
+
+This patch speeds things up for a particular case of using DWARF symbol
+files. The improvement for the initial lookup for Unreal5 ShooterGame:
+
+```
+# Before
+(lldb) script timeit(lldb.target.FindTypes("EAutoReceiveInput::Type"))
+83.72795928385828
+# After
+(lldb) script timeit(lldb.target.FindTypes("EAutoReceiveInput::Type"))
+7.014563322067261
+```
+
+---
+ lldb/source/Symbol/TypeMap.cpp | 32 +++++++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/lldb/source/Symbol/TypeMap.cpp b/lldb/source/Symbol/TypeMap.cpp
+index 8200f3589184..2b51d6efafe1 100644
+--- a/lldb/source/Symbol/TypeMap.cpp
++++ b/lldb/source/Symbol/TypeMap.cpp
+@@ -8,6 +8,7 @@
+ 
+ #include <vector>
+ 
++#include "llvm/Support/Casting.h"
+ #include "llvm/Support/FormattedStream.h"
+ #include "llvm/Support/raw_ostream.h"
+ 
+@@ -16,6 +17,10 @@
+ #include "lldb/Symbol/Type.h"
+ #include "lldb/Symbol/TypeMap.h"
+ 
++// TODO: Hack because of (internal). In general TypeMap should not
++// depend on specific implementations of SymbolFile (i.e. SymbolFileDWARF).
++#include "Plugins/SymbolFile/DWARF/SymbolFileDWARF.h"
++
+ using namespace lldb;
+ using namespace lldb_private;
+ 
+@@ -187,7 +192,32 @@ void TypeMap::RemoveMismatchedTypes(const std::string &type_scope,
+         continue;
+     }
+ 
+-    ConstString match_type_name_const_str(the_type->GetQualifiedName());
++    // TODO: Quick-n-dirty solution for (internal). Remove this code
++    // (and maybe the whole RemoveMismatchedTypes function) after a better
++    // optimization is landed.
++    std::string qualified_name;
++    ConstString match_type_name_const_str;
++    SymbolFileDWARF *symfile =
++        llvm::dyn_cast<SymbolFileDWARF>(the_type->GetSymbolFile());
++    if (symfile) {
++      DWARFDIE die = symfile->GetDIE(the_type->GetID());
++      die.GetQualifiedName(qualified_name);
++
++      if (!qualified_name.empty()) {
++        llvm::StringRef qual_name_ref(qualified_name);
++        qual_name_ref.consume_front("::");
++        // Sometimes `DWARFDIE::GetQualifiedName` is not good enough? Use it
++        // only when the qualified name is different from the unqualified name.
++        if (qual_name_ref != die.GetName()) {
++          match_type_name_const_str.SetCString(qualified_name.c_str());
++        }
++      }
++    }
++    // The hack above failed, fallback to `Type::GetQualifiedName`.
++    if (!match_type_name_const_str) {
++      match_type_name_const_str = the_type->GetQualifiedName();
++    }
++
+     if (match_type_name_const_str) {
+       const char *match_type_name = match_type_name_const_str.GetCString();
+       llvm::StringRef match_type_scope;
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

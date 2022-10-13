@@ -1,0 +1,1112 @@
+From f4c74a885dbeff06df5cb33af7c5e871984b847e Mon Sep 17 00:00:00 2001
+From: Jaroslav Sevcik <jarin@google.com>
+Date: Wed, 27 Nov 2019 09:08:12 +0100
+Subject: [lldb] Support for template instantiation in expression evaluator
+
+To get the templates from DWARF, we simply assume that a symbol
+containing '<' is a template.
+
+We also introduce a callback from Clang to lookup template
+instantiation lazily. Unfortunately, we still do parse all
+the template's instantiations from DWARF (this only takes
+significant amount of time - several seconds for couple of
+thousand instantiations) on the first evaluation.
+
+---
+ clang/include/clang/AST/ExternalASTSource.h   |  6 ++
+ clang/lib/AST/ExternalASTSource.cpp           |  6 ++
+ clang/lib/Sema/SemaTemplate.cpp               |  8 +++
+ lldb/include/lldb/Core/Module.h               |  7 +-
+ lldb/include/lldb/Core/ModuleList.h           |  4 +-
+ lldb/include/lldb/Symbol/SymbolFile.h         |  2 +-
+ lldb/include/lldb/Target/Target.h             |  4 ++
+ lldb/source/Core/Module.cpp                   | 18 ++---
+ lldb/source/Core/ModuleList.cpp               |  7 +-
+ .../ExpressionParser/Clang/ClangASTSource.cpp | 66 ++++++++++++++++-
+ .../ExpressionParser/Clang/ClangASTSource.h   | 19 +++++
+ .../Breakpad/SymbolFileBreakpad.cpp           |  2 +-
+ .../SymbolFile/Breakpad/SymbolFileBreakpad.h  |  2 +-
+ .../SymbolFile/DWARF/AppleDWARFIndex.cpp      | 11 +++
+ .../SymbolFile/DWARF/AppleDWARFIndex.h        |  6 ++
+ .../Plugins/SymbolFile/DWARF/DWARFIndex.h     |  6 ++
+ .../SymbolFile/DWARF/DebugNamesDWARFIndex.cpp | 11 +++
+ .../SymbolFile/DWARF/DebugNamesDWARFIndex.h   |  6 ++
+ .../SymbolFile/DWARF/ManualDWARFIndex.cpp     | 29 +++++++-
+ .../SymbolFile/DWARF/ManualDWARFIndex.h       |  7 ++
+ .../SymbolFile/DWARF/SymbolFileDWARF.cpp      | 14 +++-
+ .../SymbolFile/DWARF/SymbolFileDWARF.h        |  2 +-
+ .../DWARF/SymbolFileDWARFDebugMap.cpp         |  4 +-
+ .../DWARF/SymbolFileDWARFDebugMap.h           |  2 +-
+ .../NativePDB/SymbolFileNativePDB.cpp         |  2 +-
+ .../NativePDB/SymbolFileNativePDB.h           |  2 +-
+ .../Plugins/SymbolFile/PDB/SymbolFilePDB.cpp  |  2 +-
+ .../Plugins/SymbolFile/PDB/SymbolFilePDB.h    |  2 +-
+ lldb/source/Symbol/SymbolFile.cpp             |  2 +-
+ lldb/source/Symbol/TypeMap.cpp                | 30 +++++++-
+ lldb/source/Target/Target.cpp                 | 26 ++++++-
+ lldb/source/Target/TargetProperties.td        |  3 +
+ .../cpp/class-template-instantiation/Makefile |  3 +
+ .../TestClassTemplateInstantiation.py         | 70 +++++++++++++++++++
+ .../cpp/class-template-instantiation/main.cpp | 27 +++++++
+ lldb/tools/lldb-test/lldb-test.cpp            |  2 +-
+ .../SymbolFile/PDB/SymbolFilePDBTests.cpp     | 18 ++---
+ 37 files changed, 391 insertions(+), 47 deletions(-)
+ create mode 100644 lldb/test/API/lang/cpp/class-template-instantiation/Makefile
+ create mode 100644 lldb/test/API/lang/cpp/class-template-instantiation/TestClassTemplateInstantiation.py
+ create mode 100644 lldb/test/API/lang/cpp/class-template-instantiation/main.cpp
+
+diff --git a/clang/include/clang/AST/ExternalASTSource.h b/clang/include/clang/AST/ExternalASTSource.h
+index b1851afcda37..56e8ea9a8895 100644
+--- a/clang/include/clang/AST/ExternalASTSource.h
++++ b/clang/include/clang/AST/ExternalASTSource.h
+@@ -37,6 +37,7 @@ namespace clang {
+ class ASTConsumer;
+ class ASTContext;
+ class ASTSourceDescriptor;
++class ClassTemplateDecl;
+ class CXXBaseSpecifier;
+ class CXXCtorInitializer;
+ class CXXRecordDecl;
+@@ -210,6 +211,11 @@ public:
+   /// \c ObjCInterfaceDecl::setExternallyCompleted().
+   virtual void CompleteType(ObjCInterfaceDecl *Class);
+ 
++  /// Gives the external AST source an opportunity to insert class
++  /// template instantiations.
++  virtual bool FindClassTemplateSpecialization(ClassTemplateDecl *ClassTemplate,
++                                               ArrayRef<TemplateArgument> Args);
++
+   /// Loads comment ranges.
+   virtual void ReadComments();
+ 
+diff --git a/clang/lib/AST/ExternalASTSource.cpp b/clang/lib/AST/ExternalASTSource.cpp
+index 257833182621..fb92ed4907c4 100644
+--- a/clang/lib/AST/ExternalASTSource.cpp
++++ b/clang/lib/AST/ExternalASTSource.cpp
+@@ -14,6 +14,7 @@
+ 
+ #include "clang/AST/ExternalASTSource.h"
+ #include "clang/AST/ASTContext.h"
++#include "clang/AST/DeclTemplate.h"
+ #include "clang/AST/DeclarationName.h"
+ #include "clang/Basic/FileManager.h"
+ #include "clang/Basic/IdentifierTable.h"
+@@ -50,6 +51,11 @@ void ExternalASTSource::CompleteType(TagDecl *Tag) {}
+ 
+ void ExternalASTSource::CompleteType(ObjCInterfaceDecl *Class) {}
+ 
++bool ExternalASTSource::FindClassTemplateSpecialization(
++    ClassTemplateDecl *ClassTemplate, ArrayRef<TemplateArgument> Args) {
++  return false;
++}
++
+ void ExternalASTSource::ReadComments() {}
+ 
+ void ExternalASTSource::StartedDeserializing() {}
+diff --git a/clang/lib/Sema/SemaTemplate.cpp b/clang/lib/Sema/SemaTemplate.cpp
+index 64a0b45feb98..8c6793917a95 100644
+--- a/clang/lib/Sema/SemaTemplate.cpp
++++ b/clang/lib/Sema/SemaTemplate.cpp
+@@ -3793,6 +3793,14 @@ QualType Sema::CheckTemplateIdType(TemplateName Name,
+     void *InsertPos = nullptr;
+     ClassTemplateSpecializationDecl *Decl
+       = ClassTemplate->findSpecialization(Converted, InsertPos);
++    if (!Decl) {
++      // If we have external source, try to find the specialization
++      // in the external source.
++      if (auto *Source = Context.getExternalSource()) {
++        if (Source->FindClassTemplateSpecialization(ClassTemplate, Converted))
++          Decl = ClassTemplate->findSpecialization(Converted, InsertPos);
++      }
++    }
+     if (!Decl) {
+       // This is the first time we have referenced this class template
+       // specialization. Create the canonical declaration and add it to
+diff --git a/lldb/include/lldb/Core/Module.h b/lldb/include/lldb/Core/Module.h
+index f6c32586eda8..8a7c3ca9b84e 100644
+--- a/lldb/include/lldb/Core/Module.h
++++ b/lldb/include/lldb/Core/Module.h
+@@ -428,7 +428,7 @@ public:
+   void
+   FindTypes(ConstString type_name, bool exact_match, size_t max_matches,
+             llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-            TypeList &types);
++            TypeList &types, bool include_templates = false);
+ 
+   /// Find types by name.
+   ///
+@@ -458,7 +458,8 @@ public:
+   ///     A type list gets populated with any matches.
+   void FindTypesInNamespace(ConstString type_name,
+                             const CompilerDeclContext &parent_decl_ctx,
+-                            size_t max_matches, TypeList &type_list);
++                            size_t max_matches, TypeList &type_list,
++                            bool include_templates = false);
+ 
+   /// Get const accessor for the module architecture.
+   ///
+@@ -1111,7 +1112,7 @@ private:
+       ConstString name, const CompilerDeclContext &parent_decl_ctx,
+       size_t max_matches,
+       llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-      TypeMap &types);
++      TypeMap &types, bool include_templates);
+ 
+   Module(const Module &) = delete;
+   const Module &operator=(const Module &) = delete;
+diff --git a/lldb/include/lldb/Core/ModuleList.h b/lldb/include/lldb/Core/ModuleList.h
+index 01b9991129eb..16079334e413 100644
+--- a/lldb/include/lldb/Core/ModuleList.h
++++ b/lldb/include/lldb/Core/ModuleList.h
+@@ -353,10 +353,12 @@ public:
+   /// \param[out] types
+   ///     A type list gets populated with any matches.
+   ///
++  /// \param[in] include_templates
++  ///     Include (instantiations of) class templates in the matches.
+   void FindTypes(Module *search_first, ConstString name,
+                  bool name_is_fully_qualified, size_t max_matches,
+                  llvm::DenseSet<SymbolFile *> &searched_symbol_files,
+-                 TypeList &types) const;
++                 TypeList &types, bool include_templates = false) const;
+ 
+   bool FindSourceFile(const FileSpec &orig_spec, FileSpec &new_spec) const;
+ 
+diff --git a/lldb/include/lldb/Symbol/SymbolFile.h b/lldb/include/lldb/Symbol/SymbolFile.h
+index 6cdb2bfb686b..db32f2a42c91 100644
+--- a/lldb/include/lldb/Symbol/SymbolFile.h
++++ b/lldb/include/lldb/Symbol/SymbolFile.h
+@@ -232,7 +232,7 @@ public:
+   FindTypes(ConstString name, const CompilerDeclContext &parent_decl_ctx,
+             uint32_t max_matches,
+             llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-            TypeMap &types);
++            TypeMap &types, bool include_templates);
+ 
+   /// Find types specified by a CompilerContextPattern.
+   /// \param languages
+diff --git a/lldb/include/lldb/Target/Target.h b/lldb/include/lldb/Target/Target.h
+index 42a641f6d52a..3a0d5beefe53 100644
+--- a/lldb/include/lldb/Target/Target.h
++++ b/lldb/include/lldb/Target/Target.h
+@@ -224,6 +224,10 @@ public:
+ 
+   void SetInjectLocalVariables(ExecutionContext *exe_ctx, bool b);
+ 
++  bool GetInferClassTemplates() const;
++
++  void SetInferClassTemplates(bool b);
++
+   void SetRequireHardwareBreakpoints(bool b);
+ 
+   bool GetRequireHardwareBreakpoints() const;
+diff --git a/lldb/source/Core/Module.cpp b/lldb/source/Core/Module.cpp
+index feecf984f7bf..f420d0e12c79 100644
+--- a/lldb/source/Core/Module.cpp
++++ b/lldb/source/Core/Module.cpp
+@@ -941,19 +941,20 @@ void Module::FindTypes_Impl(
+     ConstString name, const CompilerDeclContext &parent_decl_ctx,
+     size_t max_matches,
+     llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-    TypeMap &types) {
++    TypeMap &types, bool include_templates) {
+   if (SymbolFile *symbols = GetSymbolFile())
+     symbols->FindTypes(name, parent_decl_ctx, max_matches,
+-                       searched_symbol_files, types);
++                       searched_symbol_files, types, include_templates);
+ }
+ 
+ void Module::FindTypesInNamespace(ConstString type_name,
+                                   const CompilerDeclContext &parent_decl_ctx,
+-                                  size_t max_matches, TypeList &type_list) {
++                                  size_t max_matches, TypeList &type_list,
++                                  bool include_templates) {
+   TypeMap types_map;
+   llvm::DenseSet<lldb_private::SymbolFile *> searched_symbol_files;
+   FindTypes_Impl(type_name, parent_decl_ctx, max_matches, searched_symbol_files,
+-                 types_map);
++                 types_map, include_templates);
+   if (types_map.GetSize()) {
+     SymbolContext sc;
+     sc.module_sp = shared_from_this();
+@@ -974,7 +975,7 @@ lldb::TypeSP Module::FindFirstType(const SymbolContext &sc, ConstString name,
+ void Module::FindTypes(
+     ConstString name, bool exact_match, size_t max_matches,
+     llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-    TypeList &types) {
++    TypeList &types, bool include_templates) {
+   const char *type_name_cstr = name.GetCString();
+   llvm::StringRef type_scope;
+   llvm::StringRef type_basename;
+@@ -991,7 +992,7 @@ void Module::FindTypes(
+ 
+     ConstString type_basename_const_str(type_basename);
+     FindTypes_Impl(type_basename_const_str, CompilerDeclContext(), max_matches,
+-                   searched_symbol_files, typesmap);
++                   searched_symbol_files, typesmap, include_templates);
+     if (typesmap.GetSize())
+       typesmap.RemoveMismatchedTypes(std::string(type_scope),
+                                      std::string(type_basename), type_class,
+@@ -1003,13 +1004,14 @@ void Module::FindTypes(
+       // The "type_name_cstr" will have been modified if we have a valid type
+       // class prefix (like "struct", "class", "union", "typedef" etc).
+       FindTypes_Impl(ConstString(type_basename), CompilerDeclContext(),
+-                     UINT_MAX, searched_symbol_files, typesmap);
++                     UINT_MAX, searched_symbol_files, typesmap,
++                     include_templates);
+       typesmap.RemoveMismatchedTypes(std::string(type_scope),
+                                      std::string(type_basename), type_class,
+                                      exact_match);
+     } else {
+       FindTypes_Impl(name, CompilerDeclContext(), UINT_MAX,
+-                     searched_symbol_files, typesmap);
++                     searched_symbol_files, typesmap, include_templates);
+       if (exact_match) {
+         std::string name_str(name.AsCString(""));
+         typesmap.RemoveMismatchedTypes(std::string(type_scope), name_str,
+diff --git a/lldb/source/Core/ModuleList.cpp b/lldb/source/Core/ModuleList.cpp
+index 48412137546d..f5ff7cec1e14 100644
+--- a/lldb/source/Core/ModuleList.cpp
++++ b/lldb/source/Core/ModuleList.cpp
+@@ -559,7 +559,7 @@ ModuleSP ModuleList::FindModule(const UUID &uuid) const {
+ void ModuleList::FindTypes(Module *search_first, ConstString name,
+                            bool name_is_fully_qualified, size_t max_matches,
+                            llvm::DenseSet<SymbolFile *> &searched_symbol_files,
+-                           TypeList &types) const {
++                           TypeList &types, bool include_templates) const {
+   std::lock_guard<std::recursive_mutex> guard(m_modules_mutex);
+ 
+   collection::const_iterator pos, end = m_modules.end();
+@@ -567,7 +567,8 @@ void ModuleList::FindTypes(Module *search_first, ConstString name,
+     for (pos = m_modules.begin(); pos != end; ++pos) {
+       if (search_first == pos->get()) {
+         search_first->FindTypes(name, name_is_fully_qualified, max_matches,
+-                                searched_symbol_files, types);
++                                searched_symbol_files, types,
++                                include_templates);
+ 
+         if (types.GetSize() >= max_matches)
+           return;
+@@ -581,7 +582,7 @@ void ModuleList::FindTypes(Module *search_first, ConstString name,
+     // comparison will always be true (valid_module_ptr != nullptr).
+     if (search_first != pos->get())
+       (*pos)->FindTypes(name, name_is_fully_qualified, max_matches,
+-                        searched_symbol_files, types);
++                        searched_symbol_files, types, include_templates);
+ 
+     if (types.GetSize() >= max_matches)
+       return;
+diff --git a/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp b/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp
+index 510352e8c173..9bb8072f6f8f 100644
+--- a/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp
++++ b/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp
+@@ -382,6 +382,65 @@ clang::ObjCInterfaceDecl *ClangASTSource::GetCompleteObjCInterface(
+   return complete_iface_decl;
+ }
+ 
++namespace {
++
++std::string
++GetNameForClassTemplateSpecialization(ClassTemplateDecl *class_template,
++                                      ArrayRef<TemplateArgument> args) {
++  clang::LangOptions lang_options;
++  lang_options.CPlusPlus = true;
++  lang_options.Bool = true;
++  PrintingPolicy policy(lang_options);
++
++  std::string name;
++  llvm::raw_string_ostream os(name);
++  class_template->printQualifiedName(os, policy);
++  printTemplateArgumentList(os, args, policy);
++  return os.str();
++}
++
++} // namespace
++
++bool ClangASTSource::FindClassTemplateSpecialization(
++    ClassTemplateDecl *class_template, ArrayRef<TemplateArgument> args) {
++  if (!m_target->GetInferClassTemplates())
++    return false;
++
++  Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_EXPRESSIONS));
++  static unsigned int invocation_id = 0;
++  unsigned int current_id = invocation_id++;
++
++  const ConstString name(
++      GetNameForClassTemplateSpecialization(class_template, args));
++
++  LLDB_LOG(
++      log,
++      "    FindClassTemplateSpecialization[{0}] on (ASTContext*){1} Completing "
++      "(ClassTemplateDecl*){2}, searching for {3}",
++      current_id, static_cast<void *>(m_ast_context),
++      static_cast<void *>(class_template), name.GetCString());
++
++  LLDB_LOG(log, "      FCTS[{0}] Before:", current_id);
++
++  TypeList types;
++  llvm::DenseSet<lldb_private::SymbolFile *> searched_symbol_files;
++  m_target->GetImages().FindTypes(nullptr, name, true, 1, searched_symbol_files,
++                                  types);
++
++  size_t num_types = types.GetSize();
++  for (size_t ti = 0; ti < num_types; ++ti) {
++    lldb::TypeSP type_sp = types.GetTypeAtIndex(ti);
++    CompilerType full_type = type_sp->GetFullCompilerType();
++    if (GuardedCopyType(full_type)) {
++      LLDB_LOG(log, "      FCTS[{0}] Specialization inserted.", current_id);
++      return true;
++    }
++  }
++
++  LLDB_LOG(log, "      FCTS[{0}] Specialization not found.", current_id);
++  return false;
++}
++
+ void ClangASTSource::FindExternalLexicalDecls(
+     const DeclContext *decl_context,
+     llvm::function_ref<bool(Decl::Kind)> predicate,
+@@ -615,12 +674,15 @@ void ClangASTSource::FindExternalVisibleDecls(
+ 
+   TypeList types;
+   const bool exact_match = true;
++  const bool include_templates = m_target->GetInferClassTemplates();
+   llvm::DenseSet<lldb_private::SymbolFile *> searched_symbol_files;
+   if (module_sp && namespace_decl)
+-    module_sp->FindTypesInNamespace(name, namespace_decl, 1, types);
++    module_sp->FindTypesInNamespace(name, namespace_decl, 1, types,
++                                    include_templates);
+   else {
+     m_target->GetImages().FindTypes(module_sp.get(), name, exact_match, 1,
+-                                    searched_symbol_files, types);
++                                    searched_symbol_files, types,
++                                    include_templates);
+   }
+ 
+   if (size_t num_types = types.GetSize()) {
+diff --git a/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.h b/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.h
+index f3fec3f944a1..238e7089b92d 100644
+--- a/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.h
++++ b/lldb/source/Plugins/ExpressionParser/Clang/ClangASTSource.h
+@@ -153,6 +153,19 @@ public:
+   ///     The Decl to be completed in place.
+   void CompleteType(clang::ObjCInterfaceDecl *Class) override;
+ 
++  /// Find class template specialization for a class template.
++  ///
++  /// \param[in] ClassTemplate
++  ///     The class template to specialize.
++  /// \param[in] Args
++  ///      Specialization arguments.
++  ///  \return
++  ///      True if a specialization is found.
++  bool FindClassTemplateSpecialization(
++      clang::ClassTemplateDecl *ClassTemplate,
++      llvm::ArrayRef<clang::TemplateArgument> Args) override;
++
++  //------------------------------------------------------------------
+   /// Called on entering a translation unit.  Tells Clang by calling
+   /// setHasExternalVisibleStorage() and setHasExternalLexicalStorage() that
+   /// this object has something to say about undefined names.
+@@ -231,6 +244,12 @@ public:
+       return m_original.CompleteType(Class);
+     }
+ 
++    bool FindClassTemplateSpecialization(
++        clang::ClassTemplateDecl *ClassTemplate,
++        llvm::ArrayRef<clang::TemplateArgument> Args) override {
++      return m_original.FindClassTemplateSpecialization(ClassTemplate, Args);
++    }
++
+     bool layoutRecordType(
+         const clang::RecordDecl *Record, uint64_t &Size, uint64_t &Alignment,
+         llvm::DenseMap<const clang::FieldDecl *, uint64_t> &FieldOffsets,
+diff --git a/lldb/source/Plugins/SymbolFile/Breakpad/SymbolFileBreakpad.cpp b/lldb/source/Plugins/SymbolFile/Breakpad/SymbolFileBreakpad.cpp
+index 9d23f1baf931..03e84b5f0717 100644
+--- a/lldb/source/Plugins/SymbolFile/Breakpad/SymbolFileBreakpad.cpp
++++ b/lldb/source/Plugins/SymbolFile/Breakpad/SymbolFileBreakpad.cpp
+@@ -448,7 +448,7 @@ void SymbolFileBreakpad::FindFunctions(const RegularExpression &regex,
+ void SymbolFileBreakpad::FindTypes(
+     ConstString name, const CompilerDeclContext &parent_decl_ctx,
+     uint32_t max_matches, llvm::DenseSet<SymbolFile *> &searched_symbol_files,
+-    TypeMap &types) {}
++    TypeMap &types, bool include_templates) {}
+ 
+ void SymbolFileBreakpad::FindTypes(
+     llvm::ArrayRef<CompilerContext> pattern, LanguageSet languages,
+diff --git a/lldb/source/Plugins/SymbolFile/Breakpad/SymbolFileBreakpad.h b/lldb/source/Plugins/SymbolFile/Breakpad/SymbolFileBreakpad.h
+index bf3e25c1a63e..ba413b9b29eb 100644
+--- a/lldb/source/Plugins/SymbolFile/Breakpad/SymbolFileBreakpad.h
++++ b/lldb/source/Plugins/SymbolFile/Breakpad/SymbolFileBreakpad.h
+@@ -121,7 +121,7 @@ public:
+   void FindTypes(ConstString name, const CompilerDeclContext &parent_decl_ctx,
+                  uint32_t max_matches,
+                  llvm::DenseSet<SymbolFile *> &searched_symbol_files,
+-                 TypeMap &types) override;
++                 TypeMap &types, bool include_templates) override;
+ 
+   void FindTypes(llvm::ArrayRef<CompilerContext> pattern, LanguageSet languages,
+                  llvm::DenseSet<SymbolFile *> &searched_symbol_files,
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/AppleDWARFIndex.cpp b/lldb/source/Plugins/SymbolFile/DWARF/AppleDWARFIndex.cpp
+index ec4057efbbc5..4b70157b5425 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/AppleDWARFIndex.cpp
++++ b/lldb/source/Plugins/SymbolFile/DWARF/AppleDWARFIndex.cpp
+@@ -170,6 +170,17 @@ void AppleDWARFIndex::GetTypes(
+       DIERefCallback(callback, type_name.GetStringRef()));
+ }
+ 
++void AppleDWARFIndex::GetGenericTypes(
++    ConstString name, llvm::function_ref<bool(DWARFDIE die)> callback) {
++  return;
++}
++
++void AppleDWARFIndex::GetGenericTypes(
++    const DWARFDeclContext &context,
++    llvm::function_ref<bool(DWARFDIE die)> callback) {
++  return;
++}
++
+ void AppleDWARFIndex::GetNamespaces(
+     ConstString name, llvm::function_ref<bool(DWARFDIE die)> callback) {
+   if (!m_apple_namespaces_up)
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/AppleDWARFIndex.h b/lldb/source/Plugins/SymbolFile/DWARF/AppleDWARFIndex.h
+index ef3cb5dee035..0f0fbb437d91 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/AppleDWARFIndex.h
++++ b/lldb/source/Plugins/SymbolFile/DWARF/AppleDWARFIndex.h
+@@ -50,6 +50,12 @@ public:
+                 llvm::function_ref<bool(DWARFDIE die)> callback) override;
+   void GetTypes(const DWARFDeclContext &context,
+                 llvm::function_ref<bool(DWARFDIE die)> callback) override;
++  void
++  GetGenericTypes(ConstString name,
++                  llvm::function_ref<bool(DWARFDIE die)> callback) override;
++  void
++  GetGenericTypes(const DWARFDeclContext &context,
++                  llvm::function_ref<bool(DWARFDIE die)> callback) override;
+   void GetNamespaces(ConstString name,
+                      llvm::function_ref<bool(DWARFDIE die)> callback) override;
+   void GetFunctions(ConstString name, SymbolFileDWARF &dwarf,
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/DWARFIndex.h b/lldb/source/Plugins/SymbolFile/DWARF/DWARFIndex.h
+index c4995e721554..68b6a2e01fd3 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/DWARFIndex.h
++++ b/lldb/source/Plugins/SymbolFile/DWARF/DWARFIndex.h
+@@ -51,6 +51,12 @@ public:
+   virtual void GetTypes(const DWARFDeclContext &context,
+                         llvm::function_ref<bool(DWARFDIE die)> callback) = 0;
+   virtual void
++  GetGenericTypes(ConstString name,
++                  llvm::function_ref<bool(DWARFDIE die)> callback) = 0;
++  virtual void
++  GetGenericTypes(const DWARFDeclContext &context,
++                  llvm::function_ref<bool(DWARFDIE die)> callback) = 0;
++  virtual void
+   GetNamespaces(ConstString name,
+                 llvm::function_ref<bool(DWARFDIE die)> callback) = 0;
+   virtual void
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/DebugNamesDWARFIndex.cpp b/lldb/source/Plugins/SymbolFile/DWARF/DebugNamesDWARFIndex.cpp
+index 2350c8fc3d5b..d44155b0fc73 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/DebugNamesDWARFIndex.cpp
++++ b/lldb/source/Plugins/SymbolFile/DWARF/DebugNamesDWARFIndex.cpp
+@@ -236,6 +236,17 @@ void DebugNamesDWARFIndex::GetNamespaces(
+   m_fallback.GetNamespaces(name, callback);
+ }
+ 
++void DebugNamesDWARFIndex::GetGenericTypes(
++    ConstString name, llvm::function_ref<bool(DWARFDIE die)> callback) {
++  m_fallback.GetGenericTypes(name, callback);
++}
++
++void DebugNamesDWARFIndex::GetGenericTypes(
++    const DWARFDeclContext &context,
++    llvm::function_ref<bool(DWARFDIE die)> callback) {
++  m_fallback.GetGenericTypes(context, callback);
++}
++
+ void DebugNamesDWARFIndex::GetFunctions(
+     ConstString name, SymbolFileDWARF &dwarf,
+     const CompilerDeclContext &parent_decl_ctx, uint32_t name_type_mask,
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/DebugNamesDWARFIndex.h b/lldb/source/Plugins/SymbolFile/DWARF/DebugNamesDWARFIndex.h
+index c451ccd4857f..144bc941e3a1 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/DebugNamesDWARFIndex.h
++++ b/lldb/source/Plugins/SymbolFile/DWARF/DebugNamesDWARFIndex.h
+@@ -44,6 +44,12 @@ public:
+                 llvm::function_ref<bool(DWARFDIE die)> callback) override;
+   void GetTypes(const DWARFDeclContext &context,
+                 llvm::function_ref<bool(DWARFDIE die)> callback) override;
++  void
++  GetGenericTypes(ConstString name,
++                  llvm::function_ref<bool(DWARFDIE die)> callback) override;
++  void
++  GetGenericTypes(const DWARFDeclContext &context,
++                  llvm::function_ref<bool(DWARFDIE die)> callback) override;
+   void GetNamespaces(ConstString name,
+                      llvm::function_ref<bool(DWARFDIE die)> callback) override;
+   void GetFunctions(ConstString name, SymbolFileDWARF &dwarf,
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.cpp b/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.cpp
+index e8fbd5dd664b..0efb62233b9b 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.cpp
++++ b/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.cpp
+@@ -128,6 +128,7 @@ void ManualDWARFIndex::Index() {
+   pool.async(finalize_fn, &IndexSet::objc_class_selectors);
+   pool.async(finalize_fn, &IndexSet::globals);
+   pool.async(finalize_fn, &IndexSet::types);
++  pool.async(finalize_fn, &IndexSet::generic_types);
+   pool.async(finalize_fn, &IndexSet::namespaces);
+   pool.wait();
+ 
+@@ -315,8 +316,17 @@ void ManualDWARFIndex::IndexUnitImpl(DWARFUnit &unit,
+     case DW_TAG_typedef:
+     case DW_TAG_union_type:
+     case DW_TAG_unspecified_type:
+-      if (name && !is_declaration)
+-        set.types.Insert(ConstString(name), ref);
++      if (name && !is_declaration) {
++        ConstString name_cs(name);
++        set.types.Insert(name_cs, ref);
++        if (Language::LanguageIsCPlusPlus(cu_language) && !name_cs.IsEmpty() &&
++            name[name_cs.GetLength() - 1] == '>') {
++          const char *angle_bracket_pos = strchr(name, '<');
++          assert(angle_bracket_pos && "missing matching angle bracket");
++          size_t generic_length = angle_bracket_pos - name;
++          set.generic_types.Insert(ConstString(name, generic_length), ref);
++        }
++      }
+       if (mangled_cstr && !is_declaration)
+         set.types.Insert(ConstString(mangled_cstr), ref);
+       break;
+@@ -402,6 +412,21 @@ void ManualDWARFIndex::GetTypes(
+                    DIERefCallback(callback, llvm::StringRef(name)));
+ }
+ 
++void ManualDWARFIndex::GetGenericTypes(
++    ConstString name, llvm::function_ref<bool(DWARFDIE die)> callback) {
++  Index();
++  m_set.generic_types.Find(name, DIERefCallback(callback, name.GetStringRef()));
++}
++
++void ManualDWARFIndex::GetGenericTypes(
++    const DWARFDeclContext &context,
++    llvm::function_ref<bool(DWARFDIE die)> callback) {
++  Index();
++  auto name = context[0].name;
++  m_set.generic_types.Find(ConstString(name),
++                           DIERefCallback(callback, llvm::StringRef(name)));
++}
++
+ void ManualDWARFIndex::GetNamespaces(
+     ConstString name, llvm::function_ref<bool(DWARFDIE die)> callback) {
+   Index();
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.h b/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.h
+index 5c5e43de9ca6..685b279067b1 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.h
++++ b/lldb/source/Plugins/SymbolFile/DWARF/ManualDWARFIndex.h
+@@ -44,6 +44,12 @@ public:
+                 llvm::function_ref<bool(DWARFDIE die)> callback) override;
+   void GetTypes(const DWARFDeclContext &context,
+                 llvm::function_ref<bool(DWARFDIE die)> callback) override;
++  void
++  GetGenericTypes(ConstString name,
++                  llvm::function_ref<bool(DWARFDIE die)> callback) override;
++  void
++  GetGenericTypes(const DWARFDeclContext &context,
++                  llvm::function_ref<bool(DWARFDIE die)> callback) override;
+   void GetNamespaces(ConstString name,
+                      llvm::function_ref<bool(DWARFDIE die)> callback) override;
+   void GetFunctions(ConstString name, SymbolFileDWARF &dwarf,
+@@ -64,6 +70,7 @@ public:
+     NameToDIE objc_class_selectors;
+     NameToDIE globals;
+     NameToDIE types;
++    NameToDIE generic_types;
+     NameToDIE namespaces;
+     bool Decode(const DataExtractor &data, lldb::offset_t *offset_ptr);
+     void Encode(DataEncoder &encoder) const;
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp
+index 027a4caf5555..363b3e73f9ab 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp
++++ b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp
+@@ -2407,7 +2407,7 @@ void SymbolFileDWARF::FindTypes(
+     ConstString name, const CompilerDeclContext &parent_decl_ctx,
+     uint32_t max_matches,
+     llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-    TypeMap &types) {
++    TypeMap &types, bool include_templates) {
+   std::lock_guard<std::recursive_mutex> guard(GetModuleMutex());
+   // Make sure we haven't already searched this SymbolFile before.
+   if (!searched_symbol_files.insert(this).second)
+@@ -2448,6 +2448,16 @@ void SymbolFileDWARF::FindTypes(
+     return types.GetSize() < max_matches;
+   });
+ 
++  m_index->GetGenericTypes(name, [&](DWARFDIE die) {
++    if (!DIEInDeclContext(parent_decl_ctx, die))
++      return true; // The containing decl contexts don't match
++    if (Type *matching_type = ResolveType(die, true, true)) {
++      types.InsertUnique(matching_type->shared_from_this());
++    }
++
++    return types.GetSize() < max_matches;
++  });
++
+   // Next search through the reachable Clang modules. This only applies for
+   // DWARF objects compiled with -gmodules that haven't been processed by
+   // dsymutil.
+@@ -2458,7 +2468,7 @@ void SymbolFileDWARF::FindTypes(
+       if (ModuleSP external_module_sp = pair.second)
+         if (SymbolFile *sym_file = external_module_sp->GetSymbolFile())
+           sym_file->FindTypes(name, parent_decl_ctx, max_matches,
+-                              searched_symbol_files, types);
++                              searched_symbol_files, types, include_templates);
+   }
+ 
+   if (log && types.GetSize()) {
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h
+index f84a78620e17..7484ac8f1498 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h
++++ b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h
+@@ -196,7 +196,7 @@ public:
+             const lldb_private::CompilerDeclContext &parent_decl_ctx,
+             uint32_t max_matches,
+             llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-            lldb_private::TypeMap &types) override;
++            lldb_private::TypeMap &types, bool include_templates) override;
+ 
+   void FindTypes(llvm::ArrayRef<lldb_private::CompilerContext> pattern,
+                  lldb_private::LanguageSet languages,
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.cpp b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.cpp
+index 08bfe37fd92f..ceffa6cc35fe 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.cpp
++++ b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.cpp
+@@ -1172,11 +1172,11 @@ void SymbolFileDWARFDebugMap::FindTypes(
+     ConstString name, const CompilerDeclContext &parent_decl_ctx,
+     uint32_t max_matches,
+     llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-    TypeMap &types) {
++    TypeMap &types, bool include_templates) {
+   std::lock_guard<std::recursive_mutex> guard(GetModuleMutex());
+   ForEachSymbolFile([&](SymbolFileDWARF *oso_dwarf) -> bool {
+     oso_dwarf->FindTypes(name, parent_decl_ctx, max_matches,
+-                         searched_symbol_files, types);
++                         searched_symbol_files, types, include_templates);
+     return types.GetSize() >= max_matches;
+   });
+ }
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.h b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.h
+index 2a6232a501b4..830ce5d4565c 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.h
++++ b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.h
+@@ -122,7 +122,7 @@ public:
+             const lldb_private::CompilerDeclContext &parent_decl_ctx,
+             uint32_t max_matches,
+             llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-            lldb_private::TypeMap &types) override;
++            lldb_private::TypeMap &types, bool include_templates) override;
+   void
+   FindTypes(llvm::ArrayRef<lldb_private::CompilerContext> context,
+             lldb_private::LanguageSet languages,
+diff --git a/lldb/source/Plugins/SymbolFile/NativePDB/SymbolFileNativePDB.cpp b/lldb/source/Plugins/SymbolFile/NativePDB/SymbolFileNativePDB.cpp
+index a035a791f868..de70295b7520 100644
+--- a/lldb/source/Plugins/SymbolFile/NativePDB/SymbolFileNativePDB.cpp
++++ b/lldb/source/Plugins/SymbolFile/NativePDB/SymbolFileNativePDB.cpp
+@@ -1553,7 +1553,7 @@ void SymbolFileNativePDB::FindFunctions(const RegularExpression &regex,
+ void SymbolFileNativePDB::FindTypes(
+     ConstString name, const CompilerDeclContext &parent_decl_ctx,
+     uint32_t max_matches, llvm::DenseSet<SymbolFile *> &searched_symbol_files,
+-    TypeMap &types) {
++    TypeMap &types, bool include_templates) {
+   std::lock_guard<std::recursive_mutex> guard(GetModuleMutex());
+   if (!name)
+     return;
+diff --git a/lldb/source/Plugins/SymbolFile/NativePDB/SymbolFileNativePDB.h b/lldb/source/Plugins/SymbolFile/NativePDB/SymbolFileNativePDB.h
+index f1b6e34ca346..142247c66a7d 100644
+--- a/lldb/source/Plugins/SymbolFile/NativePDB/SymbolFileNativePDB.h
++++ b/lldb/source/Plugins/SymbolFile/NativePDB/SymbolFileNativePDB.h
+@@ -141,7 +141,7 @@ public:
+   void FindTypes(ConstString name, const CompilerDeclContext &parent_decl_ctx,
+                  uint32_t max_matches,
+                  llvm::DenseSet<SymbolFile *> &searched_symbol_files,
+-                 TypeMap &types) override;
++                 TypeMap &types, bool include_templates) override;
+ 
+   void FindTypes(llvm::ArrayRef<CompilerContext> pattern, LanguageSet languages,
+                  llvm::DenseSet<SymbolFile *> &searched_symbol_files,
+diff --git a/lldb/source/Plugins/SymbolFile/PDB/SymbolFilePDB.cpp b/lldb/source/Plugins/SymbolFile/PDB/SymbolFilePDB.cpp
+index a40b6ec9a635..a62d19b34581 100644
+--- a/lldb/source/Plugins/SymbolFile/PDB/SymbolFilePDB.cpp
++++ b/lldb/source/Plugins/SymbolFile/PDB/SymbolFilePDB.cpp
+@@ -1427,7 +1427,7 @@ void SymbolFilePDB::FindTypes(
+     lldb_private::ConstString name, const CompilerDeclContext &parent_decl_ctx,
+     uint32_t max_matches,
+     llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-    lldb_private::TypeMap &types) {
++    lldb_private::TypeMap &types, bool include_templates) {
+   std::lock_guard<std::recursive_mutex> guard(GetModuleMutex());
+   if (!name)
+     return;
+diff --git a/lldb/source/Plugins/SymbolFile/PDB/SymbolFilePDB.h b/lldb/source/Plugins/SymbolFile/PDB/SymbolFilePDB.h
+index 69f1d268edfd..601202158987 100644
+--- a/lldb/source/Plugins/SymbolFile/PDB/SymbolFilePDB.h
++++ b/lldb/source/Plugins/SymbolFile/PDB/SymbolFilePDB.h
+@@ -140,7 +140,7 @@ public:
+             const lldb_private::CompilerDeclContext &parent_decl_ctx,
+             uint32_t max_matches,
+             llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-            lldb_private::TypeMap &types) override;
++            lldb_private::TypeMap &types, bool include_templates) override;
+ 
+   void FindTypes(llvm::ArrayRef<lldb_private::CompilerContext> pattern,
+                  lldb_private::LanguageSet languages,
+diff --git a/lldb/source/Symbol/SymbolFile.cpp b/lldb/source/Symbol/SymbolFile.cpp
+index b85901af4d67..d8ed0e6fe993 100644
+--- a/lldb/source/Symbol/SymbolFile.cpp
++++ b/lldb/source/Symbol/SymbolFile.cpp
+@@ -131,7 +131,7 @@ void SymbolFile::FindTypes(
+     ConstString name, const CompilerDeclContext &parent_decl_ctx,
+     uint32_t max_matches,
+     llvm::DenseSet<lldb_private::SymbolFile *> &searched_symbol_files,
+-    TypeMap &types) {}
++    TypeMap &types, bool include_templates) {}
+ 
+ void SymbolFile::FindTypes(llvm::ArrayRef<CompilerContext> pattern,
+                            LanguageSet languages,
+diff --git a/lldb/source/Symbol/TypeMap.cpp b/lldb/source/Symbol/TypeMap.cpp
+index 2cda9b6c27d1..8200f3589184 100644
+--- a/lldb/source/Symbol/TypeMap.cpp
++++ b/lldb/source/Symbol/TypeMap.cpp
+@@ -142,6 +142,27 @@ void TypeMap::RemoveMismatchedTypes(const char *qualified_typename,
+                                exact_match);
+ }
+ 
++namespace {
++
++bool TypeBasenamesMatch(const std::string &type_basename,
++                        llvm::StringRef match_type_basename,
++                        bool is_instantiation) {
++  if (match_type_basename == type_basename)
++    return true;
++  // If the basenames do not match, let us see if {match_type_basename} could
++  // be an instantiation of {type_basename}.
++  if (is_instantiation)
++    return false;
++  size_t basename_size = type_basename.size();
++  if (match_type_basename.size() <= basename_size)
++    return false;
++  if (match_type_basename[basename_size] != '<')
++    return false;
++  return match_type_basename.take_front(basename_size) == type_basename;
++}
++
++} // namespace
++
+ void TypeMap::RemoveMismatchedTypes(const std::string &type_scope,
+                                     const std::string &type_basename,
+                                     TypeClass type_class, bool exact_match) {
+@@ -153,6 +174,8 @@ void TypeMap::RemoveMismatchedTypes(const std::string &type_scope,
+ 
+   iterator pos, end = m_types.end();
+ 
++  bool is_instantiation = type_basename.find('<') != std::string::npos;
++
+   for (pos = m_types.begin(); pos != end; ++pos) {
+     Type *the_type = pos->second.get();
+     bool keep_match = false;
+@@ -172,7 +195,8 @@ void TypeMap::RemoveMismatchedTypes(const std::string &type_scope,
+       if (Type::GetTypeScopeAndBasename(match_type_name, match_type_scope,
+                                         match_type_basename,
+                                         match_type_class)) {
+-        if (match_type_basename == type_basename) {
++        if (TypeBasenamesMatch(type_basename, match_type_basename,
++                               is_instantiation)) {
+           const size_t type_scope_size = type_scope.size();
+           const size_t match_type_scope_size = match_type_scope.size();
+           if (exact_match || (type_scope_size == match_type_scope_size)) {
+@@ -204,7 +228,9 @@ void TypeMap::RemoveMismatchedTypes(const std::string &type_scope,
+       } else {
+         // The type we are currently looking at doesn't exists in a namespace
+         // or class, so it only matches if there is no type scope...
+-        keep_match = type_scope.empty() && type_basename == match_type_name;
++        keep_match = type_scope.empty() &&
++                     TypeBasenamesMatch(type_basename, match_type_name,
++                                        is_instantiation);
+       }
+     }
+ 
+diff --git a/lldb/source/Target/Target.cpp b/lldb/source/Target/Target.cpp
+index 6d33db6554d2..0321bbc45b38 100644
+--- a/lldb/source/Target/Target.cpp
++++ b/lldb/source/Target/Target.cpp
+@@ -3750,9 +3750,9 @@ public:
+ };
+ 
+ // TargetProperties
++
+ #define LLDB_PROPERTIES_target_experimental
+ #include "TargetProperties.inc"
+-
+ enum {
+ #define LLDB_PROPERTIES_target_experimental
+ #include "TargetPropertiesEnum.inc"
+@@ -3867,7 +3867,29 @@ void TargetProperties::SetInjectLocalVariables(ExecutionContext *exe_ctx,
+       exp_property->GetValue()->GetAsProperties();
+   if (exp_values)
+     exp_values->SetPropertyAtIndexAsBoolean(exe_ctx, ePropertyInjectLocalVars,
+-                                            true);
++                                            b);
++}
++
++bool TargetProperties::GetInferClassTemplates() const {
++  const Property *exp_property = m_collection_sp->GetPropertyAtIndex(
++      nullptr, false, ePropertyExperimental);
++  OptionValueProperties *exp_values =
++      exp_property->GetValue()->GetAsProperties();
++  if (exp_values)
++    return exp_values->GetPropertyAtIndexAsBoolean(
++        nullptr, ePropertyInferClassTemplates, true);
++  else
++    return true;
++}
++
++void TargetProperties::SetInferClassTemplates(bool b) {
++  const Property *exp_property = m_collection_sp->GetPropertyAtIndex(
++      nullptr, false, ePropertyExperimental);
++  OptionValueProperties *exp_values =
++      exp_property->GetValue()->GetAsProperties();
++  if (exp_values)
++    exp_values->SetPropertyAtIndexAsBoolean(nullptr,
++                                            ePropertyInferClassTemplates, b);
+ }
+ 
+ ArchSpec TargetProperties::GetDefaultArchitecture() const {
+diff --git a/lldb/source/Target/TargetProperties.td b/lldb/source/Target/TargetProperties.td
+index 063ba0a6c25a..2ec69cc20d64 100644
+--- a/lldb/source/Target/TargetProperties.td
++++ b/lldb/source/Target/TargetProperties.td
+@@ -4,6 +4,9 @@ let Definition = "target_experimental" in {
+   def InjectLocalVars : Property<"inject-local-vars", "Boolean">,
+     Global, DefaultTrue,
+     Desc<"If true, inject local variables explicitly into the expression text. This will fix symbol resolution when there are name collisions between ivars and local variables. But it can make expressions run much more slowly.">;
++  def InferClassTemplates : Property<"infer-class-templates", "Boolean">,
++    Global, DefaultFalse,
++    Desc<"If true, infer class templates from template instantiations and instantiate templates lazily during expression evaluation.">;
+ }
+ 
+ let Definition = "target" in {
+diff --git a/lldb/test/API/lang/cpp/class-template-instantiation/Makefile b/lldb/test/API/lang/cpp/class-template-instantiation/Makefile
+new file mode 100644
+index 000000000000..99998b20bcb0
+--- /dev/null
++++ b/lldb/test/API/lang/cpp/class-template-instantiation/Makefile
+@@ -0,0 +1,3 @@
++CXX_SOURCES := main.cpp
++
++include Makefile.rules
+diff --git a/lldb/test/API/lang/cpp/class-template-instantiation/TestClassTemplateInstantiation.py b/lldb/test/API/lang/cpp/class-template-instantiation/TestClassTemplateInstantiation.py
+new file mode 100644
+index 000000000000..7b3c91a556f6
+--- /dev/null
++++ b/lldb/test/API/lang/cpp/class-template-instantiation/TestClassTemplateInstantiation.py
+@@ -0,0 +1,70 @@
++"""
++Test that the expression evaluator can instantiate templates. We should be able
++to instantiate at least those templates that are instantiated in the symbol
++file.
++"""
++
++import lldb
++from lldbsuite.test.decorators import *
++from lldbsuite.test.lldbtest import *
++from lldbsuite.test import lldbutil
++
++
++class TestClassTemplateInstantiation(TestBase):
++    mydir = TestBase.compute_mydir(__file__)
++
++    @skipIf(debug_info=no_match(["dwarf"]),oslist=no_match(["macosx"]))
++    def test_instantiate_template_from_function(self):
++        self.runCmd("settings set target.experimental.infer-class-templates true")
++        self.main_source_file = lldb.SBFileSpec("main.cpp")
++        self.build()
++        (_, _, thread, _) = lldbutil.run_to_source_breakpoint(self, "// break main", self.main_source_file)
++        frame = thread.GetSelectedFrame()
++
++        expr_result = frame.EvaluateExpression("foo<char>::x")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "43")
++
++        expr_result = frame.EvaluateExpression("foo<int>::x")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "46")
++
++        expr_result = frame.EvaluateExpression("sizeof(A::bar<short>)")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "2")
++
++        expr_result = frame.EvaluateExpression("sizeof(A::bar<int>)")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "4")
++
++        expr_result = frame.EvaluateExpression("sizeof(S<S<S<int>>>)")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "4")
++
++        expr_result = frame.EvaluateExpression("sizeof(S<S<S<double>>>)")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "8")
++
++    @skipIf(debug_info=no_match(["dwarf"]),oslist=no_match(["macosx"]))
++    def test_instantiate_template_from_method(self):
++        self.runCmd("settings set target.experimental.infer-class-templates true")
++        self.main_source_file = lldb.SBFileSpec("main.cpp")
++        self.build()
++        (_, _, thread, _) = lldbutil.run_to_source_breakpoint(self, "// break method", self.main_source_file)
++        frame = thread.GetSelectedFrame()
++
++        expr_result = frame.EvaluateExpression("sizeof(bar<short>)")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "2")
++
++        expr_result = frame.EvaluateExpression("sizeof(bar<int>)")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "4")
++
++        expr_result = frame.EvaluateExpression("::foo<char>::x")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "43")
++
++        expr_result = frame.EvaluateExpression("foo<int>::x")
++        self.assertTrue(expr_result.IsValid())
++        self.assertEqual(expr_result.GetValue(), "46")
+diff --git a/lldb/test/API/lang/cpp/class-template-instantiation/main.cpp b/lldb/test/API/lang/cpp/class-template-instantiation/main.cpp
+new file mode 100644
+index 000000000000..c2793c7b6d5e
+--- /dev/null
++++ b/lldb/test/API/lang/cpp/class-template-instantiation/main.cpp
+@@ -0,0 +1,27 @@
++template <typename T> struct foo { static int x; };
++
++template <typename T> int foo<T>::x = 42 + sizeof(T);
++
++template <typename T>
++struct S {
++  T t;
++};
++
++struct A {
++  template <typename T> struct bar { T f; };
++
++  bar<int> bi;
++  bar<short> bs;
++  S<S<S<int>>> si;
++  S<S<S<double>>> sd;
++
++  int size() {
++    return sizeof(bar<int>) + sizeof(bar<short>); // break method
++  }
++};
++
++int main() {
++  A a;
++  a.size();
++  return foo<char>::x + foo<int>::x; // break main
++}
+diff --git a/lldb/tools/lldb-test/lldb-test.cpp b/lldb/tools/lldb-test/lldb-test.cpp
+index 1109a6bb6558..44801ff38ff3 100644
+--- a/lldb/tools/lldb-test/lldb-test.cpp
++++ b/lldb/tools/lldb-test/lldb-test.cpp
+@@ -540,7 +540,7 @@ Error opts::symbols::findTypes(lldb_private::Module &Module) {
+   TypeMap Map;
+   if (!Name.empty())
+     Symfile.FindTypes(ConstString(Name), ContextPtr, UINT32_MAX, SearchedFiles,
+-                      Map);
++                      Map, false);
+   else
+     Module.FindTypes(parseCompilerContext(), languages, SearchedFiles, Map);
+ 
+diff --git a/lldb/unittests/SymbolFile/PDB/SymbolFilePDBTests.cpp b/lldb/unittests/SymbolFile/PDB/SymbolFilePDBTests.cpp
+index 7c7d1902eefb..a080724a0009 100644
+--- a/lldb/unittests/SymbolFile/PDB/SymbolFilePDBTests.cpp
++++ b/lldb/unittests/SymbolFile/PDB/SymbolFilePDBTests.cpp
+@@ -365,7 +365,7 @@ TEST_F(SymbolFilePDBTests, TestSimpleClassTypes) {
+   llvm::DenseSet<SymbolFile *> searched_files;
+   TypeMap results;
+   symfile->FindTypes(ConstString("Class"), CompilerDeclContext(), 0,
+-                     searched_files, results);
++                     searched_files, results, false);
+   EXPECT_EQ(1u, results.GetSize());
+   lldb::TypeSP udt_type = results.GetTypeAtIndex(0);
+   EXPECT_EQ(ConstString("Class"), udt_type->GetName());
+@@ -395,7 +395,7 @@ TEST_F(SymbolFilePDBTests, TestNestedClassTypes) {
+   EXPECT_NE(nullptr, clang_ast_ctx);
+ 
+   symfile->FindTypes(ConstString("Class"), CompilerDeclContext(), 0,
+-                     searched_files, results);
++                     searched_files, results, false);
+   EXPECT_EQ(1u, results.GetSize());
+ 
+   auto Class = results.GetTypeAtIndex(0);
+@@ -416,7 +416,7 @@ TEST_F(SymbolFilePDBTests, TestNestedClassTypes) {
+   TypeMap more_results;
+   auto ClassCompilerDeclCtx = CompilerDeclContext(clang_ast_ctx, ClassDeclCtx);
+   symfile->FindTypes(ConstString("NestedClass"), ClassCompilerDeclCtx, 0,
+-                     searched_files, more_results);
++                     searched_files, more_results, false);
+   EXPECT_LE(1u, more_results.GetSize());
+ 
+   lldb::TypeSP udt_type = more_results.GetTypeAtIndex(0);
+@@ -460,7 +460,7 @@ TEST_F(SymbolFilePDBTests, TestClassInNamespace) {
+   EXPECT_TRUE(ns_namespace.IsValid());
+ 
+   symfile->FindTypes(ConstString("NSClass"), ns_namespace, 0, searched_files,
+-                     results);
++                     results, false);
+   EXPECT_EQ(1u, results.GetSize());
+ 
+   lldb::TypeSP udt_type = results.GetTypeAtIndex(0);
+@@ -486,7 +486,7 @@ TEST_F(SymbolFilePDBTests, TestEnumTypes) {
+   for (auto Enum : EnumsToCheck) {
+     TypeMap results;
+     symfile->FindTypes(ConstString(Enum), CompilerDeclContext(), 0,
+-                       searched_files, results);
++                       searched_files, results, false);
+     EXPECT_EQ(1u, results.GetSize());
+     lldb::TypeSP enum_type = results.GetTypeAtIndex(0);
+     EXPECT_EQ(ConstString(Enum), enum_type->GetName());
+@@ -535,7 +535,7 @@ TEST_F(SymbolFilePDBTests, TestTypedefs) {
+   for (auto Typedef : TypedefsToCheck) {
+     TypeMap results;
+     symfile->FindTypes(ConstString(Typedef), CompilerDeclContext(), 0,
+-                       searched_files, results);
++                       searched_files, results, false);
+     EXPECT_EQ(1u, results.GetSize());
+     lldb::TypeSP typedef_type = results.GetTypeAtIndex(0);
+     EXPECT_EQ(ConstString(Typedef), typedef_type->GetName());
+@@ -580,7 +580,7 @@ TEST_F(SymbolFilePDBTests, TestMaxMatches) {
+   llvm::DenseSet<SymbolFile *> searched_files;
+   TypeMap results;
+   const ConstString name("ClassTypedef");
+-  symfile->FindTypes(name, CompilerDeclContext(), 0, searched_files, results);
++  symfile->FindTypes(name, CompilerDeclContext(), 0, searched_files, results, false);
+   // Try to limit ourselves from 1 to 10 results, otherwise we could
+   // be doing this thousands of times.  The idea is just to make sure
+   // that for a variety of values, the number of limited results
+@@ -590,7 +590,7 @@ TEST_F(SymbolFilePDBTests, TestMaxMatches) {
+   for (uint32_t i = 1; i <= iterations; ++i) {
+     TypeMap more_results;
+     symfile->FindTypes(name, CompilerDeclContext(), i, searched_files,
+-                       more_results);
++                       more_results, false);
+     uint32_t num_limited_results = more_results.GetSize();
+     EXPECT_EQ(i, num_limited_results);
+   }
+@@ -606,7 +606,7 @@ TEST_F(SymbolFilePDBTests, TestNullName) {
+   llvm::DenseSet<SymbolFile *> searched_files;
+   TypeMap results;
+   symfile->FindTypes(ConstString(), CompilerDeclContext(), 0, searched_files,
+-                     results);
++                     results, false);
+   EXPECT_EQ(0u, results.GetSize());
+ }
+ 
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

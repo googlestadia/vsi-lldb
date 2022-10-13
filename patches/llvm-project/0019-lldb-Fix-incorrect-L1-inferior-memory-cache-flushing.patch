@@ -1,0 +1,44 @@
+From 56882a0c2b0d1580650e462a5d37fb7c229450f4 Mon Sep 17 00:00:00 2001
+From: Jaroslav Sevcik <jarin@google.com>
+Date: Tue, 14 Apr 2020 17:22:59 +0200
+Subject: [lldb] Fix incorrect L1 inferior memory cache flushing
+
+The L1 memory cache flushing is incorrect. For instance, if the L1 cache
+contains two chunks (10, 10) and (30, 10) and we call
+MemoryCache::Flush(25, 10), the current code does not flush anything
+(because it just tries to flush the previous range (10, 10) and if that
+is not intersecting, it will bail out).
+
+With this patch, if the previous chunk is not overlapping, we still try
+the next chunk, and only if that one is not overlapping, we bail out.
+
+Patch with details: https://reviews.llvm.org/D77765 (the patch was
+abandoned because of disagreement on testing, we do not include the test
+here)
+
+---
+ lldb/source/Target/Memory.cpp | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/lldb/source/Target/Memory.cpp b/lldb/source/Target/Memory.cpp
+index 806e92aa4ed5..4ae155b22f65 100644
+--- a/lldb/source/Target/Memory.cpp
++++ b/lldb/source/Target/Memory.cpp
+@@ -60,7 +60,13 @@ void MemoryCache::Flush(addr_t addr, size_t size) {
+     AddrRange flush_range(addr, size);
+     BlockMap::iterator pos = m_L1_cache.upper_bound(addr);
+     if (pos != m_L1_cache.begin()) {
+-      --pos;
++      // If we are not in the beginning, the previous range might be
++      // intersecting.
++      BlockMap::iterator previous = pos;
++      previous--;
++      AddrRange chunk_range(previous->first, previous->second->GetByteSize());
++      if (chunk_range.DoesIntersect(flush_range))
++          m_L1_cache.erase(previous);
+     }
+     while (pos != m_L1_cache.end()) {
+       AddrRange chunk_range(pos->first, pos->second->GetByteSize());
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

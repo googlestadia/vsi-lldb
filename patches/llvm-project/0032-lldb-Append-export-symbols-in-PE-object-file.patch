@@ -1,0 +1,124 @@
+From 20324980c9f7c599a5485a7d03512b4b8a08ede1 Mon Sep 17 00:00:00 2001
+From: Jaroslav Sevcik <jarin@google.com>
+Date: Mon, 14 Jun 2021 22:15:52 +0200
+Subject: [lldb] Append export symbols in PE object file
+
+Without this change, export symbols overwrite COFF
+symbol table. Since MinGW uses COFF symbol tables,
+this will result in broken stack traces for MinGW
+compiled binaries.
+
+With this change, we simply append export symbols
+to COFF symbols.
+
+---
+ .../ObjectFile/PECOFF/ObjectFilePECOFF.cpp    | 13 ++++---
+ lldb/test/API/windows/export_symtab/Makefile  |  4 +++
+ .../windows/export_symtab/TestExportSymtab.py | 35 +++++++++++++++++++
+ lldb/test/API/windows/export_symtab/main.cpp  |  9 +++++
+ 4 files changed, 56 insertions(+), 5 deletions(-)
+ create mode 100644 lldb/test/API/windows/export_symtab/Makefile
+ create mode 100644 lldb/test/API/windows/export_symtab/TestExportSymtab.py
+ create mode 100644 lldb/test/API/windows/export_symtab/main.cpp
+
+diff --git a/lldb/source/Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.cpp b/lldb/source/Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.cpp
+index f69f3c300ae7..4e2462ae1721 100644
+--- a/lldb/source/Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.cpp
++++ b/lldb/source/Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.cpp
+@@ -681,7 +681,9 @@ void ObjectFilePECOFF::ParseSymtab(Symtab &symtab) {
+     lldb::offset_t name_ordinal_offset =
+         export_table.address_of_name_ordinals - data_start;
+ 
+-    Symbol *symbols = symtab.Resize(export_table.number_of_names);
++    size_t first_export_symbol = m_symtab_up->GetNumSymbols();
++    Symbol *symbols = m_symtab_up->Resize(first_export_symbol +
++                                          export_table.number_of_names);
+ 
+     std::string symbol_name;
+ 
+@@ -702,10 +704,11 @@ void ObjectFilePECOFF::ParseSymtab(Symtab &symtab) {
+ 
+       Address symbol_addr(m_coff_header_opt.image_base + function_rva,
+                           sect_list);
+-      symbols[i].GetMangled().SetValue(ConstString(symbol_name.c_str()));
+-      symbols[i].GetAddressRef() = symbol_addr;
+-      symbols[i].SetType(lldb::eSymbolTypeCode);
+-      symbols[i].SetDebug(true);
++      Symbol &symbol = symbols[first_export_symbol + i];
++      symbol.GetMangled().SetValue(ConstString(symbol_name.c_str()));
++      symbol.GetAddressRef() = symbol_addr;
++      symbol.SetType(lldb::eSymbolTypeCode);
++      symbol.SetDebug(true);
+     }
+   }
+ }
+diff --git a/lldb/test/API/windows/export_symtab/Makefile b/lldb/test/API/windows/export_symtab/Makefile
+new file mode 100644
+index 000000000000..2ef04b3da442
+--- /dev/null
++++ b/lldb/test/API/windows/export_symtab/Makefile
+@@ -0,0 +1,4 @@
++CXX_SOURCES := main.cpp
++LD_EXTRAS := -Wl,-debug:symtab  # Generate COFF symtab.
++
++include Makefile.rules
+diff --git a/lldb/test/API/windows/export_symtab/TestExportSymtab.py b/lldb/test/API/windows/export_symtab/TestExportSymtab.py
+new file mode 100644
+index 000000000000..13842dc12d7f
+--- /dev/null
++++ b/lldb/test/API/windows/export_symtab/TestExportSymtab.py
+@@ -0,0 +1,35 @@
++"""
++Test that export table does not overwrite COFF symbols (on Windows).
++"""
++
++import lldb
++import lldbsuite.test.lldbutil as lldbutil
++from lldbsuite.test.decorators import *
++from lldbsuite.test.lldbtest import *
++
++
++class TestExportSymtab(TestBase):
++
++    mydir = TestBase.compute_mydir(__file__)
++
++    # If your test case doesn't stress debug info, the
++    # set this to true.  That way it won't be run once for
++    # each debug info format.
++    NO_DEBUG_INFO_TESTCASE = True
++
++    @skipIf(oslist=no_match(["windows"]))
++    @skipIf(archs=no_match(["x86_64"]))
++    def test_export_symtab(self):
++        self.build()
++        exe = self.getBuildArtifact("a.out")
++
++        target = self.dbg.CreateTarget(exe)
++        error = lldb.SBError()
++        launch_info = lldb.SBLaunchInfo(None)
++        process = target.Launch(launch_info, error)
++
++        thread = process.GetSelectedThread()
++        # Verify that the stack trace contains correct names of the symbols.
++        self.assertEqual("int f(void)", thread.frames[0].GetFunctionName())
++        self.assertEqual("int g(void)", thread.frames[1].GetFunctionName())
++        self.assertEqual("main", thread.frames[2].GetFunctionName())
+\ No newline at end of file
+diff --git a/lldb/test/API/windows/export_symtab/main.cpp b/lldb/test/API/windows/export_symtab/main.cpp
+new file mode 100644
+index 000000000000..7346fd00c73e
+--- /dev/null
++++ b/lldb/test/API/windows/export_symtab/main.cpp
+@@ -0,0 +1,9 @@
++// Put function f into the export table.
++__declspec(dllexport) int f() {
++  __asm__("int3;");
++  return 42;
++}
++
++int g() { return f(); }
++
++int main() { return g(); }
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

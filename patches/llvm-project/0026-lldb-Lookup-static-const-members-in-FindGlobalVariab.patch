@@ -1,0 +1,259 @@
+From 6dbb57255a4c418a35dce2269209b761a8a1c087 Mon Sep 17 00:00:00 2001
+From: Levon Ter-Grigoryan <patrios@google.com>
+Date: Thu, 4 Mar 2021 15:01:59 +0100
+Subject: [lldb] Lookup static const members in FindGlobalVariables
+
+Static const members initialized inside a class definition might not have a corresponding DW_TAG_variable, so they're not indexed by ManualDWARFIndex.
+
+Add an additional lookup in FindGlobalVariables. Try looking up the enclosing type (e.g. foo::bar for foo::bar::A) and then searching for a static const member (A) within this type.
+
+Differential revision: https://reviews.llvm.org/D92643
+
+---
+ .../SymbolFile/DWARF/SymbolFileDWARF.cpp      | 126 ++++++++++++++++++
+ .../SymbolFile/DWARF/SymbolFileDWARF.h        |   4 +
+ .../API/python_api/frame/globals/Makefile     |   3 +
+ .../frame/globals/TestTargetGlobals.py        |  42 ++++++
+ .../API/python_api/frame/globals/main.cpp     |  12 ++
+ 5 files changed, 187 insertions(+)
+ create mode 100644 lldb/test/API/python_api/frame/globals/Makefile
+ create mode 100644 lldb/test/API/python_api/frame/globals/TestTargetGlobals.py
+ create mode 100644 lldb/test/API/python_api/frame/globals/main.cpp
+
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp
+index 5b4ace9a37cc..d53167325bb1 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp
++++ b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp
+@@ -2195,6 +2195,48 @@ void SymbolFileDWARF::FindGlobalVariables(
+     return variables.GetSize() - original_size < max_matches;
+   });
+ 
++  // If we don't have enough matches and the variable context is not empty, try
++  // to resolve the context as a type and look for static const members.
++  if (variables.GetSize() - original_size < max_matches && !context.empty()) {
++    llvm::StringRef type_scope;
++    llvm::StringRef type_name;
++    TypeClass type_class;
++    if (!Type::GetTypeScopeAndBasename(context, type_scope, type_name,
++                                       type_class))
++      type_name = context;
++
++    m_index->GetTypes(ConstString(type_name), [&](DWARFDIE parent) {
++      llvm::StringRef parent_type_name = GetDWARFDeclContext(parent)
++                                             .GetQualifiedNameAsConstString()
++                                             .GetStringRef();
++
++      // This type is from another scope, skip it.
++      if (!parent_type_name.endswith(context))
++        return true;
++
++      auto *dwarf_cu = llvm::dyn_cast<DWARFCompileUnit>(parent.GetCU());
++      if (!dwarf_cu)
++        return true;
++
++      sc.comp_unit = GetCompUnitForDWARFCompUnit(*dwarf_cu);
++
++      for (DWARFDIE die = parent.GetFirstChild(); die.IsValid();
++           die = die.GetSibling()) {
++        // Try parsing the entry as a static const member.
++        if (auto var_sp = ParseStaticConstMemberDIE(sc, die)) {
++          if (var_sp->GetUnqualifiedName().GetStringRef() != basename)
++            continue;
++
++          // There can be only one member with a given name.
++          variables.AddVariableIfUnique(var_sp);
++          break;
++        }
++      }
++
++      return variables.GetSize() - original_size < max_matches;
++    });
++  }
++
+   // Return the number of variable that were appended to the list
+   const uint32_t num_matches = variables.GetSize() - original_size;
+   if (log && num_matches > 0) {
+@@ -3135,6 +3177,90 @@ size_t SymbolFileDWARF::ParseVariablesForContext(const SymbolContext &sc) {
+   return 0;
+ }
+ 
++VariableSP SymbolFileDWARF::ParseStaticConstMemberDIE(
++    const lldb_private::SymbolContext &sc, const DWARFDIE &die) {
++  if (die.GetDWARF() != this)
++    return die.GetDWARF()->ParseStaticConstMemberDIE(sc, die);
++
++  // Look only for members, ignore all other types of entries.
++  if (die.Tag() != DW_TAG_member)
++    return nullptr;
++
++  if (VariableSP var_sp = GetDIEToVariable()[die.GetDIE()])
++    return var_sp; // Already been parsed!
++
++  const char *name = nullptr;
++  const char *mangled = nullptr;
++  Declaration decl;
++  DWARFExpression location;
++  DWARFFormValue type_die_form;
++  DWARFFormValue const_value_form;
++
++  DWARFAttributes attributes;
++  const size_t num_attributes = die.GetAttributes(attributes);
++
++  for (size_t i = 0; i < num_attributes; ++i) {
++    dw_attr_t attr = attributes.AttributeAtIndex(i);
++    DWARFFormValue form_value;
++
++    if (!attributes.ExtractFormValueAtIndex(i, form_value))
++      continue;
++
++    switch (attr) {
++    case DW_AT_decl_file:
++      decl.SetFile(sc.comp_unit->GetSupportFiles().GetFileSpecAtIndex(
++          form_value.Unsigned()));
++      break;
++    case DW_AT_decl_line:
++      decl.SetLine(form_value.Unsigned());
++      break;
++    case DW_AT_decl_column:
++      decl.SetColumn(form_value.Unsigned());
++      break;
++    case DW_AT_name:
++      name = form_value.AsCString();
++      break;
++    case DW_AT_type:
++     type_die_form = form_value;
++      break;
++    case DW_AT_const_value:
++      const_value_form = form_value;
++      break;
++    }
++  }
++
++  // Look only for static const members with const values.
++  if (!DWARFFormValue::IsDataForm(const_value_form.Form()))
++    return nullptr;
++
++  SymbolFileTypeSP type_sp = std::make_shared<SymbolFileType>(
++      *this, GetUID(type_die_form.Reference()));
++
++  if (type_sp->GetType()) {
++    location.UpdateValue(const_value_form.Unsigned(),
++                         type_sp->GetType()->GetByteSize(nullptr).getValueOr(0),
++                         die.GetCU()->GetAddressByteSize());
++  }
++
++  if (Language::LanguageIsCPlusPlus(GetLanguage(*die.GetCU())))
++    mangled =
++        GetDWARFDeclContext(die).GetQualifiedNameAsConstString().GetCString();
++
++  ValueType scope = eValueTypeVariableGlobal;
++  Variable::RangeList scope_ranges;
++
++  VariableSP var_sp = std::make_shared<Variable>(
++      die.GetID(), name, mangled, type_sp, scope, sc.comp_unit, scope_ranges,
++      &decl, location, /*is_external*/ true, /*is_artificial*/ false,
++      /*is_static_member*/ true);
++  var_sp->SetLocationIsConstantValueData(true);
++
++  // Cache this variable, so we don't parse it over and over again.
++  GetDIEToVariable()[die.GetDIE()] = var_sp;
++
++  return var_sp;
++}
++
+ VariableSP SymbolFileDWARF::ParseVariableDIECached(const SymbolContext &sc,
+                                                    const DWARFDIE &die) {
+   if (!die)
+diff --git a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h
+index 7484ac8f1498..4edca40c53ad 100644
+--- a/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h
++++ b/lldb/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h
+@@ -384,6 +384,10 @@ protected:
+ 
+   lldb_private::Type *ResolveTypeUID(const DIERef &die_ref);
+ 
++  lldb::VariableSP
++  ParseStaticConstMemberDIE(const lldb_private::SymbolContext &sc,
++                            const DWARFDIE &die);
++
+   lldb::VariableSP ParseVariableDIE(const lldb_private::SymbolContext &sc,
+                                     const DWARFDIE &die,
+                                     const lldb::addr_t func_low_pc);
+diff --git a/lldb/test/API/python_api/frame/globals/Makefile b/lldb/test/API/python_api/frame/globals/Makefile
+new file mode 100644
+index 000000000000..99998b20bcb0
+--- /dev/null
++++ b/lldb/test/API/python_api/frame/globals/Makefile
+@@ -0,0 +1,3 @@
++CXX_SOURCES := main.cpp
++
++include Makefile.rules
+diff --git a/lldb/test/API/python_api/frame/globals/TestTargetGlobals.py b/lldb/test/API/python_api/frame/globals/TestTargetGlobals.py
+new file mode 100644
+index 000000000000..edbd97ceadaf
+--- /dev/null
++++ b/lldb/test/API/python_api/frame/globals/TestTargetGlobals.py
+@@ -0,0 +1,42 @@
++"""
++Test SBTarget::FindGlobalVariables API.
++"""
++
++from lldbsuite.test.decorators import *
++from lldbsuite.test.lldbtest import *
++
++class TargetAPITestCase(TestBase):
++
++    mydir = TestBase.compute_mydir(__file__)
++
++    @add_test_categories(['pyapi'])
++    def test_find_global_variables(self):
++        """Exercise SBTarget.FindGlobalVariables() API."""
++        self.build()
++
++        # Don't need to launch a process, since we're only interested in
++        # looking up global variables.
++        target = self.dbg.CreateTarget(self.getBuildArtifact())
++
++        def test_global_var(query, name, type_name, value):
++            value_list = target.FindGlobalVariables(query, 1)
++            self.assertEqual(value_list.GetSize(), 1)
++            var = value_list.GetValueAtIndex(0)
++            self.DebugSBValue(var)
++            self.assertTrue(var)
++            self.assertEqual(var.GetName(), name)
++            self.assertEqual(var.GetTypeName(), type_name)
++            self.assertEqual(var.GetValue(), value)
++
++        test_global_var(
++            "Vars::inline_static",
++            "Vars::inline_static", "double", "1.5")
++        test_global_var(
++            "Vars::static_constexpr",
++            "Vars::static_constexpr", "const int", "2")
++        test_global_var(
++            "Vars::static_const_out_out_class",
++            "Vars::static_const_out_out_class", "const int", "3")
++        test_global_var(
++            "global_var_of_char_type",
++            "::global_var_of_char_type", "char", "'X'")
+diff --git a/lldb/test/API/python_api/frame/globals/main.cpp b/lldb/test/API/python_api/frame/globals/main.cpp
+new file mode 100644
+index 000000000000..e2095e800826
+--- /dev/null
++++ b/lldb/test/API/python_api/frame/globals/main.cpp
+@@ -0,0 +1,12 @@
++class Vars {
++public:
++  inline static double inline_static = 1.5;
++  static constexpr int static_constexpr = 2;
++  static const int static_const_out_out_class;
++};
++
++const int Vars::static_const_out_out_class = 3;
++
++char global_var_of_char_type = 'X';
++
++int main() {}
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

@@ -1,0 +1,196 @@
+From 9c8ab6990ada00b2df0aa2b919a11a27381f9e85 Mon Sep 17 00:00:00 2001
+From: Levon Ter-Grigoryan <patrios@google.com>
+Date: Thu, 4 Mar 2021 17:24:55 +0100
+Subject: [lldb] Reset stop reason of all threads when resuming
+
+This patch makes the stop reason reset logic similar to MacOS'
+debugserver, where exceptions are reset for all threads when resuming
+process for stepping or continuing (see [[
+https://github.com/llvm/llvm-project/blob/96f3ea0d21b48ca088355db10d4d1a2e9bc9f884/lldb/tools/debugserver/source/MacOSX/MachThreadList.cpp#L433
+| MachThreadList::ProcessWillResume ]] and [[
+https://github.com/llvm/llvm-project/blob/96f3ea0d21b48ca088355db10d4d1a2e9bc9f884/lldb/tools/debugserver/source/MacOSX/MachThread.cpp#L363
+| MachThread::ThreadWillResume ]]).
+
+Resetting stop reasons on resume fixes problems where LLDB spuriously
+reports SIGTRAP signal stop reason for deleted breakpoints (both
+internal and public) and where  LLDB stops on an internal breakpoint
+while stepping over while a breakpoint is hit in another thread. See [[
+https://bugs.llvm.org/show_bug.cgi?id=45642 | PR45642 ]] for details.
+
+Differential Revision: https://reviews.llvm.org/D79308
+
+Note: This patch was landed upstream and reverted.
+Patch broke ARM64/AARCH64 debugging because of watchpoints.
+See: https://github.com/llvm/llvm-project/commit/587f81f54a3abab88fe9be5f113c74fc12655ee0
+
+Patch is safe for x86.
+
+---
+ .../Process/Linux/NativeProcessLinux.cpp      |  2 +
+ .../Process/Linux/NativeThreadLinux.cpp       |  3 +
+ .../Plugins/Process/Linux/NativeThreadLinux.h |  2 +
+ .../thread/break_step_other/Makefile          |  4 ++
+ .../TestThreadBreakStepOther.py               | 63 +++++++++++++++++++
+ .../thread/break_step_other/main.cpp          | 27 ++++++++
+ 6 files changed, 101 insertions(+)
+ create mode 100644 lldb/test/API/functionalities/thread/break_step_other/Makefile
+ create mode 100644 lldb/test/API/functionalities/thread/break_step_other/TestThreadBreakStepOther.py
+ create mode 100644 lldb/test/API/functionalities/thread/break_step_other/main.cpp
+
+diff --git a/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp b/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp
+index e4dec0e00ebe..42807be7a401 100644
+--- a/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp
++++ b/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp
+@@ -927,6 +927,8 @@ Status NativeProcessLinux::Resume(const ResumeActionList &resume_actions) {
+     if (action == nullptr) {
+       LLDB_LOG(log, "no action specified for pid {0} tid {1}", GetID(),
+                thread->GetID());
++      // Make sure we reset the stop reason for all the threads.
++      static_cast<NativeThreadLinux &>(*thread).ResetStopReason();
+       continue;
+     }
+ 
+diff --git a/lldb/source/Plugins/Process/Linux/NativeThreadLinux.cpp b/lldb/source/Plugins/Process/Linux/NativeThreadLinux.cpp
+index a5187a626c89..5a92865ff998 100644
+--- a/lldb/source/Plugins/Process/Linux/NativeThreadLinux.cpp
++++ b/lldb/source/Plugins/Process/Linux/NativeThreadLinux.cpp
+@@ -470,7 +470,10 @@ void NativeThreadLinux::SetStoppedByVForkDone() {
+ 
+ void NativeThreadLinux::SetStoppedWithNoReason() {
+   SetStopped();
++  ResetStopReason();
++}
+ 
++void NativeThreadLinux::ResetStopReason() {
+   m_stop_info.reason = StopReason::eStopReasonNone;
+   m_stop_info.details.signal.signo = 0;
+ }
+diff --git a/lldb/source/Plugins/Process/Linux/NativeThreadLinux.h b/lldb/source/Plugins/Process/Linux/NativeThreadLinux.h
+index 030a4012f46a..d9d7cb3aed9f 100644
+--- a/lldb/source/Plugins/Process/Linux/NativeThreadLinux.h
++++ b/lldb/source/Plugins/Process/Linux/NativeThreadLinux.h
+@@ -112,6 +112,8 @@ private:
+   /// to get.
+   void AnnotateSyncTagCheckFault(const siginfo_t *info);
+ 
++  void ResetStopReason();
++
+   // Member Variables
+   lldb::StateType m_state;
+   ThreadStopInfo m_stop_info;
+diff --git a/lldb/test/API/functionalities/thread/break_step_other/Makefile b/lldb/test/API/functionalities/thread/break_step_other/Makefile
+new file mode 100644
+index 000000000000..893c9de5e478
+--- /dev/null
++++ b/lldb/test/API/functionalities/thread/break_step_other/Makefile
+@@ -0,0 +1,4 @@
++CXX_SOURCES := main.cpp
++ENABLE_THREADS := YES
++
++include Makefile.rules
+\ No newline at end of file
+diff --git a/lldb/test/API/functionalities/thread/break_step_other/TestThreadBreakStepOther.py b/lldb/test/API/functionalities/thread/break_step_other/TestThreadBreakStepOther.py
+new file mode 100644
+index 000000000000..0e8176809591
+--- /dev/null
++++ b/lldb/test/API/functionalities/thread/break_step_other/TestThreadBreakStepOther.py
+@@ -0,0 +1,63 @@
++"""
++Test stop reasons after hitting and deleting a breakpoint and
++stepping another thread. Scenario:
++  - run a thread
++  - stop the thread at a breakpoint
++  - delete the breakpoint
++  - single step on the main thread
++The thread stopped at the deleted breakpoint should have stop reason
++'none'.
++"""
++
++
++
++import lldb
++from lldbsuite.test.decorators import *
++from lldbsuite.test.lldbtest import *
++from lldbsuite.test import lldbutil
++
++
++class ThreadBreakStepOtherTestCase(TestBase):
++    mydir = TestBase.compute_mydir(__file__)
++    NO_DEBUG_INFO_TESTCASE = True
++
++    def test_hit_breakpoint_delete_step_other_thread(self):
++        main_source_file = lldb.SBFileSpec("main.cpp")
++        self.build()
++        (target, process, main_thread, _) = lldbutil.run_to_source_breakpoint(
++            self, "// main break here", main_source_file)
++
++        # Run until the breakpoint in the thread.
++        thread_breakpoint = target.BreakpointCreateBySourceRegex(
++            "// thread break here", main_source_file)
++        self.assertGreater(
++            thread_breakpoint.GetNumLocations(),
++            0,
++            "thread breakpoint has no locations associated with it.")
++        process.Continue()
++        stopped_threads = lldbutil.get_threads_stopped_at_breakpoint(
++            process, thread_breakpoint)
++        self.assertEquals(
++            1,
++            len(stopped_threads),
++            "only one thread expected stopped at the thread breakpoint")
++        breakpoint_thread = stopped_threads[0]
++
++        # Delete the breakpint in the thread and do a step in the main thread.
++        target.BreakpointDelete(thread_breakpoint.GetID())
++        main_thread.StepInstruction(False)
++
++        # Check the stop reasons.
++        reason = main_thread.GetStopReason()
++        self.assertEqual(
++            lldb.eStopReasonPlanComplete,
++            reason,
++            "Expected thread stop reason 'plancomplete', but got '%s'" %
++            lldbutil.stop_reason_to_str(reason))
++
++        reason = breakpoint_thread.GetStopReason()
++        self.assertEqual(
++            lldb.eStopReasonNone,
++            reason,
++            "Expected thread stop reason 'none', but got '%s'" %
++            lldbutil.stop_reason_to_str(reason))
+diff --git a/lldb/test/API/functionalities/thread/break_step_other/main.cpp b/lldb/test/API/functionalities/thread/break_step_other/main.cpp
+new file mode 100644
+index 000000000000..ce471555d9bd
+--- /dev/null
++++ b/lldb/test/API/functionalities/thread/break_step_other/main.cpp
+@@ -0,0 +1,27 @@
++#include <thread>
++#include "pseudo_barrier.h"
++
++// Barrier for starting the thread and reaching the loop in main.
++pseudo_barrier_t g_barrier;
++volatile int g_foo = 0;
++
++void thread_func() {
++  // Wait until all the threads are running
++  pseudo_barrier_wait(g_barrier);
++  g_foo = 1; // thread break here
++}
++
++int main() {
++  g_foo = 0; // main break here
++
++  pseudo_barrier_init(g_barrier, 2);
++  std::thread t(thread_func);
++  pseudo_barrier_wait(g_barrier);
++
++  // A dummy loop to have something to step through.
++  volatile int i = 0;
++  while (g_foo == 0)
++    ++i;
++  t.join();
++  return 0;
++}
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+

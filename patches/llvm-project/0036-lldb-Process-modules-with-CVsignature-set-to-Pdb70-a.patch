@@ -1,0 +1,126 @@
+From 7e3de3d4a099fe8441b8f495eed061a1338787c6 Mon Sep 17 00:00:00 2001
+From: Iryna Shakhova <irinasha@google.com>
+Date: Tue, 24 Aug 2021 17:18:12 +0200
+Subject: [lldb] Process modules with CVsignature set to Pdb70 as PEs
+
+This change handles minidump generated on Linux+wine. In order to open
+these minidumps in VisualStudio correctly we need minidump_reader to
+correctly identify their architecture (at the moment it's hardcoded to
+"x86_64-pc-windows-msvc"): we check the following:
+- architecture.OS of the minidump itself is Linux
+- CVRecord of a module is Pdb70
+- module name ends with `.dll` or `.exe`.
+For other cases the behaviour stays unchanged.
+
+---
+ .../Process/minidump/MinidumpParser.cpp       | 30 +++++++++++++++++++
+ .../Plugins/Process/minidump/MinidumpParser.h |  3 ++
+ .../Process/minidump/ProcessMinidump.cpp      | 14 +++++++--
+ .../Process/minidump/ProcessMinidump.h        |  3 ++
+ 4 files changed, 48 insertions(+), 2 deletions(-)
+
+diff --git a/lldb/source/Plugins/Process/minidump/MinidumpParser.cpp b/lldb/source/Plugins/Process/minidump/MinidumpParser.cpp
+index 61106ebcc430..ff35176098dc 100644
+--- a/lldb/source/Plugins/Process/minidump/MinidumpParser.cpp
++++ b/lldb/source/Plugins/Process/minidump/MinidumpParser.cpp
+@@ -133,6 +133,36 @@ MinidumpParser::GetThreadContextWow64(const minidump::Thread &td) {
+   // stored in the first slot of the 64-bit TEB (wow64teb.Reserved1[0]).
+ }
+ 
++ArchSpec MinidumpParser::GetModuleArchitecture(llvm::StringRef file_name,
++                                               const minidump::Module *module) {
++
++  ArchSpec arch = GetArchitecture();
++  if (arch.GetTriple().isOSLinux()) {
++    // When producing minidumps on linux+wine, the CVRecords for PE-modules
++    // will be stored as Pdb70 and the architecture for them should be set
++    // accordingly.
++    auto cv_record =
++        GetData().slice(module->CvRecord.RVA, module->CvRecord.DataSize);
++
++    // Read the CV record signature
++    const llvm::support::ulittle32_t *signature = nullptr;
++    const Status error = consumeObject(cv_record, signature);
++    if (error.Fail())
++      return arch;
++
++    const auto cv_signature =
++        static_cast<CvSignature>(static_cast<uint32_t>(*signature));
++
++    if ((cv_signature == CvSignature::Pdb70)
++        && (file_name.endswith_insensitive(".exe")
++            || file_name.endswith_insensitive(".dll"))) {
++      arch.SetTriple("x86_64-pc-windows-msvc");
++    }
++  }
++
++  return arch;
++}
++
+ ArchSpec MinidumpParser::GetArchitecture() {
+   if (m_arch.IsValid())
+     return m_arch;
+diff --git a/lldb/source/Plugins/Process/minidump/MinidumpParser.h b/lldb/source/Plugins/Process/minidump/MinidumpParser.h
+index ff7134ff1815..4134c7be2ee8 100644
+--- a/lldb/source/Plugins/Process/minidump/MinidumpParser.h
++++ b/lldb/source/Plugins/Process/minidump/MinidumpParser.h
+@@ -68,6 +68,9 @@ public:
+ 
+   ArchSpec GetArchitecture();
+ 
++  ArchSpec GetModuleArchitecture(llvm::StringRef file_name,
++                                 const minidump::Module *module);
++
+   const MinidumpMiscInfo *GetMiscInfo();
+ 
+   llvm::Optional<LinuxProcStatus> GetLinuxProcStatus();
+diff --git a/lldb/source/Plugins/Process/minidump/ProcessMinidump.cpp b/lldb/source/Plugins/Process/minidump/ProcessMinidump.cpp
+index 162697bed7e9..6b93d696801f 100644
+--- a/lldb/source/Plugins/Process/minidump/ProcessMinidump.cpp
++++ b/lldb/source/Plugins/Process/minidump/ProcessMinidump.cpp
+@@ -385,6 +385,15 @@ size_t ProcessMinidump::DoReadMemory(lldb::addr_t addr, void *buf, size_t size,
+   return mem.size();
+ }
+ 
++ArchSpec ProcessMinidump::GetModuleArchitecture(llvm::StringRef file_name,
++                                                const minidump::Module *module) {
++  if (!m_is_wow64) {
++    return m_minidump_parser->GetModuleArchitecture(file_name, module);
++  }
++
++  return GetArchitecture();
++}
++
+ ArchSpec ProcessMinidump::GetArchitecture() {
+   if (!m_is_wow64) {
+     return m_minidump_parser->GetArchitecture();
+@@ -545,9 +554,10 @@ void ProcessMinidump::ReadModuleList() {
+     }
+ 
+     const auto uuid = m_minidump_parser->GetModuleUUID(module);
+-    auto file_spec = FileSpec(name, GetArchitecture().GetTriple());
++    const auto arch = GetModuleArchitecture(llvm::StringRef(name), module);
++    auto file_spec = FileSpec(name, arch.GetTriple());
+     ModuleSpec module_spec(file_spec, uuid);
+-    module_spec.GetArchitecture() = GetArchitecture();
++    module_spec.GetArchitecture() = arch;
+     Status error;
+     // Try and find a module with a full UUID that matches. This function will
+     // add the module to the target if it finds one.
+diff --git a/lldb/source/Plugins/Process/minidump/ProcessMinidump.h b/lldb/source/Plugins/Process/minidump/ProcessMinidump.h
+index 5360269199cd..a304111d44c6 100644
+--- a/lldb/source/Plugins/Process/minidump/ProcessMinidump.h
++++ b/lldb/source/Plugins/Process/minidump/ProcessMinidump.h
+@@ -75,6 +75,9 @@ public:
+ 
+   ArchSpec GetArchitecture();
+ 
++  ArchSpec GetModuleArchitecture(llvm::StringRef file_name,
++                                 const minidump::Module *module);
++
+   Status GetMemoryRegions(
+       lldb_private::MemoryRegionInfos &region_list) override;
+ 
+-- 
+2.38.0.rc1.362.ged0d419d3c-goog
+
