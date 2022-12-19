@@ -6,12 +6,17 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="binaries\hello" />
-    <None Remove="binaries\hello_cpp.exe" />
-    <None Remove="binaries\hello_cpp.pdb" />
-    <None Remove="binaries\hello_dotnet.dll" />
-    <None Remove="binaries\hello_dotnet.exe" />
-    <None Remove="binaries\hello_dotnet.pdb" />
+    <Compile Remove="binaries\**" />
+    <EmbeddedResource Remove="binaries\**" />
+    <None Remove="binaries\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="TestData\ModuleParserTests\hello_cpp_exe.dat" />
+    <None Remove="TestData\ModuleParserTests\hello_cpp_pdb.dat" />
+    <None Remove="TestData\ModuleParserTests\hello_dotnet_dll.dat" />
+    <None Remove="TestData\ModuleParserTests\hello_dotnet_exe.dat" />
+    <None Remove="TestData\ModuleParserTests\hello_dotnet_pdb.dat" />
+    <None Remove="TestData\ModuleParserTests\hello_elf.dat" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />
@@ -75,22 +80,22 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="binaries\hello_cpp.exe">
+    <Content Include="TestData\ModuleParserTests\hello_cpp_exe.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="binaries\hello_cpp.pdb">
+    <Content Include="TestData\ModuleParserTests\hello_cpp_pdb.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="binaries\hello">
+    <Content Include="TestData\ModuleParserTests\hello_dotnet_dll.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="binaries\hello_dotnet.dll">
+    <Content Include="TestData\ModuleParserTests\hello_dotnet_exe.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="binaries\hello_dotnet.exe">
+    <Content Include="TestData\ModuleParserTests\hello_dotnet_pdb.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="binaries\hello_dotnet.pdb">
+    <Content Include="TestData\ModuleParserTests\hello_elf.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
