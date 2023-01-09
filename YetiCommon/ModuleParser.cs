@@ -111,30 +111,34 @@ namespace YetiCommon
         BuildIdInfo ParseBuildIdFromElf(string filepath)
         {
             var output = new BuildIdInfo();
-            if (!ELFReader.TryLoad(filepath, out IELF elfReader))
+            using (Stream stream = File.OpenRead(filepath))
             {
-                output.AddError(ErrorStrings.InvalidSymbolFileFormat(filepath, ModuleFormat.Elf));
-                return output;
-            }
-
-            using (elfReader)
-            {
-                if (!elfReader.TryGetSection(_buildIdName, out ISection buildIdSection))
+                if (!ELFReader.TryLoad(stream, false, out IELF elfReader))
                 {
                     output.AddError(
-                        ErrorStrings.FailedToReadBuildId(filepath, ErrorStrings.EmptyBuildId));
+                        ErrorStrings.InvalidSymbolFileFormat(filepath, ModuleFormat.Elf));
                     return output;
                 }
 
-                if (buildIdSection is INoteSection buildIdNoteSection)
+                using (elfReader)
                 {
-                    byte[] contents = buildIdNoteSection.Description;
-                    output.Data = ParseBuildIdValue(contents);
-                }
-                else
-                {
-                    output.AddError(
-                        ErrorStrings.FailedToReadBuildId(filepath, ErrorStrings.EmptyBuildId));
+                    if (!elfReader.TryGetSection(_buildIdName, out ISection buildIdSection))
+                    {
+                        output.AddError(
+                            ErrorStrings.FailedToReadBuildId(filepath, ErrorStrings.EmptyBuildId));
+                        return output;
+                    }
+
+                    if (buildIdSection is INoteSection buildIdNoteSection)
+                    {
+                        byte[] contents = buildIdNoteSection.Description;
+                        output.Data = ParseBuildIdValue(contents);
+                    }
+                    else
+                    {
+                        output.AddError(
+                            ErrorStrings.FailedToReadBuildId(filepath, ErrorStrings.EmptyBuildId));
+                    }
                 }
             }
 
@@ -382,26 +386,29 @@ namespace YetiCommon
                 return false;
             }
 
-            if (!ELFReader.TryLoad(filepath, out IELF elfReader))
+            using (Stream stream = File.OpenRead(filepath))
             {
-                return false;
-            }
-
-            using (elfReader)
-            {
-                if (!isDebugInfoFile)
+                if (!ELFReader.TryLoad(stream, false, out IELF elfReader))
                 {
-                    // If we are not to check the presence of .debug_info, it is sufficient that
-                    // the file has a valid ELF format.
-                    return true;
+                    return false;
                 }
 
-                if (elfReader.TryGetSection(_debugInfoName, out ISection _))
+                using (elfReader)
                 {
-                    return true;
-                }
+                    if (!isDebugInfoFile)
+                    {
+                        // If we are not to check the presence of .debug_info, it is sufficient that
+                        // the file has a valid ELF format.
+                        return true;
+                    }
 
-                errorMessage += ErrorStrings.MissingDebugInfoInSymbolFile(filepath);
+                    if (elfReader.TryGetSection(_debugInfoName, out ISection _))
+                    {
+                        return true;
+                    }
+
+                    errorMessage += ErrorStrings.MissingDebugInfoInSymbolFile(filepath);
+                }
             }
 
             return false;

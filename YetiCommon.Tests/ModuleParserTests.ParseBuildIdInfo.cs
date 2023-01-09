@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using NUnit.Framework;
 
 namespace YetiCommon.Tests
@@ -19,13 +20,16 @@ namespace YetiCommon.Tests
                   "FDF485D6-E134-4825-885F-03517602265D-00000001")]
         public void ParseBuildId_Succeeds(string filename, ModuleFormat format, string buildId)
         {
-            string path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestData",
-                                       "ModuleParserTests", filename);
-            var moduleParser = new ModuleParser();
-            BuildIdInfo output = moduleParser.ParseBuildIdInfo(path, format);
+            string scrambledPath = Path.Combine(TestContext.CurrentContext.TestDirectory,
+                                                "TestData", "ModuleParserTests", filename);
+            using (TempFile tmpFile = Unscramble(scrambledPath))
+            {
+                var moduleParser = new ModuleParser();
+                BuildIdInfo output = moduleParser.ParseBuildIdInfo(tmpFile.Path, format);
 
-            Assert.IsFalse(output.HasError);
-            Assert.True(output.Data.Matches(new BuildId(buildId), format));
+                Assert.IsFalse(output.HasError);
+                Assert.True(output.Data.Matches(new BuildId(buildId), format));
+            }
         }
 
         [Test]
@@ -49,13 +53,48 @@ namespace YetiCommon.Tests
         [TestCase("hello_dotnet_dll.dat", ModuleFormat.Pdb)]
         public void ParseBuildId_IncorrectFormat(string filename, ModuleFormat format)
         {
-            string path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestData",
-                                       "ModuleParserTests", filename);
-            var moduleParser = new ModuleParser();
-            BuildIdInfo output = moduleParser.ParseBuildIdInfo(path, format);
+            string scrambledPath = Path.Combine(TestContext.CurrentContext.TestDirectory,
+                                                "TestData", "ModuleParserTests", filename);
+            using (TempFile tmpFile = Unscramble(scrambledPath))
+            {
+                var moduleParser = new ModuleParser();
+                BuildIdInfo output = moduleParser.ParseBuildIdInfo(tmpFile.Path, format);
 
-            Assert.IsTrue(output.HasError);
-            Assert.That(output.Error.Equals(ErrorStrings.InvalidSymbolFileFormat(path, format)));
+                Assert.IsTrue(output.HasError);
+                Assert.That(
+                    output.Error.Equals(ErrorStrings.InvalidSymbolFileFormat(tmpFile.Path, format)));
+            }
+        }
+
+        class TempFile : IDisposable
+        {
+            public string Path { get; } = System.IO.Path.GetTempFileName();
+
+            public void Dispose()
+            {
+                File.Delete(Path);
+            }
+        }
+
+        /// <summary>
+        /// Unscrambles test data to addresses a Google policy that does not allow us to check in
+        /// binaries.
+        /// </summary>
+        /// <param name="filename">Name of the scrambled file in TestData\ModuleParserTests</param>
+        /// <returns>Unscrambled TempFile</returns>
+        TempFile Unscramble(string filename)
+        {
+            string scrambledPath = Path.Combine(TestContext.CurrentContext.TestDirectory,
+                                                "TestData", "ModuleParserTests", filename);
+            byte[] data = File.ReadAllBytes(scrambledPath);
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = (byte)(255 - data[i]);
+            }
+
+            TempFile file = new TempFile();
+            File.WriteAllBytes(file.Path, data);
+            return file;
         }
     }
 }
